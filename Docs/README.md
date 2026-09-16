@@ -5,10 +5,11 @@
 | 문서 | 내용 | 상태 |
 |---|---|---|
 | [00_Overview.md](00_Overview.md) | 프로젝트 정의, 확정/미확정 사항, 목표, 마일스톤 | 검토중 |
-| [01_Concept_Candidates.md](01_Concept_Candidates.md) | 테마와 비주얼 엔진 후보 비교, 추천 | 제안 |
-| [02_Progression_Skeleton.md](02_Progression_Skeleton.md) | 테마 무관한 진행 구조, 핵심 반복 행동 후보, 수식 | 제안 |
+| [01_Concept_Candidates.md](01_Concept_Candidates.md) | 테마 후보 비교. 우주 채택 기록 | 결정됨 |
+| [02_Progression_Skeleton.md](02_Progression_Skeleton.md) | 계층, 수식, 시간축, 공통 시스템 | 제안 |
 | [03_Steam_Release.md](03_Steam_Release.md) | Steam 출시 체크리스트 | 검토중 |
-| [90_Backlog.md](90_Backlog.md) | 결정 대기 질문, 제안 목록, 리스크, 용어 | - |
+| [10_Core_Loop.md](10_Core_Loop.md) | **핵심 루프.** 먼지, 홀드 중력, 행성, 판매, 방치 경로, 프레스티지, 엔딩 | 골격 확정 + 세부 제안 |
+| [90_Backlog.md](90_Backlog.md) | 결정 기록, 결정 대기, 제안, 리스크, 용어 | - |
 
 ## 상태 표기
 
@@ -20,4 +21,5 @@
 
 - 기획 세션은 코드를 쓰지 않는다. 문서만 관리한다.
 - 제안은 본문과 분리해 "제안" 또는 "추천"으로 표기한다.
-- 결정이 나면 `90_Backlog.md`의 결정 대기 표에서 지우고 해당 문서를 "확정"으로 올린다.
+- 결정이 나면 `90_Backlog.md`의 결정 대기 표에서 결정 기록으로 옮기고 해당 문서를 "확정"으로 올린다.
+- 구현 세션은 `10_Core_Loop.md` §7(프로토타입 범위)부터 읽는다.
