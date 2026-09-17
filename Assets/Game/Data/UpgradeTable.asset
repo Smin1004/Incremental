@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5be58e1bf3b36e045a8e9e7bd9d3dacf, type: 3}
+  m_Name: UpgradeTable
+  m_EditorClassIdentifier: 
+  upgrades:
+  - id: 0
+    effectPerLevel: 1
+    baseCost: 10
+    growth: 1.25
+    maxLevel: 0
+  - id: 1
+    effectPerLevel: 0.2
+    baseCost: 10
+    growth: 1.25
+    maxLevel: 0
+  - id: 2
+    effectPerLevel: 0.25
+    baseCost: 15
+    growth: 1.3
+    maxLevel: 0
+  - id: 3
+    effectPerLevel: 10
+    baseCost: 20
+    growth: 1.3
+    maxLevel: 0
+  - id: 4
+    effectPerLevel: 0.04
+    baseCost: 25
+    growth: 1.35
+    maxLevel: 10
+  unlocks:
+  - tier: 2
+    cost: 50
+  - tier: 3
+    cost: 400

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba241e51a87ce844ab26926ff504e49c, type: 3}
+  m_Name: GameParams
+  m_EditorClassIdentifier: 
+  dustInitial: 100
+  spawnRate: 4
+  dustCap: 300
+  driftSpeed: 15
+  dustMass: 1
+  gravityRadius: 180
+  pullAccel: 600
+  dustMaxSpeed: 400
+  captureRadius: 30
+  staminaMax: 60
+  staminaHoldDrain: 1
+  staminaIdleDrain: 0.2
+  saleMult: 1
+  thresholdMult: 1
+  pixelsPerUnit: 100
+  effectIntensity: 1
+  dustSizePx: 3
+  driftNoise: 2
+  driftRelaxRate: 2
+  scatterSpeedPx: 200
+  planetLifetimeSec: 1.5
+  planetPopScale: 0.5
+  planetPopDurationSec: 0.15
+  dustColorA: {r: 1, g: 1, b: 1, a: 1}
+  dustColorB: {r: 0.65, g: 0.82, b: 1, a: 1}
