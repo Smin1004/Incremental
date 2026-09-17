@@ -113,5 +113,26 @@ namespace Incremental
             img.raycastTarget = false;
             return img;
         }
+
+        /// <summary>Plain uGUI Button (solid background + Legacy Text label). Disabled state is clearly greyed out.</summary>
+        public static Button CreateButton(string name, Transform parent, Font font, int fontSize, string label,
+            Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction onClick, out Text labelText)
+        {
+            var img = CreateImage(name, parent, new Color(0.25f, 0.45f, 0.8f, 1f), anchor, pivot, pos, size, SolidSprite());
+            img.raycastTarget = true;
+            var btn = img.gameObject.AddComponent<Button>();
+            btn.targetGraphic = img;
+            var colors = btn.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
+            colors.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+            colors.disabledColor = new Color(0.35f, 0.35f, 0.4f, 0.6f);
+            btn.colors = colors;
+            labelText = CreateText("Label", img.transform, font, fontSize, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, size);
+            labelText.text = label;
+            if (onClick != null) btn.onClick.AddListener(onClick);
+            return btn;
+        }
     }
 }

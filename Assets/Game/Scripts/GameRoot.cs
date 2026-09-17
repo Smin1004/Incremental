@@ -48,6 +48,7 @@ namespace Incremental
         public PlanetPool Planets { get; private set; }
         public HudView Hud { get; private set; }
         public CursorView Cursor { get; private set; }
+        public ResultShopView ShopView { get; private set; }
         public DebugTools Tools { get; private set; }
         public Vector2 CursorWorld { get; private set; }
         public PointerState LastPointer { get; private set; }
@@ -67,6 +68,10 @@ namespace Incremental
 
         void Awake()
         {
+            // The Unity 6 editor honours this while the editor is not the active application; without it the player
+            // loop stalls as soon as another window is in front, which breaks unattended bot runs.
+            Application.runInBackground = true;
+
             Cam = Camera.main;
             if (Cam == null) Cam = FindFirstObjectByType<Camera>();
 
@@ -92,6 +97,11 @@ namespace Incremental
             cursorGo.transform.SetParent(transform, false);
             Cursor = cursorGo.AddComponent<CursorView>();
             Cursor.Init(this, unlitMaterial, Hud.CanvasRect, circleSprite);
+
+            var shopGo = new GameObject("ResultShopView");
+            shopGo.transform.SetParent(transform, false);
+            ShopView = shopGo.AddComponent<ResultShopView>();
+            ShopView.Init(this);
 
             var toolsGo = new GameObject("DebugTools");
             toolsGo.transform.SetParent(transform, false);
@@ -163,7 +173,6 @@ namespace Incremental
             Dust.Reset((int)gameParams.dustInitial, CameraArea(), CursorWorld);
             Planets.Clear();
             Phase = GamePhase.Run;
-            Hud.SetCenter(string.Empty);
             RunStarted?.Invoke();
         }
 
@@ -250,9 +259,14 @@ namespace Incremental
 
             RunLogger.Append(rec);
             UnityEngine.Debug.Log(RunLogger.Summary(rec));
-            Hud.SetCenter(string.Format(UIStrings.RunEndedTemp, Fmt.Int(rec.income)));
             RunEnded?.Invoke(rec);
         }
+
+        // ---------------- shop (between runs only) ----------------
+
+        public bool TryBuyUpgrade(UpgradeId id) => Phase == GamePhase.Result && Shop.BuyUpgrade(upgradeTable, Meta, id);
+
+        public bool TryUnlock(int tier) => Phase == GamePhase.Result && Shop.Unlock(upgradeTable, Meta, tier);
 
         // ---------------- queries (views, bot) ----------------
 
