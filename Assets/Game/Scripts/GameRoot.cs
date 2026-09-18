@@ -50,6 +50,7 @@ namespace Incremental
         public CursorView Cursor { get; private set; }
         public ResultShopView ShopView { get; private set; }
         public DebugTools Tools { get; private set; }
+        public AutoplayBot Bot { get; private set; }
         public Vector2 CursorWorld { get; private set; }
         public PointerState LastPointer { get; private set; }
         public double LastTickMs { get; private set; }
@@ -107,6 +108,11 @@ namespace Incremental
             toolsGo.transform.SetParent(transform, false);
             Tools = toolsGo.AddComponent<DebugTools>();
             Tools.Init(this);
+
+            var botGo = new GameObject("AutoplayBot");
+            botGo.transform.SetParent(transform, false);
+            Bot = botGo.AddComponent<AutoplayBot>();
+            Bot.Init(this);
         }
 
         void Start()

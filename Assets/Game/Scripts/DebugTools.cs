@@ -7,7 +7,7 @@ namespace Incremental
 {
     /// <summary>
     /// Debug keys. F1: overlay (FPS, dust count, tick ms). F2: performance mode (runtime override of dust_cap / spawn_rate,
-    /// assets untouched). F3: +currency. F12: screenshot to persistentDataPath. (F4 autoplay bot: checkpoint C.)
+    /// assets untouched). F3: +currency. F4: autoplay bot toggle. F12: screenshot to persistentDataPath.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -46,6 +46,7 @@ namespace Incremental
                 if (kb.f1Key.wasPressedThisFrame) overlay = !overlay;
                 if (kb.f2Key.wasPressedThisFrame) SetPerfMode(!perfMode);
                 if (kb.f3Key.wasPressedThisFrame) root.Meta.currency += cheatCurrency;
+                if (kb.f4Key.wasPressedThisFrame && root.Bot != null) root.Bot.SetEnabled(!root.Bot.Enabled);
                 if (kb.f12Key.wasPressedThisFrame) Screenshot();
             }
 
