@@ -28,6 +28,76 @@ namespace Incremental
             return solidSprite;
         }
 
+        static Sprite softDotSprite;
+        static Sprite shadowSprite;
+
+        /// <summary>White radial glow (alpha falls off smoothly to 0 at the edge). Used for node glows, stars and flashes.</summary>
+        public static Sprite SoftDotSprite()
+        {
+            if (softDotSprite != null) return softDotSprite;
+            const int n = 64;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { name = "SoftDot", wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = (x + 0.5f) / n * 2f - 1f, dy = (y + 0.5f) / n * 2f - 1f;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                float a = Mathf.Clamp01(1f - d);
+                a = a * a * (3f - 2f * a);
+                px[y * n + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+            }
+            tex.SetPixels32(px);
+            tex.Apply();
+            softDotSprite = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), n);
+            softDotSprite.name = "SoftDot";
+            return softDotSprite;
+        }
+
+        /// <summary>
+        /// Sphere shading as a black overlay for a circle of the same size: transparent on the lit side (−x), dark on the
+        /// far side (+x), so a planet reads as a lit ball with a crescent shadow (13 §4). Rotate it so +x points away from the light.
+        /// </summary>
+        public static Sprite ShadowSprite()
+        {
+            if (shadowSprite != null) return shadowSprite;
+            const int n = 128;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { name = "PlanetShadow", wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[n * n];
+            var light = new Vector3(-0.8f, 0f, 0.6f).normalized;
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float nx = (x + 0.5f) / n * 2f - 1f, ny = (y + 0.5f) / n * 2f - 1f;
+                float r2 = nx * nx + ny * ny;
+                float a = 0f;
+                if (r2 < 1f)
+                {
+                    float nz = Mathf.Sqrt(1f - r2);
+                    float lit = Mathf.Clamp01(nx * light.x + ny * light.y + nz * light.z);
+                    a = 1f - Mathf.SmoothStep(0f, 1f, lit * 1.4f);
+                    a *= Mathf.Clamp01((1f - Mathf.Sqrt(r2)) * n * 0.5f); // soft rim, no hard edge outside the disc
+                }
+                px[y * n + x] = new Color32(0, 0, 0, (byte)(a * 255f));
+            }
+            tex.SetPixels32(px);
+            tex.Apply();
+            shadowSprite = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), n);
+            shadowSprite.name = "PlanetShadow";
+            return shadowSprite;
+        }
+
+        /// <summary>Stretches a solid Image between two points of its parent (a line segment of the given width).</summary>
+        public static void PlaceLine(RectTransform rt, Vector2 a, Vector2 b, float width)
+        {
+            Vector2 d = b - a;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = (a + b) * 0.5f;
+            rt.sizeDelta = new Vector2(d.magnitude, width);
+            rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+        }
+
         /// <summary>Korean-capable dynamic font: OS "Malgun Gothic" on Windows, otherwise the built-in legacy font.</summary>
         public static Font LoadFont()
         {

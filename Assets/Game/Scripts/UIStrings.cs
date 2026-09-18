@@ -16,7 +16,7 @@ namespace Incremental
         public const string Stamina = "스태미나 {0} / {1}";
         public const string Paused = "일시정지";
 
-        // Result (11 §4)
+        // Result (11 §4, 13 §3)
         public const string ResultTitle = "런 {0} 결과";
         public const string ResultIncome = "이번 런 수입";
         public const string ResultPlanets = "만든 행성";
@@ -24,23 +24,25 @@ namespace Incremental
         public const string ResultBest = "최고 런 수입";
         public const string PlanetCount = "{0}  {1}";
         public const string NoPlanets = "-";
+        public const string OpenTree = "스킬트리  (Space)";
+        public const string PlanetMulti = "×{0}";
 
-        // Shop
-        public const string ShopTitle = "상점";
-        public const string ShopCurrency = "보유 재화 {0}";
-        public const string ColumnName = "항목";
-        public const string ColumnEffect = "효과 / 레벨";
-        public const string ColumnLevel = "레벨";
-        public const string ColumnCost = "비용";
-        public const string UnlockName = "{0} 해금";
-        public const string UnlockEffect = "티어 {0} · 판매가 {1}";
-        public const string AllUnlocked = "모두 해금";
+        // Skill tree (12 §9)
+        public const string TreeTitle = "스킬트리";
+        public const string TreeCurrency = "보유 재화 {0}";
+        public const string TreeHint = "클릭: 구매   누르고 있기: 연속 구매   드래그: 이동   휠: 확대";
+        public const string NextRun = "다음 런  (Space)";
         public const string Level = "Lv {0}";
         public const string LevelOf = "Lv {0}/{1}";
-        public const string PlanetMulti = "×{0}";
-        public const string Buy = "구매";
-        public const string NoCost = "-";
-        public const string NextRun = "다음 런";
+        public const string LevelShort = "{0}/{1}";
+        public const string EffectPerLevel = "레벨당 {0}";
+        public const string GateEffect = "티어 {0} · 판매가 {1} · 필요 질량 {2}";
+        public const string Cost = "비용 {0}";
+        public const string Maxed = "완료";
+        public const string LockedRing = "{0} 해금 필요";
+        public const string LockedPrereq = "이어진 노드 필요";
+        public const string CenterName = "성운";
+        public const string CenterDesc = "모든 것이 시작된 곳";
 
         // Debug overlay
         public const string DebugOverlay = "FPS {0:F1}   먼지 {1}   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}";

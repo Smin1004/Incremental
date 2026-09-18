@@ -96,6 +96,15 @@ namespace Incremental
             }
         }
 
+        /// <summary>Currency, run income and stamina bar: shown during a run only.</summary>
+        public void SetRunHudVisible(bool visible)
+        {
+            if (currencyText.gameObject.activeSelf == visible) return;
+            currencyText.gameObject.SetActive(visible);
+            incomeText.gameObject.SetActive(visible);
+            staminaFill.transform.parent.gameObject.SetActive(visible);
+        }
+
         public void SetCurrency(double currency, int run) =>
             currencyText.text = string.Format(UIStrings.CurrencyAndRun, Fmt.Num(currency), run);
 

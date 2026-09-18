@@ -50,6 +50,59 @@ namespace Incremental
         public Color dustColorA = Color.white;
         public Color dustColorB = new Color(0.65f, 0.82f, 1f);
 
+        [Header("Planet departure (13 §2)")]
+        [Tooltip("After the pop, the planet stays in place this long.")]
+        public double planetHoldSec = 0.4;
+        [Tooltip("Then it flies to the vanishing point, shrinking and fading.")]
+        public double planetDepartSec = 0.8;
+        [Tooltip("Vanishing point in viewport coordinates (0..1); beyond 1 is outside the screen.")]
+        public Vector2 vanishPoint = new Vector2(1.05f, 1.05f);
+        [Tooltip("Faint glow at the screen edge toward the vanishing point: size (px) and alpha.")]
+        public double vanishGlowPx = 520;
+        public double vanishGlowAlpha = 0.18;
+        [Tooltip("Darkness of the crescent shadow on planets (0..1).")]
+        public double planetShadow = 0.75;
+
+        [Header("Result solar system (13 §3)")]
+        [Tooltip("Central star offset from the screen center, px (right).")]
+        public double starOffsetPx = 220;
+        public double orbitR0Px = 110;
+        public double orbitStepPx = 52;
+        [Tooltip("Highest tier that gets an orbit; tiers above are stars in the sky.")]
+        public int orbitMaxTier = 8;
+        public double orbitAlpha = 0.15;
+        public double orbitAlphaUsed = 0.3;
+        [Tooltip("Angular speed of the innermost orbit, degrees per second; ω(r) = ω0 × (r0 / r)^1.5.")]
+        public double orbitOmega0Deg = 40;
+        [Tooltip("Planet size on the result screen = sizePx × this.")]
+        public double orbitPlanetScale = 0.5;
+        [Tooltip("Tiers up to this one become an asteroid belt when there are more than orbitBeltThreshold planets.")]
+        public int orbitBeltMaxTier = 3;
+        public int orbitBeltThreshold = 16;
+        public int orbitBeltMaxDots = 240;
+        public double orbitBeltJitterPx = 8;
+        public double orbitBeltDotMinPx = 2;
+        public double orbitBeltDotMaxPx = 4;
+        [Tooltip("Tiers above orbitBeltMaxTier show at most this many planets, then ×N.")]
+        public int orbitIndividualMax = 12;
+        [Tooltip("Stars (tiers above orbitMaxTier) made this run, drawn in the sky at most this many.")]
+        public int skyStarsPerRun = 20;
+        public int skyBackgroundStars = 160;
+        [Tooltip("Entry animation and income count-up, seconds (13 §5).")]
+        public double resultEntrySec = 1.2;
+        public Color protostarColor = new Color(1f, 0.55f, 0.2f);
+
+        [Header("Skill tree view (12 §5, §9)")]
+        [Tooltip("Ring k radius = treeRingR0Px + k × treeRingStepPx (reference 1080p).")]
+        public double treeRingR0Px = 40;
+        public double treeRingStepPx = 115;
+        public double treeHoldDelaySec = 0.35;
+        public double treeHoldRepeatSec = 0.08;
+        public double treeZoomMin = 0.3;
+        public double treeZoomMax = 1.6;
+        [Tooltip("Seconds of the camera move to the frontier when the tree opens.")]
+        public double treeFocusSec = 0.35;
+
         [Header("Save (02 §6)")]
         [Tooltip("While a run is going, its progress is saved this often (seconds) so a killed game keeps the run's income.")]
         public double pendingSaveIntervalSec = 5;

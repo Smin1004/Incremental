@@ -53,7 +53,8 @@ namespace Incremental
         public PlanetPool Planets { get; private set; }
         public HudView Hud { get; private set; }
         public CursorView Cursor { get; private set; }
-        public ResultShopView ShopView { get; private set; }
+        public ResultView Result { get; private set; }
+        public TreeView Tree { get; private set; }
         public DebugTools Tools { get; private set; }
         public AutoplayBot Bot { get; private set; }
         public Vector2 CursorWorld { get; private set; }
@@ -119,10 +120,15 @@ namespace Incremental
             Cursor = cursorGo.AddComponent<CursorView>();
             Cursor.Init(this, unlitMaterial, Hud.CanvasRect, circleSprite);
 
-            var shopGo = new GameObject("ResultShopView");
-            shopGo.transform.SetParent(transform, false);
-            ShopView = shopGo.AddComponent<ResultShopView>();
-            ShopView.Init(this);
+            var resultGo = new GameObject("ResultView");
+            resultGo.transform.SetParent(transform, false);
+            Result = resultGo.AddComponent<ResultView>();
+            Result.Init(this);
+
+            var treeGo = new GameObject("TreeView");
+            treeGo.transform.SetParent(transform, false);
+            Tree = treeGo.AddComponent<TreeView>();
+            Tree.Init(this);
 
             var toolsGo = new GameObject("DebugTools");
             toolsGo.transform.SetParent(transform, false);
@@ -156,7 +162,7 @@ namespace Incremental
             if (crashed != null || status == LoadStatus.RestoredFromBackup) Save();
             Phase = GamePhase.Result;
             ShowIdleField();
-            ShopView.Show(Meta.LastRun);
+            Result.Show(Meta.LastRun);
             UnityEngine.Debug.Log($"[Save] loaded ({status}): run {Meta.runCount}, currency {Fmt.Num(Meta.currency)}, max tier {Meta.unlockedMaxTier}");
         }
 
@@ -223,12 +229,8 @@ namespace Incremental
 
         void Update()
         {
-            if (Phase == GamePhase.Result)
-            {
-                var kb = Keyboard.current;
-                if (kb != null && kb.spaceKey.wasPressedThisFrame) RequestStartRun();
-            }
-
+            // Between runs the result screen and the tree show their own numbers (Space is handled there too).
+            Hud.SetRunHudVisible(Phase == GamePhase.Run);
             Hud.SetCurrency(Meta.currency, Meta.runCount);
             if (Run != null)
             {
