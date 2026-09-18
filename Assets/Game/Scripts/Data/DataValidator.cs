@@ -145,6 +145,21 @@ namespace Incremental
                 r.Errors.Add("GameParams: ignition flash alphas must be within 0..1.");
             if (!(p.ignitionFlashRiseSec > 0) || !(p.ignitionFlashRiseSec < p.ignitionRepeatSec))
                 r.Errors.Add("GameParams: ignitionFlashRiseSec must be > 0 and shorter than ignitionRepeatSec.");
+
+            ValidateLook("GameParams: protostarLook", p.protostarLook, r);
+            if (p.protostarLook != null && p.protostarLook.surface != SurfaceType.Star)
+                r.Errors.Add("GameParams: protostarLook must be a Star look (14 §7).");
+            if (p.starCorePx == null || p.starCorePx.Length == 0 || p.starGlowPx == null || p.starGlowPx.Length == 0)
+                r.Errors.Add("GameParams: starCorePx and starGlowPx need one entry per central star stage.");
+            else if (c != null)
+            {
+                int stages = Math.Max(1, c.MaxTier - p.orbitMaxTier + 1);
+                if (p.starCorePx.Length < stages || p.starGlowPx.Length < stages)
+                    r.Warnings.Add($"GameParams: starCorePx / starGlowPx have fewer than {stages} entries; later stages reuse the last one.");
+            }
+            if (!(p.skyStarScale > 0) || !(p.skyStarArea.z > p.skyStarArea.x) || !(p.skyStarArea.w > p.skyStarArea.y))
+                r.Errors.Add("GameParams: skyStarScale must be > 0 and skyStarArea must have max > min.");
+            if (!(p.newTierHighlightSec > 0) || p.newTierPulses < 1) r.Errors.Add("GameParams: newTierHighlightSec must be > 0 and newTierPulses >= 1.");
             return r;
         }
 

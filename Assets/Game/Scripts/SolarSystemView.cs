@@ -5,13 +5,16 @@ using UnityEngine.UI;
 namespace Incremental
 {
     /// <summary>
-    /// Result screen solar system (13 §3-§5), drawn in world space behind the result panel.
+    /// Result screen solar system (13 §3-§5, 14 §7), drawn in world space behind the result panel.
     /// Planets made this run orbit a display-only central star: one orbit per unlocked tier up to orbitMaxTier,
-    /// radius r0 + (t − 1) × step, counter-clockwise at ω(r) = ω0 × (r0 / r)^1.5. Tiers up to orbitBeltMaxTier with more than
-    /// orbitBeltThreshold planets become an asteroid belt; higher tiers show at most orbitIndividualMax planets, then "×N".
-    /// Stars (tiers above orbitMaxTier) made this run go to the sky. The central star's look follows highestTierCreated,
-    /// with an ignition flash the first time a star is made. On entry the planets fly in from the vanishing point, lower
-    /// tiers first. During runs a faint glow marks the vanishing point (13 §2).
+    /// radius r0 + (t − 1) × step, counter-clockwise at ω(r) = ω0 × (r0 / r)^1.5. Planets and the central star use the
+    /// planet shader, lit from the central star. Tiers up to orbitBeltMaxTier with more than orbitBeltThreshold planets
+    /// become an asteroid belt of plain dots; higher tiers show at most orbitIndividualMax planets, then "×N" on a dark
+    /// backing at a fixed angle outside the orbit. Stars (tiers above orbitMaxTier) made this run shine in the sky.
+    /// The central star follows the highest tier ever made (a faint protostar before the first star), with an ignition
+    /// flash the first time a star is made. A tier made for the first time ever gets a "new body" label and one pulse of
+    /// its orbit. On entry the planets fly in from the vanishing point, lower tiers first. During runs a faint glow marks
+    /// the vanishing point (13 §2).
     /// </summary>
     public sealed class SolarSystemView : MonoBehaviour
     {
@@ -23,10 +26,10 @@ namespace Incremental
 
         sealed class Flier
         {
-            public Transform tf;
+            public PlanetVisual v;
             public Transform pivot;
             public Vector3 local;
-            public float scale;
+            public float diameter;
             public float start;
             public bool landed;
         }
@@ -34,8 +37,22 @@ namespace Incremental
         struct Fade
         {
             public SpriteRenderer sr;
+            public PlanetVisual v;
             public Color color;
             public float start;
+        }
+
+        struct NewOrbit
+        {
+            public LineRenderer line;
+            public Color color;
+        }
+
+        struct Label
+        {
+            public RectTransform root;
+            public Image backing;
+            public Text text;
         }
 
         const int OrbitSegments = 128;
@@ -45,17 +62,19 @@ namespace Incremental
         GameParams p;
         Camera cam;
         Material mat;
-        Sprite circle, dot, shadow;
-        float circleUnit = 1f, dotUnit = 1f, shadowUnit = 1f;
+        Sprite circle, dot;
+        float circleUnit = 1f, dotUnit = 1f;
 
         Transform system, content, vanishGlow;
         SpriteRenderer vanishGlowSr;
-        SpriteRenderer starCore, starGlow, flash;
+        SpriteRenderer flash;
+        PlanetVisual centralStar;
         Canvas labelCanvas;
-        readonly List<Text> labels = new List<Text>();
+        readonly List<Label> labels = new List<Label>();
         readonly List<Orbit> orbits = new List<Orbit>();
         readonly List<Flier> fliers = new List<Flier>();
         readonly List<Fade> fades = new List<Fade>();
+        readonly List<NewOrbit> newOrbits = new List<NewOrbit>();
         float age;
         bool visible;
         bool ignition;
@@ -72,16 +91,13 @@ namespace Incremental
             mat = root.unlitMaterial;
             circle = root.circleSprite;
             dot = UIBuilder.SoftDotSprite();
-            shadow = UIBuilder.ShadowSprite();
             circleUnit = circle != null ? Mathf.Max(circle.bounds.size.x, 1e-3f) : 1f;
             dotUnit = Mathf.Max(dot.bounds.size.x, 1e-3f);
-            shadowUnit = Mathf.Max(shadow.bounds.size.x, 1e-3f);
 
             system = new GameObject("System").transform;
             system.SetParent(transform, false);
 
-            starGlow = MakeSprite("StarGlow", system, dot, -25);
-            starCore = MakeSprite("StarCore", system, circle, -9);
+            centralStar = PlanetVisual.Create("CentralStar", system, root.planetMaterial, -9);
             flash = MakeSprite("Ignition", system, dot, -5);
             flash.gameObject.SetActive(false);
 
@@ -98,7 +114,11 @@ namespace Incremental
 
         // ---------------- show / hide ----------------
 
-        public void Show(RunRecord rec)
+        /// <summary>
+        /// Builds the system for this run (null: no run yet). <paramref name="fresh"/> is true right after the run ended;
+        /// only then do first-ever tiers get the "new body" highlight (14 §7), so reopening a save does not repeat it.
+        /// </summary>
+        public void Show(RunRecord rec, bool fresh)
         {
             var m = root.Meta;
             Vector3 center = CamCenter() + new Vector3((float)(p.starOffsetPx / Ppu), 0f, 0f);
@@ -109,11 +129,12 @@ namespace Incremental
             orbits.Clear();
             fliers.Clear();
             fades.Clear();
-            foreach (var l in labels) l.gameObject.SetActive(false);
+            newOrbits.Clear();
+            foreach (var l in labels) l.root.gameObject.SetActive(false);
             int labelIndex = 0;
             var rng = new System.Random(rec != null ? rec.run * 7919 : 1);
 
-            stage = StarStage(m.highestTierCreated);
+            stage = StarStage(root.HighestTierEver);
             ignition = rec != null && MadeStar(rec) && !MadeStarBefore(m, rec);
             SetStar(stage);
 
@@ -128,7 +149,10 @@ namespace Incremental
                 float rPx = (float)(p.orbitR0Px + (t - 1) * p.orbitStepPx);
                 float r = rPx / Ppu;
                 int count = rec != null ? rec.TierCount(t) : 0;
-                AddOrbitLine(t, r, count > 0 ? (float)p.orbitAlphaUsed : (float)p.orbitAlpha);
+                var tier = root.celestialTable.Get(t);
+                bool isNew = fresh && rec != null && ResultMath.IsNewTier(m, rec, t);
+                var line = AddOrbitLine(t, r, count > 0 ? (float)p.orbitAlphaUsed : (float)p.orbitAlpha);
+                if (isNew) newOrbits.Add(new NewOrbit { line = line, color = tier != null ? tier.color : Color.white });
 
                 var pivot = new GameObject("Orbit" + t).transform;
                 pivot.SetParent(content, false);
@@ -136,7 +160,6 @@ namespace Incremental
                 orbits.Add(new Orbit { pivot = pivot, omegaDeg = (float)(p.orbitOmega0Deg * System.Math.Pow(p.orbitR0Px / rPx, 1.5)) });
                 if (count <= 0) continue;
 
-                var tier = root.celestialTable.Get(t);
                 Color color = tier != null ? tier.color : Color.white;
                 int slot = present.IndexOf(t);
                 float start = present.Count > 1 ? slot / (float)(present.Count - 1) * (1f - EntryTravel) * EntrySec : 0f;
@@ -159,33 +182,30 @@ namespace Incremental
                         fades.Add(new Fade { sr = sr, color = c, start = start });
                         sr.color = Color.clear;
                     }
-                    PlaceLabel(labelIndex++, r, count);
+                    PlaceLabel(labelIndex++, rPx + (float)p.orbitBeltJitterPx, count, isNew);
                     continue;
                 }
 
                 int max = t <= p.orbitBeltMaxTier ? p.orbitBeltThreshold : p.orbitIndividualMax;
                 int n = Mathf.Min(count, max);
-                float planetScale = (float)(tier != null ? tier.sizePx * p.orbitPlanetScale : 8.0) / Ppu / circleUnit;
+                float diameterPx = (float)(tier != null ? tier.sizePx * p.orbitPlanetScale : 8.0);
                 for (int i = 0; i < n; i++)
                 {
                     float deg = 360f * i / n + (float)((rng.NextDouble() * 2.0 - 1.0) * 8.0);
                     float a = deg * Mathf.Deg2Rad;
-                    var planet = MakeSprite("Planet", pivot, circle, -8);
-                    planet.color = color;
+                    var v = PlanetVisual.Create("Planet", pivot, root.planetMaterial, -8);
+                    v.SetLook(tier != null ? tier.look : null, (float)(rng.NextDouble() * 100.0), p.planetAxisPitchDeg);
+                    v.SetLightPoint(center);
                     var local = new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f);
-                    planet.transform.localPosition = local;
-                    planet.transform.localScale = new Vector3(planetScale, planetScale, 1f);
-                    var sh = MakeSprite("Shadow", planet.transform, shadow, -7);
-                    float ss = circleUnit / shadowUnit;
-                    sh.transform.localScale = new Vector3(ss, ss, 1f);
-                    sh.transform.localRotation = Quaternion.Euler(0f, 0f, deg); // +x away from the star
-                    sh.color = new Color(0f, 0f, 0f, (float)p.planetShadow);
-                    fliers.Add(new Flier { tf = planet.transform, pivot = pivot, local = local, scale = planetScale, start = start });
+                    v.transform.localPosition = local;
+                    v.SetDiameter(diameterPx / Ppu);
+                    fliers.Add(new Flier { v = v, pivot = pivot, local = local, diameter = diameterPx / Ppu, start = start });
                 }
-                if (count > n) PlaceLabel(labelIndex++, r, count);
+                if (count > n || isNew) PlaceLabel(labelIndex++, rPx + diameterPx * 0.5f, count > n ? count : 0, isNew);
             }
 
-            // Stars made this run: bright points in the sky (at most skyStarsPerRun).
+            // Stars made this run shine in the sky (at most skyStarsPerRun), outside the outermost orbit.
+            float clearPx = (float)(p.orbitR0Px + (Mathf.Max(1, maxOrbit) - 1) * p.orbitStepPx + p.skyStarOrbitClearPx);
             int stars = 0;
             for (int t = p.orbitMaxTier + 1; t <= root.celestialTable.MaxTier && rec != null; t++)
             {
@@ -193,14 +213,12 @@ namespace Incremental
                 var tier = root.celestialTable.Get(t);
                 for (int i = 0; i < count && stars < p.skyStarsPerRun; i++, stars++)
                 {
-                    var sr = MakeSprite("RunStar", content, dot, -22);
-                    float x = (float)(-200.0 + rng.NextDouble() * 1100.0) / Ppu;
-                    float y = (float)(-480.0 + rng.NextDouble() * 960.0) / Ppu;
-                    sr.transform.position = CamCenter() + new Vector3(x, y, 0f);
-                    float s = (float)(18.0 + 3.0 * (t - p.orbitMaxTier) + rng.NextDouble() * 10.0) / Ppu / dotUnit;
-                    sr.transform.localScale = new Vector3(s, s, 1f);
-                    fades.Add(new Fade { sr = sr, color = tier != null ? tier.color : Color.white, start = (1f - EntryTravel) * EntrySec });
-                    sr.color = Color.clear;
+                    var v = PlanetVisual.Create("RunStar", content, root.planetMaterial, -22);
+                    v.SetLook(tier != null ? tier.look : null, (float)(rng.NextDouble() * 100.0), p.planetAxisPitchDeg);
+                    v.transform.position = CamCenter() + SkyPosition(rng, clearPx) / Ppu;
+                    v.SetDiameter((float)((tier != null ? tier.sizePx : 100.0) * p.skyStarScale) / Ppu);
+                    v.SetFade(0f);
+                    fades.Add(new Fade { v = v, start = (1f - EntryTravel) * EntrySec });
                 }
             }
 
@@ -240,39 +258,44 @@ namespace Incremental
             age += dt;
             foreach (var o in orbits) o.pivot.Rotate(0f, 0f, o.omegaDeg * dt);
 
-            // Entry: planets fly in from the vanishing point; belts and sky stars fade in.
+            // Entry: planets fly in from the vanishing point; belts and sky stars fade in. Bodies stay unrotated (the
+            // shader works in screen axes) while their pivots turn.
             Vector3 vanish = root.Planets.VanishPoint();
             float travel = EntryTravel * EntrySec;
             foreach (var f in fliers)
             {
+                f.v.transform.rotation = Quaternion.identity;
                 if (f.landed) continue;
                 float k = Mathf.Clamp01((age - f.start) / travel);
                 if (k >= 1f)
                 {
-                    f.tf.localPosition = f.local;
-                    f.tf.localScale = new Vector3(f.scale, f.scale, 1f);
+                    f.v.transform.localPosition = f.local;
+                    f.v.transform.rotation = Quaternion.identity;
+                    f.v.SetDiameter(f.diameter);
                     f.landed = true;
                     continue;
                 }
                 float e = 1f - (1f - k) * (1f - k);
-                f.tf.position = Vector3.Lerp(vanish, f.pivot.TransformPoint(f.local), e);
-                float s = f.scale * Mathf.Lerp(0.3f, 1f, e);
-                f.tf.localScale = new Vector3(s, s, 1f);
+                f.v.transform.position = Vector3.Lerp(vanish, f.pivot.TransformPoint(f.local), e);
+                f.v.SetDiameter(f.diameter * Mathf.Lerp(0.3f, 1f, e));
             }
             if (before < EntrySec + travel)
                 foreach (var f in fades)
                 {
                     float k = Mathf.Clamp01((age - f.start) / travel);
-                    var c = f.color;
-                    c.a *= k;
-                    f.sr.color = c;
+                    if (f.v != null) f.v.SetFade(k);
+                    else
+                    {
+                        var c = f.color;
+                        c.a *= k;
+                        f.sr.color = c;
+                    }
                 }
 
-            // Central star: protostar breathes slowly.
-            float glowA = stage == 0 ? 0.42f + 0.12f * Mathf.Sin(age * 1.3f) : 0.6f;
-            var gc = starGlow.color;
-            gc.a = glowA;
-            starGlow.color = gc;
+            // Central star: the protostar's glow breathes.
+            centralStar.SetGlowMul(stage == 0 ? 1f + (float)p.protostarPulse * Mathf.Sin(age * (float)p.protostarPulseSpeed) : 1f);
+
+            UpdateNewOrbits();
 
             // Ignition flash at the end of the entry, the first time a star is made (13 §3).
             if (ignition && age >= EntrySec)
@@ -287,6 +310,25 @@ namespace Incremental
                     flash.transform.localScale = new Vector3(size, size, 1f);
                     flash.color = new Color(1f, 0.9f, 0.75f, (1f - k) * intensity);
                 }
+            }
+        }
+
+        /// <summary>First-ever tiers: after the entry the orbit pulses newTierPulses times in the tier color, then stays brighter.</summary>
+        void UpdateNewOrbits()
+        {
+            if (newOrbits.Count == 0) return;
+            float dur = Mathf.Max(0.01f, (float)p.newTierHighlightSec);
+            float k = Mathf.Clamp01((age - EntrySec) / dur);
+            float pulse = age < EntrySec ? 0f : Mathf.Sin(k * Mathf.PI * Mathf.Max(1, p.newTierPulses)) ;
+            pulse = Mathf.Abs(pulse) * (1f - k);
+            float baseAlpha = age < EntrySec ? (float)p.orbitAlphaUsed : Mathf.Lerp((float)p.orbitAlphaUsed, (float)p.newTierOrbitAlpha, k);
+            float width = 2f / Ppu * (1f + ((float)p.newTierOrbitWidth - 1f) * pulse);
+            foreach (var o in newOrbits)
+            {
+                var c = Color.Lerp(new Color(0.75f, 0.82f, 1f), o.color, age < EntrySec ? 0f : 1f);
+                c.a = Mathf.Clamp01(baseAlpha + pulse * 0.4f);
+                o.line.startColor = o.line.endColor = c;
+                o.line.widthMultiplier = width;
             }
         }
 
@@ -305,7 +347,6 @@ namespace Incremental
 
         // ---------------- central star ----------------
 
-        /// <summary>0 protostar (below tier 9), 1 red dwarf, 2 sun-like, 3 blue giant (13 §3).</summary>
         int StarStage(int highestTier) => BackdropView.StarStage(highestTier, p.orbitMaxTier, 4);
 
         Color StageColor(int s)
@@ -315,15 +356,14 @@ namespace Incremental
             return tier != null ? tier.color : Color.white;
         }
 
+        /// <summary>Protostar: the faint Star look from GameParams. Later stages: the look of that star tier.</summary>
         void SetStar(int s)
         {
-            var c = StageColor(s);
-            starCore.color = s == 0 ? new Color(c.r, c.g, c.b, 0.85f) : c;
-            starGlow.color = new Color(c.r, c.g, c.b, 0.6f);
-            float core = StarSize(p.starCorePx, s) / Ppu / circleUnit;
-            float glow = StarSize(p.starGlowPx, s) / Ppu / dotUnit;
-            starCore.transform.localScale = new Vector3(core, core, 1f);
-            starGlow.transform.localScale = new Vector3(glow, glow, 1f);
+            var tier = s > 0 ? root.celestialTable.Get(p.orbitMaxTier + s) : null;
+            var look = tier != null ? tier.look : p.protostarLook;
+            centralStar.SetLook(look, 3.7f, p.planetAxisPitchDeg);
+            centralStar.SetDiameter(StarSize(p.starCorePx, s) / Ppu);
+            centralStar.SetGlowMul(1f);
             flash.gameObject.SetActive(false);
         }
 
@@ -345,6 +385,23 @@ namespace Incremental
             return false;
         }
 
+        /// <summary>
+        /// A random point (px from the screen center) in skyStarArea that is at least <paramref name="clearPx"/> from the
+        /// central star; after a few misses the last try is used.
+        /// </summary>
+        Vector3 SkyPosition(System.Random rng, float clearPx)
+        {
+            var area = p.skyStarArea;
+            var star = new Vector2((float)p.starOffsetPx, 0f);
+            Vector2 pos = Vector2.zero;
+            for (int tries = 0; tries < 24; tries++)
+            {
+                pos = new Vector2((float)(area.x + rng.NextDouble() * (area.z - area.x)), (float)(area.y + rng.NextDouble() * (area.w - area.y)));
+                if ((pos - star).magnitude >= clearPx) break;
+            }
+            return new Vector3(pos.x, pos.y, 0f);
+        }
+
         // ---------------- building ----------------
 
         Vector3 CamCenter()
@@ -364,7 +421,7 @@ namespace Incremental
             return sr;
         }
 
-        void AddOrbitLine(int tier, float r, float alpha)
+        LineRenderer AddOrbitLine(int tier, float r, float alpha)
         {
             var go = new GameObject("OrbitLine" + tier);
             go.transform.SetParent(content, false);
@@ -385,28 +442,50 @@ namespace Incremental
                 float a = i / (float)OrbitSegments * Mathf.PI * 2f;
                 lr.SetPosition(i, new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f));
             }
+            return lr;
         }
 
-        /// <summary>"×N" beside an orbit, at the lower right where orbits are furthest apart.</summary>
-        void PlaceLabel(int index, float r, int count)
+        /// <summary>
+        /// "×N" (count > 0) and/or "new body" beside an orbit, on a dark backing at the fixed label angle, just outside
+        /// the orbit's planets (<paramref name="outerPx"/> = orbit radius + planet radius or belt jitter), 14 §7.
+        /// </summary>
+        void PlaceLabel(int index, float outerPx, int count, bool isNew)
         {
             while (labels.Count <= index)
             {
-                var t = UIBuilder.CreateText("Count" + labels.Count, labelCanvas.transform, root.Hud.Font, 22, TextAnchor.MiddleLeft,
-                    new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(200f, 30f));
-                t.color = new Color(0.85f, 0.9f, 1f, 0.9f);
-                labels.Add(t);
+                var c = new Vector2(0.5f, 0.5f);
+                var rt = UIBuilder.CreateRect("Label" + labels.Count, labelCanvas.transform, c, c, Vector2.zero, new Vector2(10f, 28f));
+                var backing = rt.gameObject.AddComponent<Image>();
+                backing.sprite = UIBuilder.SolidSprite();
+                backing.raycastTarget = false;
+                var t = UIBuilder.CreateText("Text", rt, root.Hud.Font, 21, TextAnchor.MiddleCenter, c, c, Vector2.zero, new Vector2(10f, 28f));
+                t.supportRichText = true;
+                labels.Add(new Label { root = rt, backing = backing, text = t });
             }
             var label = labels[index];
-            float a = -35f * Mathf.Deg2Rad;
-            Vector3 world = system.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * (r + 14f / Ppu);
+            string text = count > 0 ? string.Format(UIStrings.PlanetMulti, Fmt.Num(count)) : string.Empty;
+            if (isNew)
+            {
+                string tag = "<color=#" + ColorUtility.ToHtmlStringRGB(p.newTierColor) + ">" + UIStrings.NewBody + "</color>";
+                text = text.Length > 0 ? tag + "  " + text : tag;
+            }
+            label.text.text = text;
+            label.text.color = new Color(0.88f, 0.92f, 1f, 1f);
+            label.backing.color = p.orbitLabelBacking;
+            float w = label.text.preferredWidth + 16f;
+            label.root.sizeDelta = new Vector2(w, 28f);
+            ((RectTransform)label.text.transform).sizeDelta = new Vector2(w, 28f);
+
+            // Center of the label on the radial line, far enough out that its half width clears the planets.
+            float a = (float)p.orbitLabelAngleDeg * Mathf.Deg2Rad;
+            var dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
+            float halfExtent = Mathf.Abs(dir.x) * w * 0.5f + Mathf.Abs(dir.y) * 14f;
+            Vector3 world = system.position + dir * ((outerPx + (float)p.orbitLabelGapPx + halfExtent) / Ppu);
             Vector2 screen = cam.WorldToScreenPoint(world);
             var canvasRect = (RectTransform)labelCanvas.transform;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out var local))
-                ((RectTransform)label.transform).anchoredPosition = local;
-            label.text = string.Format(UIStrings.PlanetMulti, Fmt.Num(count));
-            label.gameObject.SetActive(true);
+                label.root.anchoredPosition = local;
+            label.root.gameObject.SetActive(true);
         }
-
     }
 }

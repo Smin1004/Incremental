@@ -203,7 +203,7 @@ namespace Incremental
             if (crashed != null || status == LoadStatus.RestoredFromBackup) Save();
             Phase = GamePhase.Result;
             ShowIdleField();
-            Result.Show(Meta.LastRun);
+            Result.Show(Meta.LastRun, false);
             UnityEngine.Debug.Log($"[Save] loaded ({status}): run {Meta.runCount}, currency {Fmt.Num(Meta.currency)}, max tier {Meta.unlockedMaxTier}");
         }
 

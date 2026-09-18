@@ -38,7 +38,6 @@ MonoBehaviour:
   vanishPoint: {x: 1.05, y: 1.05}
   vanishGlowPx: 520
   vanishGlowAlpha: 0.18
-  planetShadow: 0.75
   planetAmbient: 0.08
   planetLightZ: 0.4
   planetRimStrength: 0.35
@@ -94,29 +93,29 @@ MonoBehaviour:
   palettes:
   - background: {r: 0.02, g: 0.02, b: 0.05, a: 1}
     glowColor: {r: 0.3, g: 0.35, b: 0.6, a: 1}
-    glowStrength: 0.04
-    glowRadiusPx: 900
+    glowStrength: 0.008
+    glowRadiusPx: 800
     dustA: {r: 1, g: 1, b: 1, a: 1}
     dustB: {r: 0.65, g: 0.82, b: 1, a: 1}
     starTint: {r: 0.8, g: 0.87, b: 1, a: 1}
   - background: {r: 0.05, g: 0.02, b: 0.07, a: 1}
     glowColor: {r: 0.9, g: 0.25, b: 0.2, a: 1}
-    glowStrength: 0.1
-    glowRadiusPx: 900
+    glowStrength: 0.025
+    glowRadiusPx: 800
     dustA: {r: 1, g: 0.94, b: 0.86, a: 1}
     dustB: {r: 1, g: 0.82, b: 0.7, a: 1}
     starTint: {r: 1, g: 0.85, b: 0.85, a: 1}
   - background: {r: 0.035, g: 0.045, b: 0.1, a: 1}
     glowColor: {r: 1, g: 0.72, b: 0.38, a: 1}
-    glowStrength: 0.22
-    glowRadiusPx: 1000
+    glowStrength: 0.04
+    glowRadiusPx: 850
     dustA: {r: 1, g: 0.98, b: 0.82, a: 1}
     dustB: {r: 1, g: 0.9, b: 0.6, a: 1}
     starTint: {r: 1, g: 0.95, b: 0.8, a: 1}
   - background: {r: 0.05, g: 0.08, b: 0.18, a: 1}
     glowColor: {r: 0.6, g: 0.78, b: 1, a: 1}
-    glowStrength: 0.2
-    glowRadiusPx: 1100
+    glowStrength: 0.035
+    glowRadiusPx: 900
     dustA: {r: 0.88, g: 0.94, b: 1, a: 1}
     dustB: {r: 0.68, g: 0.84, b: 1, a: 1}
     starTint: {r: 0.8, g: 0.9, b: 1, a: 1}
@@ -156,8 +155,40 @@ MonoBehaviour:
   orbitBeltDotMaxPx: 4
   orbitIndividualMax: 12
   skyStarsPerRun: 20
+  skyStarScale: 0.2
+  skyStarArea: {x: -200, y: -480, z: 900, w: 480}
+  skyStarOrbitClearPx: 40
   resultEntrySec: 1.2
   protostarColor: {r: 1, g: 0.55, b: 0.2, a: 1}
+  protostarLook:
+    surface: 3
+    baseColor: {r: 0.8, g: 0.45, b: 0.2, a: 1}
+    darkColor: {r: 0.36, g: 0.12, b: 0.05, a: 1}
+    accentColor: {r: 1, g: 1, b: 1, a: 1}
+    glowColor: {r: 1, g: 0.52, b: 0.2, a: 1}
+    noiseScale: 3
+    patchLevel: 0.5
+    patchSoftness: 0.2
+    craterDensity: 0
+    craterSize: 0.35
+    craterScale: 3
+    polarCap: 0
+    irregularity: 0
+    cloudCover: 0
+    cloudSpinMult: 1.5
+    bandCount: 0
+    turbulence: 0
+    emission: 0
+    spinDegPerSec: 4
+    axisTiltDeg: 0
+    glowSize: 1.8
+    glowStrength: 0.6
+    tailLength: 0
+    ringInner: 0
+    ringOuter: 0
+    ringColor: {r: 1, g: 1, b: 1, a: 0}
+  protostarPulse: 0.25
+  protostarPulseSpeed: 1.3
   starCorePx:
   - 30
   - 38
@@ -170,6 +201,16 @@ MonoBehaviour:
   - 340
   ignitionSec: 0.9
   ignitionScale: 4
+  orbitLabelAngleDeg: -60
+  orbitLabelGapPx: 6
+  orbitLabelBacking: {r: 0, g: 0, b: 0, a: 0.6}
+  deltaUpColor: {r: 0.55, g: 1, b: 0.6, a: 1}
+  deltaDownColor: {r: 1, g: 0.55, b: 0.5, a: 1}
+  newTierColor: {r: 1, g: 0.85, b: 0.4, a: 1}
+  newTierHighlightSec: 2
+  newTierPulses: 2
+  newTierOrbitAlpha: 0.45
+  newTierOrbitWidth: 3
   treeRingR0Px: 40
   treeRingStepPx: 115
   treeHoldDelaySec: 0.35

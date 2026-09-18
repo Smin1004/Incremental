@@ -208,6 +208,41 @@ namespace Incremental.Tests
             Object.DestroyImmediate(p);
         }
 
+        // ---------------- result growth highlight (14 §7) ----------------
+
+        static RunRecord Rec(int run, string reason, params int[] counts) =>
+            new RunRecord { run = run, endReason = reason, tierCounts = counts };
+
+        [Test]
+        public void ComparisonRun_IsTheLastStaminaRunBefore()
+        {
+            var r1 = Rec(1, EndReason.Stamina, 10);
+            var r2 = Rec(2, EndReason.Stamina, 14, 1);
+            var r3 = Rec(3, EndReason.Quit, 3);
+            var r4 = Rec(4, EndReason.Stamina, 12, 4);
+            var history = new List<RunRecord> { r1, r2, r3, r4 };
+            Assert.AreSame(r2, ResultMath.ComparisonRun(history, r4), "quit runs are skipped, like the ratio");
+            Assert.AreSame(r2, ResultMath.ComparisonRun(history, r3));
+            Assert.IsNull(ResultMath.ComparisonRun(history, r1), "first run: nothing to compare");
+            Assert.AreEqual(-2, ResultMath.Delta(r4, r2, 1));
+            Assert.AreEqual(3, ResultMath.Delta(r4, r2, 2));
+            Assert.AreEqual(0, ResultMath.Delta(r4, null, 2));
+        }
+
+        [Test]
+        public void NewTier_UsesTotalsBeforeAndAfterTheRun()
+        {
+            var meta = new MetaState();
+            var r1 = Rec(1, EndReason.Stamina, 10);
+            Session.ApplyRunEnd(meta, r1);
+            Assert.IsTrue(ResultMath.IsNewTier(meta, r1, 1), "first asteroid ever");
+            var r2 = Rec(2, EndReason.Stamina, 6, 2);
+            Session.ApplyRunEnd(meta, r2);
+            Assert.IsFalse(ResultMath.IsNewTier(meta, r2, 1), "asteroids were made before");
+            Assert.IsTrue(ResultMath.IsNewTier(meta, r2, 2), "first comet ever");
+            Assert.IsFalse(ResultMath.IsNewTier(meta, r2, 3), "not made");
+        }
+
         [Test]
         public void Detects_BadParams()
         {

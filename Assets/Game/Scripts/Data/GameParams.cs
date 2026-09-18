@@ -11,7 +11,7 @@ namespace Incremental
     public sealed class BackdropPalette
     {
         public Color background = new Color(0.02f, 0.02f, 0.05f);
-        [Tooltip("Light bleed from the central star's direction; strength is multiplied by effectIntensity.")]
+        [Tooltip("Light bleed from the central star's direction, added in linear color (keep it small); strength is multiplied by effectIntensity.")]
         public Color glowColor = Color.black;
         public float glowStrength;
         public float glowRadiusPx = 900f;
@@ -76,8 +76,6 @@ namespace Incremental
         [Tooltip("Faint glow at the screen edge toward the vanishing point: size (px) and alpha.")]
         public double vanishGlowPx = 520;
         public double vanishGlowAlpha = 0.18;
-        [Tooltip("Darkness of the crescent shadow on planets (0..1).")]
-        public double planetShadow = 0.75;
 
         [Header("Planet shader (14 §3)")]
         [Tooltip("Ambient light on the dark side of lit bodies (0..1).")]
@@ -141,22 +139,22 @@ namespace Incremental
         {
             new BackdropPalette
             {
-                background = new Color(0.02f, 0.02f, 0.05f), glowColor = new Color(0.3f, 0.35f, 0.6f), glowStrength = 0.04f, glowRadiusPx = 900f,
+                background = new Color(0.02f, 0.02f, 0.05f), glowColor = new Color(0.3f, 0.35f, 0.6f), glowStrength = 0.008f, glowRadiusPx = 800f,
                 dustA = Color.white, dustB = new Color(0.65f, 0.82f, 1f), starTint = new Color(0.8f, 0.87f, 1f),
             },
             new BackdropPalette
             {
-                background = new Color(0.05f, 0.02f, 0.07f), glowColor = new Color(0.9f, 0.25f, 0.2f), glowStrength = 0.1f, glowRadiusPx = 900f,
+                background = new Color(0.05f, 0.02f, 0.07f), glowColor = new Color(0.9f, 0.25f, 0.2f), glowStrength = 0.025f, glowRadiusPx = 800f,
                 dustA = new Color(1f, 0.94f, 0.86f), dustB = new Color(1f, 0.82f, 0.7f), starTint = new Color(1f, 0.85f, 0.85f),
             },
             new BackdropPalette
             {
-                background = new Color(0.035f, 0.045f, 0.1f), glowColor = new Color(1f, 0.72f, 0.38f), glowStrength = 0.22f, glowRadiusPx = 1000f,
+                background = new Color(0.035f, 0.045f, 0.1f), glowColor = new Color(1f, 0.72f, 0.38f), glowStrength = 0.04f, glowRadiusPx = 850f,
                 dustA = new Color(1f, 0.98f, 0.82f), dustB = new Color(1f, 0.9f, 0.6f), starTint = new Color(1f, 0.95f, 0.8f),
             },
             new BackdropPalette
             {
-                background = new Color(0.05f, 0.08f, 0.18f), glowColor = new Color(0.6f, 0.78f, 1f), glowStrength = 0.2f, glowRadiusPx = 1100f,
+                background = new Color(0.05f, 0.08f, 0.18f), glowColor = new Color(0.6f, 0.78f, 1f), glowStrength = 0.035f, glowRadiusPx = 900f,
                 dustA = new Color(0.88f, 0.94f, 1f), dustB = new Color(0.68f, 0.84f, 1f), starTint = new Color(0.8f, 0.9f, 1f),
             },
         };
@@ -219,15 +217,48 @@ namespace Incremental
         public int orbitIndividualMax = 12;
         [Tooltip("Stars (tiers above orbitMaxTier) made this run, drawn in the sky at most this many.")]
         public int skyStarsPerRun = 20;
+        [Tooltip("Sky star diameter = the tier's sizePx × this; they are placed at random within skyStarArea (px from the screen center: xMin, yMin, xMax, yMax).")]
+        public double skyStarScale = 0.2;
+        public Vector4 skyStarArea = new Vector4(-200f, -480f, 900f, 480f);
+        [Tooltip("Sky stars keep at least this far (px) outside the outermost orbit so they do not read as planets.")]
+        public double skyStarOrbitClearPx = 40;
         [Tooltip("Entry animation and income count-up, seconds (13 §5).")]
         public double resultEntrySec = 1.2;
         public Color protostarColor = new Color(1f, 0.55f, 0.2f);
-        [Tooltip("Central star core / glow size (px) by stage: protostar, red dwarf, sun-like, blue giant.")]
+        [Tooltip("Central star below the first star tier: a faint Star with only a corona (14 §7). Its glow breathes.")]
+        public PlanetLook protostarLook = new PlanetLook
+        {
+            surface = SurfaceType.Star,
+            baseColor = new Color(0.8f, 0.45f, 0.2f), darkColor = new Color(0.36f, 0.12f, 0.05f),
+            glowColor = new Color(1f, 0.52f, 0.2f),
+            noiseScale = 3f, spinDegPerSec = 4f,
+            glowSize = 1.8f, glowStrength = 0.6f,
+        };
+        [Tooltip("Protostar glow breathing: depth (share of the glow) and speed (rad/s).")]
+        public double protostarPulse = 0.25;
+        public double protostarPulseSpeed = 1.3;
+        [Tooltip("Central star disc size and ignition flash base size (px) by stage: protostar, red dwarf, sun-like, blue giant.")]
         public float[] starCorePx = { 30f, 38f, 52f, 72f };
         public float[] starGlowPx = { 170f, 200f, 260f, 340f };
         [Tooltip("Ignition flash when tier 9 is made for the first time: seconds, and size relative to the glow.")]
         public double ignitionSec = 0.9;
         public double ignitionScale = 4;
+
+        [Header("Result growth highlight (14 §7)")]
+        [Tooltip("×N and \"new\" labels sit outside each orbit at this angle (degrees, 0 = right, counter-clockwise), with a dark backing.")]
+        public double orbitLabelAngleDeg = -60;
+        public double orbitLabelGapPx = 6;
+        public Color orbitLabelBacking = new Color(0f, 0f, 0f, 0.6f);
+        [Tooltip("Panel deltas vs the comparison run (the ratio's run) and the \"new body\" highlight colors.")]
+        public Color deltaUpColor = new Color(0.55f, 1f, 0.6f);
+        public Color deltaDownColor = new Color(1f, 0.55f, 0.5f);
+        public Color newTierColor = new Color(1f, 0.85f, 0.4f);
+        [Tooltip("A tier made for the first time: its orbit pulses this many times over this many seconds after the entry, once.")]
+        public double newTierHighlightSec = 2;
+        public int newTierPulses = 2;
+        [Tooltip("Orbit line alpha of a new tier after the pulse, and its width multiplier at the pulse peak.")]
+        public double newTierOrbitAlpha = 0.45;
+        public double newTierOrbitWidth = 3;
 
         [Header("Skill tree view (12 §5, §9)")]
         [Tooltip("Ring k radius = treeRingR0Px + k × treeRingStepPx (reference 1080p).")]

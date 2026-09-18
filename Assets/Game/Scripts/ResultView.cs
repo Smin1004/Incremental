@@ -8,15 +8,17 @@ using UnityEngine.UI;
 namespace Incremental
 {
     /// <summary>
-    /// Result screen (11 §4, 13 §3): a panel on the left with the run income (counting up during the entry animation),
-    /// the ratio vs the last full run, planets per tier, the best income and a "skill tree" button. Space or the button
+    /// Result screen (11 §4, 13 §3, 14 §7): a panel on the left with the run income (counting up during the entry animation),
+    /// the ratio vs the last full run, planets per tier with the change against the comparison run (the ratio's run) and a
+    /// "new body" tag for tiers made for the first time, the best income and a "skill tree" button. Space or the button
     /// opens the tree (12 §9 flow: result → Space → tree → Space → next run). A click anywhere skips the entry animation.
     /// </summary>
     public sealed class ResultView : MonoBehaviour
     {
         const float PanelWidth = 600f;
         const float PanelHeight = 820f;
-        const int PlanetLinesPerColumn = 6;
+        const int PlanetFontSize = 21;
+        const float PlanetLineSpacing = 0.88f;
 
         static readonly Color PanelColor = new Color(0.05f, 0.06f, 0.1f, 0.88f);
         static readonly Color LabelColor = new Color(0.7f, 0.75f, 0.85f, 1f);
@@ -25,10 +27,13 @@ namespace Incremental
         Font font;
         Canvas canvas;
         RectTransform panel;
-        Text title, incomeValue, planetsColA, planetsColB, ratioLabel, ratioValue, bestValue;
-        readonly StringBuilder sbA = new StringBuilder();
-        readonly StringBuilder sbB = new StringBuilder();
+        Text title, incomeValue, planetNames, planetCounts, planetDeltas, ratioLabel, ratioValue, bestValue;
+        readonly StringBuilder sbNames = new StringBuilder();
+        readonly StringBuilder sbCounts = new StringBuilder();
+        readonly StringBuilder sbDeltas = new StringBuilder();
         RunRecord record;
+        RunRecord comparison;
+        bool fresh;
         float entryAge;
         bool entryDone;
 
@@ -67,28 +72,37 @@ namespace Incremental
             ratioValue = Label("RatioValue", 40, TextAnchor.MiddleRight, PanelWidth - 40f - 280f, -236f, 280f, 48f);
 
             Label("PlanetsLabel", 26, TextAnchor.MiddleLeft, 40f, -306f, 520f, 34f, LabelColor).text = UIStrings.ResultPlanets;
-            planetsColA = Label("PlanetsA", 26, TextAnchor.UpperLeft, 56f, -348f, 250f, 230f);
-            planetsColB = Label("PlanetsB", 26, TextAnchor.UpperLeft, 316f, -348f, 250f, 230f);
+            // One row per tier in three aligned columns: name, count, change / new tag (up to 11 rows).
+            planetNames = Label("PlanetNames", PlanetFontSize, TextAnchor.UpperLeft, 56f, -346f, 190f, 290f);
+            planetCounts = Label("PlanetCounts", PlanetFontSize, TextAnchor.UpperRight, 246f, -346f, 110f, 290f);
+            planetDeltas = Label("PlanetDeltas", PlanetFontSize, TextAnchor.UpperLeft, 376f, -346f, 200f, 290f);
+            planetDeltas.supportRichText = true;
+            planetNames.lineSpacing = planetCounts.lineSpacing = planetDeltas.lineSpacing = PlanetLineSpacing;
 
-            Label("BestLabel", 28, TextAnchor.MiddleLeft, 40f, -598f, 300f, 48f, LabelColor).text = UIStrings.ResultBest;
-            bestValue = Label("BestValue", 32, TextAnchor.MiddleRight, PanelWidth - 40f - 280f, -598f, 280f, 48f);
+            Label("BestLabel", 28, TextAnchor.MiddleLeft, 40f, -640f, 300f, 48f, LabelColor).text = UIStrings.ResultBest;
+            bestValue = Label("BestValue", 32, TextAnchor.MiddleRight, PanelWidth - 40f - 280f, -640f, 280f, 48f);
 
             UIBuilder.CreateButton("OpenTree", panel, font, 30, UIStrings.OpenTree,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 36f), new Vector2(420f, 80f), OpenTree, out _);
 
-            root.RunEnded += Show;
+            root.RunEnded += rec => Show(rec, true);
             root.RunStarted += Hide;
             canvas.gameObject.SetActive(false);
         }
 
-        /// <summary>Opens the screen with this run as the result (null: no run yet).</summary>
-        public void Show(RunRecord rec)
+        /// <summary>
+        /// Opens the screen with this run as the result (null: no run yet). <paramref name="freshRun"/>: right after the
+        /// run ended (the "new body" highlight is shown only then, 14 §7); false when reopening a save.
+        /// </summary>
+        public void Show(RunRecord rec, bool freshRun)
         {
             record = rec;
+            fresh = freshRun;
+            comparison = ResultMath.ComparisonRun(root.Meta.runHistory, rec);
             entryAge = 0f;
             entryDone = rec == null;
             canvas.gameObject.SetActive(true);
-            if (root.Solar != null) root.Solar.Show(rec);
+            if (root.Solar != null) root.Solar.Show(rec, freshRun);
             Refresh();
         }
 
@@ -144,8 +158,9 @@ namespace Incremental
             {
                 title.text = string.Empty;
                 incomeValue.text = UIStrings.NoPlanets;
-                planetsColA.text = UIStrings.NoPlanets;
-                planetsColB.text = string.Empty;
+                planetNames.text = UIStrings.NoPlanets;
+                planetCounts.text = string.Empty;
+                planetDeltas.text = string.Empty;
             }
             bool showRatio = record != null && record.HasRatio;
             SetActive(ratioLabel, showRatio);
@@ -154,24 +169,48 @@ namespace Incremental
             bestValue.text = Fmt.Num(m.bestRunIncome);
         }
 
-        /// <summary>Planets per tier, only tiers made at least once, split over two columns.</summary>
+        /// <summary>
+        /// Planets per tier: tiers made this run or in the comparison run, with the change against it (▲3 / ▼2) and a
+        /// "new body" tag for tiers made for the first time ever (fresh results only).
+        /// </summary>
         void FillPlanets(RunRecord rec)
         {
-            sbA.Length = 0;
-            sbB.Length = 0;
+            sbNames.Length = 0;
+            sbCounts.Length = 0;
+            sbDeltas.Length = 0;
+            var p = root.gameParams;
+            string up = ColorUtility.ToHtmlStringRGB(p.deltaUpColor);
+            string down = ColorUtility.ToHtmlStringRGB(p.deltaDownColor);
+            string newColor = ColorUtility.ToHtmlStringRGB(p.newTierColor);
             int n = 0;
             var tiers = root.celestialTable.tiers;
             for (int i = 0; i < tiers.Count; i++)
             {
-                int count = rec.TierCount(tiers[i].tier);
-                if (count <= 0) continue;
-                var sb = n < PlanetLinesPerColumn ? sbA : sbB;
-                if (sb.Length > 0) sb.Append('\n');
-                sb.AppendFormat(UIStrings.PlanetCount, UIStrings.TierName(tiers[i].tier), Fmt.Num(count));
+                int t = tiers[i].tier;
+                int count = rec.TierCount(t);
+                int before = comparison != null ? comparison.TierCount(t) : 0;
+                if (count <= 0 && before <= 0) continue;
+                if (n > 0)
+                {
+                    sbNames.Append('\n');
+                    sbCounts.Append('\n');
+                    sbDeltas.Append('\n');
+                }
+                sbNames.Append(UIStrings.TierName(t));
+                sbCounts.Append(Fmt.Num(count));
+                int delta = ResultMath.Delta(rec, comparison, t);
+                if (delta > 0) sbDeltas.Append("<color=#").Append(up).Append('>').AppendFormat(UIStrings.DeltaUp, Fmt.Num(delta)).Append("</color>");
+                else if (delta < 0) sbDeltas.Append("<color=#").Append(down).Append('>').AppendFormat(UIStrings.DeltaDown, Fmt.Num(-delta)).Append("</color>");
+                if (fresh && ResultMath.IsNewTier(root.Meta, rec, t))
+                {
+                    if (delta != 0) sbDeltas.Append("  ");
+                    sbDeltas.Append("<color=#").Append(newColor).Append('>').Append(UIStrings.NewBody).Append("</color>");
+                }
                 n++;
             }
-            planetsColA.text = n == 0 ? UIStrings.NoPlanets : sbA.ToString();
-            planetsColB.text = sbB.ToString();
+            planetNames.text = n == 0 ? UIStrings.NoPlanets : sbNames.ToString();
+            planetCounts.text = sbCounts.ToString();
+            planetDeltas.text = sbDeltas.ToString();
         }
 
         Text Label(string name, int size, TextAnchor align, float x, float y, float w, float h) =>

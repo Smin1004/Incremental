@@ -22,10 +22,12 @@ namespace Incremental
         public const string ResultPlanets = "만든 행성";
         public const string ResultRatio = "지난 런 대비";
         public const string ResultBest = "최고 런 수입";
-        public const string PlanetCount = "{0}  {1}";
         public const string NoPlanets = "-";
         public const string OpenTree = "스킬트리  (Space)";
         public const string PlanetMulti = "×{0}";
+        public const string DeltaUp = "▲{0}";
+        public const string DeltaDown = "▼{0}";
+        public const string NewBody = "새 천체";
 
         // Skill tree (12 §9)
         public const string TreeTitle = "스킬트리";
