@@ -28,7 +28,6 @@ namespace Incremental
         const float FlashSec = 0.4f;
         const float TopBarHeight = 80f, BottomBarHeight = 110f, ViewMargin = 90f;
 
-        static readonly Color BgColor = new Color(0.012f, 0.016f, 0.04f, 0.97f);
         static readonly Color LockedColor = new Color(0.45f, 0.5f, 0.62f, 0.55f);
         static readonly Color ShortColor = new Color(0.75f, 0.8f, 0.95f, 0.9f);
         static readonly Color OwnedColor = new Color(1f, 0.93f, 0.72f, 1f);
@@ -86,11 +85,11 @@ namespace Incremental
             var c = new Vector2(0.5f, 0.5f);
 
             area = UIBuilder.CreateStretch("Area", canvasRect);
+            // Transparent: the shared procedural background (BackdropView) shows through; the image only catches drags.
             var bg = area.gameObject.AddComponent<Image>();
-            bg.color = BgColor;
+            bg.color = Color.clear;
             bg.raycastTarget = true;
             area.gameObject.AddComponent<TreeDragArea>().view = this;
-            BuildStarfield();
 
             content = UIBuilder.CreateRect("Content", area, c, c, Vector2.zero, Vector2.zero);
             ringsLayer = UIBuilder.CreateRect("Rings", content, c, c, Vector2.zero, Vector2.zero);
@@ -141,6 +140,7 @@ namespace Incremental
 
         public void Show()
         {
+            if (root.Solar != null) root.Solar.Hide();
             canvas.gameObject.SetActive(true);
             openedFrame = Time.frameCount;
             pressed = null;
@@ -280,7 +280,7 @@ namespace Incremental
 
         void Flash(TreeNodeWidget w)
         {
-            float intensity = Mathf.Clamp01((float)p.effectIntensity);
+            float intensity = root.EffectIntensity;
             if (intensity <= 0f) return;
             int i = nextFlash;
             nextFlash = (nextFlash + 1) % FlashPool;
@@ -294,7 +294,7 @@ namespace Incremental
 
         void UpdateFlashes(float dt)
         {
-            float intensity = Mathf.Clamp01((float)p.effectIntensity);
+            float intensity = root.EffectIntensity;
             for (int i = 0; i < FlashPool; i++)
             {
                 var f = flashes[i];
@@ -514,20 +514,6 @@ namespace Incremental
                 EdgeDim, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.one, UIBuilder.SolidSprite());
             UIBuilder.PlaceLine((RectTransform)img.transform, from.rt.anchoredPosition, to.rt.anchoredPosition, EdgeWidth);
             edges.Add(new Edge { image = img, from = from, to = to });
-        }
-
-        void BuildStarfield()
-        {
-            var rng = new System.Random(7);
-            var c = new Vector2(0.5f, 0.5f);
-            for (int i = 0; i < 140; i++)
-            {
-                float x = (float)(rng.NextDouble() - 0.5) * 1920f;
-                float y = (float)(rng.NextDouble() - 0.5) * 1080f;
-                float s = 2f + (float)rng.NextDouble() * 4f;
-                float a = 0.15f + (float)rng.NextDouble() * 0.45f;
-                UIBuilder.CreateImage("Star", area, new Color(0.8f, 0.85f, 1f, a), c, c, new Vector2(x, y), new Vector2(s, s), UIBuilder.SoftDotSprite());
-            }
         }
 
         void BuildBars(RectTransform canvasRect)

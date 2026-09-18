@@ -15,7 +15,9 @@ namespace Incremental
 
         const int CountLabelPool = 8;
 
-        Text currencyText, incomeText, staminaText, centerText, debugText;
+        Text currencyText, incomeText, staminaText, centerText, debugText, toastText;
+        float toastAge = float.MaxValue;
+        const float ToastSec = 1.5f;
         Image staminaFill;
         readonly Text[] countLabels = new Text[CountLabelPool];
         readonly float[] countAges = new float[CountLabelPool];
@@ -50,6 +52,9 @@ namespace Incremental
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 12f), new Vector2(1400f, 30f));
             debugText.color = new Color(1f, 1f, 0.6f, 1f);
             SetDebug(string.Empty);
+            toastText = UIBuilder.CreateText("Toast", root, Font, 26, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 80f), new Vector2(900f, 40f));
+            toastText.gameObject.SetActive(false);
 
             for (int i = 0; i < CountLabelPool; i++)
             {
@@ -76,9 +81,26 @@ namespace Incremental
             t.gameObject.SetActive(true);
         }
 
+        /// <summary>Short message at the bottom center that fades out (debug keys).</summary>
+        public void ShowToast(string text)
+        {
+            toastText.text = text;
+            toastText.color = new Color(1f, 1f, 0.75f, 1f);
+            toastAge = 0f;
+            toastText.gameObject.SetActive(true);
+        }
+
         void Update()
         {
             float dt = Time.deltaTime;
+            if (toastAge < ToastSec)
+            {
+                toastAge += Time.unscaledDeltaTime;
+                var tc = toastText.color;
+                tc.a = Mathf.Clamp01((ToastSec - toastAge) / (ToastSec * 0.4f));
+                toastText.color = tc;
+                if (toastAge >= ToastSec) toastText.gameObject.SetActive(false);
+            }
             for (int i = 0; i < CountLabelPool; i++)
             {
                 var t = countLabels[i];

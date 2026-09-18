@@ -75,8 +75,8 @@ namespace Incremental
             Vector2 cursor = root.CursorWorld;
             float gravR = (float)(root.Effective.gravityRadius / ppu);
             float gravR2 = gravR * gravR;
-            Color colA = p.dustColorA;
-            Color colB = p.dustColorB;
+            Color colA = root.Backdrop.DustColorA;
+            Color colB = root.Backdrop.DustColorB;
 
             var items = field.Items;
             for (int i = 0; i < n; i++)

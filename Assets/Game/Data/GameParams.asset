@@ -33,8 +33,6 @@ MonoBehaviour:
   scatterSpeedPx: 200
   planetPopScale: 0.5
   planetPopDurationSec: 0.15
-  dustColorA: {r: 1, g: 1, b: 1, a: 1}
-  dustColorB: {r: 0.65, g: 0.82, b: 1, a: 1}
   planetHoldSec: 0.4
   planetDepartSec: 0.8
   vanishPoint: {x: 1.05, y: 1.05}
@@ -93,6 +91,51 @@ MonoBehaviour:
   dustStretchFullSpeedPx: 400
   dustStreakDim: 0.7
   dustGravityBrighten: 0.8
+  palettes:
+  - background: {r: 0.02, g: 0.02, b: 0.05, a: 1}
+    glowColor: {r: 0.3, g: 0.35, b: 0.6, a: 1}
+    glowStrength: 0.04
+    glowRadiusPx: 900
+    dustA: {r: 1, g: 1, b: 1, a: 1}
+    dustB: {r: 0.65, g: 0.82, b: 1, a: 1}
+    starTint: {r: 0.8, g: 0.87, b: 1, a: 1}
+  - background: {r: 0.05, g: 0.02, b: 0.07, a: 1}
+    glowColor: {r: 0.9, g: 0.25, b: 0.2, a: 1}
+    glowStrength: 0.1
+    glowRadiusPx: 900
+    dustA: {r: 1, g: 0.94, b: 0.86, a: 1}
+    dustB: {r: 1, g: 0.82, b: 0.7, a: 1}
+    starTint: {r: 1, g: 0.85, b: 0.85, a: 1}
+  - background: {r: 0.035, g: 0.045, b: 0.1, a: 1}
+    glowColor: {r: 1, g: 0.72, b: 0.38, a: 1}
+    glowStrength: 0.22
+    glowRadiusPx: 1000
+    dustA: {r: 1, g: 0.98, b: 0.82, a: 1}
+    dustB: {r: 1, g: 0.9, b: 0.6, a: 1}
+    starTint: {r: 1, g: 0.95, b: 0.8, a: 1}
+  - background: {r: 0.05, g: 0.08, b: 0.18, a: 1}
+    glowColor: {r: 0.6, g: 0.78, b: 1, a: 1}
+    glowStrength: 0.2
+    glowRadiusPx: 1100
+    dustA: {r: 0.88, g: 0.94, b: 1, a: 1}
+    dustB: {r: 0.68, g: 0.84, b: 1, a: 1}
+    starTint: {r: 0.8, g: 0.9, b: 1, a: 1}
+  paletteBlendSec: 1.5
+  bgStarLayerA: {x: 22, y: 0.3, z: 0.6, w: 0.16}
+  bgStarLayerB: {x: 110, y: 0.4, z: 0.9, w: 0.34}
+  bgTwinkleSpeed: 0.7
+  bgTwinkleDepth: 0.5
+  ignitionFirstSec: 1.5
+  ignitionRepeatSec: 0.4
+  ignitionFlashAlpha: 0.7
+  ignitionRepeatFlashAlpha: 0.25
+  ignitionFlashRiseSec: 0.06
+  ignitionRingPx: 2600
+  ignitionRepeatRingPx: 700
+  ignitionRingWidthPx: 60
+  ignitionRingStrength: 0.9
+  ignitionRingCoreGlow: 0.6
+  ignitionFlashDecayShare: 0.6
   galleryGapPx: 44
   galleryZoomMin: 0.5
   galleryZoomMax: 3
@@ -113,7 +156,6 @@ MonoBehaviour:
   orbitBeltDotMaxPx: 4
   orbitIndividualMax: 12
   skyStarsPerRun: 20
-  skyBackgroundStars: 160
   resultEntrySec: 1.2
   protostarColor: {r: 1, g: 0.55, b: 0.2, a: 1}
   starCorePx:

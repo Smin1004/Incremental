@@ -1,7 +1,27 @@
+using System;
 using UnityEngine;
 
 namespace Incremental
 {
+    /// <summary>
+    /// Background and dust colors for one central-star stage (14 §6): protostar, red dwarf, sun-like, blue giant.
+    /// Shared by the run, result and tree screens.
+    /// </summary>
+    [Serializable]
+    public sealed class BackdropPalette
+    {
+        public Color background = new Color(0.02f, 0.02f, 0.05f);
+        [Tooltip("Light bleed from the central star's direction; strength is multiplied by effectIntensity.")]
+        public Color glowColor = Color.black;
+        public float glowStrength;
+        public float glowRadiusPx = 900f;
+        [Tooltip("Dust colors; each dust sits somewhere between the two.")]
+        public Color dustA = Color.white;
+        public Color dustB = new Color(0.65f, 0.82f, 1f);
+        [Tooltip("Background star tint.")]
+        public Color starTint = new Color(0.8f, 0.87f, 1f);
+    }
+
     /// <summary>
     /// Balance parameters. Fields map 1:1 to the spec §6 parameter table (snake_case → camelCase),
     /// plus presentation values that the spec leaves open. All numbers are double; no constants in code.
@@ -45,8 +65,6 @@ namespace Incremental
         [Tooltip("Extra scale at planet spawn (0.5 = 150%), multiplied by effectIntensity.")]
         public double planetPopScale = 0.5;
         public double planetPopDurationSec = 0.15;
-        public Color dustColorA = Color.white;
-        public Color dustColorB = new Color(0.65f, 0.82f, 1f);
 
         [Header("Planet departure (13 §2)")]
         [Tooltip("After the pop, the planet stays in place this long.")]
@@ -117,6 +135,58 @@ namespace Incremental
         [Tooltip("Extra brightness inside the gravity radius while holding (at the center; fades to 0 at the edge).")]
         public double dustGravityBrighten = 0.8;
 
+        [Header("Background (14 §6)")]
+        [Tooltip("By central star stage: 0 protostar (below the first star tier), 1 red dwarf, 2 sun-like, 3 blue giant.")]
+        public BackdropPalette[] palettes =
+        {
+            new BackdropPalette
+            {
+                background = new Color(0.02f, 0.02f, 0.05f), glowColor = new Color(0.3f, 0.35f, 0.6f), glowStrength = 0.04f, glowRadiusPx = 900f,
+                dustA = Color.white, dustB = new Color(0.65f, 0.82f, 1f), starTint = new Color(0.8f, 0.87f, 1f),
+            },
+            new BackdropPalette
+            {
+                background = new Color(0.05f, 0.02f, 0.07f), glowColor = new Color(0.9f, 0.25f, 0.2f), glowStrength = 0.1f, glowRadiusPx = 900f,
+                dustA = new Color(1f, 0.94f, 0.86f), dustB = new Color(1f, 0.82f, 0.7f), starTint = new Color(1f, 0.85f, 0.85f),
+            },
+            new BackdropPalette
+            {
+                background = new Color(0.035f, 0.045f, 0.1f), glowColor = new Color(1f, 0.72f, 0.38f), glowStrength = 0.22f, glowRadiusPx = 1000f,
+                dustA = new Color(1f, 0.98f, 0.82f), dustB = new Color(1f, 0.9f, 0.6f), starTint = new Color(1f, 0.95f, 0.8f),
+            },
+            new BackdropPalette
+            {
+                background = new Color(0.05f, 0.08f, 0.18f), glowColor = new Color(0.6f, 0.78f, 1f), glowStrength = 0.2f, glowRadiusPx = 1100f,
+                dustA = new Color(0.88f, 0.94f, 1f), dustB = new Color(0.68f, 0.84f, 1f), starTint = new Color(0.8f, 0.9f, 1f),
+            },
+        };
+        [Tooltip("Palette change when the stage changes outside an ignition, seconds (at load it snaps).")]
+        public double paletteBlendSec = 1.5;
+        [Tooltip("Background star layers: cell size px, share of cells with a star, star radius px, brightness. A: many faint, B: few brighter.")]
+        public Vector4 bgStarLayerA = new Vector4(22f, 0.3f, 0.6f, 0.16f);
+        public Vector4 bgStarLayerB = new Vector4(110f, 0.4f, 0.9f, 0.34f);
+        [Tooltip("Twinkle speed (rad/s) and depth (0..1).")]
+        public double bgTwinkleSpeed = 0.7;
+        public double bgTwinkleDepth = 0.5;
+
+        [Header("Star ignition (14 §6, 10 §4.3)")]
+        [Tooltip("First star ever on the run screen: screen flash + light ring + palette change, seconds. Logic time is untouched.")]
+        public double ignitionFirstSec = 1.5;
+        [Tooltip("Every later star: short flash + light ring, seconds.")]
+        public double ignitionRepeatSec = 0.4;
+        [Tooltip("Peak screen flash alpha (× effectIntensity) and the time to the peak, seconds.")]
+        public double ignitionFlashAlpha = 0.7;
+        public double ignitionRepeatFlashAlpha = 0.25;
+        public double ignitionFlashRiseSec = 0.06;
+        [Tooltip("Light ring: final diameter px and ring width px (first / later).")]
+        public double ignitionRingPx = 2600;
+        public double ignitionRepeatRingPx = 700;
+        public double ignitionRingWidthPx = 60;
+        public double ignitionRingStrength = 0.9;
+        [Tooltip("Soft glow at the ring's center (share of the ring strength) and the share of the ignition time the flash fades over.")]
+        public double ignitionRingCoreGlow = 0.6;
+        public double ignitionFlashDecayShare = 0.6;
+
         [Header("Gallery debug key (14 §3)")]
         [Tooltip("Gap between bodies in the tier gallery, px.")]
         public double galleryGapPx = 44;
@@ -149,7 +219,6 @@ namespace Incremental
         public int orbitIndividualMax = 12;
         [Tooltip("Stars (tiers above orbitMaxTier) made this run, drawn in the sky at most this many.")]
         public int skyStarsPerRun = 20;
-        public int skyBackgroundStars = 160;
         [Tooltip("Entry animation and income count-up, seconds (13 §5).")]
         public double resultEntrySec = 1.2;
         public Color protostarColor = new Color(1f, 0.55f, 0.2f);

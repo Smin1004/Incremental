@@ -36,13 +36,13 @@ namespace Incremental.EditorTools
                 Debug.LogError($"[Validate] expected exactly one GameParams, found {gameParams.Count}.");
                 return report.Errors.Count + 1;
             }
-            var paramReport = DataValidator.ValidateParams(gameParams[0]);
+            var paramReport = DataValidator.ValidateParams(gameParams[0], c);
             foreach (var e in paramReport.Errors) Debug.LogError("[Validate] " + e, gameParams[0]);
             foreach (var w in paramReport.Warnings) Debug.LogWarning("[Validate] " + w, gameParams[0]);
             report.Errors.AddRange(paramReport.Errors);
             report.Warnings.AddRange(paramReport.Warnings);
 
-            int drift = WarnSeedDrift(c, n);
+            int drift = WarnSeedDrift(c, n) + WarnParamsDrift(gameParams[0]);
             if (report.Ok)
             {
                 int gates = 0;
@@ -82,6 +82,65 @@ namespace Incremental.EditorTools
                 if (n.RingCostMult(i) != mult[i]) diffs.Add($"ringCostMult[{i}] is {n.RingCostMult(i)}, seed {mult[i]}");
             foreach (var d in diffs) Debug.LogWarning("[Validate] seed drift: " + d + " (update the seed code or the asset)");
             return diffs.Count;
+        }
+
+        /// <summary>
+        /// GameParams field initializers are its seed (PrototypeSetup creates the asset from them); warn per top-level field
+        /// where the asset holds another value. Copy a field over with <see cref="CopyParamsFromCode"/>.
+        /// </summary>
+        static int WarnParamsDrift(GameParams asset)
+        {
+            var fresh = ScriptableObject.CreateInstance<GameParams>();
+            try
+            {
+                var diffs = ParamsDrift(asset, fresh);
+                foreach (var d in diffs) Debug.LogWarning("[Validate] seed drift: GameParams." + d + " differs from the code default (update the initializer or the asset)", asset);
+                return diffs.Count;
+            }
+            finally
+            {
+                Object.DestroyImmediate(fresh);
+            }
+        }
+
+        static List<string> ParamsDrift(GameParams asset, GameParams fresh)
+        {
+            var diffs = new List<string>();
+            var a = new SerializedObject(asset);
+            var b = new SerializedObject(fresh);
+            var it = b.GetIterator();
+            bool enter = true;
+            while (it.NextVisible(enter))
+            {
+                enter = false;
+                if (it.propertyPath == "m_Script") continue;
+                var ap = a.FindProperty(it.propertyPath);
+                if (ap == null || !SerializedProperty.DataEquals(ap, it)) diffs.Add(it.propertyPath);
+            }
+            return diffs;
+        }
+
+        /// <summary>Copies the named top-level fields from the code defaults into the GameParams asset (after changing an initializer).</summary>
+        public static void CopyParamsFromCode(params string[] fields)
+        {
+            var asset = LoadAll<GameParams>()[0];
+            var fresh = ScriptableObject.CreateInstance<GameParams>();
+            var a = new SerializedObject(asset);
+            var b = new SerializedObject(fresh);
+            foreach (var f in fields)
+            {
+                var src = b.FindProperty(f);
+                if (src == null)
+                {
+                    Debug.LogError("[Setup] GameParams has no field " + f);
+                    continue;
+                }
+                a.CopyFromSerializedProperty(src);
+            }
+            a.ApplyModifiedPropertiesWithoutUndo();
+            Object.DestroyImmediate(fresh);
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssets();
         }
 
         static bool SameNode(NodeDef a, NodeDef s)

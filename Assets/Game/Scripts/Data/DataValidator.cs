@@ -91,8 +91,11 @@ namespace Incremental
             if (l.surface == SurfaceType.Terran && l.cloudCover > 0 && l.cloudSpinMult == 0) r.Warnings.Add(where + ": clouds do not move (cloudSpinMult 0).");
         }
 
-        /// <summary>Presentation parameters (14): ranges that would break the shaders or the views.</summary>
-        public static ValidationReport ValidateParams(GameParams p)
+        /// <summary>
+        /// Presentation parameters (14): ranges that would break the shaders or the views. With the celestial table, also
+        /// checks that there is a background palette for every central star stage.
+        /// </summary>
+        public static ValidationReport ValidateParams(GameParams p, CelestialTable c = null)
         {
             var r = new ValidationReport();
             if (p == null)
@@ -116,6 +119,32 @@ namespace Incremental
                 r.Errors.Add("GameParams: dust jitter must be within 0..1 (exclusive).");
             if (!(p.dustStretchMax >= 1)) r.Errors.Add("GameParams: dustStretchMax must be >= 1.");
             if (!(p.dustStretchFullSpeedPx > p.driftSpeed)) r.Errors.Add("GameParams: dustStretchFullSpeedPx must be above driftSpeed.");
+
+            if (p.palettes == null || p.palettes.Length == 0) r.Errors.Add("GameParams: palettes is empty (14 §6).");
+            else
+            {
+                if (c != null)
+                {
+                    int stages = Math.Max(1, c.MaxTier - p.orbitMaxTier + 1);
+                    if (p.palettes.Length < stages)
+                        r.Errors.Add($"GameParams: {p.palettes.Length} palettes for {stages} central star stages (protostar + one per star tier).");
+                }
+                for (int i = 0; i < p.palettes.Length; i++)
+                {
+                    var pal = p.palettes[i];
+                    if (pal == null) r.Errors.Add($"GameParams: palettes[{i}] is missing.");
+                    else if (pal.glowStrength < 0 || !(pal.glowRadiusPx > 0)) r.Errors.Add($"GameParams: palettes[{i}] glow strength must be >= 0 and radius > 0.");
+                }
+            }
+            if (!(p.paletteBlendSec > 0)) r.Errors.Add("GameParams: paletteBlendSec must be > 0.");
+            if (!(p.bgStarLayerA.x >= 4) || !(p.bgStarLayerB.x >= 4)) r.Errors.Add("GameParams: background star cells must be >= 4 px.");
+            if (p.bgStarLayerA.y < 0 || p.bgStarLayerA.y > 1 || p.bgStarLayerB.y < 0 || p.bgStarLayerB.y > 1)
+                r.Errors.Add("GameParams: background star density must be within 0..1.");
+            if (!(p.ignitionFirstSec > 0) || !(p.ignitionRepeatSec > 0)) r.Errors.Add("GameParams: ignition durations must be > 0.");
+            if (p.ignitionFlashAlpha < 0 || p.ignitionFlashAlpha > 1 || p.ignitionRepeatFlashAlpha < 0 || p.ignitionRepeatFlashAlpha > 1)
+                r.Errors.Add("GameParams: ignition flash alphas must be within 0..1.");
+            if (!(p.ignitionFlashRiseSec > 0) || !(p.ignitionFlashRiseSec < p.ignitionRepeatSec))
+                r.Errors.Add("GameParams: ignitionFlashRiseSec must be > 0 and shorter than ignitionRepeatSec.");
             return r;
         }
 

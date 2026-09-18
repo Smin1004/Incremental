@@ -28,6 +28,10 @@ namespace Incremental.EditorTools
         const string PlanetShaderName = "Incremental/Planet";
         const string DustMaterialPath = MaterialsDir + "/Dust.mat";
         const string DustShaderName = "Incremental/Dust";
+        const string BackgroundMaterialPath = MaterialsDir + "/Starfield.mat";
+        const string BackgroundShaderName = "Incremental/Starfield";
+        const string FxMaterialPath = MaterialsDir + "/FxRing.mat";
+        const string FxShaderName = "Incremental/FxRing";
         const string CirclePath = MaterialsDir + "/Circle.png";
         const string CircleSource = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/Circle.png";
         const string TemplatePath = "Assets/Settings/Lit2DSceneTemplate.scenetemplate";
@@ -120,6 +124,8 @@ namespace Incremental.EditorTools
 
             EnsureMaterial(PlanetMaterialPath, PlanetShaderName);
             EnsureMaterial(DustMaterialPath, DustShaderName);
+            EnsureMaterial(BackgroundMaterialPath, BackgroundShaderName);
+            EnsureMaterial(FxMaterialPath, FxShaderName);
 
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(CirclePath) == null)
             {
@@ -142,7 +148,8 @@ namespace Incremental.EditorTools
                 ti.SaveAndReimport();
             }
             AssetDatabase.SaveAssets();
-            Debug.Log("[Setup] Render assets ready: " + MaterialPath + ", " + PlanetMaterialPath + ", " + DustMaterialPath + ", " + CirclePath);
+            Debug.Log("[Setup] Render assets ready: " + MaterialPath + ", " + PlanetMaterialPath + ", " + DustMaterialPath + ", " +
+                      BackgroundMaterialPath + ", " + FxMaterialPath + ", " + CirclePath);
         }
 
         /// <summary>Creates a material asset for a project shader when it is missing (procedural shaders, no textures).</summary>
@@ -211,6 +218,8 @@ namespace Incremental.EditorTools
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
             root.planetMaterial = AssetDatabase.LoadAssetAtPath<Material>(PlanetMaterialPath);
             root.dustMaterial = AssetDatabase.LoadAssetAtPath<Material>(DustMaterialPath);
+            root.backgroundMaterial = AssetDatabase.LoadAssetAtPath<Material>(BackgroundMaterialPath);
+            root.fxMaterial = AssetDatabase.LoadAssetAtPath<Material>(FxMaterialPath);
             root.circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
             EditorUtility.SetDirty(root);
 

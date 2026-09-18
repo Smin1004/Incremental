@@ -40,6 +40,10 @@ namespace Incremental
         public Material planetMaterial;
         [Tooltip("Incremental/Dust: glowing dust points (14 §5).")]
         public Material dustMaterial;
+        [Tooltip("Incremental/Starfield: the shared procedural background (14 §6).")]
+        public Material backgroundMaterial;
+        [Tooltip("Incremental/FxRing: light rings of star ignition (14 §6).")]
+        public Material fxMaterial;
         public Sprite circleSprite;
         public int planetPoolSize = 8;
 
@@ -53,6 +57,8 @@ namespace Incremental
         public EffectiveStats Effective { get; private set; }
         public GamePhase Phase { get; private set; } = GamePhase.Result;
         public Camera Cam { get; private set; }
+        public BackdropView Backdrop { get; private set; }
+        public IgnitionFx Ignition { get; private set; }
         public DustField Dust { get; private set; }
         public DustMeshRenderer DustRenderer { get; private set; }
         public PlanetPool Planets { get; private set; }
@@ -110,6 +116,16 @@ namespace Incremental
             Cam = Camera.main;
             if (Cam == null) Cam = FindFirstObjectByType<Camera>();
 
+            var planetPoolGo = new GameObject("PlanetPool");
+            planetPoolGo.transform.SetParent(transform, false);
+            Planets = planetPoolGo.AddComponent<PlanetPool>();
+            Planets.Init(this, planetPoolSize);
+
+            var backdropGo = new GameObject("Backdrop", typeof(MeshFilter), typeof(MeshRenderer));
+            backdropGo.transform.SetParent(transform, false);
+            Backdrop = backdropGo.AddComponent<BackdropView>();
+            Backdrop.Init(this, backgroundMaterial);
+
             var dustGo = new GameObject("DustField", typeof(MeshFilter), typeof(MeshRenderer));
             dustGo.transform.SetParent(transform, false);
             Dust = dustGo.AddComponent<DustField>();
@@ -117,10 +133,6 @@ namespace Incremental
             DustRenderer = dustGo.AddComponent<DustMeshRenderer>();
             DustRenderer.Init(this, Dust, dustMaterial);
 
-            var poolGo = new GameObject("PlanetPool");
-            poolGo.transform.SetParent(transform, false);
-            Planets = poolGo.AddComponent<PlanetPool>();
-            Planets.Init(this, planetPoolSize);
 
             var hudGo = new GameObject("HudView");
             hudGo.transform.SetParent(transform, false);
@@ -153,6 +165,11 @@ namespace Incremental
             toolsGo.transform.SetParent(transform, false);
             Tools = toolsGo.AddComponent<DebugTools>();
             Tools.Init(this);
+
+            var ignitionGo = new GameObject("Ignition");
+            ignitionGo.transform.SetParent(transform, false);
+            Ignition = ignitionGo.AddComponent<IgnitionFx>();
+            Ignition.Init(this, fxMaterial);
 
             var galleryGo = new GameObject("Gallery");
             galleryGo.transform.SetParent(transform, false);
@@ -513,6 +530,26 @@ namespace Incremental
         }
 
         public double Threshold(CelestialTier tier) => Stats.Threshold(tier, Effective);
+
+        /// <summary>
+        /// Highest tier ever made, this run included (MetaState.highestTierCreated is updated only when a run ends).
+        /// Drives the central star stage and the background palette (14 §6) without a new save field.
+        /// </summary>
+        public int HighestTierEver
+        {
+            get
+            {
+                int h = Meta.highestTierCreated;
+                if (Phase == GamePhase.Run && Run != null)
+                    for (int i = Run.planetCounts.Length - 1; i >= 0; i--)
+                        if (Run.planetCounts[i] > 0)
+                        {
+                            if (i + 1 > h) h = i + 1;
+                            break;
+                        }
+                return h;
+            }
+        }
 
         /// <summary>0..1 fill of the cursor gauge: mass over the target tier's threshold.</summary>
         public double GaugeFill()

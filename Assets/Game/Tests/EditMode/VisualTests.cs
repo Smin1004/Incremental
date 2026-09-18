@@ -34,9 +34,31 @@ namespace Incremental.Tests
         public void ProjectParams_PassValidation()
         {
             var p = AssetDatabase.LoadAssetAtPath<GameParams>("Assets/Game/Data/GameParams.asset");
-            var r = DataValidator.ValidateParams(p);
+            var c = AssetDatabase.LoadAssetAtPath<CelestialTable>("Assets/Game/Data/CelestialTable.asset");
+            var r = DataValidator.ValidateParams(p, c);
             Assert.IsEmpty(r.Errors, Joined(r.Errors));
             Assert.IsEmpty(r.Warnings, Joined(r.Warnings));
+        }
+
+        [Test]
+        public void ProjectParams_MatchCodeDefaults()
+        {
+            // GameParams initializers are the seed; the asset must hold the same values (Validate Data warns otherwise).
+            var asset = AssetDatabase.LoadAssetAtPath<GameParams>("Assets/Game/Data/GameParams.asset");
+            var fresh = ScriptableObject.CreateInstance<GameParams>();
+            var diffs = new List<string>();
+            var a = new SerializedObject(asset);
+            var it = new SerializedObject(fresh).GetIterator();
+            bool enter = true;
+            while (it.NextVisible(enter))
+            {
+                enter = false;
+                if (it.propertyPath == "m_Script") continue;
+                var ap = a.FindProperty(it.propertyPath);
+                if (ap == null || !SerializedProperty.DataEquals(ap, it)) diffs.Add(it.propertyPath);
+            }
+            Object.DestroyImmediate(fresh);
+            Assert.IsEmpty(diffs, string.Join(", ", diffs));
         }
 
         [Test]
@@ -150,6 +172,40 @@ namespace Incremental.Tests
                 Object.DestroyImmediate(go2);
                 Object.DestroyImmediate(p);
             }
+        }
+
+        // ---------------- background and ignition (14 §6) ----------------
+
+        [Test]
+        public void StarStage_FollowsTheHighestStarTier()
+        {
+            Assert.AreEqual(0, BackdropView.StarStage(0, 8, 4));
+            Assert.AreEqual(0, BackdropView.StarStage(8, 8, 4), "brown dwarf is not a star");
+            Assert.AreEqual(1, BackdropView.StarStage(9, 8, 4), "red dwarf");
+            Assert.AreEqual(2, BackdropView.StarStage(10, 8, 4), "sun-like");
+            Assert.AreEqual(3, BackdropView.StarStage(11, 8, 4), "blue giant");
+            Assert.AreEqual(3, BackdropView.StarStage(14, 8, 4), "capped at the last palette");
+        }
+
+        [Test]
+        public void Ignition_FirstOnlyOnce()
+        {
+            Assert.IsTrue(IgnitionFx.IsStarTier(9, 8));
+            Assert.IsFalse(IgnitionFx.IsStarTier(8, 8));
+            Assert.IsTrue(IgnitionFx.IsFirstIgnition(8, false, 8), "no star before: first ignition");
+            Assert.IsFalse(IgnitionFx.IsFirstIgnition(8, true, 8), "a star earlier this run");
+            Assert.IsFalse(IgnitionFx.IsFirstIgnition(9, false, 8), "a star in an earlier run");
+        }
+
+        [Test]
+        public void Detects_MissingPalettes()
+        {
+            var p = TestData.Params();
+            p.palettes = new[] { new BackdropPalette(), new BackdropPalette() };
+            var c = TestData.Tiers(11);
+            var r = DataValidator.ValidateParams(p, c);
+            Assert.IsTrue(r.Errors.Exists(e => e.Contains("2 palettes for 4 central star stages")), Joined(r.Errors));
+            Object.DestroyImmediate(p);
         }
 
         [Test]

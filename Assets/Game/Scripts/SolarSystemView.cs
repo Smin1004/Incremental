@@ -48,7 +48,7 @@ namespace Incremental
         Sprite circle, dot, shadow;
         float circleUnit = 1f, dotUnit = 1f, shadowUnit = 1f;
 
-        Transform system, sky, content, vanishGlow;
+        Transform system, content, vanishGlow;
         SpriteRenderer vanishGlowSr;
         SpriteRenderer starCore, starGlow, flash;
         Canvas labelCanvas;
@@ -79,9 +79,6 @@ namespace Incremental
 
             system = new GameObject("System").transform;
             system.SetParent(transform, false);
-            sky = new GameObject("Sky").transform;
-            sky.SetParent(transform, false);
-            BuildSky();
 
             starGlow = MakeSprite("StarGlow", system, dot, -25);
             starCore = MakeSprite("StarCore", system, circle, -9);
@@ -224,7 +221,7 @@ namespace Incremental
         {
             visible = on;
             system.gameObject.SetActive(on);
-            sky.gameObject.SetActive(on);
+            root.Backdrop.SetGlowCenter(on ? system.position : (Vector3?)null);
             labelCanvas.gameObject.SetActive(on);
             if (!on) flash.gameObject.SetActive(false);
         }
@@ -281,7 +278,7 @@ namespace Incremental
             if (ignition && age >= EntrySec)
             {
                 float k = (age - EntrySec) / Mathf.Max(0.01f, (float)p.ignitionSec);
-                float intensity = Mathf.Clamp01((float)p.effectIntensity);
+                float intensity = root.EffectIntensity;
                 bool on = k < 1f && intensity > 0f;
                 if (flash.gameObject.activeSelf != on) flash.gameObject.SetActive(on);
                 if (on)
@@ -301,7 +298,7 @@ namespace Incremental
             vanishGlow.position = root.Planets.VanishPoint();
             float s = (float)(p.vanishGlowPx / Ppu) / dotUnit;
             vanishGlow.localScale = new Vector3(s, s, 1f);
-            var c = StageColor(StarStage(root.Meta.highestTierCreated));
+            var c = StageColor(StarStage(root.HighestTierEver));
             c.a = (float)p.vanishGlowAlpha;
             vanishGlowSr.color = c;
         }
@@ -309,12 +306,7 @@ namespace Incremental
         // ---------------- central star ----------------
 
         /// <summary>0 protostar (below tier 9), 1 red dwarf, 2 sun-like, 3 blue giant (13 §3).</summary>
-        int StarStage(int highestTier)
-        {
-            int first = p.orbitMaxTier + 1;
-            if (highestTier < first) return 0;
-            return Mathf.Clamp(highestTier - first + 1, 1, 3);
-        }
+        int StarStage(int highestTier) => BackdropView.StarStage(highestTier, p.orbitMaxTier, 4);
 
         Color StageColor(int s)
         {
@@ -416,18 +408,5 @@ namespace Incremental
             label.gameObject.SetActive(true);
         }
 
-        void BuildSky()
-        {
-            var rng = new System.Random(11);
-            float halfW = cam.orthographicSize * cam.aspect, halfH = cam.orthographicSize;
-            for (int i = 0; i < p.skyBackgroundStars; i++)
-            {
-                var sr = MakeSprite("Star", sky, dot, -30);
-                sr.transform.position = CamCenter() + new Vector3((float)(rng.NextDouble() * 2 - 1) * halfW, (float)(rng.NextDouble() * 2 - 1) * halfH, 0f);
-                float s = (float)(3.0 + rng.NextDouble() * 5.0) / Ppu / dotUnit;
-                sr.transform.localScale = new Vector3(s, s, 1f);
-                sr.color = new Color(0.8f, 0.86f, 1f, 0.15f + (float)rng.NextDouble() * 0.45f);
-            }
-        }
     }
 }
