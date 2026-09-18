@@ -93,7 +93,8 @@ namespace Incremental
         }
 
         public static string Int(double v) => Math.Floor(v).ToString("N0", Inv);
-        public static string Mult(double v) => "×" + v.ToString("F2", Inv);
+        /// <summary>Multiplier: ×1.25 below ×1,000, the number notation above (×347M), 12 §10-6.</summary>
+        public static string Mult(double v) => "×" + (v < 999.995 ? v.ToString("F2", Inv) : Num(v));
         public static string Sec(double v) => v.ToString("F1", Inv);
         public static string Csv(double v) => v.ToString("R", Inv);
         /// <summary>Up to two decimals, no trailing zeros (upgrade effect numbers: 1, 1.5, 20).</summary>

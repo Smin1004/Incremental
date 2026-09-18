@@ -22,10 +22,14 @@ namespace Incremental
     public sealed class MetaState
     {
         public double currency;
+        /// <summary>Skill tree node levels by node id (gates included: level 1 = bought).</summary>
         public List<UpgradeLevel> upgradeLevels = new List<UpgradeLevel>();
+        /// <summary>Derived from the gate levels (Shop.RecomputeUnlockedMaxTier); stored for readability.</summary>
         public int unlockedMaxTier = 1;
         public int runCount;
+        /// <summary>Income of the most recent stamina-ended run (the base of the next ratio). quit / crash runs do not count.</summary>
         public double lastRunIncome;
+        /// <summary>Best income of a stamina-ended run. quit / crash runs do not count.</summary>
         public double bestRunIncome;
 
         // Run statistics

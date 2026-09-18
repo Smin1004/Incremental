@@ -20,10 +20,15 @@ namespace Incremental
         public double income;
         /// <summary>Index = tier - 1.</summary>
         public int[] tierCounts = new int[0];
-        /// <summary>Income / last run income. -1 when there is no ratio (first run, or last run had no income).</summary>
+        /// <summary>
+        /// Income / income of the most recent stamina-ended run. -1 when there is no ratio: quit and crash runs, the first
+        /// full run, or a previous full run without income (12 §10-3).
+        /// </summary>
         public double ratioVsLast = -1;
-        /// <summary>Upgrade levels at run start, by id.</summary>
+        /// <summary>Node levels at run start, by node id.</summary>
         public List<UpgradeLevel> startLevels = new List<UpgradeLevel>();
+        /// <summary>Effective stats at run start (run_log.csv records these instead of node levels).</summary>
+        public EffectiveStats startStats;
         /// <summary>Highest unlocked tier during the run.</summary>
         public int unlockedMaxTier;
         public string endReason = EndReason.Stamina;

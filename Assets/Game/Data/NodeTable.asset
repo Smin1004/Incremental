@@ -1,0 +1,895 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cb7a031150509444b8206391f5ebe9d, type: 3}
+  m_Name: NodeTable
+  m_EditorClassIdentifier: 
+  nodes:
+  - id: r1_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 1
+    maxLevel: 2
+    baseCost: 5
+    growth: 1.5
+    tier: 0
+    minTier: 1
+    prereqs: []
+    angleDeg: 30
+    enabled: 1
+  - id: r1_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.2
+    maxLevel: 2
+    baseCost: 5
+    growth: 1.5
+    tier: 0
+    minTier: 1
+    prereqs: []
+    angleDeg: 330
+    enabled: 1
+  - id: r1_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.25
+    maxLevel: 1
+    baseCost: 8
+    growth: 1
+    tier: 0
+    minTier: 1
+    prereqs: []
+    angleDeg: 270
+    enabled: 1
+  - id: r1_stamina
+    kind: 0
+    statId: stamina_max
+    effectPerLevel: 10
+    maxLevel: 1
+    baseCost: 8
+    growth: 1
+    tier: 0
+    minTier: 1
+    prereqs: []
+    angleDeg: 210
+    enabled: 1
+  - id: gate_t2
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 30
+    growth: 1
+    tier: 2
+    minTier: 1
+    prereqs: []
+    angleDeg: 90
+    enabled: 1
+  - id: r2_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 2
+    maxLevel: 2
+    baseCost: 40
+    growth: 1.5
+    tier: 0
+    minTier: 2
+    prereqs:
+    - r1_spawn
+    angleDeg: 20
+    enabled: 1
+  - id: r2_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 100
+    maxLevel: 2
+    baseCost: 40
+    growth: 1.5
+    tier: 0
+    minTier: 2
+    prereqs:
+    - r1_spawn
+    angleDeg: 40
+    enabled: 1
+  - id: r2_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.1
+    maxLevel: 2
+    baseCost: 40
+    growth: 1.5
+    tier: 0
+    minTier: 2
+    prereqs:
+    - r1_pull
+    angleDeg: 330
+    enabled: 1
+  - id: r2_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.25
+    maxLevel: 2
+    baseCost: 40
+    growth: 1.5
+    tier: 0
+    minTier: 2
+    prereqs:
+    - r1_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r2_stamina
+    kind: 0
+    statId: stamina_max
+    effectPerLevel: 10
+    maxLevel: 2
+    baseCost: 40
+    growth: 1.5
+    tier: 0
+    minTier: 2
+    prereqs:
+    - r1_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r2_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 40
+    growth: 1.5
+    tier: 0
+    minTier: 2
+    prereqs:
+    - gate_t2
+    angleDeg: 150
+    enabled: 1
+  - id: gate_t3
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 300
+    growth: 1
+    tier: 3
+    minTier: 2
+    prereqs:
+    - gate_t2
+    angleDeg: 90
+    enabled: 1
+  - id: r3_start
+    kind: 0
+    statId: start_bonus
+    effectPerLevel: 50
+    maxLevel: 2
+    baseCost: 300
+    growth: 1.5
+    tier: 0
+    minTier: 3
+    prereqs:
+    - r2_cap
+    angleDeg: 30
+    enabled: 1
+  - id: r3_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.3
+    maxLevel: 2
+    baseCost: 300
+    growth: 1.5
+    tier: 0
+    minTier: 3
+    prereqs:
+    - r2_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r3_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.25
+    maxLevel: 2
+    baseCost: 300
+    growth: 1.5
+    tier: 0
+    minTier: 3
+    prereqs:
+    - r2_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r3_drain
+    kind: 0
+    statId: stamina_drain
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 300
+    growth: 1.5
+    tier: 0
+    minTier: 3
+    prereqs:
+    - r2_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r3_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 300
+    growth: 1.5
+    tier: 0
+    minTier: 3
+    prereqs:
+    - r2_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: r3_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 1
+    baseCost: 850
+    growth: 1
+    tier: 0
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t4
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2500
+    growth: 1
+    tier: 4
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 90
+    enabled: 1
+  - id: r4_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 3
+    maxLevel: 2
+    baseCost: 2500
+    growth: 1.5
+    tier: 0
+    minTier: 4
+    prereqs:
+    - r3_start
+    angleDeg: 30
+    enabled: 1
+  - id: r4_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.1
+    maxLevel: 2
+    baseCost: 2500
+    growth: 1.5
+    tier: 0
+    minTier: 4
+    prereqs:
+    - r3_pull
+    angleDeg: 330
+    enabled: 1
+  - id: r4_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 2500
+    growth: 1.5
+    tier: 0
+    minTier: 4
+    prereqs:
+    - r3_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: r4_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.5
+    maxLevel: 2
+    baseCost: 2500
+    growth: 1.5
+    tier: 0
+    minTier: 4
+    prereqs:
+    - r3_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r4_stamina
+    kind: 0
+    statId: stamina_max
+    effectPerLevel: 20
+    maxLevel: 2
+    baseCost: 2500
+    growth: 1.5
+    tier: 0
+    minTier: 4
+    prereqs:
+    - r3_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r4_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 2
+    baseCost: 6800
+    growth: 1.8
+    tier: 0
+    minTier: 4
+    prereqs:
+    - r3_mass
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t5
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 20000
+    growth: 1
+    tier: 5
+    minTier: 4
+    prereqs:
+    - gate_t4
+    angleDeg: 90
+    enabled: 1
+  - id: r5_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 300
+    maxLevel: 2
+    baseCost: 20000
+    growth: 1.5
+    tier: 0
+    minTier: 5
+    prereqs:
+    - r4_spawn
+    angleDeg: 30
+    enabled: 1
+  - id: r5_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.4
+    maxLevel: 2
+    baseCost: 20000
+    growth: 1.5
+    tier: 0
+    minTier: 5
+    prereqs:
+    - r4_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r5_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 20000
+    growth: 1.5
+    tier: 0
+    minTier: 5
+    prereqs:
+    - r4_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: r5_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.5
+    maxLevel: 2
+    baseCost: 20000
+    growth: 1.5
+    tier: 0
+    minTier: 5
+    prereqs:
+    - r4_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r5_drain
+    kind: 0
+    statId: stamina_drain
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 20000
+    growth: 1.5
+    tier: 0
+    minTier: 5
+    prereqs:
+    - r4_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r5_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 2
+    baseCost: 54000
+    growth: 1.8
+    tier: 0
+    minTier: 5
+    prereqs:
+    - r4_mass
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t6
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 150000
+    growth: 1
+    tier: 6
+    minTier: 5
+    prereqs:
+    - gate_t5
+    angleDeg: 90
+    enabled: 1
+  - id: r6_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 5
+    maxLevel: 2
+    baseCost: 160000
+    growth: 1.5
+    tier: 0
+    minTier: 6
+    prereqs:
+    - r5_cap
+    angleDeg: 30
+    enabled: 1
+  - id: r6_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.15
+    maxLevel: 2
+    baseCost: 160000
+    growth: 1.5
+    tier: 0
+    minTier: 6
+    prereqs:
+    - r5_pull
+    angleDeg: 330
+    enabled: 1
+  - id: r6_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1
+    maxLevel: 2
+    baseCost: 160000
+    growth: 1.5
+    tier: 0
+    minTier: 6
+    prereqs:
+    - r5_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r6_stamina
+    kind: 0
+    statId: stamina_max
+    effectPerLevel: 30
+    maxLevel: 2
+    baseCost: 160000
+    growth: 1.5
+    tier: 0
+    minTier: 6
+    prereqs:
+    - r5_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r6_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 2
+    baseCost: 430000
+    growth: 1.8
+    tier: 0
+    minTier: 6
+    prereqs:
+    - r5_mass
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t7
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 1200000
+    growth: 1
+    tier: 7
+    minTier: 6
+    prereqs:
+    - gate_t6
+    angleDeg: 90
+    enabled: 1
+  - id: r7_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 500
+    maxLevel: 2
+    baseCost: 1300000
+    growth: 1.5
+    tier: 0
+    minTier: 7
+    prereqs:
+    - r6_spawn
+    angleDeg: 30
+    enabled: 1
+  - id: r7_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.5
+    maxLevel: 2
+    baseCost: 1300000
+    growth: 1.5
+    tier: 0
+    minTier: 7
+    prereqs:
+    - r6_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r7_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1
+    maxLevel: 2
+    baseCost: 1300000
+    growth: 1.5
+    tier: 0
+    minTier: 7
+    prereqs:
+    - r6_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r7_drain
+    kind: 0
+    statId: stamina_drain
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 1300000
+    growth: 1.5
+    tier: 0
+    minTier: 7
+    prereqs:
+    - r6_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r7_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 2
+    baseCost: 3500000
+    growth: 1.8
+    tier: 0
+    minTier: 7
+    prereqs:
+    - r6_mass
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t8
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 10000000
+    growth: 1
+    tier: 8
+    minTier: 7
+    prereqs:
+    - gate_t7
+    angleDeg: 90
+    enabled: 1
+  - id: r8_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 8
+    maxLevel: 2
+    baseCost: 10000000
+    growth: 1.5
+    tier: 0
+    minTier: 8
+    prereqs:
+    - r7_cap
+    angleDeg: 20
+    enabled: 1
+  - id: r8_start
+    kind: 0
+    statId: start_bonus
+    effectPerLevel: 200
+    maxLevel: 2
+    baseCost: 10000000
+    growth: 1.5
+    tier: 0
+    minTier: 8
+    prereqs:
+    - r7_cap
+    angleDeg: 40
+    enabled: 1
+  - id: r8_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.15
+    maxLevel: 2
+    baseCost: 10000000
+    growth: 1.5
+    tier: 0
+    minTier: 8
+    prereqs:
+    - r7_pull
+    angleDeg: 330
+    enabled: 1
+  - id: r8_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 2
+    maxLevel: 2
+    baseCost: 10000000
+    growth: 1.5
+    tier: 0
+    minTier: 8
+    prereqs:
+    - r7_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r8_stamina
+    kind: 0
+    statId: stamina_max
+    effectPerLevel: 40
+    maxLevel: 2
+    baseCost: 10000000
+    growth: 1.5
+    tier: 0
+    minTier: 8
+    prereqs:
+    - r7_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r8_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 2
+    baseCost: 28000000
+    growth: 1.8
+    tier: 0
+    minTier: 8
+    prereqs:
+    - r7_mass
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t9
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 100000000
+    growth: 1
+    tier: 9
+    minTier: 8
+    prereqs:
+    - gate_t8
+    angleDeg: 90
+    enabled: 1
+  - id: r9_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 800
+    maxLevel: 2
+    baseCost: 81000000
+    growth: 1.5
+    tier: 0
+    minTier: 9
+    prereqs:
+    - r8_spawn
+    - r8_start
+    angleDeg: 30
+    enabled: 1
+  - id: r9_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.6
+    maxLevel: 2
+    baseCost: 81000000
+    growth: 1.5
+    tier: 0
+    minTier: 9
+    prereqs:
+    - r8_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r9_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 2
+    maxLevel: 2
+    baseCost: 81000000
+    growth: 1.5
+    tier: 0
+    minTier: 9
+    prereqs:
+    - r8_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r9_drain
+    kind: 0
+    statId: stamina_drain
+    effectPerLevel: 0.05
+    maxLevel: 2
+    baseCost: 81000000
+    growth: 1.5
+    tier: 0
+    minTier: 9
+    prereqs:
+    - r8_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r9_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 2
+    baseCost: 220000000
+    growth: 1.8
+    tier: 0
+    minTier: 9
+    prereqs:
+    - r8_mass
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t10
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 1000000000
+    growth: 1
+    tier: 10
+    minTier: 9
+    prereqs:
+    - gate_t9
+    angleDeg: 90
+    enabled: 1
+  - id: r10_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 12
+    maxLevel: 2
+    baseCost: 640000000
+    growth: 1.5
+    tier: 0
+    minTier: 10
+    prereqs:
+    - r9_cap
+    angleDeg: 30
+    enabled: 1
+  - id: r10_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.2
+    maxLevel: 2
+    baseCost: 640000000
+    growth: 1.5
+    tier: 0
+    minTier: 10
+    prereqs:
+    - r9_pull
+    angleDeg: 330
+    enabled: 1
+  - id: r10_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 4
+    maxLevel: 2
+    baseCost: 640000000
+    growth: 1.5
+    tier: 0
+    minTier: 10
+    prereqs:
+    - r9_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r10_stamina
+    kind: 0
+    statId: stamina_max
+    effectPerLevel: 60
+    maxLevel: 2
+    baseCost: 640000000
+    growth: 1.5
+    tier: 0
+    minTier: 10
+    prereqs:
+    - r9_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r10_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 2
+    baseCost: 1800000000
+    growth: 1.8
+    tier: 0
+    minTier: 10
+    prereqs:
+    - r9_mass
+    angleDeg: 60
+    enabled: 1
+  - id: gate_t11
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 10000000000
+    growth: 1
+    tier: 11
+    minTier: 10
+    prereqs:
+    - gate_t10
+    angleDeg: 90
+    enabled: 1
+  - id: r11_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1
+    maxLevel: 0
+    baseCost: 5200000000
+    growth: 1.6
+    tier: 0
+    minTier: 11
+    prereqs:
+    - r10_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r11_mass
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.5
+    maxLevel: 0
+    baseCost: 14000000000
+    growth: 2
+    tier: 0
+    minTier: 11
+    prereqs:
+    - r10_mass
+    angleDeg: 60
+    enabled: 1
+  - id: r11_stamina
+    kind: 0
+    statId: stamina_max
+    effectPerLevel: 30
+    maxLevel: 0
+    baseCost: 5200000000
+    growth: 1.6
+    tier: 0
+    minTier: 11
+    prereqs:
+    - r10_stamina
+    angleDeg: 210
+    enabled: 1
+  ringCostMult:
+  - 1
+  - 1.5
+  - 0.75
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1

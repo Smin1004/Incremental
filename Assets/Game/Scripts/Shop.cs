@@ -1,77 +1,137 @@
-using System;
+using System.Collections.Generic;
 
 namespace Incremental
 {
+    /// <summary>Display state of a node (12 §4).</summary>
+    public enum NodeState
+    {
+        /// <summary>minTier > unlockedMaxTier + 1: not drawn.</summary>
+        Hidden,
+        /// <summary>Next ring, or no prereq owned: drawn dim, with name / effect / cost.</summary>
+        Locked,
+        /// <summary>Purchase conditions 1-4 met and level 0 (currency decides whether the buy succeeds).</summary>
+        Available,
+        /// <summary>Level ≥ 1, not maxed (still purchasable).</summary>
+        Owned,
+        /// <summary>Level at maxLevel.</summary>
+        Maxed,
+    }
+
     /// <summary>
-    /// Purchase rules as pure functions over MetaState + UpgradeTable.
-    /// The shop panel and the autoplay bot both go through here. Costs are rounded up and charged as displayed.
+    /// Skill tree purchase rules (12 §2) as pure functions over MetaState + NodeTable. The shop panel and the autoplay bot
+    /// both go through here. Costs are rounded up and charged as displayed.
+    /// Gate levels are the single source of truth for unlocked tiers; <see cref="MetaState.unlockedMaxTier"/> is derived
+    /// from them by <see cref="RecomputeUnlockedMaxTier"/>.
     /// </summary>
     public static class Shop
     {
-        /// <summary>Shown in the shop: enabled, and the highest unlocked tier has reached revealAtTier.</summary>
-        public static bool IsVisible(UpgradeDef def, MetaState m) =>
-            def != null && def.enabled && m.unlockedMaxTier >= def.revealAtTier;
+        public static int Level(MetaState m, NodeDef n) => n != null ? m.GetLevel(n.id) : 0;
 
-        public static bool IsMaxed(UpgradeDef def, MetaState m) =>
-            def != null && def.maxLevel > 0 && m.GetLevel(def.id) >= def.maxLevel;
+        /// <summary>Owned = level ≥ 1 and enabled (a disabled node counts as absent).</summary>
+        public static bool IsOwned(MetaState m, NodeDef n) => n != null && n.enabled && m.GetLevel(n.id) >= 1;
 
-        public static bool IsMaxed(UpgradeTable t, MetaState m, string id) => IsMaxed(t.Get(id), m);
+        public static bool IsMaxed(MetaState m, NodeDef n) => n != null && n.maxLevel > 0 && m.GetLevel(n.id) >= n.maxLevel;
 
-        /// <summary>Cost of the next level: baseCost × growth ^ level, rounded up.</summary>
-        public static double UpgradeCost(UpgradeDef def, MetaState m) =>
-            def == null ? double.PositiveInfinity : Stats.CostCeil(def, m.GetLevel(def.id));
-
-        public static double UpgradeCost(UpgradeTable t, MetaState m, string id) => UpgradeCost(t.Get(id), m);
-
-        public static bool CanBuyUpgrade(UpgradeTable t, MetaState m, string id)
+        /// <summary>Any-of: at least one prereq owned. No prereqs = next to the center, always met.</summary>
+        public static bool PrereqsMet(NodeTable t, MetaState m, NodeDef n)
         {
-            var def = t.Get(id);
-            return IsVisible(def, m) && !IsMaxed(def, m) && m.currency >= UpgradeCost(def, m);
+            if (n.prereqs == null || n.prereqs.Count == 0) return true;
+            for (int i = 0; i < n.prereqs.Count; i++)
+                if (IsOwned(m, t.Get(n.prereqs[i]))) return true;
+            return false;
         }
 
-        public static bool BuyUpgrade(UpgradeTable t, MetaState m, string id)
+        /// <summary>Purchase conditions 1-4 of 12 §2 (everything except currency). Gates also need to be the next tier.</summary>
+        public static bool IsPurchasable(NodeTable t, MetaState m, NodeDef n)
         {
-            if (!CanBuyUpgrade(t, m, id)) return false;
-            m.currency -= UpgradeCost(t, m, id);
+            if (n == null || !n.enabled) return false;
+            if (m.unlockedMaxTier < n.minTier) return false;
+            if (!PrereqsMet(t, m, n)) return false;
+            if (IsMaxed(m, n)) return false;
+            if (n.IsGate && n.tier != m.unlockedMaxTier + 1) return false;
+            return true;
+        }
+
+        /// <summary>Cost of the next level, rounded up.</summary>
+        public static double Cost(NodeTable t, MetaState m, NodeDef n) =>
+            n == null ? double.PositiveInfinity : Stats.CostCeil(t, n, m.GetLevel(n.id));
+
+        public static double Cost(NodeTable t, MetaState m, string id) => Cost(t, m, t.Get(id));
+
+        public static bool CanBuy(NodeTable t, MetaState m, string id)
+        {
+            var n = t.Get(id);
+            return IsPurchasable(t, m, n) && m.currency >= Cost(t, m, n);
+        }
+
+        public static bool Buy(NodeTable t, MetaState m, string id)
+        {
+            if (!CanBuy(t, m, id)) return false;
+            var n = t.Get(id);
+            m.currency -= Cost(t, m, n);
             m.SetLevel(id, m.GetLevel(id) + 1);
+            if (n.IsGate) RecomputeUnlockedMaxTier(t, m);
             return true;
         }
 
-        public static bool IsUnlocked(MetaState m, int tier) => tier <= m.unlockedMaxTier;
-
-        /// <summary>Unlocks are sequential: only the tier right above the current maximum can be bought.</summary>
-        public static bool IsNextUnlock(MetaState m, int tier) => tier == m.unlockedMaxTier + 1;
-
-        /// <summary>The tier the shop offers next, or 0 when every unlock in the table is bought.</summary>
-        public static int NextUnlockTier(UpgradeTable t, MetaState m)
+        public static NodeState State(NodeTable t, MetaState m, NodeDef n)
         {
-            var u = t.GetUnlock(m.unlockedMaxTier + 1);
-            return u != null ? u.tier : 0;
+            if (n.minTier > m.unlockedMaxTier + 1) return NodeState.Hidden;
+            if (IsMaxed(m, n)) return NodeState.Maxed;
+            if (!IsPurchasable(t, m, n)) return NodeState.Locked;
+            return m.GetLevel(n.id) >= 1 ? NodeState.Owned : NodeState.Available;
         }
 
-        public static double UnlockCost(UpgradeTable t, int tier)
+        // ---------------- gates ----------------
+
+        /// <summary>The gate of the tier right above the unlocked maximum, or null when every tier is unlocked.</summary>
+        public static NodeDef NextGate(NodeTable t, MetaState m)
         {
-            var u = t.GetUnlock(tier);
-            return u == null ? double.PositiveInfinity : Math.Ceiling(u.cost);
+            var g = t.Gate(m.unlockedMaxTier + 1);
+            return g != null && g.enabled ? g : null;
         }
 
-        public static bool CanUnlock(UpgradeTable t, MetaState m, int tier) =>
-            t.GetUnlock(tier) != null && IsNextUnlock(m, tier) && m.currency >= UnlockCost(t, tier);
-
-        public static bool Unlock(UpgradeTable t, MetaState m, int tier)
+        /// <summary>unlockedMaxTier = 1 + number of consecutively owned gates (tier 2, 3, …). Returns the new value.</summary>
+        public static int RecomputeUnlockedMaxTier(NodeTable t, MetaState m)
         {
-            if (!CanUnlock(t, m, tier)) return false;
-            m.currency -= UnlockCost(t, tier);
+            int tier = 1;
+            while (IsOwned(m, t.Gate(tier + 1))) tier++;
             m.unlockedMaxTier = tier;
-            return true;
+            return tier;
         }
 
-        /// <summary>Debug (F6): unlock the next tier without paying. Returns the unlocked tier, or 0.</summary>
-        public static int UnlockNextFree(UpgradeTable t, MetaState m)
+        /// <summary>Debug (F6): raise the next gate to level 1 without paying. Returns the unlocked tier, or 0.</summary>
+        public static int UnlockNextFree(NodeTable t, MetaState m)
         {
-            int next = NextUnlockTier(t, m);
-            if (next > 0) m.unlockedMaxTier = next;
-            return next;
+            var g = NextGate(t, m);
+            if (g == null) return 0;
+            m.SetLevel(g.id, 1);
+            RecomputeUnlockedMaxTier(t, m);
+            return g.tier;
+        }
+
+        /// <summary>Purchasable stat nodes (12 §2 conditions 1-4), cheapest first. Gates are not included.</summary>
+        public static void PurchasableStatNodes(NodeTable t, MetaState m, List<NodeDef> result)
+        {
+            result.Clear();
+            for (int i = 0; i < t.nodes.Count; i++)
+            {
+                var n = t.nodes[i];
+                if (!n.IsGate && IsPurchasable(t, m, n)) result.Add(n);
+            }
+            // Stable insertion sort by cost (few dozen nodes at most); equal costs keep table order.
+            for (int i = 1; i < result.Count; i++)
+            {
+                var x = result[i];
+                double cx = Cost(t, m, x);
+                int j = i - 1;
+                while (j >= 0 && Cost(t, m, result[j]) > cx)
+                {
+                    result[j + 1] = result[j];
+                    j--;
+                }
+                result[j + 1] = x;
+            }
         }
     }
 }

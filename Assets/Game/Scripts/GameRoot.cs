@@ -32,7 +32,7 @@ namespace Incremental
         [Header("Data")]
         public GameParams gameParams;
         public CelestialTable celestialTable;
-        public UpgradeTable upgradeTable;
+        public NodeTable nodeTable;
 
         [Header("Render")]
         public Material unlitMaterial;
@@ -72,6 +72,7 @@ namespace Incremental
 
         readonly Stopwatch tickWatch = new Stopwatch();
         List<UpgradeLevel> runStartLevels = new List<UpgradeLevel>();
+        EffectiveStats runStartStats;
         bool endingLoggedThisRun;
         bool pendingStart;
         bool hasFocus = true;
@@ -110,6 +111,7 @@ namespace Incremental
             hudGo.transform.SetParent(transform, false);
             Hud = hudGo.AddComponent<HudView>();
             Hud.Build();
+            Hud.SetCountLifetime(gameParams.planetLifetimeSec);
             UIBuilder.EnsureEventSystem(transform);
 
             var cursorGo = new GameObject("CursorView");
@@ -148,6 +150,7 @@ namespace Incremental
             }
 
             Meta = data.meta;
+            Shop.RecomputeUnlockedMaxTier(nodeTable, Meta);
             var crashed = Session.FinalizePending(data, EndReason.Crash);
             if (crashed != null) LogRun(crashed);
             if (crashed != null || status == LoadStatus.RestoredFromBackup) Save();
@@ -173,10 +176,21 @@ namespace Incremental
             Dust.Reset((int)Effective.dustInitial, CameraArea(), CursorWorld, Effective);
         }
 
-        /// <summary>Quitting mid-run ends the run without the result screen (income kept); otherwise just saves.</summary>
+        /// <summary>
+        /// Quitting mid-run ends the run without the result screen (income kept). Held mass is released first, as when
+        /// stamina runs out (12 §10-4). Between runs it just saves.
+        /// </summary>
         void OnApplicationQuit()
         {
-            if (Phase == GamePhase.Run && Run != null) EndRun(EndReason.Quit, false);
+            if (Phase == GamePhase.Run && Run != null)
+            {
+                if (Run.holding)
+                {
+                    Release();
+                    Run.holding = false;
+                }
+                EndRun(EndReason.Quit, false);
+            }
             else Save();
         }
 
@@ -243,6 +257,7 @@ namespace Incremental
             runStartLevels = Meta.CopyLevels();
             endingLoggedThisRun = false;
             Effective = ComputeStats();
+            runStartStats = Effective;
             Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
 
             var ps = ReadPointer();
@@ -304,7 +319,7 @@ namespace Incremental
             }
         }
 
-        /// <summary>Release: create the highest reached tier, or scatter the collected dust if below tier 1.</summary>
+        /// <summary>Release: create the highest reached tier (excess mass is lost below the top tier), or scatter the dust below tier 1.</summary>
         void Release()
         {
             var tier = HighestReachedTier();
@@ -319,12 +334,25 @@ namespace Incremental
             Run.mass = 0;
         }
 
+        /// <summary>
+        /// Creates and sells planets of this tier from the current mass. At the highest unlocked tier the mass makes
+        /// floor(mass / threshold) planets, so dust mass beyond one threshold still pays (12 §10-2); below it, one planet.
+        /// Each planet pays ceil(sale price × sale multiplier), so currency stays an integer (12 §10-9).
+        /// </summary>
         void CreatePlanet(CelestialTier tier)
         {
-            Run.runIncome += tier.salePrice * Effective.saleMult;
+            double count = 1;
+            if (tier.tier == Meta.unlockedMaxTier)
+            {
+                double th = Threshold(tier);
+                if (th > 0) count = Math.Max(1.0, Math.Floor(Run.mass / th));
+            }
+            Run.runIncome += count * Stats.SaleIncome(tier, Effective);
             int idx = tier.tier - 1;
-            if (idx >= 0 && idx < Run.planetCounts.Length) Run.planetCounts[idx]++;
+            if (idx >= 0 && idx < Run.planetCounts.Length)
+                Run.planetCounts[idx] = (int)Math.Min((double)int.MaxValue, Run.planetCounts[idx] + count);
             Planets.Show(CursorWorld, tier.sizePx, tier.color);
+            if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(CursorWorld), tier.sizePx, count);
             Run.mass = 0;
 
             // The last tier ends the game in week 4; for now it only sells, and the log marks it once per run.
@@ -342,7 +370,7 @@ namespace Incremental
         /// </summary>
         void EndRun(string reason, bool showResult)
         {
-            var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, reason);
+            var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, runStartStats, reason);
             Session.ApplyRunEnd(Meta, rec);
             Phase = GamePhase.Result;
             Save();
@@ -352,7 +380,7 @@ namespace Incremental
 
         void LogRun(RunRecord rec)
         {
-            RunLogger.Append(DataDir, rec, celestialTable, upgradeTable);
+            RunLogger.Append(DataDir, rec, celestialTable);
             UnityEngine.Debug.Log(RunLogger.Summary(rec));
         }
 
@@ -363,7 +391,7 @@ namespace Incremental
         {
             var data = new SaveData { meta = Meta };
             if (Phase == GamePhase.Run && Run != null)
-                data.pending = Session.MakePending(Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels);
+                data.pending = Session.MakePending(Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, runStartStats);
             try
             {
                 Store.Write(data);
@@ -401,16 +429,10 @@ namespace Incremental
 
         // ---------------- shop (between runs only) ----------------
 
-        public bool TryBuyUpgrade(string id)
+        /// <summary>Buys one level of a node (stat or gate). Between runs only; saves after every purchase.</summary>
+        public bool TryBuy(string nodeId)
         {
-            if (Phase != GamePhase.Result || !Shop.BuyUpgrade(upgradeTable, Meta, id)) return false;
-            Save();
-            return true;
-        }
-
-        public bool TryUnlock(int tier)
-        {
-            if (Phase != GamePhase.Result || !Shop.Unlock(upgradeTable, Meta, tier)) return false;
+            if (Phase != GamePhase.Result || !Shop.Buy(nodeTable, Meta, nodeId)) return false;
             Save();
             return true;
         }
@@ -420,10 +442,10 @@ namespace Incremental
         /// <summary>F3: currency = max(currency × mult, min).</summary>
         public void DebugBoostCurrency(double mult, double min) => Meta.currency = Math.Max(Meta.currency * mult, min);
 
-        /// <summary>F6: unlock the next tier for free (also mid-run). Returns the unlocked tier, or 0.</summary>
+        /// <summary>F6: raise the next gate node to level 1 for free (also mid-run). Returns the unlocked tier, or 0.</summary>
         public int DebugUnlockNext()
         {
-            int tier = Shop.UnlockNextFree(upgradeTable, Meta);
+            int tier = Shop.UnlockNextFree(nodeTable, Meta);
             UnityEngine.Debug.Log(tier > 0 ? $"[Debug] tier {tier} unlocked for free" : "[Debug] every tier is already unlocked");
             if (tier > 0) Save();
             return tier;
@@ -491,7 +513,7 @@ namespace Incremental
 
         EffectiveStats ComputeStats()
         {
-            var s = Stats.Compute(gameParams, upgradeTable, Meta);
+            var s = Stats.Compute(gameParams, nodeTable, Meta);
             if (Override.enabled)
             {
                 s.dustCap = Override.dustCap;

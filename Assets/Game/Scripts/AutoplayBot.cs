@@ -1,13 +1,28 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Incremental
 {
+    /// <summary>How the bot handles the next gate between runs.</summary>
+    public enum GateSaving
+    {
+        /// <summary>Cheapest affordable node first, gate included (week-1 behaviour).</summary>
+        Off,
+        /// <summary>12 §3: gate first when affordable; buy nothing while gate ≤ currency + last run income.</summary>
+        Stop,
+        /// <summary>Like Stop, but while saving still spends what exceeds the reserve (gate − last run income).</summary>
+        KeepReserve,
+    }
+
     /// <summary>
     /// F4 autoplay bot for unattended measurement runs. Simple rules only:
     /// during a run, move the cursor toward the densest dust cell and hold; release once the goal tier
-    /// (highest unlocked tier) threshold is reached; between runs buy the cheapest affordable item until
-    /// nothing is affordable, then start the next run. Drives the game through GameRoot.InputProvider.
+    /// (highest unlocked tier) threshold is reached; between runs buy purchasable skill tree nodes, cheapest first,
+    /// until nothing is affordable, then start the next run. Drives the game through GameRoot.InputProvider.
+    /// <see cref="gateSaving"/> (12 §3): the next gate is bought first when affordable, and the bot saves for it once the
+    /// gate costs no more than currency + last run income, instead of spending everything on cheap nodes
+    /// (week 1 report: the bot never unlocked tier 2).
     /// </summary>
     public sealed class AutoplayBot : MonoBehaviour
     {
@@ -17,11 +32,15 @@ namespace Incremental
         public int gridY = 7;
         [Tooltip("Stop the bot after this many completed runs (0 = keep going).")]
         public int stopAfterRuns = 0;
+        [Tooltip("Stop: buy the next gate first and buy nothing else once currency + last run income would pay for it (12 §3). " +
+                 "KeepReserve: while saving, still spend what exceeds gate − last run income.")]
+        public GateSaving gateSaving = GateSaving.Stop;
 
         GameRoot root;
         Vector2 cursor;
         bool pressed;
         int[] counts = new int[0];
+        readonly List<NodeDef> scratch = new List<NodeDef>();
         int runsCompleted;
         Func<PointerState> provider;
 
@@ -125,37 +144,47 @@ namespace Incremental
             root.RequestStartRun();
         }
 
-        /// <summary>Cheapest affordable item first (upgrades and unlocks together), repeated until nothing is affordable.</summary>
+        /// <summary>Buys <see cref="ChooseNext"/> until it returns nothing. Returns the number of levels bought.</summary>
         int BuyCheapestUntilBroke()
         {
-            var t = root.upgradeTable;
-            var m = root.Meta;
             int bought = 0;
-            for (int guard = 0; guard < 100; guard++)
+            for (int guard = 0; guard < 200; guard++)
             {
-                double best = double.PositiveInfinity;
-                bool isUnlock = false;
-                string bestId = null;
-                int bestTier = 0;
-                for (int i = 0; i < t.upgrades.Count; i++)
-                {
-                    string id = t.upgrades[i].id;
-                    if (!Shop.CanBuyUpgrade(t, m, id)) continue;
-                    double c = Shop.UpgradeCost(t, m, id);
-                    if (c < best) { best = c; isUnlock = false; bestId = id; }
-                }
-                foreach (var u in t.unlocks)
-                {
-                    if (!Shop.CanUnlock(t, m, u.tier)) continue;
-                    double c = Shop.UnlockCost(t, u.tier);
-                    if (c < best) { best = c; isUnlock = true; bestTier = u.tier; }
-                }
-                if (double.IsPositiveInfinity(best)) break;
-                bool ok = isUnlock ? root.TryUnlock(bestTier) : root.TryBuyUpgrade(bestId);
-                if (!ok) break;
+                var n = ChooseNext(root.nodeTable, root.Meta, gateSaving, scratch);
+                if (n == null || !root.TryBuy(n.id)) break;
                 bought++;
             }
             return bought;
+        }
+
+        /// <summary>
+        /// The bot's next purchase, or null to stop buying. Off: the cheapest affordable purchasable node, gate included.
+        /// Stop / KeepReserve: the next gate if affordable; else, once the gate costs no more than currency + last run
+        /// income, nothing (Stop) or the cheapest node that leaves currency ≥ gate − last run income (KeepReserve);
+        /// else the cheapest affordable stat node.
+        /// </summary>
+        public static NodeDef ChooseNext(NodeTable t, MetaState m, GateSaving saving, List<NodeDef> scratch)
+        {
+            var gate = Shop.NextGate(t, m);
+            if (gate != null && !Shop.IsPurchasable(t, m, gate)) gate = null;
+            double gateCost = gate != null ? Shop.Cost(t, m, gate) : double.PositiveInfinity;
+            double budget = m.currency;
+
+            if (saving != GateSaving.Off && gate != null)
+            {
+                if (m.currency >= gateCost) return gate;
+                if (gateCost <= m.currency + m.lastRunIncome)
+                {
+                    if (saving == GateSaving.Stop) return null;
+                    budget = m.currency - (gateCost - m.lastRunIncome);
+                }
+            }
+
+            Shop.PurchasableStatNodes(t, m, scratch);
+            NodeDef best = scratch.Count > 0 && budget >= Shop.Cost(t, m, scratch[0]) ? scratch[0] : null;
+            if (saving == GateSaving.Off && gate != null && m.currency >= gateCost && (best == null || gateCost < Shop.Cost(t, m, best)))
+                best = gate;
+            return best;
         }
     }
 }

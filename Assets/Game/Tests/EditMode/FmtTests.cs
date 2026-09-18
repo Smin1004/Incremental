@@ -63,6 +63,25 @@ namespace Incremental.Tests
         [Test]
         public void Scientific_RoundUp_CarriesIntoNextExponent() => Assert.AreEqual("1.00e6", S(999999, Rounding.Up));
 
+        [TestCase(1.25, "×1.25")]
+        [TestCase(0.88, "×0.88")]
+        [TestCase(999.99, "×999.99")]
+        [TestCase(1000, "×1.00K")]
+        [TestCase(347409153.13, "×347M")]
+        public void Mult_UsesNumberNotationFromThousand(double v, string expected)
+        {
+            var saved = Fmt.Mode;
+            try
+            {
+                Fmt.Mode = Notation.Letters;
+                Assert.AreEqual(expected, Fmt.Mult(v));
+            }
+            finally
+            {
+                Fmt.Mode = saved;
+            }
+        }
+
         [Test]
         public void NonFinite_And_Negative()
         {

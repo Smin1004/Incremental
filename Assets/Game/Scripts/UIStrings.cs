@@ -4,8 +4,9 @@ namespace Incremental
 {
     /// <summary>
     /// All user-facing strings in one place (Korean). Placeholders are string.Format indices.
-    /// Names that belong to data rows (tiers, upgrades) are looked up by id key in <see cref="Keyed"/>
-    /// (tier.&lt;n&gt;, upg.&lt;id&gt;.name, upg.&lt;id&gt;.effect) so the data assets hold no display text.
+    /// Names that belong to data rows (tiers, stats) are looked up by id key in <see cref="Keyed"/>
+    /// (tier.&lt;n&gt;, stat.&lt;id&gt;.name, stat.&lt;id&gt;.effect) so the data assets hold no display text.
+    /// Node names are generated (12 §3 "이름"): stat name + roman numeral; gates use the tier name.
     /// </summary>
     public static class UIStrings
     {
@@ -35,11 +36,9 @@ namespace Incremental
         public const string UnlockEffect = "티어 {0} · 판매가 {1}";
         public const string AllUnlocked = "모두 해금";
         public const string Level = "Lv {0}";
-        public const string LevelMax = "Lv {0} (최대)";
-        public const string Unlocked = "해금됨";
-        public const string Locked = "잠김";
+        public const string LevelOf = "Lv {0}/{1}";
+        public const string PlanetMulti = "×{0}";
         public const string Buy = "구매";
-        public const string Max = "최대";
         public const string NoCost = "-";
         public const string NextRun = "다음 런";
 
@@ -49,7 +48,7 @@ namespace Incremental
         public const string Off = "꺼짐";
         public const string ScreenshotSaved = "스크린샷 저장: {0}";
 
-        /// <summary>Strings keyed by data id. Every tier and upgrade id needs its keys here (Validate Data checks).</summary>
+        /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
         static readonly Dictionary<string, string> Keyed = new Dictionary<string, string>
         {
             { "tier.1", "소행성" },
@@ -65,26 +64,26 @@ namespace Incremental
             { "tier.11", "청색 거성" },
 
             // {0} = Stats.EffectDisplayNumber (percent for fraction effects).
-            { "upg.spawn_rate.name", "먼지 생성 빈도" },
-            { "upg.spawn_rate.effect", "+{0}/초" },
-            { "upg.pull_accel.name", "모으는 힘" },
-            { "upg.pull_accel.effect", "+{0}%" },
-            { "upg.sale_mult.name", "판매 비용" },
-            { "upg.sale_mult.effect", "+{0}%" },
-            { "upg.stamina_max.name", "최대 스태미나" },
-            { "upg.stamina_max.effect", "+{0}" },
-            { "upg.threshold_mult.name", "필요 먼지 수 감소" },
-            { "upg.threshold_mult.effect", "−{0}%" },
-            { "upg.dust_cap.name", "화면 상한" },
-            { "upg.dust_cap.effect", "+{0}개" },
-            { "upg.dust_mass.name", "먼지 질량" },
-            { "upg.dust_mass.effect", "×{0}" },
-            { "upg.gravity_radius.name", "중력 반경" },
-            { "upg.gravity_radius.effect", "+{0}%" },
-            { "upg.stamina_drain.name", "스태미나 소모 감소" },
-            { "upg.stamina_drain.effect", "−{0}%" },
-            { "upg.start_bonus.name", "시작 보너스" },
-            { "upg.start_bonus.effect", "먼지 +{0}" },
+            { "stat.spawn_rate.name", "먼지 생성 빈도" },
+            { "stat.spawn_rate.effect", "+{0}/초" },
+            { "stat.pull_accel.name", "모으는 힘" },
+            { "stat.pull_accel.effect", "+{0}%" },
+            { "stat.sale_mult.name", "판매 비용" },
+            { "stat.sale_mult.effect", "+{0}%" },
+            { "stat.stamina_max.name", "최대 스태미나" },
+            { "stat.stamina_max.effect", "+{0}" },
+            { "stat.threshold_mult.name", "필요 먼지 수 감소" },
+            { "stat.threshold_mult.effect", "−{0}%" },
+            { "stat.dust_cap.name", "화면 상한" },
+            { "stat.dust_cap.effect", "+{0}개" },
+            { "stat.dust_mass.name", "먼지 질량" },
+            { "stat.dust_mass.effect", "×{0}" },
+            { "stat.gravity_radius.name", "중력 반경" },
+            { "stat.gravity_radius.effect", "+{0}%" },
+            { "stat.stamina_drain.name", "스태미나 소모 감소" },
+            { "stat.stamina_drain.effect", "−{0}%" },
+            { "stat.start_bonus.name", "시작 보너스" },
+            { "stat.start_bonus.effect", "먼지 +{0}" },
         };
 
         public static bool Has(string key) => key != null && Keyed.ContainsKey(key);
@@ -93,12 +92,44 @@ namespace Incremental
         public static string Get(string key) => key != null && Keyed.TryGetValue(key, out var s) ? s : key;
 
         public static string TierKey(int tier) => "tier." + tier;
-        public static string UpgradeNameKey(string id) => "upg." + id + ".name";
-        public static string UpgradeEffectKey(string id) => "upg." + id + ".effect";
+        public static string StatNameKey(string statId) => "stat." + statId + ".name";
+        public static string StatEffectKey(string statId) => "stat." + statId + ".effect";
 
         public static string TierName(int tier) => Get(TierKey(tier));
-        public static string UpgradeName(string id) => Get(UpgradeNameKey(id));
-        public static string UpgradeEffect(UpgradeDef def) =>
-            string.Format(Get(UpgradeEffectKey(def.id)), Fmt.Short(Stats.EffectDisplayNumber(def)));
+        public static string StatName(string statId) => Get(StatNameKey(statId));
+
+        /// <summary>Effect of one level of a stat node, e.g. "+20%", "×1.5". Empty for gates.</summary>
+        public static string NodeEffect(NodeDef n) =>
+            n.IsGate ? string.Empty : string.Format(Get(StatEffectKey(n.statId)), Fmt.Short(Stats.EffectDisplayNumber(n)));
+
+        /// <summary>
+        /// Stat nodes: stat name + roman numeral by position among the nodes of that stat (ring order, then table order),
+        /// e.g. 먼지 생성 빈도 II. Gates: the tier name.
+        /// </summary>
+        public static string NodeName(NodeTable t, NodeDef n)
+        {
+            if (n.IsGate) return TierName(n.tier);
+            int self = t.nodes.IndexOf(n);
+            int index = 1;
+            for (int i = 0; i < t.nodes.Count; i++)
+            {
+                var o = t.nodes[i];
+                if (i == self || o.IsGate || o.statId != n.statId) continue;
+                if (o.minTier < n.minTier || (o.minTier == n.minTier && i < self)) index++;
+            }
+            return StatName(n.statId) + " " + Roman(index);
+        }
+
+        static readonly int[] RomanValues = { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+        static readonly string[] RomanDigits = { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+
+        public static string Roman(int n)
+        {
+            if (n <= 0) return n.ToString();
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < RomanValues.Length; i++)
+                while (n >= RomanValues[i]) { sb.Append(RomanDigits[i]); n -= RomanValues[i]; }
+            return sb.ToString();
+        }
     }
 }

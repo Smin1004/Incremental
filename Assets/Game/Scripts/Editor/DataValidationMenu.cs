@@ -5,39 +5,45 @@ using UnityEngine;
 namespace Incremental.EditorTools
 {
     /// <summary>
-    /// Menu: Incremental / Validate Data. Runs <see cref="DataValidator"/> on every CelestialTable / UpgradeTable pair in the
-    /// project and logs each problem as a console error. Also warns where an asset differs from the PrototypeSetup seed.
+    /// Menu: Incremental / Validate Data. Runs <see cref="DataValidator"/> on the CelestialTable / NodeTable pair in the
+    /// project: errors go to the console as errors, warnings as warnings. Also warns where an asset differs from the seed code.
     /// </summary>
     public static class DataValidationMenu
     {
         [MenuItem("Incremental/Validate Data")]
         public static void ValidateMenu() => Validate();
 
-        /// <summary>Returns the number of errors (warnings for seed drift are not counted).</summary>
+        /// <summary>Returns the number of errors (warnings are not counted).</summary>
         public static int Validate()
         {
             var celestial = LoadAll<CelestialTable>();
-            var upgrades = LoadAll<UpgradeTable>();
-            if (celestial.Count != 1 || upgrades.Count != 1)
+            var nodes = LoadAll<NodeTable>();
+            if (celestial.Count != 1 || nodes.Count != 1)
             {
-                Debug.LogError($"[Validate] expected exactly one CelestialTable and one UpgradeTable, found {celestial.Count} and {upgrades.Count}.");
+                Debug.LogError($"[Validate] expected exactly one CelestialTable and one NodeTable, found {celestial.Count} and {nodes.Count}.");
                 return 1;
             }
             var c = celestial[0];
-            var u = upgrades[0];
+            var n = nodes[0];
 
-            var errors = DataValidator.Validate(c, u);
-            foreach (var e in errors) Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : u);
+            var report = DataValidator.Validate(c, n);
+            foreach (var e in report.Errors) Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : n);
+            foreach (var w in report.Warnings) Debug.LogWarning("[Validate] " + w, n);
 
-            int drift = WarnSeedDrift(c, u);
-            if (errors.Count == 0)
-                Debug.Log($"[Validate] OK: {c.tiers.Count} tiers, {u.upgrades.Count} upgrades, {u.unlocks.Count} unlocks" +
-                          (drift > 0 ? $" ({drift} seed differences, see warnings)" : string.Empty));
-            return errors.Count;
+            int drift = WarnSeedDrift(c, n);
+            if (report.Ok)
+            {
+                int gates = 0;
+                foreach (var node in n.nodes) if (node.IsGate) gates++;
+                Debug.Log($"[Validate] OK: {c.tiers.Count} tiers, {n.nodes.Count - gates} stat nodes, {gates} gates" +
+                          (report.Warnings.Count > 0 ? $", {report.Warnings.Count} warnings" : string.Empty) +
+                          (drift > 0 ? $", {drift} seed differences (see warnings)" : string.Empty));
+            }
+            return report.Errors.Count;
         }
 
-        /// <summary>PrototypeSetup seed code and the assets must hold the same values; warn where they differ.</summary>
-        static int WarnSeedDrift(CelestialTable c, UpgradeTable u)
+        /// <summary>PrototypeSetup / SkillTreeSeed and the assets must hold the same values; warn where they differ.</summary>
+        static int WarnSeedDrift(CelestialTable c, NodeTable n)
         {
             var diffs = new List<string>();
             foreach (var s in PrototypeSetup.SeedTiers())
@@ -47,22 +53,35 @@ namespace Incremental.EditorTools
                 else if (a.requiredMass != s.requiredMass || a.salePrice != s.salePrice || a.sizePx != s.sizePx || a.color != s.color)
                     diffs.Add($"tier {s.tier} differs from the seed");
             }
-            foreach (var s in PrototypeSetup.SeedUpgrades())
+            var seedIds = new HashSet<string>();
+            foreach (var s in SkillTreeSeed.Nodes())
             {
-                var a = u.Get(s.id);
-                if (a == null) diffs.Add($"upgrade '{s.id}' is in the seed but not in the asset");
-                else if (a.enabled != s.enabled || a.revealAtTier != s.revealAtTier || a.effectPerLevel != s.effectPerLevel ||
-                         a.baseCost != s.baseCost || a.growth != s.growth || a.maxLevel != s.maxLevel)
-                    diffs.Add($"upgrade '{s.id}' differs from the seed");
+                seedIds.Add(s.id);
+                var a = n.Get(s.id);
+                if (a == null) diffs.Add($"node '{s.id}' is in the seed but not in the asset");
+                else if (!SameNode(a, s)) diffs.Add($"node '{s.id}' differs from the seed");
             }
-            foreach (var s in PrototypeSetup.SeedUnlocks())
-            {
-                var a = u.GetUnlock(s.tier);
-                if (a == null) diffs.Add($"unlock {s.tier} is in the seed but not in the asset");
-                else if (a.cost != s.cost) diffs.Add($"unlock {s.tier} cost differs from the seed");
-            }
-            foreach (var d in diffs) Debug.LogWarning("[Validate] seed drift: " + d + " (update PrototypeSetup or the asset)");
+            foreach (var a in n.nodes)
+                if (a != null && !seedIds.Contains(a.id)) diffs.Add($"node '{a.id}' is in the asset but not in the seed");
+            var mult = SkillTreeSeed.RingCostMult();
+            for (int i = 0; i < mult.Length; i++)
+                if (n.RingCostMult(i) != mult[i]) diffs.Add($"ringCostMult[{i}] is {n.RingCostMult(i)}, seed {mult[i]}");
+            foreach (var d in diffs) Debug.LogWarning("[Validate] seed drift: " + d + " (update the seed code or the asset)");
             return diffs.Count;
+        }
+
+        static bool SameNode(NodeDef a, NodeDef s)
+        {
+            // Unity serializes a null string as "".
+            if (a.kind != s.kind || (a.statId ?? "") != (s.statId ?? "") || a.effectPerLevel != s.effectPerLevel || a.maxLevel != s.maxLevel ||
+                a.baseCost != s.baseCost || a.growth != s.growth || a.tier != s.tier || a.minTier != s.minTier ||
+                a.angleDeg != s.angleDeg || a.enabled != s.enabled)
+                return false;
+            var ap = a.prereqs ?? new List<string>();
+            var sp = s.prereqs ?? new List<string>();
+            if (ap.Count != sp.Count) return false;
+            for (int i = 0; i < ap.Count; i++) if (ap[i] != sp[i]) return false;
+            return true;
         }
 
         static List<T> LoadAll<T>() where T : ScriptableObject

@@ -7,16 +7,18 @@ namespace Incremental
 {
     /// <summary>
     /// Result (11 §4) and shop on one screen, shown between runs, as two panels side by side at 1920x1080:
-    /// result on the left (run income, planets per tier for tiers made at least once, ratio vs last run hidden on the
-    /// first run, best run income, "next run" button), shop on the right (visible upgrades and the next unlock).
+    /// result on the left (run income, planets per tier for tiers made at least once, ratio vs last run hidden when there
+    /// is none, best run income, "next run" button), shop on the right.
+    /// Shop (12 §8, step 1 of the skill tree): the purchasable nodes, cheapest first, at most <see cref="MaxNodeRows"/>,
+    /// and the next gate as the last row. Locked nodes appear in the tree view (step 2).
     /// Built from code; refreshed every frame while visible so debug currency changes show immediately.
     /// </summary>
     public sealed class ResultShopView : MonoBehaviour
     {
         sealed class Row
         {
-            /// <summary>Null for the unlock row.</summary>
-            public UpgradeDef def;
+            /// <summary>The node shown in this row this frame (rows are reassigned as the list changes).</summary>
+            public NodeDef node;
             public RectTransform rt;
             public Image bg;
             public Text name, effect, level, cost, buttonLabel;
@@ -33,11 +35,15 @@ namespace Incremental
         const float ColName = 40f, ColEffect = 350f, ColLevel = 610f, ColCost = 780f, ColButton = 960f;
         const float WName = 300f, WEffect = 250f, WLevel = 160f, WCost = 160f, WButton = 130f;
         const int PlanetLinesPerColumn = 6;
+        /// <summary>Stat node rows; with the gate row the list has 11 rows, what fits the panel at 1080p.</summary>
+        const int MaxNodeRows = 10;
 
         static readonly Color PanelColor = new Color(0.08f, 0.09f, 0.13f, 0.97f);
         static readonly Color LabelColor = new Color(0.7f, 0.75f, 0.85f, 1f);
         static readonly Color RowColorA = new Color(1f, 1f, 1f, 0.035f);
         static readonly Color RowColorB = new Color(1f, 1f, 1f, 0f);
+        static readonly Color CostColor = Color.white;
+        static readonly Color CostShortColor = new Color(1f, 0.45f, 0.42f, 1f);
 
         GameRoot root;
         Font font;
@@ -45,7 +51,9 @@ namespace Incremental
         RectTransform left, right;
         Text title, incomeValue, planetsColA, planetsColB, ratioLabel, ratioValue, bestValue, currencyText;
         readonly List<Row> rows = new List<Row>();
-        Row unlockRow;
+        Row gateRow;
+        readonly List<NodeDef> purchasable = new List<NodeDef>();
+        readonly Dictionary<NodeDef, string> nodeNames = new Dictionary<NodeDef, string>();
         readonly StringBuilder sbA = new StringBuilder();
         readonly StringBuilder sbB = new StringBuilder();
         RunRecord lastRecord;
@@ -109,23 +117,14 @@ namespace Incremental
             HeaderCell(UIStrings.ColumnLevel, ColLevel, WLevel, TextAnchor.MiddleLeft);
             HeaderCell(UIStrings.ColumnCost, ColCost, WCost, TextAnchor.MiddleRight);
 
-            foreach (var def in root.upgradeTable.upgrades)
+            for (int i = 0; i < MaxNodeRows; i++)
             {
-                var row = MakeRow("Upg_" + def.id);
-                row.def = def;
-                row.name.text = UIStrings.UpgradeName(def.id);
-                row.effect.text = UIStrings.UpgradeEffect(def);
-                string id = def.id;
-                row.button.onClick.AddListener(() => { if (root.TryBuyUpgrade(id)) Refresh(); });
+                var row = MakeRow("Node" + i);
+                row.button.onClick.AddListener(() => { if (row.node != null && root.TryBuy(row.node.id)) Refresh(); });
                 rows.Add(row);
             }
-
-            unlockRow = MakeRow("Unlock");
-            unlockRow.button.onClick.AddListener(() =>
-            {
-                int next = Shop.NextUnlockTier(root.upgradeTable, root.Meta);
-                if (next > 0 && root.TryUnlock(next)) Refresh();
-            });
+            gateRow = MakeRow("Gate");
+            gateRow.button.onClick.AddListener(() => { if (gateRow.node != null && root.TryBuy(gateRow.node.id)) Refresh(); });
         }
 
         void Update()
@@ -151,7 +150,7 @@ namespace Incremental
         public void Refresh()
         {
             var m = root.Meta;
-            var t = root.upgradeTable;
+            var t = root.nodeTable;
 
             if (lastRecord != null)
             {
@@ -173,47 +172,63 @@ namespace Incremental
             bestValue.text = Fmt.Num(m.bestRunIncome);
             currencyText.text = string.Format(UIStrings.ShopCurrency, Fmt.Num(m.currency));
 
+            // Purchasable stat nodes, cheapest first.
+            Shop.PurchasableStatNodes(t, m, purchasable);
             float y = RowsTop;
-            int visible = 0;
+            int shown = 0;
             for (int i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
-                bool show = Shop.IsVisible(row.def, m);
-                SetActive(row.rt, show);
-                if (!show) continue;
-                Place(row, ref y, visible++);
+                row.node = i < purchasable.Count ? purchasable[i] : null;
+                SetActive(row.rt, row.node != null);
+                if (row.node == null) continue;
+                Place(row, ref y, shown++);
 
-                int lvl = m.GetLevel(row.def.id);
-                bool maxed = Shop.IsMaxed(row.def, m);
-                row.level.text = string.Format(maxed ? UIStrings.LevelMax : UIStrings.Level, lvl);
-                row.cost.text = maxed ? UIStrings.NoCost : Fmt.Num(Shop.UpgradeCost(row.def, m), Rounding.Up);
-                row.button.interactable = Shop.CanBuyUpgrade(t, m, row.def.id);
-                row.buttonLabel.text = maxed ? UIStrings.Max : UIStrings.Buy;
+                var n = row.node;
+                int lvl = m.GetLevel(n.id);
+                double cost = Shop.Cost(t, m, n);
+                row.name.text = NodeName(n);
+                row.effect.text = UIStrings.NodeEffect(n);
+                row.level.text = n.maxLevel > 0 ? string.Format(UIStrings.LevelOf, lvl, n.maxLevel) : string.Format(UIStrings.Level, lvl);
+                row.cost.text = Fmt.Num(cost, Rounding.Up);
+                row.cost.color = m.currency >= cost ? CostColor : CostShortColor;
+                row.button.interactable = m.currency >= cost;
             }
 
-            // One unlock row: the next tier, or "all unlocked".
-            Place(unlockRow, ref y, visible);
-            int next = Shop.NextUnlockTier(t, m);
-            bool any = next > 0;
-            SetActive(unlockRow.button, any);
-            if (any)
+            // Last row: the next gate, or "all unlocked".
+            Place(gateRow, ref y, shown);
+            var gate = Shop.NextGate(t, m);
+            gateRow.node = gate != null && Shop.IsPurchasable(t, m, gate) ? gate : null;
+            SetActive(gateRow.button, gateRow.node != null);
+            if (gateRow.node != null)
             {
-                var tier = root.celestialTable.Get(next);
-                double price = tier != null ? tier.salePrice * Stats.Compute(root.gameParams, t, m).saleMult : 0.0;
-                unlockRow.name.text = string.Format(UIStrings.UnlockName, UIStrings.TierName(next));
-                unlockRow.effect.text = string.Format(UIStrings.UnlockEffect, next, Fmt.Num(price));
-                unlockRow.level.text = UIStrings.Locked;
-                unlockRow.cost.text = Fmt.Num(Shop.UnlockCost(t, next), Rounding.Up);
-                unlockRow.button.interactable = Shop.CanUnlock(t, m, next);
-                unlockRow.buttonLabel.text = UIStrings.Buy;
+                var tier = root.celestialTable.Get(gate.tier);
+                double price = tier != null ? Stats.SaleIncome(tier, Stats.Compute(root.gameParams, t, m)) : 0.0;
+                double cost = Shop.Cost(t, m, gate);
+                gateRow.name.text = string.Format(UIStrings.UnlockName, UIStrings.TierName(gate.tier));
+                gateRow.effect.text = string.Format(UIStrings.UnlockEffect, gate.tier, Fmt.Num(price));
+                gateRow.level.text = string.Empty;
+                gateRow.cost.text = Fmt.Num(cost, Rounding.Up);
+                gateRow.cost.color = m.currency >= cost ? CostColor : CostShortColor;
+                gateRow.button.interactable = m.currency >= cost;
             }
             else
             {
-                unlockRow.name.text = UIStrings.AllUnlocked;
-                unlockRow.effect.text = string.Empty;
-                unlockRow.level.text = string.Empty;
-                unlockRow.cost.text = string.Empty;
+                gateRow.name.text = UIStrings.AllUnlocked;
+                gateRow.effect.text = string.Empty;
+                gateRow.level.text = string.Empty;
+                gateRow.cost.text = string.Empty;
             }
+        }
+
+        string NodeName(NodeDef n)
+        {
+            if (!nodeNames.TryGetValue(n, out var name))
+            {
+                name = UIStrings.NodeName(root.nodeTable, n);
+                nodeNames[n] = name;
+            }
+            return name;
         }
 
         /// <summary>Planets per tier, only tiers made at least once, split over two columns.</summary>

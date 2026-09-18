@@ -75,7 +75,7 @@ namespace Incremental
                 if (data != null)
                 {
                     status = LoadStatus.Loaded;
-                    return SaveMigration.Migrate(data);
+                    return Migrate(data, SavePath);
                 }
                 string kept = Quarantine(SavePath);
                 Debug.LogWarning($"[Save] {SaveFile} could not be read ({error}); kept as {Path.GetFileName(kept)}. Trying {BakFile}.");
@@ -88,7 +88,7 @@ namespace Incremental
                 {
                     status = LoadStatus.RestoredFromBackup;
                     Debug.LogWarning($"[Save] restored from {BakFile}. Progress since the previous save is lost.");
-                    return SaveMigration.Migrate(data);
+                    return Migrate(data, BakPath);
                 }
                 string kept = Quarantine(BakPath);
                 Debug.LogWarning($"[Save] {BakFile} could not be read either ({error}); kept as {Path.GetFileName(kept)}.");
@@ -97,6 +97,25 @@ namespace Incremental
             Debug.LogWarning("[Save] no readable save; starting a new game.");
             status = LoadStatus.Corrupt;
             return null;
+        }
+
+        /// <summary>Migrates; a save that migration replaces with a new game is first copied to save.v&lt;n&gt;_&lt;time&gt;.json.</summary>
+        SaveData Migrate(SaveData data, string sourcePath)
+        {
+            if (SaveMigration.ResetsProgress(data.version))
+            {
+                string copy = Path.Combine(Dir, "save.v" + data.version + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + ".json");
+                try
+                {
+                    File.Copy(sourcePath, copy, true);
+                    Debug.LogWarning("[Save] old save kept as " + Path.GetFileName(copy));
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[Save] could not keep a copy of the old save: " + e.Message);
+                }
+            }
+            return SaveMigration.Migrate(data);
         }
 
         /// <summary>Deletes save.json, save.bak and save.tmp. Settings and quarantined files are kept.</summary>

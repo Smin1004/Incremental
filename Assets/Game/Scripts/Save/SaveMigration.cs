@@ -5,20 +5,34 @@ namespace Incremental
 {
     /// <summary>
     /// Upgrades a loaded SaveData to <see cref="CurrentVersion"/>, one step per version, then fills in anything the
-    /// JSON did not have. Version 1 is the first format, so the chain has no steps yet.
-    /// Upgrade ids are never removed: ids unknown to the table are kept and ignored, ids new to the table read as level 0.
+    /// JSON did not have. Node ids are never removed: ids unknown to the table are kept and ignored, new ids read as level 0.
     /// </summary>
     public static class SaveMigration
     {
-        public const int CurrentVersion = 1;
+        /// <summary>1: flat shop (week 2). 2: skill tree nodes (12 §3).</summary>
+        public const int CurrentVersion = 2;
+
+        /// <summary>
+        /// Versions below this are replaced by a new game instead of being converted: v1 levels were per stat, v2 levels
+        /// are per node, and v1 saves only ever existed during development (12 §3, "세이브"). Settings are separate and stay.
+        /// </summary>
+        public const int FirstKeptVersion = 2;
+
+        public static bool ResetsProgress(int version) => version < FirstKeptVersion;
 
         public static SaveData Migrate(SaveData d)
         {
             if (d == null) return null;
             if (d.version < 1) d.version = 1;
 
-            // Add steps here when the format changes, e.g.
-            // if (d.version == 1) { MigrateV1ToV2(d); d.version = 2; }
+            // v1 → v2: flat-shop levels cannot be mapped onto nodes; start a new game (statistics included).
+            if (d.version == 1)
+            {
+                Debug.LogWarning("[Save] version 1 save (flat shop) replaced by a new game for the skill tree (version 2).");
+                d = new SaveData { version = 2 };
+            }
+
+            // Future steps: if (d.version == 2) { ...; d.version = 3; }
 
             if (d.version > CurrentVersion)
                 Debug.LogWarning($"[Save] save version {d.version} is newer than this build ({CurrentVersion}); loading what is known.");

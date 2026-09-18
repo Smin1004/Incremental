@@ -5,7 +5,7 @@ namespace Incremental
 {
     /// <summary>
     /// Run HUD: currency + run number (top-left), run income (top-right), stamina bar (top-center),
-    /// a center message and the debug overlay line. Built from code; render only.
+    /// a center message, the debug overlay line and the "×N" label over a multi-planet creation. Built from code; render only.
     /// </summary>
     public sealed class HudView : MonoBehaviour
     {
@@ -13,8 +13,14 @@ namespace Incremental
         public RectTransform CanvasRect { get; private set; }
         public Font Font { get; private set; }
 
+        const int CountLabelPool = 8;
+
         Text currencyText, incomeText, staminaText, centerText, debugText;
         Image staminaFill;
+        readonly Text[] countLabels = new Text[CountLabelPool];
+        readonly float[] countAges = new float[CountLabelPool];
+        int nextCountLabel;
+        float countLifetime = 1.5f;
 
         public void Build()
         {
@@ -44,6 +50,50 @@ namespace Incremental
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 12f), new Vector2(1400f, 30f));
             debugText.color = new Color(1f, 1f, 0.6f, 1f);
             SetDebug(string.Empty);
+
+            for (int i = 0; i < CountLabelPool; i++)
+            {
+                countLabels[i] = UIBuilder.CreateText("PlanetCount" + i, root, Font, 30, TextAnchor.LowerCenter,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(300f, 40f));
+                countLabels[i].gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>How long a "×N" label stays (the planet's display time).</summary>
+        public void SetCountLifetime(double seconds) => countLifetime = Mathf.Max(0.1f, (float)seconds);
+
+        /// <summary>"×N" above a planet created N at once (12 §10-2). screenPos in pixels, sizePx = planet diameter.</summary>
+        public void ShowPlanetCount(Vector3 screenPos, double sizePx, double count)
+        {
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(CanvasRect, screenPos, null, out var local)) return;
+            int i = nextCountLabel;
+            nextCountLabel = (nextCountLabel + 1) % CountLabelPool;
+            var t = countLabels[i];
+            t.text = string.Format(UIStrings.PlanetMulti, Fmt.Num(count));
+            ((RectTransform)t.transform).anchoredPosition = local + new Vector2(0f, (float)sizePx * 0.5f + 8f);
+            t.color = Color.white;
+            countAges[i] = 0f;
+            t.gameObject.SetActive(true);
+        }
+
+        void Update()
+        {
+            float dt = Time.deltaTime;
+            for (int i = 0; i < CountLabelPool; i++)
+            {
+                var t = countLabels[i];
+                if (t == null || !t.gameObject.activeSelf) continue;
+                countAges[i] += dt;
+                if (countAges[i] >= countLifetime)
+                {
+                    t.gameObject.SetActive(false);
+                    continue;
+                }
+                float fadeStart = countLifetime * 0.6f;
+                var c = t.color;
+                c.a = countAges[i] <= fadeStart ? 1f : 1f - (countAges[i] - fadeStart) / (countLifetime - fadeStart);
+                t.color = c;
+            }
         }
 
         public void SetCurrency(double currency, int run) =>

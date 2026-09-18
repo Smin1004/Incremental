@@ -22,7 +22,7 @@ namespace Incremental.EditorTools
         const string ScenesDir = GameDir + "/Scenes";
         const string ParamsPath = DataDir + "/GameParams.asset";
         const string CelestialPath = DataDir + "/CelestialTable.asset";
-        const string UpgradePath = DataDir + "/UpgradeTable.asset";
+        const string NodePath = DataDir + "/NodeTable.asset";
         const string MaterialPath = MaterialsDir + "/DustUnlit.mat";
         const string CirclePath = MaterialsDir + "/Circle.png";
         const string CircleSource = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/Circle.png";
@@ -47,20 +47,19 @@ namespace Incremental.EditorTools
             // GameParams field initializers already hold the §6 parameter values.
             var p = LoadOrCreate<GameParams>(ParamsPath, _ => { });
             var c = LoadOrCreate<CelestialTable>(CelestialPath, t => t.tiers = SeedTiers());
-            var u = LoadOrCreate<UpgradeTable>(UpgradePath, t =>
+            var n = LoadOrCreate<NodeTable>(NodePath, t =>
             {
-                t.upgrades = SeedUpgrades();
-                t.unlocks = SeedUnlocks();
+                t.nodes = SkillTreeSeed.Nodes();
+                t.ringCostMult = SkillTreeSeed.RingCostMult();
             });
-            int added = AddMissing(c, u);
+            int added = AddMissing(c, n);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Setup] Data assets ready ({added} missing entries added): {AssetDatabase.GetAssetPath(p)}, {AssetDatabase.GetAssetPath(c)}, {AssetDatabase.GetAssetPath(u)}");
+            Debug.Log($"[Setup] Data assets ready ({added} missing entries added): {AssetDatabase.GetAssetPath(p)}, {AssetDatabase.GetAssetPath(c)}, {AssetDatabase.GetAssetPath(n)}");
         }
 
         // ---------------- seed data (keep equal to the assets) ----------------
-        // Tiers 1-3 and the first five upgrades are the week-1 values. Tiers 4-11: mass and price from 10 §3.4,
-        // size / color / unlock cost (= sale price x 10) are week-2 placeholders. The last five upgrades are 10 §5
-        // "proposed" items with placeholder values; each can be switched off with enabled.
+        // Tiers 1-3 are the week-1 values. Tiers 4-11: mass and price from 10 §3.4, size / color are week-2 placeholders.
+        // Skill tree nodes: SkillTreeSeed (12 §6).
 
         public static List<CelestialTier> SeedTiers() => new List<CelestialTier>
         {
@@ -77,42 +76,11 @@ namespace Incremental.EditorTools
             new CelestialTier { tier = 11, requiredMass = 1e5, salePrice = 1e9, sizePx = 140, color = new Color(0.72f, 0.85f, 1f) },
         };
 
-        public static List<UpgradeDef> SeedUpgrades() => new List<UpgradeDef>
-        {
-            Upg(UpgradeIds.SpawnRate, 1, 10, 1.25, 0),
-            Upg(UpgradeIds.PullAccel, 0.20, 10, 1.25, 0),
-            Upg(UpgradeIds.SaleMult, 0.25, 15, 1.3, 0),
-            Upg(UpgradeIds.StaminaMax, 10, 20, 1.3, 0),
-            Upg(UpgradeIds.ThresholdMult, 0.04, 25, 1.35, 10),
-            Upg(UpgradeIds.DustCap, 100, 30, 1.3, 27),
-            Upg(UpgradeIds.DustMass, 1.5, 200, 1.6, 0),
-            Upg(UpgradeIds.GravityRadius, 0.10, 20, 1.3, 20),
-            Upg(UpgradeIds.StaminaDrain, 0.05, 40, 1.35, 10),
-            Upg(UpgradeIds.StartBonus, 50, 25, 1.3, 20),
-        };
-
-        public static List<UnlockDef> SeedUnlocks() => new List<UnlockDef>
-        {
-            new UnlockDef { tier = 2, cost = 50 },
-            new UnlockDef { tier = 3, cost = 400 },
-            new UnlockDef { tier = 4, cost = 2500 },
-            new UnlockDef { tier = 5, cost = 2e4 },
-            new UnlockDef { tier = 6, cost = 1.5e5 },
-            new UnlockDef { tier = 7, cost = 1.2e6 },
-            new UnlockDef { tier = 8, cost = 1e7 },
-            new UnlockDef { tier = 9, cost = 1e8 },
-            new UnlockDef { tier = 10, cost = 1e9 },
-            new UnlockDef { tier = 11, cost = 1e10 },
-        };
-
-        static UpgradeDef Upg(string id, double effect, double baseCost, double growth, int maxLevel) =>
-            new UpgradeDef { id = id, enabled = true, revealAtTier = 1, effectPerLevel = effect, baseCost = baseCost, growth = growth, maxLevel = maxLevel };
-
         /// <summary>
-        /// Adds seed entries that the existing assets lack (tiers by number, upgrades by id, unlocks by tier), keeping
-        /// every existing entry and value untouched. Tiers and unlocks stay sorted by tier. Returns the number added.
+        /// Adds seed entries that the existing assets lack (tiers by number, nodes by id, missing ringCostMult entries as 1),
+        /// keeping every existing entry and value untouched. Tiers stay sorted by tier. Returns the number added.
         /// </summary>
-        public static int AddMissing(CelestialTable c, UpgradeTable u)
+        public static int AddMissing(CelestialTable c, NodeTable n)
         {
             int added = 0;
             foreach (var t in SeedTiers())
@@ -122,23 +90,25 @@ namespace Incremental.EditorTools
                 added++;
             }
             c.tiers.Sort((a, b) => a.tier.CompareTo(b.tier));
-            foreach (var d in SeedUpgrades())
+            foreach (var d in SkillTreeSeed.Nodes())
             {
-                if (u.Get(d.id) != null) continue;
-                u.upgrades.Add(d);
+                if (n.Get(d.id) != null) continue;
+                n.nodes.Add(d);
+                n.Invalidate();
                 added++;
             }
-            foreach (var un in SeedUnlocks())
+            var mult = SkillTreeSeed.RingCostMult();
+            if (n.ringCostMult == null || n.ringCostMult.Length < mult.Length)
             {
-                if (u.GetUnlock(un.tier) != null) continue;
-                u.unlocks.Add(un);
-                added++;
+                int have = n.ringCostMult == null ? 0 : n.ringCostMult.Length;
+                for (int i = 0; i < have; i++) mult[i] = n.ringCostMult[i];
+                n.ringCostMult = mult;
+                added += mult.Length - have;
             }
-            u.unlocks.Sort((a, b) => a.tier.CompareTo(b.tier));
             if (added > 0)
             {
                 EditorUtility.SetDirty(c);
-                EditorUtility.SetDirty(u);
+                EditorUtility.SetDirty(n);
             }
             return added;
         }
@@ -231,7 +201,7 @@ namespace Incremental.EditorTools
             if (root == null) root = rootGo.AddComponent<GameRoot>();
             root.gameParams = gameParams;
             root.celestialTable = AssetDatabase.LoadAssetAtPath<CelestialTable>(CelestialPath);
-            root.upgradeTable = AssetDatabase.LoadAssetAtPath<UpgradeTable>(UpgradePath);
+            root.nodeTable = AssetDatabase.LoadAssetAtPath<NodeTable>(NodePath);
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
             root.circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
             EditorUtility.SetDirty(root);

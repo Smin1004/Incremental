@@ -7,11 +7,15 @@ namespace Incremental
     /// Run bookkeeping as pure functions over MetaState: building the run record, applying a finished run
     /// (currency, best, totals, history) and closing a pending run left behind by a killed game.
     /// Every way a run can end (stamina, quit, crash) goes through <see cref="ApplyRunEnd"/>.
+    /// Only stamina-ended runs are "full" runs: quit and crash runs are recorded and paid, but they get no ratio and
+    /// do not move the ratio base (lastRunIncome) or the best income (12 §10-3).
     /// </summary>
     public static class Session
     {
+        public static bool IsFullRun(string endReason) => endReason == EndReason.Stamina;
+
         public static RunRecord MakeRecord(MetaState meta, int run, double durationSec, double income, int[] tierCounts,
-            List<UpgradeLevel> startLevels, string endReason)
+            List<UpgradeLevel> startLevels, EffectiveStats startStats, string endReason)
         {
             return new RunRecord
             {
@@ -19,19 +23,23 @@ namespace Incremental
                 durationSec = durationSec,
                 income = income,
                 tierCounts = tierCounts != null ? (int[])tierCounts.Clone() : new int[0],
-                ratioVsLast = run > 1 && meta.lastRunIncome > 0 ? income / meta.lastRunIncome : -1.0,
+                ratioVsLast = IsFullRun(endReason) && meta.lastRunIncome > 0 ? income / meta.lastRunIncome : -1.0,
                 startLevels = MetaState.CopyLevels(startLevels),
+                startStats = startStats,
                 unlockedMaxTier = meta.unlockedMaxTier,
                 endReason = endReason,
             };
         }
 
-        /// <summary>Income goes into currency; last / best / totals / history are updated.</summary>
+        /// <summary>Income goes into currency; totals and history are updated; ratio base and best only for full runs.</summary>
         public static void ApplyRunEnd(MetaState meta, RunRecord rec)
         {
             meta.currency += rec.income;
-            meta.lastRunIncome = rec.income;
-            if (rec.income > meta.bestRunIncome) meta.bestRunIncome = rec.income;
+            if (IsFullRun(rec.endReason))
+            {
+                meta.lastRunIncome = rec.income;
+                if (rec.income > meta.bestRunIncome) meta.bestRunIncome = rec.income;
+            }
             meta.totalIncome += rec.income;
             meta.totalPlayTimeSec += rec.durationSec;
             if (rec.run > meta.runCount) meta.runCount = rec.run;
@@ -49,7 +57,8 @@ namespace Incremental
             meta.runHistory.Add(rec);
         }
 
-        public static PendingRun MakePending(int run, double elapsed, double income, int[] tierCounts, List<UpgradeLevel> startLevels)
+        public static PendingRun MakePending(int run, double elapsed, double income, int[] tierCounts,
+            List<UpgradeLevel> startLevels, EffectiveStats startStats)
         {
             return new PendingRun
             {
@@ -59,6 +68,7 @@ namespace Incremental
                 income = income,
                 tierCounts = tierCounts != null ? (int[])tierCounts.Clone() : new int[0],
                 startLevels = MetaState.CopyLevels(startLevels),
+                startStats = startStats,
             };
         }
 
@@ -70,7 +80,7 @@ namespace Incremental
         {
             var p = data.pending;
             if (p == null || !p.active) return null;
-            var rec = MakeRecord(data.meta, p.run, p.elapsed, p.income, p.tierCounts, p.startLevels, endReason);
+            var rec = MakeRecord(data.meta, p.run, p.elapsed, p.income, p.tierCounts, p.startLevels, p.startStats, endReason);
             ApplyRunEnd(data.meta, rec);
             data.pending = new PendingRun();
             return rec;

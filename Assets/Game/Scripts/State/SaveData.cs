@@ -30,6 +30,7 @@ namespace Incremental
         /// <summary>Index = tier - 1.</summary>
         public int[] tierCounts = new int[0];
         public List<UpgradeLevel> startLevels = new List<UpgradeLevel>();
+        public EffectiveStats startStats;
     }
 
     /// <summary>Contents of settings.json. Kept apart from save.json so a save reset leaves settings alone.</summary>
