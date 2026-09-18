@@ -28,6 +28,7 @@ namespace Incremental.Tests
             Assert.AreEqual(0f, c.Get(2).look.spinDegPerSec, "comet does not spin");
             for (int t = 9; t <= 11; t++) Assert.AreEqual(SurfaceType.Star, c.Get(t).look.surface);
             for (int t = 5; t <= 7; t++) Assert.Greater(c.Get(t).look.spinDegPerSec, 0f, "tiers 5-7 spin visibly (14 §9)");
+            Assert.Greater(c.Get(7).look.spotSize, 0f, "bands alone do not show the spin: the gas giant has a storm spot");
         }
 
         [Test]

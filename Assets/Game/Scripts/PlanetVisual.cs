@@ -25,6 +25,7 @@ namespace Incremental
         static readonly int IdSurf2 = Shader.PropertyToID("_Surf2");
         static readonly int IdSurf3 = Shader.PropertyToID("_Surf3");
         static readonly int IdSurf4 = Shader.PropertyToID("_Surf4");
+        static readonly int IdSurf5 = Shader.PropertyToID("_Surf5");
         static readonly int IdMotion = Shader.PropertyToID("_Motion");
         static readonly int IdExtra = Shader.PropertyToID("_Extra");
         static readonly int IdLight = Shader.PropertyToID("_Light");
@@ -109,6 +110,7 @@ namespace Incremental
             mpb.SetVector(IdSurf3, new Vector4(l.irregularity, l.cloudCover, l.cloudSpinMult, l.emission));
             surf4 = new Vector4(l.bandCount, l.turbulence, l.glowSize, l.glowStrength);
             mpb.SetVector(IdSurf4, new Vector4(surf4.x, surf4.y, surf4.z, surf4.w * glowMul));
+            mpb.SetVector(IdSurf5, new Vector4(l.spotSize, l.spotLatitude, 0f, 0f));
             mpb.SetVector(IdMotion, new Vector4(l.spinDegPerSec * Mathf.Deg2Rad, l.axisTiltDeg * Mathf.Deg2Rad,
                 (float)axisPitchDeg * Mathf.Deg2Rad, seed * 2.399f));
             extra = new Vector4(l.tailLength, l.ringInner, l.ringOuter, fade);

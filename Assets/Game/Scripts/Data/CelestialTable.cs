@@ -61,6 +61,9 @@ namespace Incremental
         public float bandCount;
         [Tooltip("Gas: how much the bands are distorted.")]
         public float turbulence;
+        [Tooltip("Gas: storm spot radius (latitude units, 0 = none) and latitude (-1..1), in the accent color. Gives the spin a landmark.")]
+        [Range(0f, 0.5f)] public float spotSize;
+        [Range(-1f, 1f)] public float spotLatitude;
         [Tooltip("Self-lit share 0..1 (brown dwarf). Stars are always fully self-lit.")]
         [Range(0f, 1f)] public float emission;
 
@@ -104,7 +107,8 @@ namespace Incremental
                    patchSoftness == o.patchSoftness && craterDensity == o.craterDensity && craterSize == o.craterSize &&
                    craterScale == o.craterScale && polarCap == o.polarCap && irregularity == o.irregularity &&
                    cloudCover == o.cloudCover && cloudSpinMult == o.cloudSpinMult && bandCount == o.bandCount &&
-                   turbulence == o.turbulence && emission == o.emission && spinDegPerSec == o.spinDegPerSec &&
+                   turbulence == o.turbulence && spotSize == o.spotSize && spotLatitude == o.spotLatitude &&
+                   emission == o.emission && spinDegPerSec == o.spinDegPerSec &&
                    axisTiltDeg == o.axisTiltDeg && glowSize == o.glowSize && glowStrength == o.glowStrength &&
                    tailLength == o.tailLength && ringInner == o.ringInner && ringOuter == o.ringOuter && ringColor == o.ringColor;
         }

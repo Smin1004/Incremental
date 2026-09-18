@@ -98,13 +98,13 @@ namespace Incremental.EditorTools
             glowSize = 0.14f, glowStrength = 0.9f,
         };
 
-        // Gas: ochre bands, ring.
+        // Gas: ochre bands, a storm spot, ring.
         static PlanetLook GasGiant() => new PlanetLook
         {
             surface = SurfaceType.Gas,
             baseColor = new Color(0.94f, 0.84f, 0.64f), darkColor = new Color(0.72f, 0.47f, 0.24f),
-            glowColor = new Color(1f, 0.9f, 0.7f),
-            noiseScale = 2f, bandCount = 7f, turbulence = 0.55f,
+            accentColor = new Color(0.8f, 0.36f, 0.22f), glowColor = new Color(1f, 0.9f, 0.7f),
+            noiseScale = 2f, bandCount = 7f, turbulence = 0.9f, spotSize = 0.24f, spotLatitude = 0.3f,
             spinDegPerSec = 40f, axisTiltDeg = 12f,
             ringInner = 1.35f, ringOuter = 2.2f, ringColor = new Color(0.9f, 0.82f, 0.64f, 0.85f),
         };

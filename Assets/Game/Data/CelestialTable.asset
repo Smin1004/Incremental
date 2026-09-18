@@ -36,6 +36,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 45
       axisTiltDeg: 25
@@ -68,6 +70,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 0
       axisTiltDeg: 0
@@ -100,6 +104,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 28
       axisTiltDeg: -15
@@ -132,6 +138,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 18
       axisTiltDeg: 8
@@ -164,6 +172,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 32
       axisTiltDeg: 25
@@ -196,6 +206,8 @@ MonoBehaviour:
       cloudSpinMult: 1.6
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 30
       axisTiltDeg: 23
@@ -214,7 +226,7 @@ MonoBehaviour:
       surface: 2
       baseColor: {r: 0.94, g: 0.84, b: 0.64, a: 1}
       darkColor: {r: 0.72, g: 0.47, b: 0.24, a: 1}
-      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      accentColor: {r: 0.8, g: 0.36, b: 0.22, a: 1}
       glowColor: {r: 1, g: 0.9, b: 0.7, a: 1}
       noiseScale: 2
       patchLevel: 0.5
@@ -227,7 +239,9 @@ MonoBehaviour:
       cloudCover: 0
       cloudSpinMult: 1.5
       bandCount: 7
-      turbulence: 0.55
+      turbulence: 0.9
+      spotSize: 0.24
+      spotLatitude: 0.3
       emission: 0
       spinDegPerSec: 40
       axisTiltDeg: 12
@@ -260,6 +274,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 5
       turbulence: 0.8
+      spotSize: 0
+      spotLatitude: 0
       emission: 0.35
       spinDegPerSec: 26
       axisTiltDeg: -8
@@ -292,6 +308,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 8
       axisTiltDeg: 0
@@ -324,6 +342,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 6
       axisTiltDeg: 0
@@ -356,6 +376,8 @@ MonoBehaviour:
       cloudSpinMult: 1.5
       bandCount: 0
       turbulence: 0
+      spotSize: 0
+      spotLatitude: 0
       emission: 0
       spinDegPerSec: 5
       axisTiltDeg: 0

@@ -87,6 +87,8 @@ namespace Incremental
             }
             else if (l.ringOuter < 0) r.Errors.Add(where + ": look.ringOuter must be >= 0.");
             if (l.surface == SurfaceType.Gas && !(l.bandCount > 0)) r.Errors.Add(where + ": Gas look needs bandCount > 0.");
+            if (l.spotSize < 0 || l.spotSize > 0.5f || l.spotLatitude < -1 || l.spotLatitude > 1)
+                r.Errors.Add(where + ": look.spotSize must be within 0..0.5 and spotLatitude within -1..1.");
             if (l.surface == SurfaceType.Star && !(l.glowStrength > 0 && l.glowSize > 0)) r.Warnings.Add(where + ": Star look without a corona.");
             if (l.surface == SurfaceType.Terran && l.cloudCover > 0 && l.cloudSpinMult == 0) r.Warnings.Add(where + ": clouds do not move (cloudSpinMult 0).");
         }

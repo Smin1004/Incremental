@@ -17,6 +17,7 @@ Shader "Incremental/Planet"
         _Surf2 ("craterDensity, craterSize, craterScale, polarCap", Vector) = (0, 0.35, 3, 0)
         _Surf3 ("irregularity, cloudCover, cloudSpinMult, emission", Vector) = (0, 0, 1.5, 0)
         _Surf4 ("bandCount, turbulence, glowSize, glowStrength", Vector) = (0, 0, 0, 0)
+        _Surf5 ("spotSize, spotLatitude", Vector) = (0, 0, 0, 0)
         _Motion ("spin rad/s, axis roll rad, axis pitch rad, spin phase rad", Vector) = (0, 0, 0.35, 0)
         _Extra ("tailLength, ringInner, ringOuter, fade", Vector) = (0, 0, 0, 1)
         _Light ("light: xy world point (w 0) or direction (w 1)", Vector) = (1, 1, 0, 1)
@@ -50,6 +51,7 @@ Shader "Incremental/Planet"
                 float4 _Surf2;
                 float4 _Surf3;
                 float4 _Surf4;
+                float4 _Surf5;
                 float4 _Motion;
                 float4 _Extra;
                 float4 _Light;
@@ -202,12 +204,23 @@ Shader "Incremental/Planet"
                 {
                     if (isGas)
                     {
-                        float turb = Fbm4(P * float3(1.0, 2.6, 1.0));
+                        float turb = Fbm4(P * float3(1.4, 2.6, 1.4));
                         float bands = _Surf4.x;
                         float b1 = sin((q.y * bands + (turb - 0.5) * _Surf4.y * 2.2) * 3.14159);
                         float b2 = sin((q.y * bands * 3.1 + (turb - 0.5) * _Surf4.y * 3.5 + seed) * 3.14159);
                         float k = saturate(0.5 + 0.5 * b1) * 0.78 + (0.5 + 0.5 * b2) * 0.22 * lod + 0.11 * (1.0 - lod);
                         albedo = lerp(_DarkColor.rgb, _BaseColor.rgb, k);
+
+                        // Storm spot: an oval at a fixed latitude and a seed longitude, so the spin has a landmark.
+                        if (_Surf5.x > 0.0)
+                        {
+                            float lon = atan2(q.z, q.x);
+                            float dl = lon - frac(seed * 0.37) * 6.28318;
+                            dl = dl - 6.28318 * floor((dl + 3.14159) / 6.28318);
+                            float e = pow(dl / (_Surf5.x * 2.2), 2.0) + pow((q.y - _Surf5.y) / _Surf5.x, 2.0);
+                            float spot = smoothstep(1.0, 0.55, e + (turb - 0.5) * 0.4);
+                            albedo = lerp(albedo, _AccentColor.rgb * (0.85 + 0.3 * (1.0 - e)), spot);
+                        }
                     }
                     else
                     {
