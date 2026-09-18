@@ -54,6 +54,7 @@ namespace Incremental
         public HudView Hud { get; private set; }
         public CursorView Cursor { get; private set; }
         public ResultView Result { get; private set; }
+        public SolarSystemView Solar { get; private set; }
         public TreeView Tree { get; private set; }
         public DebugTools Tools { get; private set; }
         public AutoplayBot Bot { get; private set; }
@@ -106,13 +107,13 @@ namespace Incremental
             var poolGo = new GameObject("PlanetPool");
             poolGo.transform.SetParent(transform, false);
             Planets = poolGo.AddComponent<PlanetPool>();
-            Planets.Init(gameParams, circleSprite, unlitMaterial, planetPoolSize);
+            Planets.Init(gameParams, circleSprite, unlitMaterial, planetPoolSize, Cam);
 
             var hudGo = new GameObject("HudView");
             hudGo.transform.SetParent(transform, false);
             Hud = hudGo.AddComponent<HudView>();
             Hud.Build();
-            Hud.SetCountLifetime(gameParams.planetLifetimeSec);
+            Hud.SetCountLifetime(gameParams.planetPopDurationSec + gameParams.planetHoldSec + gameParams.planetDepartSec * 0.5);
             UIBuilder.EnsureEventSystem(transform);
 
             var cursorGo = new GameObject("CursorView");
@@ -124,6 +125,11 @@ namespace Incremental
             resultGo.transform.SetParent(transform, false);
             Result = resultGo.AddComponent<ResultView>();
             Result.Init(this);
+
+            var solarGo = new GameObject("SolarSystem");
+            solarGo.transform.SetParent(transform, false);
+            Solar = solarGo.AddComponent<SolarSystemView>();
+            Solar.Init(this);
 
             var treeGo = new GameObject("TreeView");
             treeGo.transform.SetParent(transform, false);
@@ -231,6 +237,7 @@ namespace Incremental
         {
             // Between runs the result screen and the tree show their own numbers (Space is handled there too).
             Hud.SetRunHudVisible(Phase == GamePhase.Run);
+            DustRenderer.SetVisible(Phase == GamePhase.Run);
             Hud.SetCurrency(Meta.currency, Meta.runCount);
             if (Run != null)
             {

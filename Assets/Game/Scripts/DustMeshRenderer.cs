@@ -28,6 +28,14 @@ namespace Incremental
             mr.lightProbeUsage = LightProbeUsage.Off;
             mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
             mr.sortingOrder = 0;
+            UIBuilder.UseWhiteTexture(mr);
+        }
+
+        /// <summary>The dust is drawn during runs only; between runs the solar system and the tree take the screen.</summary>
+        public void SetVisible(bool visible)
+        {
+            var mr = GetComponent<MeshRenderer>();
+            if (mr.enabled != visible) mr.enabled = visible;
         }
 
         void LateUpdate()

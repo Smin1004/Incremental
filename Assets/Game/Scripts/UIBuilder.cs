@@ -87,6 +87,19 @@ namespace Incremental
             return shadowSprite;
         }
 
+        /// <summary>
+        /// Binds a white _MainTex to a renderer that shares the sprite material but has no sprite of its own (dust mesh,
+        /// line renderers). Without it the batcher can reuse the texture of the sprite drawn just before (e.g. a soft glow
+        /// whose corner is transparent), which makes the dust invisible.
+        /// </summary>
+        public static void UseWhiteTexture(Renderer r)
+        {
+            var mpb = new MaterialPropertyBlock();
+            r.GetPropertyBlock(mpb);
+            mpb.SetTexture("_MainTex", Texture2D.whiteTexture);
+            r.SetPropertyBlock(mpb);
+        }
+
         /// <summary>Stretches a solid Image between two points of its parent (a line segment of the given width).</summary>
         public static void PlaceLine(RectTransform rt, Vector2 a, Vector2 b, float width)
         {

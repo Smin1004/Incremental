@@ -35,6 +35,7 @@ namespace Incremental
             ring.widthMultiplier = (float)(2.0 / p.pixelsPerUnit);
             ring.startColor = ring.endColor = new Color(1f, 1f, 1f, 0.35f);
             ring.sortingOrder = 5;
+            UIBuilder.UseWhiteTexture(ring);
             ring.positionCount = RingSegments;
             SetRingRadius(p.gravityRadius);
 

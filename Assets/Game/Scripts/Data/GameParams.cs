@@ -43,7 +43,6 @@ namespace Incremental
         public double driftRelaxRate = 2.0;
         [Tooltip("Outward speed (px/s) of dust scattered when released below tier 1.")]
         public double scatterSpeedPx = 200;
-        public double planetLifetimeSec = 1.5;
         [Tooltip("Extra scale at planet spawn (0.5 = 150%), multiplied by effectIntensity.")]
         public double planetPopScale = 0.5;
         public double planetPopDurationSec = 0.15;
@@ -91,6 +90,12 @@ namespace Incremental
         [Tooltip("Entry animation and income count-up, seconds (13 §5).")]
         public double resultEntrySec = 1.2;
         public Color protostarColor = new Color(1f, 0.55f, 0.2f);
+        [Tooltip("Central star core / glow size (px) by stage: protostar, red dwarf, sun-like, blue giant.")]
+        public float[] starCorePx = { 30f, 38f, 52f, 72f };
+        public float[] starGlowPx = { 170f, 200f, 260f, 340f };
+        [Tooltip("Ignition flash when tier 9 is made for the first time: seconds, and size relative to the glow.")]
+        public double ignitionSec = 0.9;
+        public double ignitionScale = 4;
 
         [Header("Skill tree view (12 §5, §9)")]
         [Tooltip("Ring k radius = treeRingR0Px + k × treeRingStepPx (reference 1080p).")]

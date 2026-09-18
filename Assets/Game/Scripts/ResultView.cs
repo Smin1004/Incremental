@@ -88,6 +88,7 @@ namespace Incremental
             entryAge = 0f;
             entryDone = rec == null;
             canvas.gameObject.SetActive(true);
+            if (root.Solar != null) root.Solar.Show(rec);
             Refresh();
         }
 
