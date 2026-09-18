@@ -160,7 +160,8 @@ namespace Incremental
 
         void Update()
         {
-            if (!IsVisible) return;
+            // The debug gallery hides this canvas without deactivating it; keys must not reach a hidden screen.
+            if (!IsVisible || (root.Gallery != null && root.Gallery.IsOpen)) return;
 
             var kb = Keyboard.current;
             if (kb != null && kb.spaceKey.wasPressedThisFrame && Time.frameCount != openedFrame)
@@ -431,7 +432,7 @@ namespace Incremental
                     var s = Stats.Compute(p, t, m);
                     double price = tier != null ? Stats.SaleIncome(tier, s) : 0;
                     double mass = tier != null ? Stats.Threshold(tier, s) : 0;
-                    sb.Append(string.Format(UIStrings.GateEffect, n.tier, Fmt.Num(price), Fmt.Num(mass, Rounding.Up)));
+                    sb.Append(string.Format(UIStrings.GateEffect, n.tier, Fmt.Price(price), Fmt.Num(mass, Rounding.Up)));
                 }
                 else
                 {

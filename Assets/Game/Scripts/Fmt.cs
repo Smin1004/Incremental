@@ -97,6 +97,10 @@ namespace Incremental
         public static string Mult(double v) => "×" + (v < 999.995 ? v.ToString("F2", Inv) : Num(v));
         public static string Sec(double v) => v.ToString("F1", Inv);
         public static string Csv(double v) => v.ToString("R", Inv);
+        /// <summary>Sale price: one decimal below 100 when it is not an integer (7.5), the number notation otherwise (14 §8).</summary>
+        public static string Price(double v) =>
+            v < 100 && Math.Abs(v - Math.Round(v)) > 1e-9 ? v.ToString("0.0", Inv) : Num(v);
+
         /// <summary>Up to two decimals, no trailing zeros (upgrade effect numbers: 1, 1.5, 20).</summary>
         public static string Short(double v) => v.ToString("0.##", Inv);
 

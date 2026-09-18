@@ -130,8 +130,9 @@ namespace Incremental
         public void SetCurrency(double currency, int run) =>
             currencyText.text = string.Format(UIStrings.CurrencyAndRun, Fmt.Num(currency), run);
 
+        /// <summary>Run income as it will be paid: rounded up once, the same value the result screen shows (14 §8).</summary>
         public void SetIncome(double income) =>
-            incomeText.text = string.Format(UIStrings.RunIncome, Fmt.Num(income));
+            incomeText.text = string.Format(UIStrings.RunIncome, Fmt.Num(Stats.RunIncome(income)));
 
         public void SetStamina(double current, double max)
         {

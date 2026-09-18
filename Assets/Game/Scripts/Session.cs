@@ -14,9 +14,14 @@ namespace Incremental
     {
         public static bool IsFullRun(string endReason) => endReason == EndReason.Stamina;
 
+        /// <summary>
+        /// Builds the record of a finished run. <paramref name="income"/> is the raw run income (planet incomes keep their
+        /// fractions); the record holds it rounded up once, which is what the currency, the ratio and the log get (14 §8).
+        /// </summary>
         public static RunRecord MakeRecord(MetaState meta, int run, double durationSec, double income, int[] tierCounts,
             List<UpgradeLevel> startLevels, EffectiveStats startStats, string endReason)
         {
+            income = Stats.RunIncome(income);
             return new RunRecord
             {
                 run = run,

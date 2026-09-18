@@ -381,7 +381,7 @@ namespace Incremental
         /// <summary>
         /// Creates and sells planets of this tier from the current mass. At the highest unlocked tier the mass makes
         /// floor(mass / threshold) planets, so dust mass beyond one threshold still pays (12 §10-2); below it, one planet.
-        /// Each planet pays ceil(sale price × sale multiplier), so currency stays an integer (12 §10-9).
+        /// Each planet pays sale price × sale multiplier with fractions; the run total is rounded up once at the end (14 §8).
         /// </summary>
         void CreatePlanet(CelestialTier tier)
         {

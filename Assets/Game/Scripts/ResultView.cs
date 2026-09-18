@@ -113,7 +113,8 @@ namespace Incremental
 
         void Update()
         {
-            if (!IsVisible) return;
+            // The debug gallery hides this canvas without deactivating it; keys must not reach a hidden screen.
+            if (!IsVisible || (root.Gallery != null && root.Gallery.IsOpen)) return;
             var kb = Keyboard.current;
             if (kb != null && kb.spaceKey.wasPressedThisFrame)
             {

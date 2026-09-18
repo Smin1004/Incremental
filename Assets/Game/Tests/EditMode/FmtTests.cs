@@ -91,6 +91,27 @@ namespace Incremental.Tests
         }
 
         [Test]
+        public void Price_OneDecimalBelow100WhenFractional()
+        {
+            // 14 §8: the gate tooltip's sale price.
+            Assert.AreEqual("7.5", Fmt.Price(7.5));
+            Assert.AreEqual("6", Fmt.Price(6));
+            Assert.AreEqual("1.3", Fmt.Price(1.25));
+            Assert.AreEqual("50", Fmt.Price(50.000000000001));
+            var saved = Fmt.Mode;
+            try
+            {
+                Fmt.Mode = Notation.Letters;
+                Assert.AreEqual("312", Fmt.Price(312.5), "100 and above: the number notation");
+                Assert.AreEqual("1.25K", Fmt.Price(1250));
+            }
+            finally
+            {
+                Fmt.Mode = saved;
+            }
+        }
+
+        [Test]
         public void ModeField_SelectsNotation()
         {
             var saved = Fmt.Mode;

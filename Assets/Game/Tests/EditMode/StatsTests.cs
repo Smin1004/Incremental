@@ -146,13 +146,19 @@ namespace Incremental.Tests
         }
 
         [Test]
-        public void SaleIncome_RoundsUpToInteger()
+        public void SaleIncome_KeepsFractions_RunIncomeRoundsUpOnce()
         {
+            // 14 §8: per planet no rounding; the run total is rounded up once.
             var tier = new CelestialTier { tier = 2, salePrice = 6 };
             Assert.AreEqual(6, Stats.SaleIncome(tier, With()), Eps);
-            Assert.AreEqual(8, Stats.SaleIncome(tier, With(("e_sale", 1))), Eps); // 6 × 1.25 = 7.5
-            var noisy = new CelestialTier { tier = 4, salePrice = 250 };
-            Assert.AreEqual(275, Stats.SaleIncome(noisy, new EffectiveStats { saleMult = 1.1 }), Eps); // 275.00000000000006
+            Assert.AreEqual(7.5, Stats.SaleIncome(tier, With(("e_sale", 1))), Eps); // 6 × 1.25
+            var asteroid = new CelestialTier { tier = 1, salePrice = 1 };
+            double run = 0;
+            for (int i = 0; i < 19; i++) run += Stats.SaleIncome(asteroid, With(("e_sale", 1)));
+            Assert.AreEqual(23.75, run, Eps);
+            Assert.AreEqual(24, Stats.RunIncome(run), Eps, "+25% on 19 asteroids is 24, not 38");
+            Assert.AreEqual(275, Stats.RunIncome(250 * 1.1), Eps); // 275.00000000000006 snaps
+            Assert.AreEqual(0, Stats.RunIncome(0), Eps);
         }
     }
 }

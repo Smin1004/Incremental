@@ -33,8 +33,8 @@ namespace Incremental
         [Tooltip("Stop the bot after this many completed runs (0 = keep going).")]
         public int stopAfterRuns = 0;
         [Tooltip("Stop: buy the next gate first and buy nothing else once currency + last run income would pay for it (12 §3). " +
-                 "KeepReserve: while saving, still spend what exceeds gate − last run income.")]
-        public GateSaving gateSaving = GateSaving.Stop;
+                 "KeepReserve (default, 14 §8): while saving, still spend what exceeds gate − last run income.")]
+        public GateSaving gateSaving = GateSaving.KeepReserve;
 
         GameRoot root;
         Vector2 cursor;

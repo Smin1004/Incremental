@@ -44,7 +44,8 @@ namespace Incremental.EditorTools
 
         /// <summary>
         /// Per-ring cost multiplier (index = ring), the only knob turned to pace rings (12 §7). Rings without a
-        /// measurement stay 1. Values and the bot runs behind them: Docs/Reports/SkillTree_Step1.md.
+        /// measurement stay 1. Values and the bot runs behind them: Docs/Reports/SkillTree_Step1.md ([1], [2]) and
+        /// Docs/Reports/Week4_Visuals.md ([3], re-measured after the run-level rounding of 14 §8).
         /// </summary>
         public static double[] RingCostMult()
         {
@@ -52,6 +53,7 @@ namespace Incremental.EditorTools
             for (int i = 0; i < m.Length; i++) m[i] = 1;
             m[1] = 1.5;
             m[2] = 0.75;
+            m[3] = 0.8;
             return m;
         }
 

@@ -278,6 +278,20 @@ namespace Incremental.Tests
             Assert.AreEqual(4, meta.runHistory.Count, "every run is recorded");
         }
 
+        [Test]
+        public void RunRecord_RoundsTheRunIncomeUpOnce()
+        {
+            var meta = new MetaState { currency = 5, lastRunIncome = 10 };
+            var rec = Session.MakeRecord(meta, 2, 30, 23.75, new int[1], null, default, EndReason.Stamina);
+            Assert.AreEqual(24, rec.income, 1e-9);
+            Assert.AreEqual(2.4, rec.ratioVsLast, 1e-9, "the ratio uses the rounded income");
+            Session.ApplyRunEnd(meta, rec);
+            Assert.AreEqual(29, meta.currency, 1e-9, "currency stays an integer");
+            var data = new SaveData { meta = meta, pending = Session.MakePending(3, 12, 6.25, new int[1], null, default) };
+            var crashed = Session.FinalizePending(data, EndReason.Crash);
+            Assert.AreEqual(7, crashed.income, 1e-9, "a killed run is rounded the same way");
+        }
+
         static RunRecord Run(MetaState meta, int run, double income, string reason)
         {
             var rec = Session.MakeRecord(meta, run, 30, income, new int[1], null, default, reason);

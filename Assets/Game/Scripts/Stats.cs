@@ -89,8 +89,14 @@ namespace Incremental
 
         public static double Threshold(CelestialTier tier, in EffectiveStats s) => tier.requiredMass * s.thresholdMult;
 
-        /// <summary>Income of one planet of this tier: sale price × sale multiplier, rounded up, so currency stays an integer (12 §10-9).</summary>
-        public static double SaleIncome(CelestialTier tier, in EffectiveStats s) => CeilSnap(tier.salePrice * s.saleMult);
+        /// <summary>
+        /// Income of one planet of this tier: sale price × sale multiplier, fractions kept. The run total is rounded up once
+        /// when the run ends (<see cref="RunIncome"/>), so "+25%" stays +25% at tier 1 (14 §8, replaces 12 §10-9).
+        /// </summary>
+        public static double SaleIncome(CelestialTier tier, in EffectiveStats s) => tier.salePrice * s.saleMult;
+
+        /// <summary>Run income as paid and shown: the raw sum rounded up once, so currency stays an integer (14 §8).</summary>
+        public static double RunIncome(double rawIncome) => CeilSnap(rawIncome);
 
         /// <summary>Raw cost of the next level: baseCost × ringCostMult[minTier] × growth ^ level (12 §2).</summary>
         public static double Cost(NodeTable t, NodeDef n, int level) =>
