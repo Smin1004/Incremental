@@ -82,6 +82,76 @@ namespace Incremental.Tests
             Assert.IsTrue(r.Warnings.Exists(w => w.Contains("tier 3 sizePx")), Joined(r.Warnings));
         }
 
+        // ---------------- forming body (14 §4) ----------------
+
+        [Test]
+        public void FormingSize_GrowsFromCurrentToNextTierSize()
+        {
+            // Tier 3 (threshold 60, 34 px) toward tier 4 (threshold 150, 42 px).
+            Assert.AreEqual(34, CursorView.FormingSizePx(60, 60, 34, 150, 42), 1e-9);
+            Assert.AreEqual(38, CursorView.FormingSizePx(105, 60, 34, 150, 42), 1e-9);
+            Assert.AreEqual(42, CursorView.FormingSizePx(150, 60, 34, 150, 42), 1e-9);
+            Assert.AreEqual(42, CursorView.FormingSizePx(400, 60, 34, 150, 42), 1e-9, "clamped at the next size");
+            // Below tier 1: the clump grows from its min to its max size up to the tier 1 threshold.
+            Assert.AreEqual(6, CursorView.FormingSizePx(0, 0, 6, 10, 16), 1e-9);
+            Assert.AreEqual(11, CursorView.FormingSizePx(5, 0, 6, 10, 16), 1e-9);
+            // No next tier (top unlocked): the size stays.
+            Assert.AreEqual(50, CursorView.FormingSizePx(999, 400, 50, 400, 60), 1e-9);
+        }
+
+        [Test]
+        public void ProjectParams_ClumpIsSmallerThanTier1()
+        {
+            var p = AssetDatabase.LoadAssetAtPath<GameParams>("Assets/Game/Data/GameParams.asset");
+            var c = AssetDatabase.LoadAssetAtPath<CelestialTable>("Assets/Game/Data/CelestialTable.asset");
+            Assert.Less(p.formingClumpMaxPx, c.Get(1).sizePx, "tier 1 pops out of the clump");
+            Assert.AreEqual(SurfaceType.Rock, p.formingClumpLook.surface);
+        }
+
+        // ---------------- dust (14 §5) ----------------
+
+        [Test]
+        public void DustVariation_DoesNotChangeTheSimulation()
+        {
+            // Two fields with the same seed must place and move dust identically; the render-only size and brightness
+            // come from a separate RNG, so they are allowed to differ.
+            var p = TestData.Params();
+            var s = Stats.Compute(p, TestData.Nodes(), new MetaState());
+            var area = new Rect(-9.6f, -5.4f, 19.2f, 10.8f);
+            var go1 = new GameObject("a");
+            var go2 = new GameObject("b");
+            try
+            {
+                var a = go1.AddComponent<DustField>();
+                var b = go2.AddComponent<DustField>();
+                a.Init(p);
+                b.Init(p);
+                a.Reseed(5);
+                b.Reseed(5);
+                a.Reset(50, area, Vector2.zero, s);
+                b.Reset(50, area, Vector2.zero, s);
+                for (int i = 0; i < 30; i++)
+                {
+                    a.Tick(0.02, area, Vector2.zero, true, s);
+                    b.Tick(0.02, area, Vector2.zero, true, s);
+                }
+                Assert.AreEqual(a.Count, b.Count);
+                for (int i = 0; i < a.Count; i++)
+                {
+                    Assert.AreEqual(a.Items[i].pos, b.Items[i].pos);
+                    Assert.AreEqual(a.Items[i].tint, b.Items[i].tint);
+                    Assert.That(a.Items[i].size, Is.InRange(1f - (float)p.dustSizeJitter, 1f + (float)p.dustSizeJitter));
+                    Assert.That(a.Items[i].bright, Is.InRange(1f - (float)p.dustBrightJitter, 1f + (float)p.dustBrightJitter));
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(go1);
+                Object.DestroyImmediate(go2);
+                Object.DestroyImmediate(p);
+            }
+        }
+
         [Test]
         public void Detects_BadParams()
         {

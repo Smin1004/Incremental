@@ -3,38 +3,54 @@ using UnityEngine.Rendering;
 
 namespace Incremental
 {
-    /// <summary>Draws every dust as one quad in a single dynamic mesh (vertex colors). Render only; rebuilt each frame.</summary>
+    /// <summary>
+    /// Draws every dust as one quad in a single dynamic mesh, rebuilt each frame (14 §5): a soft additive glowing point
+    /// (Incremental/Dust), per-dust size and brightness variation, stretched along the velocity when fast (up to
+    /// dustStretchMax), brighter inside the gravity radius while holding. Colors come from the background palette.
+    /// Render only.
+    /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class DustMeshRenderer : MonoBehaviour
     {
+        static readonly int IdCore = Shader.PropertyToID("_Core");
+        static readonly int IdHaloAlpha = Shader.PropertyToID("_HaloAlpha");
+        static readonly int IdStreakDim = Shader.PropertyToID("_StreakDim");
+
+        GameRoot root;
         DustField field;
         GameParams p;
         Mesh mesh;
+        MeshRenderer mr;
         Vector3[] verts = new Vector3[0];
+        Vector3[] uvs = new Vector3[0];
         Color32[] cols = new Color32[0];
         int[] tris = new int[0];
 
-        public void Init(DustField dustField, GameParams gameParams, Material material)
+        public void Init(GameRoot gameRoot, DustField dustField, Material material)
         {
+            root = gameRoot;
             field = dustField;
-            p = gameParams;
+            p = root.gameParams;
             mesh = new Mesh { name = "DustMesh", indexFormat = IndexFormat.UInt32 };
             mesh.MarkDynamic();
             GetComponent<MeshFilter>().sharedMesh = mesh;
-            var mr = GetComponent<MeshRenderer>();
+            mr = GetComponent<MeshRenderer>();
             if (material != null) mr.sharedMaterial = material;
             mr.shadowCastingMode = ShadowCastingMode.Off;
             mr.receiveShadows = false;
             mr.lightProbeUsage = LightProbeUsage.Off;
             mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
             mr.sortingOrder = 0;
-            UIBuilder.UseWhiteTexture(mr);
+            var mpb = new MaterialPropertyBlock();
+            mpb.SetFloat(IdCore, (float)(p.dustCorePx / System.Math.Max(p.dustHaloPx, 1e-3)));
+            mpb.SetFloat(IdHaloAlpha, (float)p.dustHaloAlpha);
+            mpb.SetFloat(IdStreakDim, (float)p.dustStreakDim);
+            mr.SetPropertyBlock(mpb);
         }
 
         /// <summary>The dust is drawn during runs only; between runs the solar system and the tree take the screen.</summary>
         public void SetVisible(bool visible)
         {
-            var mr = GetComponent<MeshRenderer>();
             if (mr.enabled != visible) mr.enabled = visible;
         }
 
@@ -49,23 +65,58 @@ namespace Incremental
             }
             EnsureCapacity(n);
 
-            float h = (float)(p.dustSizePx / p.pixelsPerUnit) * 0.5f;
+            float ppu = (float)p.pixelsPerUnit;
+            float halo = (float)(p.dustHaloPx / ppu) * 0.5f;
+            float drift = (float)(p.driftSpeed / ppu);
+            float full = Mathf.Max(drift + 1e-3f, (float)(p.dustStretchFullSpeedPx / ppu));
+            float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
+            float brighten = (float)p.dustGravityBrighten;
+            bool holding = root.Phase == GamePhase.Run && root.Run != null && root.Run.holding;
+            Vector2 cursor = root.CursorWorld;
+            float gravR = (float)(root.Effective.gravityRadius / ppu);
+            float gravR2 = gravR * gravR;
+            Color colA = p.dustColorA;
+            Color colB = p.dustColorB;
+
             var items = field.Items;
             for (int i = 0; i < n; i++)
             {
-                Vector2 c = items[i].pos;
+                ref Dust d = ref items[i];
+                Vector2 c = d.pos;
+                float speed = d.vel.magnitude;
+                Vector2 axis = speed > 1e-5f ? d.vel / speed : new Vector2(1f, 0f);
+                float s = 1f + (stretchMax - 1f) * Mathf.Clamp01((speed - drift) / (full - drift));
+                float h = halo * d.size;
+                Vector2 along = axis * (h * s);
+                Vector2 across = new Vector2(-axis.y, axis.x) * h;
+
                 int v = i * 4;
-                verts[v] = new Vector3(c.x - h, c.y - h, 0f);
-                verts[v + 1] = new Vector3(c.x - h, c.y + h, 0f);
-                verts[v + 2] = new Vector3(c.x + h, c.y + h, 0f);
-                verts[v + 3] = new Vector3(c.x + h, c.y - h, 0f);
-                Color32 col = items[i].color;
-                cols[v] = col; cols[v + 1] = col; cols[v + 2] = col; cols[v + 3] = col;
+                verts[v] = c - along - across;
+                verts[v + 1] = c - along + across;
+                verts[v + 2] = c + along + across;
+                verts[v + 3] = c + along - across;
+                uvs[v] = new Vector3(-s, -1f, s);
+                uvs[v + 1] = new Vector3(-s, 1f, s);
+                uvs[v + 2] = new Vector3(s, 1f, s);
+                uvs[v + 3] = new Vector3(s, -1f, s);
+
+                float b = d.bright;
+                if (holding)
+                {
+                    float dist2 = (c - cursor).sqrMagnitude;
+                    if (dist2 < gravR2) b *= 1f + brighten * (1f - Mathf.Sqrt(dist2) / gravR);
+                }
+                Color col = Color.Lerp(colA, colB, d.tint);
+                // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
+                float k = Mathf.Min(b, 2f) * 0.5f;
+                Color32 c32 = new Color(col.r * k, col.g * k, col.b * k, 1f);
+                cols[v] = c32; cols[v + 1] = c32; cols[v + 2] = c32; cols[v + 3] = c32;
             }
 
             const MeshUpdateFlags flags = MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontResetBoneBounds;
             mesh.Clear(true);
             mesh.SetVertices(verts, 0, n * 4, flags);
+            mesh.SetUVs(0, uvs, 0, n * 4, flags);
             mesh.SetColors(cols, 0, n * 4, flags);
             mesh.SetIndices(tris, 0, n * 6, MeshTopology.Triangles, 0, false);
             Rect a = field.Area;
@@ -78,6 +129,7 @@ namespace Incremental
             int cap = Mathf.Max(256, verts.Length / 4);
             while (cap < n) cap *= 2;
             verts = new Vector3[cap * 4];
+            uvs = new Vector3[cap * 4];
             cols = new Color32[cap * 4];
             tris = new int[cap * 6];
             for (int i = 0; i < cap; i++)

@@ -36,7 +36,6 @@ namespace Incremental
         public double pixelsPerUnit = 100;
         [Tooltip("0..1. Every flash / shake / pop is multiplied by this.")]
         public double effectIntensity = 1;
-        public double dustSizePx = 3;
         [Tooltip("Max random heading change of drifting dust, radians per second.")]
         public double driftNoise = 2.0;
         [Tooltip("How fast dust speed relaxes back to driftSpeed after being pulled, 1/s.")]
@@ -76,6 +75,47 @@ namespace Incremental
         public double planetCraterRelief = 0.6;
         [Tooltip("Spin axis tilt toward the viewer, degrees (rings show as ellipses, poles are visible).")]
         public double planetAxisPitchDeg = 20;
+
+        [Header("Forming body (14 §4)")]
+        [Tooltip("Look below tier 1: a dark clump of dust.")]
+        public PlanetLook formingClumpLook = new PlanetLook
+        {
+            surface = SurfaceType.Rock,
+            baseColor = new Color(0.36f, 0.34f, 0.33f), darkColor = new Color(0.16f, 0.15f, 0.15f),
+            glowColor = new Color(0.7f, 0.75f, 0.85f),
+            noiseScale = 4f, patchLevel = 0.5f, patchSoftness = 0.3f,
+            irregularity = 0.42f,
+            spinDegPerSec = 70f, axisTiltDeg = 30f,
+        };
+        [Tooltip("Clump diameter at zero mass and at the tier 1 threshold, px.")]
+        public double formingClumpMinPx = 6;
+        public double formingClumpMaxPx = 16;
+        [Tooltip("How fast the drawn size follows the mass, 1/s (smooths the per-dust steps).")]
+        public double formingSizeLerpRate = 12;
+        [Tooltip("Pop when a threshold is crossed: extra scale (× effectIntensity) and duration.")]
+        public double formingPopScale = 0.35;
+        public double formingPopSec = 0.2;
+        [Tooltip("Mass gauge: a thin ring this far outside the body, px; width and alphas.")]
+        public double gaugeGapPx = 8;
+        public double gaugeWidthPx = 3;
+        public double gaugeBgAlpha = 0.18;
+        public double gaugeFillAlpha = 0.8;
+
+        [Header("Dust look (14 §5)")]
+        [Tooltip("Bright core diameter and halo diameter, px.")]
+        public double dustCorePx = 4;
+        public double dustHaloPx = 14;
+        public double dustHaloAlpha = 0.35;
+        [Tooltip("Per-dust size and brightness variation (0.3 = ±30%).")]
+        public double dustSizeJitter = 0.3;
+        public double dustBrightJitter = 0.3;
+        [Tooltip("Fast dust stretches along its velocity: length × up to dustStretchMax, reached at dustStretchFullSpeedPx (px/s).")]
+        public double dustStretchMax = 4;
+        public double dustStretchFullSpeedPx = 400;
+        [Tooltip("Brightness of a fully stretched streak relative to a still dot.")]
+        public double dustStreakDim = 0.7;
+        [Tooltip("Extra brightness inside the gravity radius while holding (at the center; fades to 0 at the edge).")]
+        public double dustGravityBrighten = 0.8;
 
         [Header("Gallery debug key (14 §3)")]
         [Tooltip("Gap between bodies in the tier gallery, px.")]

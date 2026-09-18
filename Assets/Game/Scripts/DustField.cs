@@ -7,7 +7,11 @@ namespace Incremental
     {
         public Vector2 pos;
         public Vector2 vel;
-        public Color32 color;
+        /// <summary>0..1 position between the two dust colors of the palette (render only).</summary>
+        public float tint;
+        /// <summary>Size and brightness multipliers, 1 ± dustSizeJitter / dustBrightJitter (render only, 14 §5).</summary>
+        public float size;
+        public float bright;
     }
 
     /// <summary>
@@ -20,6 +24,8 @@ namespace Incremental
         int count;
         double spawnAcc;
         System.Random rng = new System.Random();
+        // Render-only variation draws from its own RNG so the simulation sequence is the same as before (bot measurements).
+        System.Random visualRng = new System.Random();
         GameParams p;
 
         public Dust[] Items => items;
@@ -146,7 +152,9 @@ namespace Incremental
             {
                 pos = pos,
                 vel = vel,
-                color = Color32.Lerp(p.dustColorA, p.dustColorB, (float)rng.NextDouble()),
+                tint = (float)rng.NextDouble(),
+                size = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustSizeJitter),
+                bright = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustBrightJitter),
             };
         }
 

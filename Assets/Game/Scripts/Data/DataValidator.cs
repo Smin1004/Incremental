@@ -106,6 +106,16 @@ namespace Incremental
             if (p.planetAxisPitchDeg <= 1 || p.planetAxisPitchDeg >= 89) r.Errors.Add("GameParams: planetAxisPitchDeg must be within 1..89 (rings need a visible tilt).");
             if (!(p.galleryZoomMin > 0) || !(p.galleryZoomMax >= p.galleryZoomMin)) r.Errors.Add("GameParams: gallery zoom range is invalid.");
             if (p.effectIntensity < 0 || p.effectIntensity > 1) r.Errors.Add("GameParams: effectIntensity must be within 0..1.");
+            ValidateLook("GameParams: formingClumpLook", p.formingClumpLook, r);
+            if (!(p.formingClumpMinPx > 0) || !(p.formingClumpMaxPx >= p.formingClumpMinPx))
+                r.Errors.Add("GameParams: formingClumpMinPx must be > 0 and formingClumpMaxPx >= formingClumpMinPx.");
+            if (!(p.formingSizeLerpRate > 0)) r.Errors.Add("GameParams: formingSizeLerpRate must be > 0.");
+            if (!(p.dustHaloPx > 0) || !(p.dustCorePx > 0) || p.dustCorePx > p.dustHaloPx)
+                r.Errors.Add("GameParams: dust core and halo must be > 0 with the core inside the halo.");
+            if (p.dustSizeJitter < 0 || p.dustSizeJitter >= 1 || p.dustBrightJitter < 0 || p.dustBrightJitter >= 1)
+                r.Errors.Add("GameParams: dust jitter must be within 0..1 (exclusive).");
+            if (!(p.dustStretchMax >= 1)) r.Errors.Add("GameParams: dustStretchMax must be >= 1.");
+            if (!(p.dustStretchFullSpeedPx > p.driftSpeed)) r.Errors.Add("GameParams: dustStretchFullSpeedPx must be above driftSpeed.");
             return r;
         }
 

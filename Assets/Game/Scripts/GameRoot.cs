@@ -38,6 +38,8 @@ namespace Incremental
         public Material unlitMaterial;
         [Tooltip("Incremental/Planet: every planet, star and forming body (14 §3).")]
         public Material planetMaterial;
+        [Tooltip("Incremental/Dust: glowing dust points (14 §5).")]
+        public Material dustMaterial;
         public Sprite circleSprite;
         public int planetPoolSize = 8;
 
@@ -113,7 +115,7 @@ namespace Incremental
             Dust = dustGo.AddComponent<DustField>();
             Dust.Init(gameParams);
             DustRenderer = dustGo.AddComponent<DustMeshRenderer>();
-            DustRenderer.Init(Dust, gameParams, unlitMaterial);
+            DustRenderer.Init(this, Dust, dustMaterial);
 
             var poolGo = new GameObject("PlanetPool");
             poolGo.transform.SetParent(transform, false);
@@ -130,7 +132,7 @@ namespace Incremental
             var cursorGo = new GameObject("CursorView");
             cursorGo.transform.SetParent(transform, false);
             Cursor = cursorGo.AddComponent<CursorView>();
-            Cursor.Init(this, unlitMaterial, Hud.CanvasRect, circleSprite);
+            Cursor.Init(this, unlitMaterial, Hud.CanvasRect);
 
             var resultGo = new GameObject("ResultView");
             resultGo.transform.SetParent(transform, false);
@@ -376,7 +378,9 @@ namespace Incremental
             int idx = tier.tier - 1;
             if (idx >= 0 && idx < Run.planetCounts.Length)
                 Run.planetCounts[idx] = (int)Math.Min((double)int.MaxValue, Run.planetCounts[idx] + count);
-            Planets.Show(CursorWorld, tier, NextVisualSeed(), 0);
+            // The forming body under the cursor becomes this planet (same surface, grows from its drawn size, 14 §4).
+            Cursor.TakeFormingBody(out float bodySeed, out double bodyPx);
+            Planets.Show(CursorWorld, tier, bodySeed, bodyPx);
             if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(CursorWorld), tier.sizePx, count);
             Run.mass = 0;
 

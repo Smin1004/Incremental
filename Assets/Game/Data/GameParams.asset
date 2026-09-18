@@ -28,7 +28,6 @@ MonoBehaviour:
   thresholdMult: 1
   pixelsPerUnit: 100
   effectIntensity: 1
-  dustSizePx: 3
   driftNoise: 2
   driftRelaxRate: 2
   scatterSpeedPx: 200
@@ -49,6 +48,51 @@ MonoBehaviour:
   planetDetailPx: 10
   planetCraterRelief: 0.6
   planetAxisPitchDeg: 20
+  formingClumpLook:
+    surface: 0
+    baseColor: {r: 0.36, g: 0.34, b: 0.33, a: 1}
+    darkColor: {r: 0.16, g: 0.15, b: 0.15, a: 1}
+    accentColor: {r: 1, g: 1, b: 1, a: 1}
+    glowColor: {r: 0.7, g: 0.75, b: 0.85, a: 1}
+    noiseScale: 4
+    patchLevel: 0.5
+    patchSoftness: 0.3
+    craterDensity: 0
+    craterSize: 0.35
+    craterScale: 3
+    polarCap: 0
+    irregularity: 0.42
+    cloudCover: 0
+    cloudSpinMult: 1.5
+    bandCount: 0
+    turbulence: 0
+    emission: 0
+    spinDegPerSec: 70
+    axisTiltDeg: 30
+    glowSize: 0
+    glowStrength: 0
+    tailLength: 0
+    ringInner: 0
+    ringOuter: 0
+    ringColor: {r: 1, g: 1, b: 1, a: 0}
+  formingClumpMinPx: 6
+  formingClumpMaxPx: 16
+  formingSizeLerpRate: 12
+  formingPopScale: 0.35
+  formingPopSec: 0.2
+  gaugeGapPx: 8
+  gaugeWidthPx: 3
+  gaugeBgAlpha: 0.18
+  gaugeFillAlpha: 0.8
+  dustCorePx: 4
+  dustHaloPx: 14
+  dustHaloAlpha: 0.35
+  dustSizeJitter: 0.3
+  dustBrightJitter: 0.3
+  dustStretchMax: 4
+  dustStretchFullSpeedPx: 400
+  dustStreakDim: 0.7
+  dustGravityBrighten: 0.8
   galleryGapPx: 44
   galleryZoomMin: 0.5
   galleryZoomMax: 3

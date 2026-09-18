@@ -26,6 +26,8 @@ namespace Incremental.EditorTools
         const string MaterialPath = MaterialsDir + "/DustUnlit.mat";
         const string PlanetMaterialPath = MaterialsDir + "/Planet.mat";
         const string PlanetShaderName = "Incremental/Planet";
+        const string DustMaterialPath = MaterialsDir + "/Dust.mat";
+        const string DustShaderName = "Incremental/Dust";
         const string CirclePath = MaterialsDir + "/Circle.png";
         const string CircleSource = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/Circle.png";
         const string TemplatePath = "Assets/Settings/Lit2DSceneTemplate.scenetemplate";
@@ -117,6 +119,7 @@ namespace Incremental.EditorTools
             }
 
             EnsureMaterial(PlanetMaterialPath, PlanetShaderName);
+            EnsureMaterial(DustMaterialPath, DustShaderName);
 
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(CirclePath) == null)
             {
@@ -139,7 +142,7 @@ namespace Incremental.EditorTools
                 ti.SaveAndReimport();
             }
             AssetDatabase.SaveAssets();
-            Debug.Log("[Setup] Render assets ready: " + MaterialPath + ", " + PlanetMaterialPath + ", " + CirclePath);
+            Debug.Log("[Setup] Render assets ready: " + MaterialPath + ", " + PlanetMaterialPath + ", " + DustMaterialPath + ", " + CirclePath);
         }
 
         /// <summary>Creates a material asset for a project shader when it is missing (procedural shaders, no textures).</summary>
@@ -207,6 +210,7 @@ namespace Incremental.EditorTools
             root.nodeTable = AssetDatabase.LoadAssetAtPath<NodeTable>(NodePath);
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
             root.planetMaterial = AssetDatabase.LoadAssetAtPath<Material>(PlanetMaterialPath);
+            root.dustMaterial = AssetDatabase.LoadAssetAtPath<Material>(DustMaterialPath);
             root.circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
             EditorUtility.SetDirty(root);
 
