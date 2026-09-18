@@ -49,6 +49,7 @@ namespace Incremental
         public const string On = "켜짐";
         public const string Off = "꺼짐";
         public const string ScreenshotSaved = "스크린샷 저장: {0}";
+        public const string GalleryHint = "천체 갤러리   F8 닫기   마우스: 광원 방향   휠: 크기";
 
         /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
         static readonly Dictionary<string, string> Keyed = new Dictionary<string, string>

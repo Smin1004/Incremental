@@ -36,6 +36,8 @@ namespace Incremental
 
         [Header("Render")]
         public Material unlitMaterial;
+        [Tooltip("Incremental/Planet: every planet, star and forming body (14 §3).")]
+        public Material planetMaterial;
         public Sprite circleSprite;
         public int planetPoolSize = 8;
 
@@ -43,7 +45,8 @@ namespace Incremental
         public Settings Settings { get; private set; } = new Settings();
         public SaveStore Store { get; private set; }
         /// <summary>The run is frozen while the window is unfocused (settings.pauseOnFocusLoss), except when the bot plays.</summary>
-        public bool Paused => Phase == GamePhase.Run && !hasFocus && Settings.pauseOnFocusLoss && !(Bot != null && Bot.Enabled);
+        public bool Paused => Phase == GamePhase.Run &&
+                              ((!hasFocus && Settings.pauseOnFocusLoss && !(Bot != null && Bot.Enabled)) || (Gallery != null && Gallery.IsOpen));
         public RunState Run { get; private set; }
         public EffectiveStats Effective { get; private set; }
         public GamePhase Phase { get; private set; } = GamePhase.Result;
@@ -57,12 +60,18 @@ namespace Incremental
         public SolarSystemView Solar { get; private set; }
         public TreeView Tree { get; private set; }
         public DebugTools Tools { get; private set; }
+        public GalleryView Gallery { get; private set; }
         public AutoplayBot Bot { get; private set; }
         public Vector2 CursorWorld { get; private set; }
         public PointerState LastPointer { get; private set; }
         public double LastTickMs { get; private set; }
         public double MaxTickMs { get; private set; }
         public StatsOverride Override;
+        /// <summary>
+        /// 0..1, multiplies every flash, light bleed and pop (10 §8). Starts at GameParams.effectIntensity; the debug key
+        /// cycles it at runtime (the options screen is week 7), so the asset is never modified.
+        /// </summary>
+        public float EffectIntensity { get; set; } = 1f;
         /// <summary>Replace to drive the game without a mouse (autoplay bot).</summary>
         public Func<PointerState> InputProvider;
         public event Action<RunRecord> RunEnded;
@@ -93,6 +102,8 @@ namespace Incremental
             Settings = Store.LoadSettings();
             Fmt.Mode = Settings.notation;
             hasFocus = Application.isFocused;
+            EffectIntensity = Mathf.Clamp01((float)gameParams.effectIntensity);
+            PlanetVisual.ApplyGlobals(gameParams);
 
             Cam = Camera.main;
             if (Cam == null) Cam = FindFirstObjectByType<Camera>();
@@ -107,7 +118,7 @@ namespace Incremental
             var poolGo = new GameObject("PlanetPool");
             poolGo.transform.SetParent(transform, false);
             Planets = poolGo.AddComponent<PlanetPool>();
-            Planets.Init(gameParams, circleSprite, unlitMaterial, planetPoolSize, Cam);
+            Planets.Init(this, planetPoolSize);
 
             var hudGo = new GameObject("HudView");
             hudGo.transform.SetParent(transform, false);
@@ -140,6 +151,11 @@ namespace Incremental
             toolsGo.transform.SetParent(transform, false);
             Tools = toolsGo.AddComponent<DebugTools>();
             Tools.Init(this);
+
+            var galleryGo = new GameObject("Gallery");
+            galleryGo.transform.SetParent(transform, false);
+            Gallery = galleryGo.AddComponent<GalleryView>();
+            Gallery.Init(this);
 
             var botGo = new GameObject("AutoplayBot");
             botGo.transform.SetParent(transform, false);
@@ -360,7 +376,7 @@ namespace Incremental
             int idx = tier.tier - 1;
             if (idx >= 0 && idx < Run.planetCounts.Length)
                 Run.planetCounts[idx] = (int)Math.Min((double)int.MaxValue, Run.planetCounts[idx] + count);
-            Planets.Show(CursorWorld, tier.sizePx, tier.color);
+            Planets.Show(CursorWorld, tier, NextVisualSeed(), 0);
             if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(CursorWorld), tier.sizePx, count);
             Run.mass = 0;
 
@@ -459,6 +475,13 @@ namespace Incremental
             if (tier > 0) Save();
             return tier;
         }
+
+        // ---------------- visuals ----------------
+
+        readonly System.Random visualRng = new System.Random();
+
+        /// <summary>Noise seed for a new body's surface. Separate from the logic RNGs so visuals never change the simulation.</summary>
+        public float NextVisualSeed() => (float)(visualRng.NextDouble() * 100.0);
 
         // ---------------- queries (views, bot) ----------------
 

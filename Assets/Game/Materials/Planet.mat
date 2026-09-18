@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Planet
+  m_Shader: {fileID: 4800000, guid: 9fbf5d1941d34274384f2f73c66c7b75, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Extent: 1.1
+    - _Surface: 0
+    m_Colors:
+    - _AccentColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BaseColor: {r: 0.6, g: 0.6, b: 0.6, a: 1}
+    - _DarkColor: {r: 0.29999998, g: 0.29999998, b: 0.29999998, a: 1}
+    - _Extra: {r: 0, g: 0, b: 0, a: 1}
+    - _GlowColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Light: {r: 1, g: 1, b: 0, a: 1}
+    - _Motion: {r: 0, g: 0, b: 0.35, a: 0}
+    - _RingColor: {r: 1, g: 1, b: 1, a: 0}
+    - _Surf1: {r: 2, g: 0.5, b: 0.2, a: 0}
+    - _Surf2: {r: 0, g: 0.35, b: 3, a: 0}
+    - _Surf3: {r: 0, g: 0, b: 1.5, a: 0}
+    - _Surf4: {r: 0, g: 0, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

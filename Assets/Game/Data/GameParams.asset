@@ -32,8 +32,63 @@ MonoBehaviour:
   driftNoise: 2
   driftRelaxRate: 2
   scatterSpeedPx: 200
-  planetLifetimeSec: 1.5
   planetPopScale: 0.5
   planetPopDurationSec: 0.15
   dustColorA: {r: 1, g: 1, b: 1, a: 1}
   dustColorB: {r: 0.65, g: 0.82, b: 1, a: 1}
+  planetHoldSec: 0.4
+  planetDepartSec: 0.8
+  vanishPoint: {x: 1.05, y: 1.05}
+  vanishGlowPx: 520
+  vanishGlowAlpha: 0.18
+  planetShadow: 0.75
+  planetAmbient: 0.08
+  planetLightZ: 0.4
+  planetRimStrength: 0.35
+  planetRimPower: 3
+  planetDetailPx: 10
+  planetCraterRelief: 0.6
+  planetAxisPitchDeg: 20
+  galleryGapPx: 44
+  galleryZoomMin: 0.5
+  galleryZoomMax: 3
+  galleryZoomStep: 0.1
+  starOffsetPx: 220
+  orbitR0Px: 110
+  orbitStepPx: 52
+  orbitMaxTier: 8
+  orbitAlpha: 0.15
+  orbitAlphaUsed: 0.3
+  orbitOmega0Deg: 40
+  orbitPlanetScale: 0.5
+  orbitBeltMaxTier: 3
+  orbitBeltThreshold: 16
+  orbitBeltMaxDots: 240
+  orbitBeltJitterPx: 8
+  orbitBeltDotMinPx: 2
+  orbitBeltDotMaxPx: 4
+  orbitIndividualMax: 12
+  skyStarsPerRun: 20
+  skyBackgroundStars: 160
+  resultEntrySec: 1.2
+  protostarColor: {r: 1, g: 0.55, b: 0.2, a: 1}
+  starCorePx:
+  - 30
+  - 38
+  - 52
+  - 72
+  starGlowPx:
+  - 170
+  - 200
+  - 260
+  - 340
+  ignitionSec: 0.9
+  ignitionScale: 4
+  treeRingR0Px: 40
+  treeRingStepPx: 115
+  treeHoldDelaySec: 0.35
+  treeHoldRepeatSec: 0.08
+  treeZoomMin: 0.3
+  treeZoomMax: 1.6
+  treeFocusSec: 0.35
+  pendingSaveIntervalSec: 5

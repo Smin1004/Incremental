@@ -9,7 +9,7 @@ namespace Incremental
     /// Debug keys (editor and development builds only). F1: overlay (FPS, dust count, tick ms). F2: performance mode
     /// (runtime override of dust_cap / spawn_rate, assets untouched). F3: currency = max(currency × 10, 1,000).
     /// F4: autoplay bot toggle. F5: save now. F6: unlock the next tier for free. F7: toggle number notation (settings.json).
-    /// Shift+F9: delete the save and start again from run 1. F12: screenshot to persistentDataPath.
+    /// F8: tier gallery (14 §3). Shift+F9: delete the save and start again from run 1. F12: screenshot to persistentDataPath.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -55,6 +55,7 @@ namespace Incremental
                 if (kb.f5Key.wasPressedThisFrame) SaveNow();
                 if (kb.f6Key.wasPressedThisFrame) root.DebugUnlockNext();
                 if (kb.f7Key.wasPressedThisFrame) ToggleNotation();
+                if (kb.f8Key.wasPressedThisFrame && root.Gallery != null) root.Gallery.Toggle();
                 if (kb.f9Key.wasPressedThisFrame && kb.shiftKey.isPressed) root.ResetProgress();
                 if (kb.f12Key.wasPressedThisFrame) Screenshot();
             }

@@ -51,7 +51,62 @@ namespace Incremental
                 if (tier.salePrice <= 0) r.Errors.Add($"CelestialTable: tier {tier.tier} salePrice must be > 0.");
                 if (!UIStrings.Has(UIStrings.TierKey(tier.tier)))
                     r.Errors.Add($"UIStrings: missing key '{UIStrings.TierKey(tier.tier)}'.");
+                if (tier.sizePx <= 0) r.Errors.Add($"CelestialTable: tier {tier.tier} sizePx must be > 0.");
+                else if (i > 0 && tier.sizePx <= c.tiers[i - 1].sizePx)
+                    r.Warnings.Add($"CelestialTable: tier {tier.tier} sizePx {tier.sizePx} is not larger than tier {c.tiers[i - 1].tier}; the forming body shrinks at that step.");
+                ValidateLook("CelestialTable: tier " + tier.tier, tier.look, r);
             }
+        }
+
+        /// <summary>Planet shader look ranges (14 §3). Also used for the looks in GameParams.</summary>
+        public static void ValidateLook(string where, PlanetLook l, ValidationReport r)
+        {
+            if (l == null)
+            {
+                r.Errors.Add(where + ": look is missing.");
+                return;
+            }
+            if (!(l.noiseScale > 0)) r.Errors.Add(where + ": look.noiseScale must be > 0.");
+            if (l.glowSize < 0 || l.glowStrength < 0) r.Errors.Add(where + ": look.glowSize and glowStrength must be >= 0.");
+            if (l.tailLength < 0) r.Errors.Add(where + ": look.tailLength must be >= 0.");
+            if (l.patchLevel < 0 || l.patchLevel > 1 || l.patchSoftness < 0 || l.patchSoftness > 1)
+                r.Errors.Add(where + ": look.patchLevel and patchSoftness must be within 0..1.");
+            if (l.craterDensity < 0 || l.craterDensity > 1) r.Errors.Add(where + ": look.craterDensity must be within 0..1.");
+            if (l.craterDensity > 0 && (!(l.craterSize > 0) || !(l.craterScale > 0)))
+                r.Errors.Add(where + ": look has craters but craterSize or craterScale is not > 0.");
+            if (l.polarCap < 0 || l.polarCap > 1) r.Errors.Add(where + ": look.polarCap must be within 0..1.");
+            if (l.irregularity < 0 || l.irregularity > 0.6f) r.Errors.Add(where + ": look.irregularity must be within 0..0.6.");
+            if (l.cloudCover < 0 || l.cloudCover > 1) r.Errors.Add(where + ": look.cloudCover must be within 0..1.");
+            if (l.emission < 0 || l.emission > 1) r.Errors.Add(where + ": look.emission must be within 0..1.");
+            if (float.IsNaN(l.spinDegPerSec) || float.IsInfinity(l.spinDegPerSec)) r.Errors.Add(where + ": look.spinDegPerSec is not a number.");
+            if (l.HasRing)
+            {
+                if (!(l.ringInner > 1f)) r.Errors.Add(where + ": look.ringInner must be > 1 (outside the disc).");
+                if (!(l.ringOuter > l.ringInner)) r.Errors.Add(where + ": look.ringOuter must be > ringInner.");
+                if (!(l.ringColor.a > 0)) r.Warnings.Add(where + ": look has a ring with alpha 0 (invisible).");
+            }
+            else if (l.ringOuter < 0) r.Errors.Add(where + ": look.ringOuter must be >= 0.");
+            if (l.surface == SurfaceType.Gas && !(l.bandCount > 0)) r.Errors.Add(where + ": Gas look needs bandCount > 0.");
+            if (l.surface == SurfaceType.Star && !(l.glowStrength > 0 && l.glowSize > 0)) r.Warnings.Add(where + ": Star look without a corona.");
+            if (l.surface == SurfaceType.Terran && l.cloudCover > 0 && l.cloudSpinMult == 0) r.Warnings.Add(where + ": clouds do not move (cloudSpinMult 0).");
+        }
+
+        /// <summary>Presentation parameters (14): ranges that would break the shaders or the views.</summary>
+        public static ValidationReport ValidateParams(GameParams p)
+        {
+            var r = new ValidationReport();
+            if (p == null)
+            {
+                r.Errors.Add("GameParams is missing.");
+                return r;
+            }
+            if (p.planetAmbient < 0 || p.planetAmbient > 1) r.Errors.Add("GameParams: planetAmbient must be within 0..1.");
+            if (!(p.planetLightZ >= 0)) r.Errors.Add("GameParams: planetLightZ must be >= 0.");
+            if (!(p.planetDetailPx > 0)) r.Errors.Add("GameParams: planetDetailPx must be > 0.");
+            if (p.planetAxisPitchDeg <= 1 || p.planetAxisPitchDeg >= 89) r.Errors.Add("GameParams: planetAxisPitchDeg must be within 1..89 (rings need a visible tilt).");
+            if (!(p.galleryZoomMin > 0) || !(p.galleryZoomMax >= p.galleryZoomMin)) r.Errors.Add("GameParams: gallery zoom range is invalid.");
+            if (p.effectIntensity < 0 || p.effectIntensity > 1) r.Errors.Add("GameParams: effectIntensity must be within 0..1.");
+            return r;
         }
 
         // Per node: unique id, known stat, string keys, sane cost curve, ring in range.

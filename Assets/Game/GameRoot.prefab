@@ -48,5 +48,6 @@ MonoBehaviour:
   celestialTable: {fileID: 11400000, guid: 70d2eecc0289a9a4695ffd29dc84cf8c, type: 2}
   nodeTable: {fileID: 11400000, guid: 399cf4353515c6143b435c93c2727bdb, type: 2}
   unlitMaterial: {fileID: 2100000, guid: 319a5615ae4d94947aa6fdaa04d30eb2, type: 2}
+  planetMaterial: {fileID: 2100000, guid: c44782bd835645a449856ae3cd7c07ce, type: 2}
   circleSprite: {fileID: 21300000, guid: fe92612f76f4a674185a662bec7ab958, type: 3}
   planetPoolSize: 8

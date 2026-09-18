@@ -24,6 +24,8 @@ namespace Incremental.EditorTools
         const string CelestialPath = DataDir + "/CelestialTable.asset";
         const string NodePath = DataDir + "/NodeTable.asset";
         const string MaterialPath = MaterialsDir + "/DustUnlit.mat";
+        const string PlanetMaterialPath = MaterialsDir + "/Planet.mat";
+        const string PlanetShaderName = "Incremental/Planet";
         const string CirclePath = MaterialsDir + "/Circle.png";
         const string CircleSource = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/Circle.png";
         const string TemplatePath = "Assets/Settings/Lit2DSceneTemplate.scenetemplate";
@@ -58,23 +60,9 @@ namespace Incremental.EditorTools
         }
 
         // ---------------- seed data (keep equal to the assets) ----------------
-        // Tiers 1-3 are the week-1 values. Tiers 4-11: mass and price from 10 §3.4, size / color are week-2 placeholders.
-        // Skill tree nodes: SkillTreeSeed (12 §6).
+        // Tiers: CelestialSeed (mass, price, size, look). Skill tree nodes: SkillTreeSeed (12 §6).
 
-        public static List<CelestialTier> SeedTiers() => new List<CelestialTier>
-        {
-            new CelestialTier { tier = 1, requiredMass = 10, salePrice = 1, sizePx = 12, color = new Color(0.62f, 0.62f, 0.62f) },
-            new CelestialTier { tier = 2, requiredMass = 25, salePrice = 6, sizePx = 16, color = new Color(0.55f, 0.8f, 1f) },
-            new CelestialTier { tier = 3, requiredMass = 60, salePrice = 40, sizePx = 24, color = new Color(0.62f, 0.42f, 0.25f) },
-            new CelestialTier { tier = 4, requiredMass = 150, salePrice = 250, sizePx = 32, color = new Color(0.8f, 0.8f, 0.82f) },
-            new CelestialTier { tier = 5, requiredMass = 400, salePrice = 2000, sizePx = 40, color = new Color(0.6f, 0.3f, 0.2f) },
-            new CelestialTier { tier = 6, requiredMass = 1000, salePrice = 15000, sizePx = 52, color = new Color(0.25f, 0.5f, 0.95f) },
-            new CelestialTier { tier = 7, requiredMass = 2500, salePrice = 1.2e5, sizePx = 68, color = new Color(0.8f, 0.65f, 0.35f) },
-            new CelestialTier { tier = 8, requiredMass = 6000, salePrice = 1e6, sizePx = 80, color = new Color(0.45f, 0.2f, 0.14f) },
-            new CelestialTier { tier = 9, requiredMass = 15000, salePrice = 1e7, sizePx = 96, color = new Color(0.95f, 0.25f, 0.2f) },
-            new CelestialTier { tier = 10, requiredMass = 40000, salePrice = 1e8, sizePx = 116, color = new Color(1f, 0.9f, 0.35f) },
-            new CelestialTier { tier = 11, requiredMass = 1e5, salePrice = 1e9, sizePx = 140, color = new Color(0.72f, 0.85f, 1f) },
-        };
+        public static List<CelestialTier> SeedTiers() => CelestialSeed.Tiers();
 
         /// <summary>
         /// Adds seed entries that the existing assets lack (tiers by number, nodes by id, missing ringCostMult entries as 1),
@@ -128,6 +116,8 @@ namespace Incremental.EditorTools
                 AssetDatabase.CreateAsset(new Material(shader) { name = "DustUnlit" }, MaterialPath);
             }
 
+            EnsureMaterial(PlanetMaterialPath, PlanetShaderName);
+
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(CirclePath) == null)
             {
                 if (!AssetDatabase.CopyAsset(CircleSource, CirclePath))
@@ -149,7 +139,20 @@ namespace Incremental.EditorTools
                 ti.SaveAndReimport();
             }
             AssetDatabase.SaveAssets();
-            Debug.Log("[Setup] Render assets ready: " + MaterialPath + ", " + CirclePath);
+            Debug.Log("[Setup] Render assets ready: " + MaterialPath + ", " + PlanetMaterialPath + ", " + CirclePath);
+        }
+
+        /// <summary>Creates a material asset for a project shader when it is missing (procedural shaders, no textures).</summary>
+        static void EnsureMaterial(string path, string shaderName)
+        {
+            if (AssetDatabase.LoadAssetAtPath<Material>(path) != null) return;
+            var shader = Shader.Find(shaderName);
+            if (shader == null)
+            {
+                Debug.LogError("[Setup] Shader not found: " + shaderName);
+                return;
+            }
+            AssetDatabase.CreateAsset(new Material(shader) { name = System.IO.Path.GetFileNameWithoutExtension(path) }, path);
         }
 
         [MenuItem("Incremental/Setup/3. Build Prototype Scene")]
@@ -203,6 +206,7 @@ namespace Incremental.EditorTools
             root.celestialTable = AssetDatabase.LoadAssetAtPath<CelestialTable>(CelestialPath);
             root.nodeTable = AssetDatabase.LoadAssetAtPath<NodeTable>(NodePath);
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
+            root.planetMaterial = AssetDatabase.LoadAssetAtPath<Material>(PlanetMaterialPath);
             root.circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
             EditorUtility.SetDirty(root);
 

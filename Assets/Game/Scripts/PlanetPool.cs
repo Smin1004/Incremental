@@ -5,58 +5,41 @@ namespace Incremental
     /// <summary>
     /// Pool of planets shown where one is created during a run, then sent off to the vanishing point (13 §2):
     /// pop (planetPopDurationSec) → stays in place (planetHoldSec) → flies to the vanishing point while shrinking and
-    /// fading (planetDepartSec). Each planet carries a crescent shadow lit from the vanishing point (13 §4). Render only;
+    /// fading (planetDepartSec). Drawn by the planet shader, lit from the vanishing point (14 §3). Render only;
     /// input is never blocked.
     /// </summary>
     public sealed class PlanetPool : MonoBehaviour
     {
         struct Slot
         {
-            public Transform tf;
-            public SpriteRenderer sr;
-            public SpriteRenderer shadow;
-            public Color color;
+            public PlanetVisual v;
             public Vector3 start;
-            public float targetScale;
+            public float diameter;
+            public float fromDiameter;
             public float age;
             public bool active;
         }
 
         Slot[] slots = new Slot[0];
         int next;
+        GameRoot root;
         GameParams p;
         Camera cam;
-        float spriteUnitSize = 1f;
 
         /// <summary>Seconds a planet is on screen: pop + hold + departure.</summary>
         public float Lifetime => (float)(p.planetPopDurationSec + p.planetHoldSec + p.planetDepartSec);
 
-        public void Init(GameParams gameParams, Sprite sprite, Material material, int poolSize, Camera camera)
+        public void Init(GameRoot gameRoot, int poolSize)
         {
-            p = gameParams;
-            cam = camera;
-            spriteUnitSize = sprite != null ? Mathf.Max(sprite.bounds.size.x, 1e-3f) : 1f;
-            var shadowSprite = UIBuilder.ShadowSprite();
-            float shadowScale = spriteUnitSize / Mathf.Max(shadowSprite.bounds.size.x, 1e-3f);
+            root = gameRoot;
+            p = root.gameParams;
+            cam = root.Cam;
             slots = new Slot[Mathf.Max(1, poolSize)];
             for (int i = 0; i < slots.Length; i++)
             {
-                var go = new GameObject("Planet" + i);
-                go.transform.SetParent(transform, false);
-                var sr = go.AddComponent<SpriteRenderer>();
-                sr.sprite = sprite;
-                if (material != null) sr.sharedMaterial = material;
-                sr.sortingOrder = 10;
-
-                var sh = new GameObject("Shadow").AddComponent<SpriteRenderer>();
-                sh.transform.SetParent(go.transform, false);
-                sh.transform.localScale = new Vector3(shadowScale, shadowScale, 1f);
-                sh.sprite = shadowSprite;
-                if (material != null) sh.sharedMaterial = material;
-                sh.sortingOrder = 11;
-
-                go.SetActive(false);
-                slots[i] = new Slot { tf = go.transform, sr = sr, shadow = sh };
+                var v = PlanetVisual.Create("Planet" + i, transform, root.planetMaterial, 10);
+                v.gameObject.SetActive(false);
+                slots[i] = new Slot { v = v };
             }
         }
 
@@ -67,20 +50,23 @@ namespace Incremental
             return new Vector3(v.x, v.y, 0f);
         }
 
-        public void Show(Vector2 pos, double sizePx, Color color)
+        /// <summary>
+        /// Shows a planet of this tier at <paramref name="pos"/>. <paramref name="seed"/> keeps the forming body's surface;
+        /// <paramref name="fromDiameterPx"/> (> 0) is the forming body's size, so the pop starts from it.
+        /// </summary>
+        public void Show(Vector2 pos, CelestialTier tier, float seed, double fromDiameterPx)
         {
             ref Slot s = ref slots[next];
             next = (next + 1) % slots.Length;
             s.active = true;
             s.age = 0f;
-            s.color = color;
             s.start = new Vector3(pos.x, pos.y, 0f);
-            s.targetScale = (float)(sizePx / p.pixelsPerUnit) / spriteUnitSize;
-            s.tf.position = s.start;
-            // Shadow +x points away from the light (the vanishing point).
-            Vector3 away = s.start - VanishPoint();
-            s.shadow.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(away.y, away.x) * Mathf.Rad2Deg);
-            s.tf.gameObject.SetActive(true);
+            s.diameter = (float)(tier.sizePx / p.pixelsPerUnit);
+            s.fromDiameter = fromDiameterPx > 0 ? (float)(fromDiameterPx / p.pixelsPerUnit) : s.diameter;
+            s.v.transform.position = s.start;
+            s.v.SetLook(tier.look, seed, p.planetAxisPitchDeg);
+            s.v.SetLightPoint(VanishPoint());
+            s.v.gameObject.SetActive(true);
             Apply(ref s);
         }
 
@@ -89,7 +75,7 @@ namespace Incremental
             for (int i = 0; i < slots.Length; i++)
             {
                 slots[i].active = false;
-                slots[i].tf.gameObject.SetActive(false);
+                slots[i].v.gameObject.SetActive(false);
             }
         }
 
@@ -105,7 +91,7 @@ namespace Incremental
                 if (s.age >= life)
                 {
                     s.active = false;
-                    s.tf.gameObject.SetActive(false);
+                    s.v.gameObject.SetActive(false);
                     continue;
                 }
                 Apply(ref s);
@@ -117,10 +103,11 @@ namespace Incremental
             float popDur = (float)p.planetPopDurationSec;
             float hold = (float)p.planetHoldSec;
             float depart = Mathf.Max(0.01f, (float)p.planetDepartSec);
-            float pop = (float)(p.planetPopScale * p.effectIntensity);
+            float pop = (float)p.planetPopScale * root.EffectIntensity;
 
             float tPop = popDur > 0f ? Mathf.Clamp01(s.age / popDur) : 1f;
-            float scale = s.targetScale * (1f + pop * (1f - tPop));
+            float baseD = Mathf.Lerp(s.fromDiameter, s.diameter, tPop);
+            float d = baseD * (1f + pop * Mathf.Sin(tPop * Mathf.PI));
             float alpha = 1f;
             Vector3 pos = s.start;
 
@@ -129,16 +116,13 @@ namespace Incremental
             {
                 float e = tDepart * tDepart; // accelerate away
                 pos = Vector3.Lerp(s.start, VanishPoint(), e);
-                scale *= Mathf.Lerp(1f, 0.15f, e);
+                d *= Mathf.Lerp(1f, 0.15f, e);
                 alpha = 1f - tDepart * tDepart * tDepart;
             }
 
-            s.tf.position = pos;
-            s.tf.localScale = new Vector3(scale, scale, 1f);
-            var c = s.color;
-            c.a *= alpha;
-            s.sr.color = c;
-            s.shadow.color = new Color(0f, 0f, 0f, (float)p.planetShadow * alpha);
+            s.v.transform.position = pos;
+            s.v.SetDiameter(d);
+            s.v.SetFade(alpha);
         }
     }
 }

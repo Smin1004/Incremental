@@ -30,6 +30,18 @@ namespace Incremental.EditorTools
             foreach (var e in report.Errors) Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : n);
             foreach (var w in report.Warnings) Debug.LogWarning("[Validate] " + w, n);
 
+            var gameParams = LoadAll<GameParams>();
+            if (gameParams.Count != 1)
+            {
+                Debug.LogError($"[Validate] expected exactly one GameParams, found {gameParams.Count}.");
+                return report.Errors.Count + 1;
+            }
+            var paramReport = DataValidator.ValidateParams(gameParams[0]);
+            foreach (var e in paramReport.Errors) Debug.LogError("[Validate] " + e, gameParams[0]);
+            foreach (var w in paramReport.Warnings) Debug.LogWarning("[Validate] " + w, gameParams[0]);
+            report.Errors.AddRange(paramReport.Errors);
+            report.Warnings.AddRange(paramReport.Warnings);
+
             int drift = WarnSeedDrift(c, n);
             if (report.Ok)
             {
@@ -52,6 +64,8 @@ namespace Incremental.EditorTools
                 if (a == null) diffs.Add($"tier {s.tier} is in the seed but not in the asset");
                 else if (a.requiredMass != s.requiredMass || a.salePrice != s.salePrice || a.sizePx != s.sizePx || a.color != s.color)
                     diffs.Add($"tier {s.tier} differs from the seed");
+                else if (!s.look.SameAs(a.look))
+                    diffs.Add($"tier {s.tier} look differs from the seed (menu Incremental/Setup/4. Apply Seed Looks)");
             }
             var seedIds = new HashSet<string>();
             foreach (var s in SkillTreeSeed.Nodes())

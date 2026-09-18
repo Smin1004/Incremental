@@ -16,55 +16,352 @@ MonoBehaviour:
   - tier: 1
     requiredMass: 10
     salePrice: 1
-    sizePx: 12
+    sizePx: 20
     color: {r: 0.62, g: 0.62, b: 0.62, a: 1}
+    look:
+      surface: 0
+      baseColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
+      darkColor: {r: 0.3, g: 0.29, b: 0.28, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+      noiseScale: 3.2
+      patchLevel: 0.5
+      patchSoftness: 0.22
+      craterDensity: 0.55
+      craterSize: 0.4
+      craterScale: 3.2
+      polarCap: 0
+      irregularity: 0.32
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 45
+      axisTiltDeg: 25
+      glowSize: 0
+      glowStrength: 0
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 2
     requiredMass: 25
     salePrice: 6
-    sizePx: 16
+    sizePx: 26
     color: {r: 0.55, g: 0.8, b: 1, a: 1}
+    look:
+      surface: 0
+      baseColor: {r: 0.88, g: 0.95, b: 1, a: 1}
+      darkColor: {r: 0.52, g: 0.62, b: 0.74, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 0.5, g: 0.78, b: 1, a: 1}
+      noiseScale: 2.6
+      patchLevel: 0.5
+      patchSoftness: 0.3
+      craterDensity: 0
+      craterSize: 0.35
+      craterScale: 3
+      polarCap: 0
+      irregularity: 0.12
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 0
+      axisTiltDeg: 0
+      glowSize: 0.9
+      glowStrength: 0.75
+      tailLength: 6
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 3
     requiredMass: 60
     salePrice: 40
-    sizePx: 24
+    sizePx: 34
     color: {r: 0.62, g: 0.42, b: 0.25, a: 1}
+    look:
+      surface: 0
+      baseColor: {r: 0.66, g: 0.5, b: 0.36, a: 1}
+      darkColor: {r: 0.38, g: 0.26, b: 0.17, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 0.9, g: 0.75, b: 0.6, a: 1}
+      noiseScale: 2.2
+      patchLevel: 0.5
+      patchSoftness: 0.18
+      craterDensity: 0.5
+      craterSize: 0.42
+      craterScale: 3
+      polarCap: 0
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 28
+      axisTiltDeg: -15
+      glowSize: 0
+      glowStrength: 0
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 4
     requiredMass: 150
     salePrice: 250
-    sizePx: 32
+    sizePx: 42
     color: {r: 0.8, g: 0.8, b: 0.82, a: 1}
+    look:
+      surface: 0
+      baseColor: {r: 0.84, g: 0.84, b: 0.86, a: 1}
+      darkColor: {r: 0.4, g: 0.4, b: 0.44, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 0.9, g: 0.9, b: 0.95, a: 1}
+      noiseScale: 1.5
+      patchLevel: 0.44
+      patchSoftness: 0.05
+      craterDensity: 0.6
+      craterSize: 0.5
+      craterScale: 2.4
+      polarCap: 0
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 18
+      axisTiltDeg: 8
+      glowSize: 0
+      glowStrength: 0
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 5
     requiredMass: 400
     salePrice: 2000
-    sizePx: 40
+    sizePx: 50
     color: {r: 0.6, g: 0.3, b: 0.2, a: 1}
+    look:
+      surface: 0
+      baseColor: {r: 0.78, g: 0.42, b: 0.24, a: 1}
+      darkColor: {r: 0.42, g: 0.19, b: 0.12, a: 1}
+      accentColor: {r: 0.96, g: 0.96, b: 1, a: 1}
+      glowColor: {r: 1, g: 0.7, b: 0.55, a: 1}
+      noiseScale: 2.4
+      patchLevel: 0.5
+      patchSoftness: 0.12
+      craterDensity: 0.2
+      craterSize: 0.3
+      craterScale: 4
+      polarCap: 0.86
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 32
+      axisTiltDeg: 25
+      glowSize: 0
+      glowStrength: 0
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 6
     requiredMass: 1000
     salePrice: 15000
-    sizePx: 52
+    sizePx: 60
     color: {r: 0.25, g: 0.5, b: 0.95, a: 1}
+    look:
+      surface: 1
+      baseColor: {r: 0.3, g: 0.5, b: 0.24, a: 1}
+      darkColor: {r: 0.07, g: 0.26, b: 0.66, a: 1}
+      accentColor: {r: 0.97, g: 0.98, b: 1, a: 1}
+      glowColor: {r: 0.42, g: 0.7, b: 1, a: 1}
+      noiseScale: 1.8
+      patchLevel: 0.55
+      patchSoftness: 0.035
+      craterDensity: 0
+      craterSize: 0.35
+      craterScale: 3
+      polarCap: 0.9
+      irregularity: 0
+      cloudCover: 0.42
+      cloudSpinMult: 1.6
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 30
+      axisTiltDeg: 23
+      glowSize: 0.14
+      glowStrength: 0.9
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 7
     requiredMass: 2500
     salePrice: 120000
-    sizePx: 68
+    sizePx: 76
     color: {r: 0.8, g: 0.65, b: 0.35, a: 1}
+    look:
+      surface: 2
+      baseColor: {r: 0.94, g: 0.84, b: 0.64, a: 1}
+      darkColor: {r: 0.72, g: 0.47, b: 0.24, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 1, g: 0.9, b: 0.7, a: 1}
+      noiseScale: 2
+      patchLevel: 0.5
+      patchSoftness: 0.2
+      craterDensity: 0
+      craterSize: 0.35
+      craterScale: 3
+      polarCap: 0
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 7
+      turbulence: 0.55
+      emission: 0
+      spinDegPerSec: 40
+      axisTiltDeg: 12
+      glowSize: 0
+      glowStrength: 0
+      tailLength: 0
+      ringInner: 1.35
+      ringOuter: 2.2
+      ringColor: {r: 0.9, g: 0.82, b: 0.64, a: 0.85}
   - tier: 8
     requiredMass: 6000
     salePrice: 1000000
-    sizePx: 80
+    sizePx: 88
     color: {r: 0.45, g: 0.2, b: 0.14, a: 1}
+    look:
+      surface: 2
+      baseColor: {r: 0.5, g: 0.22, b: 0.13, a: 1}
+      darkColor: {r: 0.2, g: 0.07, b: 0.05, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 1, g: 0.3, b: 0.12, a: 1}
+      noiseScale: 2
+      patchLevel: 0.5
+      patchSoftness: 0.2
+      craterDensity: 0
+      craterSize: 0.35
+      craterScale: 3
+      polarCap: 0
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 5
+      turbulence: 0.8
+      emission: 0.35
+      spinDegPerSec: 26
+      axisTiltDeg: -8
+      glowSize: 0.5
+      glowStrength: 0.8
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 9
     requiredMass: 15000
     salePrice: 10000000
-    sizePx: 96
+    sizePx: 104
     color: {r: 0.95, g: 0.25, b: 0.2, a: 1}
+    look:
+      surface: 3
+      baseColor: {r: 1, g: 0.42, b: 0.2, a: 1}
+      darkColor: {r: 0.66, g: 0.09, b: 0.04, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 1, g: 0.32, b: 0.16, a: 1}
+      noiseScale: 4.5
+      patchLevel: 0.5
+      patchSoftness: 0.2
+      craterDensity: 0
+      craterSize: 0.35
+      craterScale: 3
+      polarCap: 0
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 8
+      axisTiltDeg: 0
+      glowSize: 0.45
+      glowStrength: 0.9
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 10
     requiredMass: 40000
     salePrice: 100000000
-    sizePx: 116
+    sizePx: 124
     color: {r: 1, g: 0.9, b: 0.35, a: 1}
+    look:
+      surface: 3
+      baseColor: {r: 1, g: 0.95, b: 0.62, a: 1}
+      darkColor: {r: 0.95, g: 0.52, b: 0.1, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 1, g: 0.8, b: 0.36, a: 1}
+      noiseScale: 5.5
+      patchLevel: 0.5
+      patchSoftness: 0.2
+      craterDensity: 0
+      craterSize: 0.35
+      craterScale: 3
+      polarCap: 0
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 6
+      axisTiltDeg: 0
+      glowSize: 0.9
+      glowStrength: 1
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 11
     requiredMass: 100000
     salePrice: 1000000000
-    sizePx: 140
+    sizePx: 148
     color: {r: 0.72, g: 0.85, b: 1, a: 1}
+    look:
+      surface: 3
+      baseColor: {r: 0.86, g: 0.94, b: 1, a: 1}
+      darkColor: {r: 0.32, g: 0.52, b: 1, a: 1}
+      accentColor: {r: 1, g: 1, b: 1, a: 1}
+      glowColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+      noiseScale: 5
+      patchLevel: 0.5
+      patchSoftness: 0.2
+      craterDensity: 0
+      craterSize: 0.35
+      craterScale: 3
+      polarCap: 0
+      irregularity: 0
+      cloudCover: 0
+      cloudSpinMult: 1.5
+      bandCount: 0
+      turbulence: 0
+      emission: 0
+      spinDegPerSec: 5
+      axisTiltDeg: 0
+      glowSize: 1.3
+      glowStrength: 1.1
+      tailLength: 0
+      ringInner: 0
+      ringOuter: 0
+      ringColor: {r: 1, g: 1, b: 1, a: 0}

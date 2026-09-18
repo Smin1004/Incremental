@@ -62,6 +62,29 @@ namespace Incremental
         [Tooltip("Darkness of the crescent shadow on planets (0..1).")]
         public double planetShadow = 0.75;
 
+        [Header("Planet shader (14 §3)")]
+        [Tooltip("Ambient light on the dark side of lit bodies (0..1).")]
+        public double planetAmbient = 0.08;
+        [Tooltip("Light direction = screen direction to the light mixed with this much toward the viewer, so the terminator is not an exact half.")]
+        public double planetLightZ = 0.4;
+        [Tooltip("Rim light strength and falloff power.")]
+        public double planetRimStrength = 0.35;
+        public double planetRimPower = 3;
+        [Tooltip("Disc radius (px) at which fine surface detail is fully shown; smaller discs fade it out so it does not shimmer.")]
+        public double planetDetailPx = 10;
+        [Tooltip("How strongly crater walls tilt the surface normal.")]
+        public double planetCraterRelief = 0.6;
+        [Tooltip("Spin axis tilt toward the viewer, degrees (rings show as ellipses, poles are visible).")]
+        public double planetAxisPitchDeg = 20;
+
+        [Header("Gallery debug key (14 §3)")]
+        [Tooltip("Gap between bodies in the tier gallery, px.")]
+        public double galleryGapPx = 44;
+        public double galleryZoomMin = 0.5;
+        public double galleryZoomMax = 3;
+        [Tooltip("Zoom change per mouse wheel notch.")]
+        public double galleryZoomStep = 0.1;
+
         [Header("Result solar system (13 §3)")]
         [Tooltip("Central star offset from the screen center, px (right).")]
         public double starOffsetPx = 220;
