@@ -14,20 +14,57 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tiers:
   - tier: 1
-    name: "\uC18C\uD589\uC131"
     requiredMass: 10
     salePrice: 1
     sizePx: 12
     color: {r: 0.62, g: 0.62, b: 0.62, a: 1}
   - tier: 2
-    name: "\uD61C\uC131"
     requiredMass: 25
     salePrice: 6
     sizePx: 16
     color: {r: 0.55, g: 0.8, b: 1, a: 1}
   - tier: 3
-    name: "\uC65C\uC18C\uD589\uC131"
     requiredMass: 60
     salePrice: 40
     sizePx: 24
     color: {r: 0.62, g: 0.42, b: 0.25, a: 1}
+  - tier: 4
+    requiredMass: 150
+    salePrice: 250
+    sizePx: 32
+    color: {r: 0.8, g: 0.8, b: 0.82, a: 1}
+  - tier: 5
+    requiredMass: 400
+    salePrice: 2000
+    sizePx: 40
+    color: {r: 0.6, g: 0.3, b: 0.2, a: 1}
+  - tier: 6
+    requiredMass: 1000
+    salePrice: 15000
+    sizePx: 52
+    color: {r: 0.25, g: 0.5, b: 0.95, a: 1}
+  - tier: 7
+    requiredMass: 2500
+    salePrice: 120000
+    sizePx: 68
+    color: {r: 0.8, g: 0.65, b: 0.35, a: 1}
+  - tier: 8
+    requiredMass: 6000
+    salePrice: 1000000
+    sizePx: 80
+    color: {r: 0.45, g: 0.2, b: 0.14, a: 1}
+  - tier: 9
+    requiredMass: 15000
+    salePrice: 10000000
+    sizePx: 96
+    color: {r: 0.95, g: 0.25, b: 0.2, a: 1}
+  - tier: 10
+    requiredMass: 40000
+    salePrice: 100000000
+    sizePx: 116
+    color: {r: 1, g: 0.9, b: 0.35, a: 1}
+  - tier: 11
+    requiredMass: 100000
+    salePrice: 1000000000
+    sizePx: 140
+    color: {r: 0.72, g: 0.85, b: 1, a: 1}

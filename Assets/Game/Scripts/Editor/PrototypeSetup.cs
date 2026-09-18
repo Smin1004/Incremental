@@ -46,33 +46,101 @@ namespace Incremental.EditorTools
             EnsureFolders();
             // GameParams field initializers already hold the §6 parameter values.
             var p = LoadOrCreate<GameParams>(ParamsPath, _ => { });
-            var c = LoadOrCreate<CelestialTable>(CelestialPath, t =>
-            {
-                t.tiers = new List<CelestialTier>
-                {
-                    new CelestialTier { tier = 1, name = "소행성", requiredMass = 10, salePrice = 1, sizePx = 12, color = new Color(0.62f, 0.62f, 0.62f) },
-                    new CelestialTier { tier = 2, name = "혜성", requiredMass = 25, salePrice = 6, sizePx = 16, color = new Color(0.55f, 0.8f, 1f) },
-                    new CelestialTier { tier = 3, name = "왜소행성", requiredMass = 60, salePrice = 40, sizePx = 24, color = new Color(0.62f, 0.42f, 0.25f) },
-                };
-            });
+            var c = LoadOrCreate<CelestialTable>(CelestialPath, t => t.tiers = SeedTiers());
             var u = LoadOrCreate<UpgradeTable>(UpgradePath, t =>
             {
-                t.upgrades = new List<UpgradeDef>
-                {
-                    new UpgradeDef { id = UpgradeId.SpawnRate, effectPerLevel = 1, baseCost = 10, growth = 1.25, maxLevel = 0 },
-                    new UpgradeDef { id = UpgradeId.PullAccel, effectPerLevel = 0.20, baseCost = 10, growth = 1.25, maxLevel = 0 },
-                    new UpgradeDef { id = UpgradeId.SaleMult, effectPerLevel = 0.25, baseCost = 15, growth = 1.3, maxLevel = 0 },
-                    new UpgradeDef { id = UpgradeId.StaminaMax, effectPerLevel = 10, baseCost = 20, growth = 1.3, maxLevel = 0 },
-                    new UpgradeDef { id = UpgradeId.ThresholdMult, effectPerLevel = 0.04, baseCost = 25, growth = 1.35, maxLevel = 10 },
-                };
-                t.unlocks = new List<UnlockDef>
-                {
-                    new UnlockDef { tier = 2, cost = 50 },
-                    new UnlockDef { tier = 3, cost = 400 },
-                };
+                t.upgrades = SeedUpgrades();
+                t.unlocks = SeedUnlocks();
             });
+            int added = AddMissing(c, u);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Setup] Data assets ready: {AssetDatabase.GetAssetPath(p)}, {AssetDatabase.GetAssetPath(c)}, {AssetDatabase.GetAssetPath(u)}");
+            Debug.Log($"[Setup] Data assets ready ({added} missing entries added): {AssetDatabase.GetAssetPath(p)}, {AssetDatabase.GetAssetPath(c)}, {AssetDatabase.GetAssetPath(u)}");
+        }
+
+        // ---------------- seed data (keep equal to the assets) ----------------
+        // Tiers 1-3 and the first five upgrades are the week-1 values. Tiers 4-11: mass and price from 10 §3.4,
+        // size / color / unlock cost (= sale price x 10) are week-2 placeholders. The last five upgrades are 10 §5
+        // "proposed" items with placeholder values; each can be switched off with enabled.
+
+        public static List<CelestialTier> SeedTiers() => new List<CelestialTier>
+        {
+            new CelestialTier { tier = 1, requiredMass = 10, salePrice = 1, sizePx = 12, color = new Color(0.62f, 0.62f, 0.62f) },
+            new CelestialTier { tier = 2, requiredMass = 25, salePrice = 6, sizePx = 16, color = new Color(0.55f, 0.8f, 1f) },
+            new CelestialTier { tier = 3, requiredMass = 60, salePrice = 40, sizePx = 24, color = new Color(0.62f, 0.42f, 0.25f) },
+            new CelestialTier { tier = 4, requiredMass = 150, salePrice = 250, sizePx = 32, color = new Color(0.8f, 0.8f, 0.82f) },
+            new CelestialTier { tier = 5, requiredMass = 400, salePrice = 2000, sizePx = 40, color = new Color(0.6f, 0.3f, 0.2f) },
+            new CelestialTier { tier = 6, requiredMass = 1000, salePrice = 15000, sizePx = 52, color = new Color(0.25f, 0.5f, 0.95f) },
+            new CelestialTier { tier = 7, requiredMass = 2500, salePrice = 1.2e5, sizePx = 68, color = new Color(0.8f, 0.65f, 0.35f) },
+            new CelestialTier { tier = 8, requiredMass = 6000, salePrice = 1e6, sizePx = 80, color = new Color(0.45f, 0.2f, 0.14f) },
+            new CelestialTier { tier = 9, requiredMass = 15000, salePrice = 1e7, sizePx = 96, color = new Color(0.95f, 0.25f, 0.2f) },
+            new CelestialTier { tier = 10, requiredMass = 40000, salePrice = 1e8, sizePx = 116, color = new Color(1f, 0.9f, 0.35f) },
+            new CelestialTier { tier = 11, requiredMass = 1e5, salePrice = 1e9, sizePx = 140, color = new Color(0.72f, 0.85f, 1f) },
+        };
+
+        public static List<UpgradeDef> SeedUpgrades() => new List<UpgradeDef>
+        {
+            Upg(UpgradeIds.SpawnRate, 1, 10, 1.25, 0),
+            Upg(UpgradeIds.PullAccel, 0.20, 10, 1.25, 0),
+            Upg(UpgradeIds.SaleMult, 0.25, 15, 1.3, 0),
+            Upg(UpgradeIds.StaminaMax, 10, 20, 1.3, 0),
+            Upg(UpgradeIds.ThresholdMult, 0.04, 25, 1.35, 10),
+            Upg(UpgradeIds.DustCap, 100, 30, 1.3, 27),
+            Upg(UpgradeIds.DustMass, 1.5, 200, 1.6, 0),
+            Upg(UpgradeIds.GravityRadius, 0.10, 20, 1.3, 20),
+            Upg(UpgradeIds.StaminaDrain, 0.05, 40, 1.35, 10),
+            Upg(UpgradeIds.StartBonus, 50, 25, 1.3, 20),
+        };
+
+        public static List<UnlockDef> SeedUnlocks() => new List<UnlockDef>
+        {
+            new UnlockDef { tier = 2, cost = 50 },
+            new UnlockDef { tier = 3, cost = 400 },
+            new UnlockDef { tier = 4, cost = 2500 },
+            new UnlockDef { tier = 5, cost = 2e4 },
+            new UnlockDef { tier = 6, cost = 1.5e5 },
+            new UnlockDef { tier = 7, cost = 1.2e6 },
+            new UnlockDef { tier = 8, cost = 1e7 },
+            new UnlockDef { tier = 9, cost = 1e8 },
+            new UnlockDef { tier = 10, cost = 1e9 },
+            new UnlockDef { tier = 11, cost = 1e10 },
+        };
+
+        static UpgradeDef Upg(string id, double effect, double baseCost, double growth, int maxLevel) =>
+            new UpgradeDef { id = id, enabled = true, revealAtTier = 1, effectPerLevel = effect, baseCost = baseCost, growth = growth, maxLevel = maxLevel };
+
+        /// <summary>
+        /// Adds seed entries that the existing assets lack (tiers by number, upgrades by id, unlocks by tier), keeping
+        /// every existing entry and value untouched. Tiers and unlocks stay sorted by tier. Returns the number added.
+        /// </summary>
+        public static int AddMissing(CelestialTable c, UpgradeTable u)
+        {
+            int added = 0;
+            foreach (var t in SeedTiers())
+            {
+                if (c.Get(t.tier) != null) continue;
+                c.tiers.Add(t);
+                added++;
+            }
+            c.tiers.Sort((a, b) => a.tier.CompareTo(b.tier));
+            foreach (var d in SeedUpgrades())
+            {
+                if (u.Get(d.id) != null) continue;
+                u.upgrades.Add(d);
+                added++;
+            }
+            foreach (var un in SeedUnlocks())
+            {
+                if (u.GetUnlock(un.tier) != null) continue;
+                u.unlocks.Add(un);
+                added++;
+            }
+            u.unlocks.Sort((a, b) => a.tier.CompareTo(b.tier));
+            if (added > 0)
+            {
+                EditorUtility.SetDirty(c);
+                EditorUtility.SetDirty(u);
+            }
+            return added;
         }
 
         [MenuItem("Incremental/Setup/2. Create Render Assets")]

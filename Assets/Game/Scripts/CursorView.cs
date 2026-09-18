@@ -4,13 +4,16 @@ using UnityEngine.UI;
 namespace Incremental
 {
     /// <summary>
-    /// Gravity-radius ring (LineRenderer circle) and mass gauge (radial-fill uGUI Image) that follow the cursor
+    /// Gravity-radius ring (LineRenderer circle, effective radius) and mass gauge (radial-fill uGUI Image) that follow the cursor
     /// while holding. Gauge = mass / threshold of the target tier. Render only.
     /// </summary>
     public sealed class CursorView : MonoBehaviour
     {
+        const int RingSegments = 64;
+
         GameRoot root;
         LineRenderer ring;
+        double ringRadiusPx = -1;
         RectTransform canvasRect;
         RectTransform gaugeRoot;
         Image gaugeFill;
@@ -32,14 +35,8 @@ namespace Incremental
             ring.widthMultiplier = (float)(2.0 / p.pixelsPerUnit);
             ring.startColor = ring.endColor = new Color(1f, 1f, 1f, 0.35f);
             ring.sortingOrder = 5;
-            const int segments = 64;
-            ring.positionCount = segments;
-            float r = (float)(p.gravityRadius / p.pixelsPerUnit);
-            for (int i = 0; i < segments; i++)
-            {
-                float a = i / (float)segments * Mathf.PI * 2f;
-                ring.SetPosition(i, new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f));
-            }
+            ring.positionCount = RingSegments;
+            SetRingRadius(p.gravityRadius);
 
             var size = new Vector2(72f, 72f);
             var center = new Vector2(0.5f, 0.5f);
@@ -60,12 +57,25 @@ namespace Incremental
             SetVisible(show);
             if (!show) return;
 
+            if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
             var ps = root.ReadPointer();
             Vector2 w = root.ToWorld(ps.screenPos);
             transform.position = new Vector3(w.x, w.y, 0f);
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, ps.screenPos, null, out var local))
                 gaugeRoot.anchoredPosition = local;
             gaugeFill.fillAmount = (float)root.GaugeFill();
+        }
+
+        /// <summary>Rebuilds the ring for the effective gravity radius (the gravity_radius upgrade changes it between runs).</summary>
+        void SetRingRadius(double radiusPx)
+        {
+            ringRadiusPx = radiusPx;
+            float r = (float)(radiusPx / root.gameParams.pixelsPerUnit);
+            for (int i = 0; i < RingSegments; i++)
+            {
+                float a = i / (float)RingSegments * Mathf.PI * 2f;
+                ring.SetPosition(i, new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f));
+            }
         }
 
         void SetVisible(bool v)

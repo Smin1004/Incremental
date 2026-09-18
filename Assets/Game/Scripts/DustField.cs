@@ -31,12 +31,13 @@ namespace Incremental
 
         public void Reseed(int seed) { rng = new System.Random(seed); }
 
-        public void Reset(int initial, Rect area, Vector2 cursor)
+        /// <summary>Clears the field and places the initial dust outside the (effective) gravity radius of the cursor.</summary>
+        public void Reset(int initial, Rect area, Vector2 cursor, in EffectiveStats s)
         {
             count = 0;
             spawnAcc = 0;
             Area = area;
-            float gravR = Px(p.gravityRadius);
+            float gravR = Px(s.gravityRadius);
             for (int i = 0; i < initial; i++) SpawnRandom(cursor, gravR);
         }
 
@@ -46,7 +47,7 @@ namespace Incremental
             Area = area;
             float fdt = (float)dt;
             float drift = Px(p.driftSpeed);
-            float gravR = Px(p.gravityRadius);
+            float gravR = Px(s.gravityRadius);
             float capR = Px(p.captureRadius);
             float maxSpeed = Px(p.dustMaxSpeed);
             float accel = Px(s.pullAccel);

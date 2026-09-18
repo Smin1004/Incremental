@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -7,35 +6,48 @@ using UnityEngine.UI;
 namespace Incremental
 {
     /// <summary>
-    /// Result (spec §4) and shop (spec §5) on one panel, shown between runs.
-    /// Result: run income, planets per tier, ratio vs last run (hidden on the first run), best run income.
-    /// Shop: 5 upgrades + 2 unlocks with name, effect, level, cost and a buy button; "next run" button.
+    /// Result (11 §4) and shop on one screen, shown between runs, as two panels side by side at 1920x1080:
+    /// result on the left (run income, planets per tier for tiers made at least once, ratio vs last run hidden on the
+    /// first run, best run income, "next run" button), shop on the right (visible upgrades and the next unlock).
     /// Built from code; refreshed every frame while visible so debug currency changes show immediately.
     /// </summary>
     public sealed class ResultShopView : MonoBehaviour
     {
         sealed class Row
         {
-            public bool isUnlock;
-            public UpgradeId id;
-            public int tier;
-            public Text level;
-            public Text cost;
-            public Text buttonLabel;
+            /// <summary>Null for the unlock row.</summary>
+            public UpgradeDef def;
+            public RectTransform rt;
+            public Image bg;
+            public Text name, effect, level, cost, buttonLabel;
             public Button button;
         }
 
-        const float PanelWidth = 1000f;
-        const float PanelHeight = 860f;
-        const float RowHeight = 54f;
+        // Layout (reference 1920x1080).
+        const float LeftWidth = 640f;
+        const float RightWidth = 1120f;
+        const float PanelHeight = 880f;
+        const float PanelGap = 24f;
+        const float RowHeight = 56f;
+        const float RowsTop = -132f;
+        const float ColName = 40f, ColEffect = 350f, ColLevel = 610f, ColCost = 780f, ColButton = 960f;
+        const float WName = 300f, WEffect = 250f, WLevel = 160f, WCost = 160f, WButton = 130f;
+        const int PlanetLinesPerColumn = 6;
+
+        static readonly Color PanelColor = new Color(0.08f, 0.09f, 0.13f, 0.97f);
+        static readonly Color LabelColor = new Color(0.7f, 0.75f, 0.85f, 1f);
+        static readonly Color RowColorA = new Color(1f, 1f, 1f, 0.035f);
+        static readonly Color RowColorB = new Color(1f, 1f, 1f, 0f);
 
         GameRoot root;
         Font font;
         Canvas canvas;
-        RectTransform panel;
-        Text title, incomeValue, planetsValue, ratioLabel, ratioValue, bestValue, currencyText;
+        RectTransform left, right;
+        Text title, incomeValue, planetsColA, planetsColB, ratioLabel, ratioValue, bestValue, currencyText;
         readonly List<Row> rows = new List<Row>();
-        readonly StringBuilder sb = new StringBuilder();
+        Row unlockRow;
+        readonly StringBuilder sbA = new StringBuilder();
+        readonly StringBuilder sbB = new StringBuilder();
         RunRecord lastRecord;
 
         public bool IsVisible => canvas != null && canvas.gameObject.activeSelf;
@@ -52,64 +64,68 @@ namespace Incremental
             dim.color = new Color(0f, 0f, 0f, 0.55f);
             dim.raycastTarget = true;
 
-            var center = new Vector2(0.5f, 0.5f);
-            panel = UIBuilder.CreateRect("Panel", canvasRect, center, center, Vector2.zero, new Vector2(PanelWidth, PanelHeight));
-            var panelImg = panel.gameObject.AddComponent<Image>();
-            panelImg.color = new Color(0.08f, 0.09f, 0.13f, 0.97f);
-            panelImg.raycastTarget = true;
+            float total = LeftWidth + PanelGap + RightWidth;
+            left = Panel("ResultPanel", canvasRect, -total * 0.5f + LeftWidth * 0.5f, LeftWidth);
+            right = Panel("ShopPanel", canvasRect, total * 0.5f - RightWidth * 0.5f, RightWidth);
 
-            float y = -24f;
-            title = Label("Title", 40, TextAnchor.UpperCenter, 0f, y, PanelWidth, 50f);
-            y -= 72f;
-
-            incomeValue = ResultRow("Income", UIStrings.ResultIncome, ref y, out _);
-            planetsValue = ResultRow("Planets", UIStrings.ResultPlanets, ref y, out _);
-            ratioValue = ResultRow("Ratio", UIStrings.ResultRatio, ref y, out ratioLabel);
-            bestValue = ResultRow("Best", UIStrings.ResultBest, ref y, out _);
-            y -= 24f;
-
-            Label("ShopTitle", 32, TextAnchor.UpperLeft, 40f, y, 300f, 40f).text = UIStrings.ShopTitle;
-            currencyText = Label("ShopCurrency", 26, TextAnchor.UpperRight, PanelWidth - 40f - 400f, y - 4f, 400f, 40f);
-            y -= 50f;
-
-            HeaderCell(UIStrings.ColumnName, 40f, y, 280f, TextAnchor.MiddleLeft);
-            HeaderCell(UIStrings.ColumnEffect, 330f, y, 160f, TextAnchor.MiddleLeft);
-            HeaderCell(UIStrings.ColumnLevel, 500f, y, 140f, TextAnchor.MiddleLeft);
-            HeaderCell(UIStrings.ColumnCost, 650f, y, 140f, TextAnchor.MiddleRight);
-            y -= 36f;
-
-            var table = root.upgradeTable;
-            foreach (var def in table.upgrades)
-            {
-                int idx = (int)def.id;
-                string name = idx < UIStrings.UpgradeNames.Length ? UIStrings.UpgradeNames[idx] : def.id.ToString();
-                string effect = idx < UIStrings.UpgradeEffects.Length ? string.Format(UIStrings.UpgradeEffects[idx], EffectNumber(def)) : string.Empty;
-                var row = MakeRow(def.id.ToString(), name, effect, ref y);
-                row.isUnlock = false;
-                row.id = def.id;
-                UpgradeId id = def.id;
-                row.button.onClick.AddListener(() => { if (root.TryBuyUpgrade(id)) Refresh(); });
-                rows.Add(row);
-            }
-            foreach (var unlock in table.unlocks)
-            {
-                var tierDef = root.celestialTable.Get(unlock.tier);
-                string tierName = tierDef != null ? tierDef.name : unlock.tier.ToString();
-                var row = MakeRow("Unlock" + unlock.tier, string.Format(UIStrings.UnlockName, tierName), string.Format(UIStrings.UnlockEffect, unlock.tier), ref y);
-                row.isUnlock = true;
-                row.tier = unlock.tier;
-                int tier = unlock.tier;
-                row.button.onClick.AddListener(() => { if (root.TryUnlock(tier)) Refresh(); });
-                rows.Add(row);
-            }
-
-            UIBuilder.CreateButton("NextRun", panel, font, 30, UIStrings.NextRun,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(320f, 64f),
-                () => root.RequestStartRun(), out _);
+            BuildResult();
+            BuildShop();
 
             root.RunEnded += OnRunEnded;
             root.RunStarted += OnRunStarted;
             canvas.gameObject.SetActive(false);
+        }
+
+        void BuildResult()
+        {
+            title = Label(left, "Title", 44, TextAnchor.MiddleCenter, 0f, -28f, LeftWidth, 56f);
+
+            Label(left, "IncomeLabel", 26, TextAnchor.MiddleLeft, 40f, -110f, 560f, 34f, LabelColor).text = UIStrings.ResultIncome;
+            incomeValue = Label(left, "IncomeValue", 64, TextAnchor.MiddleLeft, 40f, -146f, 560f, 76f);
+
+            Label(left, "PlanetsLabel", 26, TextAnchor.MiddleLeft, 40f, -240f, 560f, 34f, LabelColor).text = UIStrings.ResultPlanets;
+            planetsColA = Label(left, "PlanetsA", 26, TextAnchor.UpperLeft, 56f, -282f, 270f, 230f);
+            planetsColB = Label(left, "PlanetsB", 26, TextAnchor.UpperLeft, 336f, -282f, 270f, 230f);
+
+            ratioLabel = Label(left, "RatioLabel", 28, TextAnchor.MiddleLeft, 40f, -532f, 300f, 48f, LabelColor);
+            ratioLabel.text = UIStrings.ResultRatio;
+            ratioValue = Label(left, "RatioValue", 40, TextAnchor.MiddleRight, LeftWidth - 40f - 280f, -532f, 280f, 48f);
+
+            Label(left, "BestLabel", 28, TextAnchor.MiddleLeft, 40f, -592f, 300f, 48f, LabelColor).text = UIStrings.ResultBest;
+            bestValue = Label(left, "BestValue", 32, TextAnchor.MiddleRight, LeftWidth - 40f - 280f, -592f, 280f, 48f);
+
+            UIBuilder.CreateButton("NextRun", left, font, 32, UIStrings.NextRun,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 36f), new Vector2(400f, 80f),
+                () => root.RequestStartRun(), out _);
+        }
+
+        void BuildShop()
+        {
+            Label(right, "ShopTitle", 36, TextAnchor.MiddleLeft, ColName, -28f, 300f, 48f).text = UIStrings.ShopTitle;
+            currencyText = Label(right, "ShopCurrency", 30, TextAnchor.MiddleRight, RightWidth - 40f - 600f, -28f, 600f, 48f);
+
+            HeaderCell(UIStrings.ColumnName, ColName, WName, TextAnchor.MiddleLeft);
+            HeaderCell(UIStrings.ColumnEffect, ColEffect, WEffect, TextAnchor.MiddleLeft);
+            HeaderCell(UIStrings.ColumnLevel, ColLevel, WLevel, TextAnchor.MiddleLeft);
+            HeaderCell(UIStrings.ColumnCost, ColCost, WCost, TextAnchor.MiddleRight);
+
+            foreach (var def in root.upgradeTable.upgrades)
+            {
+                var row = MakeRow("Upg_" + def.id);
+                row.def = def;
+                row.name.text = UIStrings.UpgradeName(def.id);
+                row.effect.text = UIStrings.UpgradeEffect(def);
+                string id = def.id;
+                row.button.onClick.AddListener(() => { if (root.TryBuyUpgrade(id)) Refresh(); });
+                rows.Add(row);
+            }
+
+            unlockRow = MakeRow("Unlock");
+            unlockRow.button.onClick.AddListener(() =>
+            {
+                int next = Shop.NextUnlockTier(root.upgradeTable, root.Meta);
+                if (next > 0 && root.TryUnlock(next)) Refresh();
+            });
         }
 
         void Update()
@@ -117,7 +133,10 @@ namespace Incremental
             if (IsVisible) Refresh();
         }
 
-        void OnRunEnded(RunRecord rec)
+        void OnRunEnded(RunRecord rec) => Show(rec);
+
+        /// <summary>Opens the screen with this run as the result (null: no run yet, only the shop and best income).</summary>
+        public void Show(RunRecord rec)
         {
             lastRecord = rec;
             canvas.gameObject.SetActive(true);
@@ -137,97 +156,138 @@ namespace Incremental
             if (lastRecord != null)
             {
                 title.text = string.Format(UIStrings.ResultTitle, lastRecord.run);
-                incomeValue.text = Fmt.Int(lastRecord.income);
-                planetsValue.text = PlanetsText(lastRecord);
-                bool showRatio = !double.IsNaN(lastRecord.ratioVsLast) && !double.IsInfinity(lastRecord.ratioVsLast);
-                if (ratioLabel.gameObject.activeSelf != showRatio) ratioLabel.gameObject.SetActive(showRatio);
-                if (ratioValue.gameObject.activeSelf != showRatio) ratioValue.gameObject.SetActive(showRatio);
-                if (showRatio) ratioValue.text = Fmt.Mult(lastRecord.ratioVsLast);
+                incomeValue.text = Fmt.Num(lastRecord.income);
+                FillPlanets(lastRecord);
             }
-            bestValue.text = Fmt.Int(m.bestRunIncome);
-            currencyText.text = string.Format(UIStrings.ShopCurrency, Fmt.Int(m.currency));
+            else
+            {
+                title.text = string.Empty;
+                incomeValue.text = UIStrings.NoPlanets;
+                planetsColA.text = UIStrings.NoPlanets;
+                planetsColB.text = string.Empty;
+            }
+            bool showRatio = lastRecord != null && lastRecord.HasRatio;
+            SetActive(ratioLabel, showRatio);
+            SetActive(ratioValue, showRatio);
+            if (showRatio) ratioValue.text = Fmt.Mult(lastRecord.ratioVsLast);
+            bestValue.text = Fmt.Num(m.bestRunIncome);
+            currencyText.text = string.Format(UIStrings.ShopCurrency, Fmt.Num(m.currency));
 
+            float y = RowsTop;
+            int visible = 0;
             for (int i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
-                if (!row.isUnlock)
-                {
-                    int lvl = m.GetLevel(row.id);
-                    bool maxed = Shop.IsMaxed(t, m, row.id);
-                    row.level.text = string.Format(maxed ? UIStrings.LevelMax : UIStrings.Level, lvl);
-                    row.cost.text = maxed ? UIStrings.NoCost : Fmt.Int(Shop.UpgradeCost(t, m, row.id));
-                    row.button.interactable = Shop.CanBuyUpgrade(t, m, row.id);
-                    row.buttonLabel.text = maxed ? UIStrings.Max : UIStrings.Buy;
-                }
-                else
-                {
-                    bool unlocked = Shop.IsUnlocked(m, row.tier);
-                    row.level.text = unlocked ? UIStrings.Unlocked : UIStrings.Locked;
-                    row.cost.text = unlocked ? UIStrings.NoCost : Fmt.Int(Shop.UnlockCost(t, row.tier));
-                    row.button.interactable = Shop.CanUnlock(t, m, row.tier);
-                    row.buttonLabel.text = unlocked ? UIStrings.Unlocked : UIStrings.Buy;
-                }
+                bool show = Shop.IsVisible(row.def, m);
+                SetActive(row.rt, show);
+                if (!show) continue;
+                Place(row, ref y, visible++);
+
+                int lvl = m.GetLevel(row.def.id);
+                bool maxed = Shop.IsMaxed(row.def, m);
+                row.level.text = string.Format(maxed ? UIStrings.LevelMax : UIStrings.Level, lvl);
+                row.cost.text = maxed ? UIStrings.NoCost : Fmt.Num(Shop.UpgradeCost(row.def, m), Rounding.Up);
+                row.button.interactable = Shop.CanBuyUpgrade(t, m, row.def.id);
+                row.buttonLabel.text = maxed ? UIStrings.Max : UIStrings.Buy;
+            }
+
+            // One unlock row: the next tier, or "all unlocked".
+            Place(unlockRow, ref y, visible);
+            int next = Shop.NextUnlockTier(t, m);
+            bool any = next > 0;
+            SetActive(unlockRow.button, any);
+            if (any)
+            {
+                var tier = root.celestialTable.Get(next);
+                double price = tier != null ? tier.salePrice * Stats.Compute(root.gameParams, t, m).saleMult : 0.0;
+                unlockRow.name.text = string.Format(UIStrings.UnlockName, UIStrings.TierName(next));
+                unlockRow.effect.text = string.Format(UIStrings.UnlockEffect, next, Fmt.Num(price));
+                unlockRow.level.text = UIStrings.Locked;
+                unlockRow.cost.text = Fmt.Num(Shop.UnlockCost(t, next), Rounding.Up);
+                unlockRow.button.interactable = Shop.CanUnlock(t, m, next);
+                unlockRow.buttonLabel.text = UIStrings.Buy;
+            }
+            else
+            {
+                unlockRow.name.text = UIStrings.AllUnlocked;
+                unlockRow.effect.text = string.Empty;
+                unlockRow.level.text = string.Empty;
+                unlockRow.cost.text = string.Empty;
             }
         }
 
-        string PlanetsText(RunRecord rec)
+        /// <summary>Planets per tier, only tiers made at least once, split over two columns.</summary>
+        void FillPlanets(RunRecord rec)
         {
-            sb.Length = 0;
+            sbA.Length = 0;
+            sbB.Length = 0;
+            int n = 0;
             var tiers = root.celestialTable.tiers;
             for (int i = 0; i < tiers.Count; i++)
             {
-                int idx = tiers[i].tier - 1;
-                int count = rec.tierCounts != null && idx >= 0 && idx < rec.tierCounts.Length ? rec.tierCounts[idx] : 0;
-                if (i > 0) sb.Append(UIStrings.PlanetSeparator);
-                sb.AppendFormat(UIStrings.PlanetCount, tiers[i].name, count);
+                int count = rec.TierCount(tiers[i].tier);
+                if (count <= 0) continue;
+                var sb = n < PlanetLinesPerColumn ? sbA : sbB;
+                if (sb.Length > 0) sb.Append('\n');
+                sb.AppendFormat(UIStrings.PlanetCount, UIStrings.TierName(tiers[i].tier), count);
+                n++;
             }
-            return sb.ToString();
-        }
-
-        /// <summary>Effect number for display: fraction effects as percent, others as-is.</summary>
-        static string EffectNumber(UpgradeDef def)
-        {
-            bool fraction = def.id == UpgradeId.PullAccel || def.id == UpgradeId.SaleMult || def.id == UpgradeId.ThresholdMult;
-            double v = fraction ? def.effectPerLevel * 100.0 : def.effectPerLevel;
-            return Fmt.Int(Math.Round(v));
+            planetsColA.text = n == 0 ? UIStrings.NoPlanets : sbA.ToString();
+            planetsColB.text = sbB.ToString();
         }
 
         // ---------------- layout helpers ----------------
 
-        Text Label(string name, int size, TextAnchor align, float x, float y, float w, float h)
+        RectTransform Panel(string name, RectTransform parent, float centerX, float width)
         {
-            var t = UIBuilder.CreateText(name, panel, font, size, align, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(x, y), new Vector2(w, h));
+            var center = new Vector2(0.5f, 0.5f);
+            var rt = UIBuilder.CreateRect(name, parent, center, center, new Vector2(centerX, 0f), new Vector2(width, PanelHeight));
+            var img = rt.gameObject.AddComponent<Image>();
+            img.color = PanelColor;
+            img.raycastTarget = true;
+            return rt;
+        }
+
+        Text Label(RectTransform parent, string name, int size, TextAnchor align, float x, float y, float w, float h) =>
+            UIBuilder.CreateText(name, parent, font, size, align, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(x, y), new Vector2(w, h));
+
+        Text Label(RectTransform parent, string name, int size, TextAnchor align, float x, float y, float w, float h, Color color)
+        {
+            var t = Label(parent, name, size, align, x, y, w, h);
+            t.color = color;
             return t;
         }
 
-        Text ResultRow(string name, string label, ref float y, out Text labelText)
+        void HeaderCell(string text, float x, float w, TextAnchor align)
         {
-            labelText = Label(name + "Label", 28, TextAnchor.MiddleLeft, 60f, y, 400f, 40f);
-            labelText.text = label;
-            var value = Label(name + "Value", 28, TextAnchor.MiddleRight, PanelWidth - 60f - 600f, y, 600f, 40f);
-            y -= 44f;
-            return value;
+            Label(right, "Header_" + text, 22, align, x, -96f, w, 30f, LabelColor).text = text;
         }
 
-        void HeaderCell(string text, float x, float y, float w, TextAnchor align)
-        {
-            var t = Label("Header_" + text, 22, align, x, y, w, 30f);
-            t.text = text;
-            t.color = new Color(0.7f, 0.75f, 0.85f, 1f);
-        }
-
-        Row MakeRow(string name, string displayName, string effect, ref float y)
+        Row MakeRow(string name)
         {
             var row = new Row();
-            Label(name + "Name", 26, TextAnchor.MiddleLeft, 40f, y, 280f, RowHeight).text = displayName;
-            Label(name + "Effect", 22, TextAnchor.MiddleLeft, 330f, y, 160f, RowHeight).text = effect;
-            row.level = Label(name + "Level", 24, TextAnchor.MiddleLeft, 500f, y, 140f, RowHeight);
-            row.cost = Label(name + "Cost", 24, TextAnchor.MiddleRight, 650f, y, 140f, RowHeight);
-            row.button = UIBuilder.CreateButton(name + "Buy", panel, font, 24, UIStrings.Buy,
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(810f, y - 5f), new Vector2(150f, RowHeight - 10f),
-                null, out row.buttonLabel);
-            y -= RowHeight;
+            var top = new Vector2(0f, 1f);
+            row.rt = UIBuilder.CreateRect(name, right, top, top, new Vector2(0f, RowsTop), new Vector2(RightWidth, RowHeight));
+            row.bg = UIBuilder.CreateImage("Bg", row.rt, RowColorB, top, top, Vector2.zero, new Vector2(RightWidth, RowHeight), UIBuilder.SolidSprite());
+            row.name = Label(row.rt, "Name", 26, TextAnchor.MiddleLeft, ColName, 0f, WName, RowHeight);
+            row.effect = Label(row.rt, "Effect", 22, TextAnchor.MiddleLeft, ColEffect, 0f, WEffect, RowHeight);
+            row.level = Label(row.rt, "Level", 24, TextAnchor.MiddleLeft, ColLevel, 0f, WLevel, RowHeight);
+            row.cost = Label(row.rt, "Cost", 24, TextAnchor.MiddleRight, ColCost, 0f, WCost, RowHeight);
+            row.button = UIBuilder.CreateButton("Buy", row.rt, font, 24, UIStrings.Buy,
+                top, top, new Vector2(ColButton, -5f), new Vector2(WButton, RowHeight - 10f), null, out row.buttonLabel);
             return row;
+        }
+
+        static void Place(Row row, ref float y, int visibleIndex)
+        {
+            if (row.rt.anchoredPosition.y != y) row.rt.anchoredPosition = new Vector2(0f, y);
+            row.bg.color = (visibleIndex & 1) == 0 ? RowColorA : RowColorB;
+            y -= RowHeight;
+        }
+
+        static void SetActive(Component c, bool on)
+        {
+            if (c.gameObject.activeSelf != on) c.gameObject.SetActive(on);
         }
     }
 }

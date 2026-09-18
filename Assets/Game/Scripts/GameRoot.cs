@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -39,6 +40,10 @@ namespace Incremental
         public int planetPoolSize = 8;
 
         public MetaState Meta { get; private set; } = new MetaState();
+        public Settings Settings { get; private set; } = new Settings();
+        public SaveStore Store { get; private set; }
+        /// <summary>The run is frozen while the window is unfocused (settings.pauseOnFocusLoss), except when the bot plays.</summary>
+        public bool Paused => Phase == GamePhase.Run && !hasFocus && Settings.pauseOnFocusLoss && !(Bot != null && Bot.Enabled);
         public RunState Run { get; private set; }
         public EffectiveStats Effective { get; private set; }
         public GamePhase Phase { get; private set; } = GamePhase.Result;
@@ -60,10 +65,18 @@ namespace Incremental
         public Func<PointerState> InputProvider;
         public event Action<RunRecord> RunEnded;
         public event Action RunStarted;
+        /// <summary>Raised on the fixed tick right after a planet is created and sold.</summary>
+        public event Action<CelestialTier> PlanetCreated;
+        /// <summary>persistentDataPath, captured on the main thread in Awake (run_log.csv, screenshots).</summary>
+        public string DataDir { get; private set; }
 
-        readonly int[] startLevels = new int[UpgradeTable.UpgradeCount];
         readonly Stopwatch tickWatch = new Stopwatch();
+        List<UpgradeLevel> runStartLevels = new List<UpgradeLevel>();
+        bool endingLoggedThisRun;
         bool pendingStart;
+        bool hasFocus = true;
+        bool shownPaused;
+        double pendingSaveTimer;
         double maxTickWindow;
         double maxTickAcc;
 
@@ -72,6 +85,11 @@ namespace Incremental
             // The Unity 6 editor honours this while the editor is not the active application; without it the player
             // loop stalls as soon as another window is in front, which breaks unattended bot runs.
             Application.runInBackground = true;
+            DataDir = Application.persistentDataPath;
+            Store = new SaveStore(DataDir);
+            Settings = Store.LoadSettings();
+            Fmt.Mode = Settings.notation;
+            hasFocus = Application.isFocused;
 
             Cam = Camera.main;
             if (Cam == null) Cam = FindFirstObjectByType<Camera>();
@@ -115,9 +133,56 @@ namespace Incremental
             Bot.Init(this);
         }
 
+        /// <summary>
+        /// No save: run 1 starts right away. With a save: a run left pending by a killed game is closed as a crash,
+        /// then the game opens on the result / shop screen showing the last run.
+        /// </summary>
         void Start()
         {
-            StartRun();
+            var data = Store.Load(out var status);
+            if (data == null)
+            {
+                Meta = new MetaState();
+                StartRun();
+                return;
+            }
+
+            Meta = data.meta;
+            var crashed = Session.FinalizePending(data, EndReason.Crash);
+            if (crashed != null) LogRun(crashed);
+            if (crashed != null || status == LoadStatus.RestoredFromBackup) Save();
+            Phase = GamePhase.Result;
+            ShowIdleField();
+            ShopView.Show(Meta.LastRun);
+            UnityEngine.Debug.Log($"[Save] loaded ({status}): run {Meta.runCount}, currency {Fmt.Num(Meta.currency)}, max tier {Meta.unlockedMaxTier}");
+        }
+
+        /// <summary>
+        /// Opening on the shop from a save: the HUD and dust field look like a finished run (stamina 0, last run income,
+        /// the run-start dust as a still background), as they do after a run ends.
+        /// </summary>
+        void ShowIdleField()
+        {
+            Effective = ComputeStats();
+            var last = Meta.LastRun;
+            Hud.SetIncome(last != null ? last.income : 0);
+            Hud.SetStamina(0, Effective.staminaMax);
+            var ps = ReadPointer();
+            LastPointer = ps;
+            CursorWorld = ToWorld(ps.screenPos);
+            Dust.Reset((int)Effective.dustInitial, CameraArea(), CursorWorld, Effective);
+        }
+
+        /// <summary>Quitting mid-run ends the run without the result screen (income kept); otherwise just saves.</summary>
+        void OnApplicationQuit()
+        {
+            if (Phase == GamePhase.Run && Run != null) EndRun(EndReason.Quit, false);
+            else Save();
+        }
+
+        void OnApplicationFocus(bool focus)
+        {
+            hasFocus = focus;
         }
 
         void FixedUpdate()
@@ -128,7 +193,7 @@ namespace Incremental
                 pendingStart = false;
                 StartRun();
             }
-            if (Phase == GamePhase.Run) TickRun(Time.fixedDeltaTime);
+            if (Phase == GamePhase.Run && !Paused) TickRun(Time.fixedDeltaTime);
             tickWatch.Stop();
 
             LastTickMs = tickWatch.Elapsed.TotalMilliseconds;
@@ -156,6 +221,12 @@ namespace Incremental
                 Hud.SetIncome(Run.runIncome);
                 Hud.SetStamina(Run.stamina, Effective.staminaMax);
             }
+            bool paused = Paused;
+            if (paused != shownPaused)
+            {
+                shownPaused = paused;
+                Hud.SetCenter(paused ? UIStrings.Paused : string.Empty);
+            }
         }
 
         // ---------------- run lifecycle ----------------
@@ -169,16 +240,19 @@ namespace Incremental
         public void StartRun()
         {
             Meta.runCount++;
-            Array.Copy(Meta.upgradeLevels, startLevels, startLevels.Length);
+            runStartLevels = Meta.CopyLevels();
+            endingLoggedThisRun = false;
             Effective = ComputeStats();
-            Run = new RunState(celestialTable.TierCount) { stamina = Effective.staminaMax };
+            Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
 
             var ps = ReadPointer();
             LastPointer = ps;
             CursorWorld = ToWorld(ps.screenPos);
-            Dust.Reset((int)gameParams.dustInitial, CameraArea(), CursorWorld);
+            Dust.Reset((int)Effective.dustInitial, CameraArea(), CursorWorld, Effective);
             Planets.Clear();
             Phase = GamePhase.Run;
+            pendingSaveTimer = 0;
+            Save();
             RunStarted?.Invoke();
         }
 
@@ -195,11 +269,11 @@ namespace Incremental
             bool holding = ps.pressed;
             Run.holding = holding;
             Run.elapsed += dt;
-            Run.stamina -= gameParams.staminaIdleDrain * dt;
-            if (holding) Run.stamina -= gameParams.staminaHoldDrain * dt;
+            Run.stamina -= s.staminaIdleDrain * dt;
+            if (holding) Run.stamina -= s.staminaHoldDrain * dt;
 
             int captured = Dust.Tick(dt, CameraArea(), CursorWorld, holding, s);
-            if (captured > 0) Run.mass += captured * gameParams.dustMass;
+            if (captured > 0) Run.mass += captured * s.dustMass;
 
             // Reaching the highest unlocked tier creates immediately, without releasing.
             if (holding)
@@ -218,7 +292,15 @@ namespace Incremental
                     Release();
                     Run.holding = false;
                 }
-                EndRun();
+                EndRun(EndReason.Stamina, true);
+                return;
+            }
+
+            pendingSaveTimer += dt;
+            if (pendingSaveTimer >= gameParams.pendingSaveIntervalSec)
+            {
+                pendingSaveTimer = 0;
+                Save();
             }
         }
 
@@ -231,7 +313,8 @@ namespace Incremental
                 CreatePlanet(tier);
                 return;
             }
-            int n = gameParams.dustMass > 0 ? (int)Math.Round(Run.mass / gameParams.dustMass) : 0;
+            double dustMass = Effective.dustMass;
+            int n = dustMass > 0 ? (int)Math.Round(Run.mass / dustMass) : 0;
             if (n > 0) Dust.Scatter(n, CursorWorld);
             Run.mass = 0;
         }
@@ -243,36 +326,108 @@ namespace Incremental
             if (idx >= 0 && idx < Run.planetCounts.Length) Run.planetCounts[idx]++;
             Planets.Show(CursorWorld, tier.sizePx, tier.color);
             Run.mass = 0;
+
+            // The last tier ends the game in week 4; for now it only sells, and the log marks it once per run.
+            if (tier.tier == celestialTable.MaxTier && !endingLoggedThisRun)
+            {
+                endingLoggedThisRun = true;
+                UnityEngine.Debug.Log($"[Ending] tier {tier.tier} created (ending: week 4)");
+            }
+            PlanetCreated?.Invoke(tier);
         }
 
-        void EndRun()
+        /// <summary>
+        /// Ends the run: income into currency, statistics and history (Session.ApplyRunEnd), save, run_log.csv.
+        /// <paramref name="showResult"/> is false when quitting: no result screen and no bot shopping.
+        /// </summary>
+        void EndRun(string reason, bool showResult)
         {
-            double ratio = (Meta.runCount > 1 && Meta.lastRunIncome > 0) ? Run.runIncome / Meta.lastRunIncome : double.NaN;
-            var rec = new RunRecord
-            {
-                run = Meta.runCount,
-                durationSec = Run.elapsed,
-                income = Run.runIncome,
-                tierCounts = (int[])Run.planetCounts.Clone(),
-                ratioVsLast = ratio,
-                startLevels = (int[])startLevels.Clone(),
-            };
-
-            Meta.currency += Run.runIncome;
-            Meta.lastRunIncome = Run.runIncome;
-            if (Run.runIncome > Meta.bestRunIncome) Meta.bestRunIncome = Run.runIncome;
+            var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, reason);
+            Session.ApplyRunEnd(Meta, rec);
             Phase = GamePhase.Result;
+            Save();
+            LogRun(rec);
+            if (showResult) RunEnded?.Invoke(rec);
+        }
 
-            RunLogger.Append(rec);
+        void LogRun(RunRecord rec)
+        {
+            RunLogger.Append(DataDir, rec, celestialTable, upgradeTable);
             UnityEngine.Debug.Log(RunLogger.Summary(rec));
-            RunEnded?.Invoke(rec);
+        }
+
+        // ---------------- save ----------------
+
+        /// <summary>Writes save.json. During a run the run in flight goes into pending.</summary>
+        public void Save()
+        {
+            var data = new SaveData { meta = Meta };
+            if (Phase == GamePhase.Run && Run != null)
+                data.pending = Session.MakePending(Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels);
+            try
+            {
+                Store.Write(data);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[Save] write failed: " + e.Message);
+            }
+        }
+
+        /// <summary>Writes settings.json with the current notation (F7).</summary>
+        public void SaveSettings()
+        {
+            Settings.notation = Fmt.Mode;
+            try
+            {
+                Store.WriteSettings(Settings);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[Save] settings write failed: " + e.Message);
+            }
+        }
+
+        /// <summary>Shift+F9: delete the save (settings stay) and start again from run 1. The current run is dropped unrecorded.</summary>
+        public void ResetProgress()
+        {
+            Store.DeleteSave();
+            Meta = new MetaState();
+            Run = null;
+            Phase = GamePhase.Result;
+            pendingStart = true;
+            UnityEngine.Debug.Log("[Save] save deleted; starting again from run 1");
         }
 
         // ---------------- shop (between runs only) ----------------
 
-        public bool TryBuyUpgrade(UpgradeId id) => Phase == GamePhase.Result && Shop.BuyUpgrade(upgradeTable, Meta, id);
+        public bool TryBuyUpgrade(string id)
+        {
+            if (Phase != GamePhase.Result || !Shop.BuyUpgrade(upgradeTable, Meta, id)) return false;
+            Save();
+            return true;
+        }
 
-        public bool TryUnlock(int tier) => Phase == GamePhase.Result && Shop.Unlock(upgradeTable, Meta, tier);
+        public bool TryUnlock(int tier)
+        {
+            if (Phase != GamePhase.Result || !Shop.Unlock(upgradeTable, Meta, tier)) return false;
+            Save();
+            return true;
+        }
+
+        // ---------------- debug (DebugTools) ----------------
+
+        /// <summary>F3: currency = max(currency × mult, min).</summary>
+        public void DebugBoostCurrency(double mult, double min) => Meta.currency = Math.Max(Meta.currency * mult, min);
+
+        /// <summary>F6: unlock the next tier for free (also mid-run). Returns the unlocked tier, or 0.</summary>
+        public int DebugUnlockNext()
+        {
+            int tier = Shop.UnlockNextFree(upgradeTable, Meta);
+            UnityEngine.Debug.Log(tier > 0 ? $"[Debug] tier {tier} unlocked for free" : "[Debug] every tier is already unlocked");
+            if (tier > 0) Save();
+            return tier;
+        }
 
         // ---------------- queries (views, bot) ----------------
 
@@ -341,6 +496,7 @@ namespace Incremental
             {
                 s.dustCap = Override.dustCap;
                 s.spawnRate = Override.spawnRate;
+                s.dustInitial = Math.Min(s.dustInitial, s.dustCap);
             }
             return s;
         }

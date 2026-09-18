@@ -47,10 +47,10 @@ namespace Incremental
         }
 
         public void SetCurrency(double currency, int run) =>
-            currencyText.text = string.Format(UIStrings.CurrencyAndRun, Fmt.Int(currency), run);
+            currencyText.text = string.Format(UIStrings.CurrencyAndRun, Fmt.Num(currency), run);
 
         public void SetIncome(double income) =>
-            incomeText.text = string.Format(UIStrings.RunIncome, Fmt.Int(income));
+            incomeText.text = string.Format(UIStrings.RunIncome, Fmt.Num(income));
 
         public void SetStamina(double current, double max)
         {

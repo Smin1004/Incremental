@@ -116,7 +116,7 @@ namespace Incremental
             runsCompleted++;
             int bought = BuyCheapestUntilBroke();
             var m = root.Meta;
-            Debug.Log($"[Bot] run {rec.run} income={Fmt.Int(rec.income)} bought={bought} currency={Fmt.Int(m.currency)} levels=[{string.Join(",", m.upgradeLevels)}] maxTier={m.unlockedMaxTier}");
+            Debug.Log($"[Bot] run {rec.run} income={Fmt.Num(rec.income)} bought={bought} currency={Fmt.Num(m.currency)} levels=[{RunLogger.LevelsText(m.upgradeLevels)}] maxTier={m.unlockedMaxTier}");
             if (stopAfterRuns > 0 && runsCompleted >= stopAfterRuns)
             {
                 SetEnabled(false);
@@ -135,11 +135,11 @@ namespace Incremental
             {
                 double best = double.PositiveInfinity;
                 bool isUnlock = false;
-                UpgradeId bestId = UpgradeId.SpawnRate;
+                string bestId = null;
                 int bestTier = 0;
-                for (int i = 0; i < UpgradeTable.UpgradeCount; i++)
+                for (int i = 0; i < t.upgrades.Count; i++)
                 {
-                    var id = (UpgradeId)i;
+                    string id = t.upgrades[i].id;
                     if (!Shop.CanBuyUpgrade(t, m, id)) continue;
                     double c = Shop.UpgradeCost(t, m, id);
                     if (c < best) { best = c; isUnlock = false; bestId = id; }

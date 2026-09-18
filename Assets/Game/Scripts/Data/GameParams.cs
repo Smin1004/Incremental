@@ -49,5 +49,9 @@ namespace Incremental
         public double planetPopDurationSec = 0.15;
         public Color dustColorA = Color.white;
         public Color dustColorB = new Color(0.65f, 0.82f, 1f);
+
+        [Header("Save (02 §6)")]
+        [Tooltip("While a run is going, its progress is saved this often (seconds) so a killed game keeps the run's income.")]
+        public double pendingSaveIntervalSec = 5;
     }
 }

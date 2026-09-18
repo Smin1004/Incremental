@@ -13,33 +13,94 @@ MonoBehaviour:
   m_Name: UpgradeTable
   m_EditorClassIdentifier: 
   upgrades:
-  - id: 0
+  - id: spawn_rate
+    enabled: 1
+    revealAtTier: 1
     effectPerLevel: 1
     baseCost: 10
     growth: 1.25
     maxLevel: 0
-  - id: 1
+  - id: pull_accel
+    enabled: 1
+    revealAtTier: 1
     effectPerLevel: 0.2
     baseCost: 10
     growth: 1.25
     maxLevel: 0
-  - id: 2
+  - id: sale_mult
+    enabled: 1
+    revealAtTier: 1
     effectPerLevel: 0.25
     baseCost: 15
     growth: 1.3
     maxLevel: 0
-  - id: 3
+  - id: stamina_max
+    enabled: 1
+    revealAtTier: 1
     effectPerLevel: 10
     baseCost: 20
     growth: 1.3
     maxLevel: 0
-  - id: 4
+  - id: threshold_mult
+    enabled: 1
+    revealAtTier: 1
     effectPerLevel: 0.04
     baseCost: 25
     growth: 1.35
     maxLevel: 10
+  - id: dust_cap
+    enabled: 1
+    revealAtTier: 1
+    effectPerLevel: 100
+    baseCost: 30
+    growth: 1.3
+    maxLevel: 27
+  - id: dust_mass
+    enabled: 1
+    revealAtTier: 1
+    effectPerLevel: 1.5
+    baseCost: 200
+    growth: 1.6
+    maxLevel: 0
+  - id: gravity_radius
+    enabled: 1
+    revealAtTier: 1
+    effectPerLevel: 0.1
+    baseCost: 20
+    growth: 1.3
+    maxLevel: 20
+  - id: stamina_drain
+    enabled: 1
+    revealAtTier: 1
+    effectPerLevel: 0.05
+    baseCost: 40
+    growth: 1.35
+    maxLevel: 10
+  - id: start_bonus
+    enabled: 1
+    revealAtTier: 1
+    effectPerLevel: 50
+    baseCost: 25
+    growth: 1.3
+    maxLevel: 20
   unlocks:
   - tier: 2
     cost: 50
   - tier: 3
     cost: 400
+  - tier: 4
+    cost: 2500
+  - tier: 5
+    cost: 20000
+  - tier: 6
+    cost: 150000
+  - tier: 7
+    cost: 1200000
+  - tier: 8
+    cost: 10000000
+  - tier: 9
+    cost: 100000000
+  - tier: 10
+    cost: 1000000000
+  - tier: 11
+    cost: 10000000000
