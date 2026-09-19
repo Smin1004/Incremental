@@ -26,6 +26,9 @@ namespace Incremental
         public static int Delta(RunRecord rec, RunRecord comparison, int tier) =>
             comparison == null ? 0 : rec.TierCount(tier) - comparison.TierCount(tier);
 
+        /// <summary>The change the result panel shows: increases only; a decrease shows nothing (15 §3).</summary>
+        public static int ShownIncrease(RunRecord rec, RunRecord comparison, int tier) => System.Math.Max(0, Delta(rec, comparison, tier));
+
         /// <summary>
         /// True when this run made the tier for the first time ever: made now, and the lifetime total before the run
         /// (totalPlanets after it minus this run's count) was 0. Valid for the run just applied to <paramref name="meta"/>.

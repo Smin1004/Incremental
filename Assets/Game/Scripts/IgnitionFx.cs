@@ -4,10 +4,11 @@ using UnityEngine.Rendering;
 namespace Incremental
 {
     /// <summary>
-    /// Star ignition on the run screen (14 §6, 10 §4.3). The first star ever: a screen flash, a light ring spreading from the
-    /// new star and the background palette change, ignitionFirstSec in all. Every later star: a short flash and a smaller
-    /// ring (ignitionRepeatSec). Flash and ring are multiplied by effectIntensity; at 0 only the palette changes. Logic time
-    /// and input are untouched. Render only.
+    /// Star ignition on the run screen (14 §6, 10 §4.3). The first star ever: a radial flash from the new star (the flash
+    /// rule of 15 §3), a light ring spreading from it and the background palette change, ignitionFirstSec in all. Every
+    /// later star: a short flash and a smaller ring (ignitionRepeatSec). The blue giant that starts the ending (15 §4.2)
+    /// gets the first-star version. Flash and ring are multiplied by effectIntensity; at 0 only the palette changes.
+    /// Logic time and input are untouched. Render only.
     /// </summary>
     public sealed class IgnitionFx : MonoBehaviour
     {
@@ -16,7 +17,7 @@ namespace Incremental
 
         GameRoot root;
         GameParams p;
-        SpriteRenderer flash;
+        ScreenFlash flash;
         MeshRenderer ring;
         MaterialPropertyBlock mpb;
         bool ignitedThisRun;
@@ -25,6 +26,7 @@ namespace Incremental
         float flashPeak;
         float ringFromPx, ringToPx;
         Color ringColor;
+        Vector3 center;
 
         /// <summary>Seconds since the last ignition started, or −1 (for captures and checks).</summary>
         public float Age => age;
@@ -35,11 +37,7 @@ namespace Incremental
             root = gameRoot;
             p = root.gameParams;
 
-            flash = new GameObject("Flash").AddComponent<SpriteRenderer>();
-            flash.transform.SetParent(transform, false);
-            flash.sprite = UIBuilder.SolidSprite();
-            if (root.unlitMaterial != null) flash.sharedMaterial = root.unlitMaterial;
-            flash.sortingOrder = 60;
+            flash = ScreenFlash.Create("Flash", transform, root, 60);
 
             var ringGo = new GameObject("LightRing", typeof(MeshFilter), typeof(MeshRenderer));
             ringGo.transform.SetParent(transform, false);
@@ -66,7 +64,8 @@ namespace Incremental
         void OnPlanetCreated(CelestialTier tier)
         {
             if (root.Phase != GamePhase.Run || !IsStarTier(tier.tier, p.orbitMaxTier)) return;
-            bool first = IsFirstIgnition(root.Meta.highestTierCreated, ignitedThisRun, p.orbitMaxTier);
+            bool firstStar = IsFirstIgnition(root.Meta.highestTierCreated, ignitedThisRun, p.orbitMaxTier);
+            bool first = firstStar || root.EndingActive;
             ignitedThisRun = true;
             LastWasFirst = first;
             duration = Mathf.Max(0.05f, (float)(first ? p.ignitionFirstSec : p.ignitionRepeatSec));
@@ -74,9 +73,10 @@ namespace Incremental
             ringFromPx = (float)tier.sizePx;
             ringToPx = (float)(first ? p.ignitionRingPx : p.ignitionRepeatRingPx);
             ringColor = tier.look != null ? tier.look.glowColor : tier.color;
-            ring.transform.position = new Vector3(root.CursorWorld.x, root.CursorWorld.y, 0f);
+            center = new Vector3(root.CursorWorld.x, root.CursorWorld.y, 0f);
+            ring.transform.position = center;
             age = 0f;
-            if (first) root.Backdrop.BlendNextChange(duration);
+            if (firstStar) root.Backdrop.BlendNextChange(duration);
         }
 
         void Update()
@@ -92,17 +92,9 @@ namespace Incremental
                 return;
             }
 
-            // Screen flash: fast rise, then fades over the rest.
-            var cam = root.Cam;
-            float h = cam.orthographicSize * 2f, w = h * cam.aspect;
-            var c = cam.transform.position;
-            flash.transform.position = new Vector3(c.x, c.y, 0f);
-            var b = flash.sprite.bounds.size;
-            flash.transform.localScale = new Vector3(w * 1.05f / b.x, h * 1.05f / b.y, 1f);
-            float rise = Mathf.Max(0.001f, (float)p.ignitionFlashRiseSec);
-            float env = age < rise ? age / rise : Mathf.Pow(1f - Mathf.Clamp01((age - rise) / Mathf.Max(0.01f, duration * (float)p.ignitionFlashDecayShare - rise)), 2f);
-            flash.color = new Color(1f, 0.97f, 0.9f, flashPeak * env * intensity);
-            flash.enabled = true;
+            // Radial flash from the star: smooth rise, then fades over the first ignitionFlashDecayShare of the ignition.
+            float env = ScreenFlash.Envelope(age, (float)p.ignitionFlashRiseSec, duration * (float)p.ignitionFlashDecayShare);
+            flash.Show(center, p.ignitionFlashColor, flashPeak * env * intensity);
 
             // Light ring from the star outward.
             float e = 1f - (1f - k) * (1f - k);
@@ -119,7 +111,7 @@ namespace Incremental
 
         void Hide()
         {
-            if (flash.enabled) flash.enabled = false;
+            flash.Hide();
             if (ring.enabled) ring.enabled = false;
         }
     }

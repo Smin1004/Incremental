@@ -9,8 +9,9 @@ namespace Incremental
 {
     /// <summary>
     /// Result screen (11 §4, 13 §3, 14 §7): a panel on the left with the run income (counting up during the entry animation),
-    /// the ratio vs the last full run, planets per tier with the change against the comparison run (the ratio's run) and a
-    /// "new body" tag for tiers made for the first time, the best income and a "skill tree" button. Space or the button
+    /// the ratio vs the last full run, planets per tier made this run with the increase against the comparison run (the
+    /// ratio's run; decreases are left blank, 15 §3) and a "new body" tag for tiers made for the first time, the best
+    /// income and a "skill tree" button. Space or the button
     /// opens the tree (12 §9 flow: result → Space → tree → Space → next run). A click anywhere skips the entry animation.
     /// </summary>
     public sealed class ResultView : MonoBehaviour
@@ -171,8 +172,9 @@ namespace Incremental
         }
 
         /// <summary>
-        /// Planets per tier: tiers made this run or in the comparison run, with the change against it (▲3 / ▼2) and a
-        /// "new body" tag for tiers made for the first time ever (fresh results only).
+        /// Planets per tier made this run, with the increase against the comparison run (▲3) and a "new body" tag for tiers
+        /// made for the first time ever (fresh results only). A decrease leaves the change column blank: it is mostly the
+        /// result of moving up to a higher tier and should not read as a penalty (15 §3); the ratio shows overall growth.
         /// </summary>
         void FillPlanets(RunRecord rec)
         {
@@ -181,7 +183,6 @@ namespace Incremental
             sbDeltas.Length = 0;
             var p = root.gameParams;
             string up = ColorUtility.ToHtmlStringRGB(p.deltaUpColor);
-            string down = ColorUtility.ToHtmlStringRGB(p.deltaDownColor);
             string newColor = ColorUtility.ToHtmlStringRGB(p.newTierColor);
             int n = 0;
             var tiers = root.celestialTable.tiers;
@@ -189,8 +190,7 @@ namespace Incremental
             {
                 int t = tiers[i].tier;
                 int count = rec.TierCount(t);
-                int before = comparison != null ? comparison.TierCount(t) : 0;
-                if (count <= 0 && before <= 0) continue;
+                if (count <= 0) continue;
                 if (n > 0)
                 {
                     sbNames.Append('\n');
@@ -199,12 +199,11 @@ namespace Incremental
                 }
                 sbNames.Append(UIStrings.TierName(t));
                 sbCounts.Append(Fmt.Num(count));
-                int delta = ResultMath.Delta(rec, comparison, t);
+                int delta = ResultMath.ShownIncrease(rec, comparison, t);
                 if (delta > 0) sbDeltas.Append("<color=#").Append(up).Append('>').AppendFormat(UIStrings.DeltaUp, Fmt.Num(delta)).Append("</color>");
-                else if (delta < 0) sbDeltas.Append("<color=#").Append(down).Append('>').AppendFormat(UIStrings.DeltaDown, Fmt.Num(-delta)).Append("</color>");
                 if (fresh && ResultMath.IsNewTier(root.Meta, rec, t))
                 {
-                    if (delta != 0) sbDeltas.Append("  ");
+                    if (delta > 0) sbDeltas.Append("  ");
                     sbDeltas.Append("<color=#").Append(newColor).Append('>').Append(UIStrings.NewBody).Append("</color>");
                 }
                 n++;

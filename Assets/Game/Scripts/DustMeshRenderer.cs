@@ -6,8 +6,9 @@ namespace Incremental
     /// <summary>
     /// Draws every dust as one quad in a single dynamic mesh, rebuilt each frame (14 §5): a soft additive glowing point
     /// (Incremental/Dust), per-dust size and brightness variation, stretched along the velocity when fast (up to
-    /// dustStretchMax), brighter inside the gravity radius while holding. Colors come from the background palette.
-    /// Render only.
+    /// dustStretchMax) into a thinner streak whose tail narrows to a point. Only dust in the active gravity field keeps full
+    /// brightness (brighter toward the center); the rest is dimmed to dustOutsideDim so the eye goes to the cursor (15 §3).
+    /// Colors are the warm dust hue of the background palette, converted to linear. Render only.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class DustMeshRenderer : MonoBehaviour
@@ -25,6 +26,7 @@ namespace Incremental
         Vector3[] uvs = new Vector3[0];
         Color32[] cols = new Color32[0];
         int[] tris = new int[0];
+        float holdGlow;
 
         public void Init(GameRoot gameRoot, DustField dustField, Material material)
         {
@@ -71,12 +73,17 @@ namespace Incremental
             float full = Mathf.Max(drift + 1e-3f, (float)(p.dustStretchFullSpeedPx / ppu));
             float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
             float brighten = (float)p.dustGravityBrighten;
-            bool holding = root.Phase == GamePhase.Run && root.Run != null && root.Run.holding;
+            float dim = (float)p.dustOutsideDim;
+            float widthAtFull = (float)p.dustStreakWidth;
+            bool holding = root.Phase == GamePhase.Run && root.Run != null && root.Run.holding && !root.Paused;
+            float fade = Mathf.Max(1e-3f, (float)p.dustHoldFadeSec);
+            holdGlow = Mathf.MoveTowards(holdGlow, holding ? 1f : 0f, Time.unscaledDeltaTime / fade);
             Vector2 cursor = root.CursorWorld;
             float gravR = (float)(root.Effective.gravityRadius / ppu);
-            float gravR2 = gravR * gravR;
-            Color colA = root.Backdrop.DustColorA;
-            Color colB = root.Backdrop.DustColorB;
+            float edgeR = gravR + Mathf.Max(1e-3f, (float)(p.dustDimEdgePx / ppu));
+            float edgeR2 = edgeR * edgeR;
+            Color colA = root.Backdrop.DustColorA.linear;
+            Color colB = root.Backdrop.DustColorB.linear;
 
             var items = field.Items;
             for (int i = 0; i < n; i++)
@@ -85,10 +92,11 @@ namespace Incremental
                 Vector2 c = d.pos;
                 float speed = d.vel.magnitude;
                 Vector2 axis = speed > 1e-5f ? d.vel / speed : new Vector2(1f, 0f);
-                float s = 1f + (stretchMax - 1f) * Mathf.Clamp01((speed - drift) / (full - drift));
+                float stretch = Mathf.Clamp01((speed - drift) / (full - drift));
+                float s = 1f + (stretchMax - 1f) * stretch;
                 float h = halo * d.size;
                 Vector2 along = axis * (h * s);
-                Vector2 across = new Vector2(-axis.y, axis.x) * h;
+                Vector2 across = new Vector2(-axis.y, axis.x) * (h * Mathf.Lerp(1f, widthAtFull, stretch));
 
                 int v = i * 4;
                 verts[v] = c - along - across;
@@ -100,12 +108,22 @@ namespace Incremental
                 uvs[v + 2] = new Vector3(s, 1f, s);
                 uvs[v + 3] = new Vector3(s, -1f, s);
 
-                float b = d.bright;
-                if (holding)
+                // Dust in the gravity field (held) keeps full brightness and gets brighter toward the center; the rest dims.
+                float inField = 0f;
+                float boost = 0f;
+                if (holdGlow > 0f)
                 {
                     float dist2 = (c - cursor).sqrMagnitude;
-                    if (dist2 < gravR2) b *= 1f + brighten * (1f - Mathf.Sqrt(dist2) / gravR);
+                    if (dist2 < edgeR2)
+                    {
+                        float dist = Mathf.Sqrt(dist2);
+                        inField = dist <= gravR ? 1f : 1f - (dist - gravR) / (edgeR - gravR);
+                        if (dist < gravR) boost = brighten * (1f - dist / gravR);
+                        inField *= holdGlow;
+                        boost *= holdGlow;
+                    }
                 }
+                float b = d.bright * Mathf.Lerp(dim, 1f, inField) * (1f + boost);
                 Color col = Color.Lerp(colA, colB, d.tint);
                 // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
                 float k = Mathf.Min(b, 2f) * 0.5f;

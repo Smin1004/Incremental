@@ -12,9 +12,9 @@ namespace Incremental
     /// become an asteroid belt of plain dots; higher tiers show at most orbitIndividualMax planets, then "×N" on a dark
     /// backing at a fixed angle outside the orbit. Stars (tiers above orbitMaxTier) made this run shine in the sky.
     /// The central star follows the highest tier ever made (a faint protostar before the first star), with an ignition
-    /// flash the first time a star is made. A tier made for the first time ever gets a "new body" label and one pulse of
-    /// its orbit. On entry the planets fly in from the vanishing point, lower tiers first. During runs a faint glow marks
-    /// the vanishing point (13 §2).
+    /// flash the first time a star is made (the radial flash rule of 15 §3). A tier made for the first time ever gets a
+    /// "new body" label and one pulse of its orbit; a star tier gets them on one of its sky stars (15 §3). On entry the
+    /// planets fly in from the vanishing point, lower tiers first. During runs a faint glow marks the vanishing point (13 §2).
     /// </summary>
     public sealed class SolarSystemView : MonoBehaviour
     {
@@ -48,6 +48,12 @@ namespace Incremental
             public Color color;
         }
 
+        struct NewStar
+        {
+            public PlanetVisual v;
+            public float diameter;
+        }
+
         struct Label
         {
             public RectTransform root;
@@ -67,7 +73,7 @@ namespace Incremental
 
         Transform system, content, vanishGlow;
         SpriteRenderer vanishGlowSr;
-        SpriteRenderer flash;
+        ScreenFlash flash;
         PlanetVisual centralStar;
         Canvas labelCanvas;
         readonly List<Label> labels = new List<Label>();
@@ -75,6 +81,7 @@ namespace Incremental
         readonly List<Flier> fliers = new List<Flier>();
         readonly List<Fade> fades = new List<Fade>();
         readonly List<NewOrbit> newOrbits = new List<NewOrbit>();
+        readonly List<NewStar> newStars = new List<NewStar>();
         float age;
         bool visible;
         bool ignition;
@@ -98,8 +105,7 @@ namespace Incremental
             system.SetParent(transform, false);
 
             centralStar = PlanetVisual.Create("CentralStar", system, root.planetMaterial, -9);
-            flash = MakeSprite("Ignition", system, dot, -5);
-            flash.gameObject.SetActive(false);
+            flash = ScreenFlash.Create("Ignition", system, root, -5);
 
             vanishGlowSr = MakeSprite("VanishGlow", transform, dot, -30);
             vanishGlow = vanishGlowSr.transform;
@@ -130,6 +136,7 @@ namespace Incremental
             fliers.Clear();
             fades.Clear();
             newOrbits.Clear();
+            newStars.Clear();
             foreach (var l in labels) l.root.gameObject.SetActive(false);
             int labelIndex = 0;
             var rng = new System.Random(rec != null ? rec.run * 7919 : 1);
@@ -177,8 +184,8 @@ namespace Incremental
                         sr.transform.localPosition = new Vector3(Mathf.Cos(a) * rr, Mathf.Sin(a) * rr, 0f);
                         float s = size / Ppu / circleUnit;
                         sr.transform.localScale = new Vector3(s, s, 1f);
-                        float shade = 0.6f + 0.4f * (float)rng.NextDouble();
-                        var c = new Color(color.r * shade, color.g * shade, color.b * shade, 1f);
+                        float shade = (0.6f + 0.4f * (float)rng.NextDouble()) * (float)p.orbitBeltDotBrightness;
+                        var c = new Color(Mathf.Clamp01(color.r * shade), Mathf.Clamp01(color.g * shade), Mathf.Clamp01(color.b * shade), 1f);
                         fades.Add(new Fade { sr = sr, color = c, start = start });
                         sr.color = Color.clear;
                     }
@@ -204,21 +211,27 @@ namespace Incremental
                 if (count > n || isNew) PlaceLabel(labelIndex++, rPx + diameterPx * 0.5f, count > n ? count : 0, isNew);
             }
 
-            // Stars made this run shine in the sky (at most skyStarsPerRun), outside the outermost orbit.
+            // Stars made this run shine in the sky (at most skyStarsPerRun), outside the outermost orbit. A star tier made
+            // for the first time always gets one, with the "new body" pulse and label (15 §3).
             float clearPx = (float)(p.orbitR0Px + (Mathf.Max(1, maxOrbit) - 1) * p.orbitStepPx + p.skyStarOrbitClearPx);
             int stars = 0;
             for (int t = p.orbitMaxTier + 1; t <= root.celestialTable.MaxTier && rec != null; t++)
             {
                 int count = rec.TierCount(t);
                 var tier = root.celestialTable.Get(t);
-                for (int i = 0; i < count && stars < p.skyStarsPerRun; i++, stars++)
+                bool isNew = fresh && ResultMath.IsNewTier(m, rec, t);
+                for (int i = 0; i < count && (stars < p.skyStarsPerRun || (isNew && i == 0)); i++, stars++)
                 {
                     var v = PlanetVisual.Create("RunStar", content, root.planetMaterial, -22);
                     v.SetLook(tier != null ? tier.look : null, (float)(rng.NextDouble() * 100.0), p.planetAxisPitchDeg);
                     v.transform.position = CamCenter() + SkyPosition(rng, clearPx) / Ppu;
-                    v.SetDiameter((float)((tier != null ? tier.sizePx : 100.0) * p.skyStarScale) / Ppu);
+                    float diameter = (float)((tier != null ? tier.sizePx : 100.0) * p.skyStarScale) / Ppu;
+                    v.SetDiameter(diameter);
                     v.SetFade(0f);
                     fades.Add(new Fade { v = v, start = (1f - EntryTravel) * EntrySec });
+                    if (!isNew || i > 0) continue;
+                    newStars.Add(new NewStar { v = v, diameter = diameter });
+                    PlaceLabelBelow(labelIndex++, v.transform.position, diameter * Ppu * 0.5f, NewTag());
                 }
             }
 
@@ -241,7 +254,7 @@ namespace Incremental
             system.gameObject.SetActive(on);
             root.Backdrop.SetGlowCenter(on ? system.position : (Vector3?)null);
             labelCanvas.gameObject.SetActive(on);
-            if (!on) flash.gameObject.SetActive(false);
+            if (!on) flash.Hide();
         }
 
         // ---------------- per frame ----------------
@@ -297,26 +310,25 @@ namespace Incremental
 
             UpdateNewOrbits();
 
-            // Ignition flash at the end of the entry, the first time a star is made (13 §3).
+            // Ignition flash at the end of the entry, the first time a star is made (13 §3): a radial flash from the star
+            // whose reach grows with the glow (flash rule, 15 §3).
             if (ignition && age >= EntrySec)
             {
-                float k = (age - EntrySec) / Mathf.Max(0.01f, (float)p.ignitionSec);
-                float intensity = root.EffectIntensity;
-                bool on = k < 1f && intensity > 0f;
-                if (flash.gameObject.activeSelf != on) flash.gameObject.SetActive(on);
-                if (on)
-                {
-                    float size = StarSize(p.starGlowPx, stage) * Mathf.Lerp(1f, (float)p.ignitionScale, k) / Ppu / dotUnit;
-                    flash.transform.localScale = new Vector3(size, size, 1f);
-                    flash.color = new Color(1f, 0.9f, 0.75f, (1f - k) * intensity);
-                }
+                float t = age - EntrySec;
+                float dur = Mathf.Max(0.01f, (float)p.ignitionSec);
+                float env = ScreenFlash.Envelope(t, (float)p.ignitionFlashRiseSec, dur);
+                float radius = StarSize(p.starGlowPx, stage) * 0.5f * Mathf.Lerp(1f, (float)p.ignitionScale, Mathf.Clamp01(t / dur));
+                flash.Show(system.position, p.ignitionFlashColor, env * (float)p.resultIgnitionFlashAlpha * root.EffectIntensity, radius);
             }
         }
 
-        /// <summary>First-ever tiers: after the entry the orbit pulses newTierPulses times in the tier color, then stays brighter.</summary>
+        /// <summary>
+        /// First-ever tiers: after the entry the orbit pulses newTierPulses times in the tier color, then stays brighter.
+        /// A first-ever star tier: its sky star swells and brightens with the same pulses.
+        /// </summary>
         void UpdateNewOrbits()
         {
-            if (newOrbits.Count == 0) return;
+            if (newOrbits.Count == 0 && newStars.Count == 0) return;
             float dur = Mathf.Max(0.01f, (float)p.newTierHighlightSec);
             float k = Mathf.Clamp01((age - EntrySec) / dur);
             float pulse = age < EntrySec ? 0f : Mathf.Sin(k * Mathf.PI * Mathf.Max(1, p.newTierPulses)) ;
@@ -329,6 +341,11 @@ namespace Incremental
                 c.a = Mathf.Clamp01(baseAlpha + pulse * 0.4f);
                 o.line.startColor = o.line.endColor = c;
                 o.line.widthMultiplier = width;
+            }
+            foreach (var st in newStars)
+            {
+                st.v.SetDiameter(st.diameter * (1f + (float)p.newTierStarPulseScale * pulse));
+                st.v.SetGlowMul(1f + pulse);
             }
         }
 
@@ -364,7 +381,7 @@ namespace Incremental
             centralStar.SetLook(look, 3.7f, p.planetAxisPitchDeg);
             centralStar.SetDiameter(StarSize(p.starCorePx, s) / Ppu);
             centralStar.SetGlowMul(1f);
-            flash.gameObject.SetActive(false);
+            flash.Hide();
         }
 
         static float StarSize(float[] sizes, int s) =>
@@ -451,6 +468,28 @@ namespace Incremental
         /// </summary>
         void PlaceLabel(int index, float outerPx, int count, bool isNew)
         {
+            string text = count > 0 ? string.Format(UIStrings.PlanetMulti, Fmt.Num(count)) : string.Empty;
+            if (isNew) text = text.Length > 0 ? NewTag() + "  " + text : NewTag();
+            var label = PrepareLabel(index, text, out float w);
+
+            // Center of the label on the radial line, far enough out that its half width clears the planets.
+            float a = (float)p.orbitLabelAngleDeg * Mathf.Deg2Rad;
+            var dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
+            float halfExtent = Mathf.Abs(dir.x) * w * 0.5f + Mathf.Abs(dir.y) * 14f;
+            PutLabel(label, system.position + dir * ((outerPx + (float)p.orbitLabelGapPx + halfExtent) / Ppu));
+        }
+
+        /// <summary>A label centered under a body (sky star): <paramref name="radiusPx"/> + gap below its center.</summary>
+        void PlaceLabelBelow(int index, Vector3 world, float radiusPx, string text)
+        {
+            var label = PrepareLabel(index, text, out _);
+            PutLabel(label, world + Vector3.down * ((radiusPx + (float)p.orbitLabelGapPx + 14f) / Ppu));
+        }
+
+        string NewTag() => "<color=#" + ColorUtility.ToHtmlStringRGB(p.newTierColor) + ">" + UIStrings.NewBody + "</color>";
+
+        Label PrepareLabel(int index, string text, out float width)
+        {
             while (labels.Count <= index)
             {
                 var c = new Vector2(0.5f, 0.5f);
@@ -463,24 +502,17 @@ namespace Incremental
                 labels.Add(new Label { root = rt, backing = backing, text = t });
             }
             var label = labels[index];
-            string text = count > 0 ? string.Format(UIStrings.PlanetMulti, Fmt.Num(count)) : string.Empty;
-            if (isNew)
-            {
-                string tag = "<color=#" + ColorUtility.ToHtmlStringRGB(p.newTierColor) + ">" + UIStrings.NewBody + "</color>";
-                text = text.Length > 0 ? tag + "  " + text : tag;
-            }
             label.text.text = text;
             label.text.color = new Color(0.88f, 0.92f, 1f, 1f);
             label.backing.color = p.orbitLabelBacking;
-            float w = label.text.preferredWidth + 16f;
-            label.root.sizeDelta = new Vector2(w, 28f);
-            ((RectTransform)label.text.transform).sizeDelta = new Vector2(w, 28f);
+            width = label.text.preferredWidth + 16f;
+            label.root.sizeDelta = new Vector2(width, 28f);
+            ((RectTransform)label.text.transform).sizeDelta = new Vector2(width, 28f);
+            return label;
+        }
 
-            // Center of the label on the radial line, far enough out that its half width clears the planets.
-            float a = (float)p.orbitLabelAngleDeg * Mathf.Deg2Rad;
-            var dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
-            float halfExtent = Mathf.Abs(dir.x) * w * 0.5f + Mathf.Abs(dir.y) * 14f;
-            Vector3 world = system.position + dir * ((outerPx + (float)p.orbitLabelGapPx + halfExtent) / Ppu);
+        void PutLabel(Label label, Vector3 world)
+        {
             Vector2 screen = cam.WorldToScreenPoint(world);
             var canvasRect = (RectTransform)labelCanvas.transform;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out var local))

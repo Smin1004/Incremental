@@ -134,8 +134,15 @@ namespace Incremental
                 for (int i = 0; i < p.palettes.Length; i++)
                 {
                     var pal = p.palettes[i];
-                    if (pal == null) r.Errors.Add($"GameParams: palettes[{i}] is missing.");
-                    else if (pal.glowStrength < 0 || !(pal.glowRadiusPx > 0)) r.Errors.Add($"GameParams: palettes[{i}] glow strength must be >= 0 and radius > 0.");
+                    if (pal == null)
+                    {
+                        r.Errors.Add($"GameParams: palettes[{i}] is missing.");
+                        continue;
+                    }
+                    if (pal.glowStrength < 0 || !(pal.glowRadiusPx > 0)) r.Errors.Add($"GameParams: palettes[{i}] glow strength must be >= 0 and radius > 0.");
+                    // 15 §3: dust takes a warm hue, background stars stay neutral, so the two never read alike.
+                    if (!IsWarm(pal.dustA) || !IsWarm(pal.dustB)) r.Warnings.Add($"GameParams: palettes[{i}] dust colors should be warm (red above blue), unlike the neutral stars (15 §3).");
+                    if (Chroma(pal.starTint) > 0.1f) r.Warnings.Add($"GameParams: palettes[{i}] starTint should be neutral white (15 §3).");
                 }
             }
             if (!(p.paletteBlendSec > 0)) r.Errors.Add("GameParams: paletteBlendSec must be > 0.");
@@ -147,6 +154,12 @@ namespace Incremental
                 r.Errors.Add("GameParams: ignition flash alphas must be within 0..1.");
             if (!(p.ignitionFlashRiseSec > 0) || !(p.ignitionFlashRiseSec < p.ignitionRepeatSec))
                 r.Errors.Add("GameParams: ignitionFlashRiseSec must be > 0 and shorter than ignitionRepeatSec.");
+            ValidateFlashRule(p, r);
+            if (p.dustOutsideDim < 0 || p.dustOutsideDim > 1) r.Errors.Add("GameParams: dustOutsideDim must be within 0..1.");
+            if (!(p.dustDimEdgePx > 0) || !(p.dustHoldFadeSec > 0)) r.Errors.Add("GameParams: dustDimEdgePx and dustHoldFadeSec must be > 0.");
+            if (!(p.dustStreakWidth > 0) || p.dustStreakWidth > 1) r.Errors.Add("GameParams: dustStreakWidth must be within 0..1 (0 excluded).");
+            if (!(p.orbitBeltDotBrightness > 0)) r.Errors.Add("GameParams: orbitBeltDotBrightness must be > 0.");
+            if (p.newTierStarPulseScale < 0) r.Errors.Add("GameParams: newTierStarPulseScale must be >= 0.");
 
             ValidateLook("GameParams: protostarLook", p.protostarLook, r);
             if (p.protostarLook != null && p.protostarLook.surface != SurfaceType.Star)
@@ -164,6 +177,40 @@ namespace Incremental
             if (!(p.newTierHighlightSec > 0) || p.newTierPulses < 1) r.Errors.Add("GameParams: newTierHighlightSec must be > 0 and newTierPulses >= 1.");
             return r;
         }
+
+        /// <summary>
+        /// Flash rule (15 §3): the shape is sane, and every flash's peak alpha is at most flashAlphaCap and its rise takes at
+        /// least flashMinRiseSec.
+        /// </summary>
+        static void ValidateFlashRule(GameParams p, ValidationReport r)
+        {
+            if (!(p.flashAlphaCap > 0) || p.flashAlphaCap > 1) r.Errors.Add("GameParams: flashAlphaCap must be within 0..1 (0 excluded).");
+            if (!(p.flashMinRiseSec > 0)) r.Errors.Add("GameParams: flashMinRiseSec must be > 0.");
+            if (!(p.flashEdgeShare > 0) || !(p.flashEdgeShare < 1)) r.Errors.Add("GameParams: flashEdgeShare must be within 0..1 (both excluded).");
+            if (!(p.flashRadiusPx > 0)) r.Errors.Add("GameParams: flashRadiusPx must be > 0.");
+            foreach (var f in FlashPeaks(p))
+                if (f.Value > p.flashAlphaCap) r.Errors.Add($"GameParams: {f.Key} {f.Value} is above flashAlphaCap {p.flashAlphaCap} (15 §3).");
+            foreach (var f in FlashRises(p))
+                if (f.Value < p.flashMinRiseSec) r.Errors.Add($"GameParams: {f.Key} {f.Value} is shorter than flashMinRiseSec {p.flashMinRiseSec} (15 §3).");
+        }
+
+        /// <summary>Peak alpha of every flash in the game, by field name.</summary>
+        public static Dictionary<string, double> FlashPeaks(GameParams p) => new Dictionary<string, double>
+        {
+            { "ignitionFlashAlpha", p.ignitionFlashAlpha },
+            { "ignitionRepeatFlashAlpha", p.ignitionRepeatFlashAlpha },
+            { "resultIgnitionFlashAlpha", p.resultIgnitionFlashAlpha },
+        };
+
+        /// <summary>Rise time of every flash in the game, by field name (the result ignition shares ignitionFlashRiseSec).</summary>
+        public static Dictionary<string, double> FlashRises(GameParams p) => new Dictionary<string, double>
+        {
+            { "ignitionFlashRiseSec", p.ignitionFlashRiseSec },
+        };
+
+        static bool IsWarm(UnityEngine.Color c) => c.r > c.b + 0.05f;
+
+        static float Chroma(UnityEngine.Color c) => Math.Max(c.r, Math.Max(c.g, c.b)) - Math.Min(c.r, Math.Min(c.g, c.b));
 
         // Per node: unique id, known stat, string keys, sane cost curve, ring in range.
         static void ValidateNodes(CelestialTable c, NodeTable t, ValidationReport r)

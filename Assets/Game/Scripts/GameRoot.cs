@@ -44,6 +44,8 @@ namespace Incremental
         public Material backgroundMaterial;
         [Tooltip("Incremental/FxRing: light rings of star ignition (14 §6).")]
         public Material fxMaterial;
+        [Tooltip("Incremental/Flash: radial flashes (15 §3 flash rule).")]
+        public Material flashMaterial;
         public Sprite circleSprite;
         public int planetPoolSize = 8;
 
@@ -82,6 +84,8 @@ namespace Incremental
         public float EffectIntensity { get; set; } = 1f;
         /// <summary>Replace to drive the game without a mouse (autoplay bot).</summary>
         public Func<PointerState> InputProvider;
+        /// <summary>True from the first blue giant ever until the ending run ends (15 §4.2): input is ignored and the dust falls into the star.</summary>
+        public bool EndingActive { get; private set; }
         public event Action<RunRecord> RunEnded;
         public event Action RunStarted;
         /// <summary>Raised on the fixed tick right after a planet is created and sold.</summary>

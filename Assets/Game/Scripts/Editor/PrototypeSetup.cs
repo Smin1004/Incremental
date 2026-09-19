@@ -32,6 +32,8 @@ namespace Incremental.EditorTools
         const string BackgroundShaderName = "Incremental/Starfield";
         const string FxMaterialPath = MaterialsDir + "/FxRing.mat";
         const string FxShaderName = "Incremental/FxRing";
+        const string FlashMaterialPath = MaterialsDir + "/Flash.mat";
+        const string FlashShaderName = "Incremental/Flash";
         const string CirclePath = MaterialsDir + "/Circle.png";
         const string CircleSource = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/Circle.png";
         const string TemplatePath = "Assets/Settings/Lit2DSceneTemplate.scenetemplate";
@@ -126,6 +128,7 @@ namespace Incremental.EditorTools
             EnsureMaterial(DustMaterialPath, DustShaderName);
             EnsureMaterial(BackgroundMaterialPath, BackgroundShaderName);
             EnsureMaterial(FxMaterialPath, FxShaderName);
+            EnsureMaterial(FlashMaterialPath, FlashShaderName);
 
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(CirclePath) == null)
             {
@@ -149,7 +152,7 @@ namespace Incremental.EditorTools
             }
             AssetDatabase.SaveAssets();
             Debug.Log("[Setup] Render assets ready: " + MaterialPath + ", " + PlanetMaterialPath + ", " + DustMaterialPath + ", " +
-                      BackgroundMaterialPath + ", " + FxMaterialPath + ", " + CirclePath);
+                      BackgroundMaterialPath + ", " + FxMaterialPath + ", " + FlashMaterialPath + ", " + CirclePath);
         }
 
         /// <summary>Creates a material asset for a project shader when it is missing (procedural shaders, no textures).</summary>
@@ -220,6 +223,7 @@ namespace Incremental.EditorTools
             root.dustMaterial = AssetDatabase.LoadAssetAtPath<Material>(DustMaterialPath);
             root.backgroundMaterial = AssetDatabase.LoadAssetAtPath<Material>(BackgroundMaterialPath);
             root.fxMaterial = AssetDatabase.LoadAssetAtPath<Material>(FxMaterialPath);
+            root.flashMaterial = AssetDatabase.LoadAssetAtPath<Material>(FlashMaterialPath);
             root.circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
             EditorUtility.SetDirty(root);
 

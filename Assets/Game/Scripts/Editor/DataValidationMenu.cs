@@ -143,6 +143,27 @@ namespace Incremental.EditorTools
             AssetDatabase.SaveAssets();
         }
 
+        /// <summary>
+        /// Copies every top-level field where the GameParams asset differs from the code defaults (after changing
+        /// initializers). Returns the copied field names. Overwrites hand edits in the asset: use it only when the code is the truth.
+        /// </summary>
+        public static string[] SyncParamsFromCode()
+        {
+            var asset = LoadAll<GameParams>()[0];
+            var fresh = ScriptableObject.CreateInstance<GameParams>();
+            string[] diffs;
+            try
+            {
+                diffs = ParamsDrift(asset, fresh).ToArray();
+            }
+            finally
+            {
+                Object.DestroyImmediate(fresh);
+            }
+            if (diffs.Length > 0) CopyParamsFromCode(diffs);
+            return diffs;
+        }
+
         static bool SameNode(NodeDef a, NodeDef s)
         {
             // Unity serializes a null string as "".

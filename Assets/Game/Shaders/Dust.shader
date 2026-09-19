@@ -1,6 +1,6 @@
 // Dust (14 §5): soft glowing points, additive. One quad per dust in a dynamic mesh (DustMeshRenderer).
-// UV = (along, across, stretch): along runs −stretch..stretch, across −1..1, so a stretched quad draws a capsule
-// (a streak along the velocity) with round ends. Vertex color = tint × brightness / 2.
+// UV = (along, across, stretch): along runs −stretch..stretch, across −1..1, so a stretched quad draws a streak along the
+// velocity with a round head and a tail that narrows to a point. Vertex color = tint × brightness / 2.
 Shader "Incremental/Dust"
 {
     Properties
@@ -56,7 +56,13 @@ Shader "Incremental/Dust"
             float4 frag(Varyings i) : SV_Target
             {
                 float s = max(i.uv.z, 1.0);
-                float d = length(float2(max(abs(i.uv.x) - (s - 1.0), 0.0), i.uv.y));
+                // Round head at +along; toward the tail a stretched streak narrows to a point (15 §3). A still dot is round.
+                float x = i.uv.x;
+                float taper = saturate(s - 1.0);
+                float w = lerp(1.0, max(0.08, (x + s) / max(2.0 * s - 1.0, 1e-3)), taper);
+                float d = x > s - 1.0
+                    ? length(float2(x - (s - 1.0), i.uv.y))
+                    : length(float2(max(-x - (s - 1.0), 0.0), i.uv.y / w));
                 float aa = max(fwidth(d), 1e-3);
                 float core = smoothstep(_Core + aa, _Core - aa, d);
                 float halo = exp(-d * d * 5.0) * saturate(1.0 - d);

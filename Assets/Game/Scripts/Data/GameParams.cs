@@ -15,7 +15,7 @@ namespace Incremental
         public Color glowColor = Color.black;
         public float glowStrength;
         public float glowRadiusPx = 900f;
-        [Tooltip("Dust colors; each dust sits somewhere between the two.")]
+        [Tooltip("Dust colors (sRGB; each dust sits somewhere between the two). A warm hue, unlike the neutral background stars (15 §3).")]
         public Color dustA = Color.white;
         public Color dustB = new Color(0.65f, 0.82f, 1f);
         [Tooltip("Background star tint.")]
@@ -129,33 +129,41 @@ namespace Incremental
         public double dustStretchMax = 4;
         public double dustStretchFullSpeedPx = 400;
         [Tooltip("Brightness of a fully stretched streak relative to a still dot.")]
-        public double dustStreakDim = 0.7;
+        public double dustStreakDim = 1;
         [Tooltip("Extra brightness inside the gravity radius while holding (at the center; fades to 0 at the edge).")]
-        public double dustGravityBrighten = 0.8;
+        public double dustGravityBrighten = 1.5;
+        [Tooltip("Brightness of dust outside the active gravity field (15 §3): only dust being pulled keeps full brightness, so the eye goes to the cursor.")]
+        public double dustOutsideDim = 0.5;
+        [Tooltip("Band outside the gravity radius over which dust dims, px; and the fade time when a hold starts or stops, seconds.")]
+        public double dustDimEdgePx = 60;
+        public double dustHoldFadeSec = 0.25;
+        [Tooltip("Width of a fully stretched streak relative to a still dot (15 §3); the tail end narrows to a point.")]
+        public double dustStreakWidth = 0.5;
 
         [Header("Background (14 §6)")]
-        [Tooltip("By central star stage: 0 protostar (below the first star tier), 1 red dwarf, 2 sun-like, 3 blue giant.")]
+        [Tooltip("By central star stage: 0 protostar (below the first star tier), 1 red dwarf, 2 sun-like, 3 blue giant. " +
+                 "Dust takes a warm hue of its palette and background stars stay neutral white, so the two never read alike (15 §3).")]
         public BackdropPalette[] palettes =
         {
             new BackdropPalette
             {
                 background = new Color(0.02f, 0.02f, 0.05f), glowColor = new Color(0.3f, 0.35f, 0.6f), glowStrength = 0.008f, glowRadiusPx = 800f,
-                dustA = Color.white, dustB = new Color(0.65f, 0.82f, 1f), starTint = new Color(0.8f, 0.87f, 1f),
+                dustA = new Color(1f, 0.84f, 0.58f), dustB = new Color(1f, 0.74f, 0.48f), starTint = new Color(0.88f, 0.9f, 0.94f),
             },
             new BackdropPalette
             {
                 background = new Color(0.05f, 0.02f, 0.07f), glowColor = new Color(0.9f, 0.25f, 0.2f), glowStrength = 0.025f, glowRadiusPx = 800f,
-                dustA = new Color(1f, 0.94f, 0.86f), dustB = new Color(1f, 0.82f, 0.7f), starTint = new Color(1f, 0.85f, 0.85f),
+                dustA = new Color(1f, 0.72f, 0.52f), dustB = new Color(1f, 0.6f, 0.45f), starTint = new Color(0.88f, 0.9f, 0.94f),
             },
             new BackdropPalette
             {
                 background = new Color(0.035f, 0.045f, 0.1f), glowColor = new Color(1f, 0.72f, 0.38f), glowStrength = 0.04f, glowRadiusPx = 850f,
-                dustA = new Color(1f, 0.98f, 0.82f), dustB = new Color(1f, 0.9f, 0.6f), starTint = new Color(1f, 0.95f, 0.8f),
+                dustA = new Color(1f, 0.88f, 0.55f), dustB = new Color(1f, 0.78f, 0.42f), starTint = new Color(0.88f, 0.9f, 0.94f),
             },
             new BackdropPalette
             {
                 background = new Color(0.05f, 0.08f, 0.18f), glowColor = new Color(0.6f, 0.78f, 1f), glowStrength = 0.035f, glowRadiusPx = 900f,
-                dustA = new Color(0.88f, 0.94f, 1f), dustB = new Color(0.68f, 0.84f, 1f), starTint = new Color(0.8f, 0.9f, 1f),
+                dustA = new Color(1f, 0.82f, 0.62f), dustB = new Color(1f, 0.7f, 0.56f), starTint = new Color(0.88f, 0.9f, 0.94f),
             },
         };
         [Tooltip("Palette change when the stage changes outside an ignition, seconds (at load it snaps).")]
@@ -167,15 +175,25 @@ namespace Incremental
         public double bgTwinkleSpeed = 0.7;
         public double bgTwinkleDepth = 0.5;
 
+        [Header("Flash rule (15 §3)")]
+        [Tooltip("Every flash (star ignition, result ignition, supernova): peak alpha at most flashAlphaCap (then × effectIntensity), " +
+                 "rise at least flashMinRiseSec, and a radial falloff from its source: flashEdgeShare of the center brightness at flashRadiusPx " +
+                 "(540 = half the 1080p screen height, so a flash at the screen center is at most 0.3 × at every edge).")]
+        public double flashAlphaCap = 0.35;
+        public double flashMinRiseSec = 0.1;
+        public double flashEdgeShare = 0.3;
+        public double flashRadiusPx = 540;
+
         [Header("Star ignition (14 §6, 10 §4.3)")]
         [Tooltip("First star ever on the run screen: screen flash + light ring + palette change, seconds. Logic time is untouched.")]
         public double ignitionFirstSec = 1.5;
         [Tooltip("Every later star: short flash + light ring, seconds.")]
         public double ignitionRepeatSec = 0.4;
-        [Tooltip("Peak screen flash alpha (× effectIntensity) and the time to the peak, seconds.")]
-        public double ignitionFlashAlpha = 0.7;
+        [Tooltip("Peak flash alpha (× effectIntensity, first / later star), the time to the peak (seconds) and the flash color.")]
+        public double ignitionFlashAlpha = 0.3;
         public double ignitionRepeatFlashAlpha = 0.25;
-        public double ignitionFlashRiseSec = 0.06;
+        public double ignitionFlashRiseSec = 0.1;
+        public Color ignitionFlashColor = new Color(1f, 0.97f, 0.9f);
         [Tooltip("Light ring: final diameter px and ring width px (first / later).")]
         public double ignitionRingPx = 2600;
         public double ignitionRepeatRingPx = 700;
@@ -213,6 +231,8 @@ namespace Incremental
         public double orbitBeltJitterPx = 8;
         public double orbitBeltDotMinPx = 2;
         public double orbitBeltDotMaxPx = 4;
+        [Tooltip("Belt dot brightness multiplier on the tier color, so a belt reads as a band (15 §3).")]
+        public double orbitBeltDotBrightness = 1.5;
         [Tooltip("Tiers above orbitBeltMaxTier show at most this many planets, then ×N.")]
         public int orbitIndividualMax = 12;
         [Tooltip("Stars (tiers above orbitMaxTier) made this run, drawn in the sky at most this many.")]
@@ -240,18 +260,18 @@ namespace Incremental
         [Tooltip("Central star disc size and ignition flash base size (px) by stage: protostar, red dwarf, sun-like, blue giant.")]
         public float[] starCorePx = { 30f, 38f, 52f, 72f };
         public float[] starGlowPx = { 170f, 200f, 260f, 340f };
-        [Tooltip("Ignition flash when tier 9 is made for the first time: seconds, and size relative to the glow.")]
+        [Tooltip("Result screen flash when tier 9 is made for the first time: seconds, radius growth relative to the glow, and peak alpha (flash rule, 15 §3).")]
         public double ignitionSec = 0.9;
         public double ignitionScale = 4;
+        public double resultIgnitionFlashAlpha = 0.3;
 
         [Header("Result growth highlight (14 §7)")]
         [Tooltip("×N and \"new\" labels sit outside each orbit at this angle (degrees, 0 = right, counter-clockwise), with a dark backing.")]
         public double orbitLabelAngleDeg = -60;
         public double orbitLabelGapPx = 6;
         public Color orbitLabelBacking = new Color(0f, 0f, 0f, 0.6f);
-        [Tooltip("Panel deltas vs the comparison run (the ratio's run) and the \"new body\" highlight colors.")]
+        [Tooltip("Panel increases vs the comparison run (the ratio's run; decreases are not shown, 15 §3) and the \"new body\" highlight color.")]
         public Color deltaUpColor = new Color(0.55f, 1f, 0.6f);
-        public Color deltaDownColor = new Color(1f, 0.55f, 0.5f);
         public Color newTierColor = new Color(1f, 0.85f, 0.4f);
         [Tooltip("A tier made for the first time: its orbit pulses this many times over this many seconds after the entry, once.")]
         public double newTierHighlightSec = 2;
@@ -259,6 +279,8 @@ namespace Incremental
         [Tooltip("Orbit line alpha of a new tier after the pulse, and its width multiplier at the pulse peak.")]
         public double newTierOrbitAlpha = 0.45;
         public double newTierOrbitWidth = 3;
+        [Tooltip("A star tier made for the first time: one of its sky stars pulses with this extra size at the pulse peak (15 §3).")]
+        public double newTierStarPulseScale = 0.6;
 
         [Header("Skill tree view (12 §5, §9)")]
         [Tooltip("Ring k radius = treeRingR0Px + k × treeRingStepPx (reference 1080p).")]

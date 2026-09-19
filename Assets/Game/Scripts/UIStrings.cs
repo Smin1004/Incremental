@@ -26,7 +26,6 @@ namespace Incremental
         public const string OpenTree = "스킬트리  (Space)";
         public const string PlanetMulti = "×{0}";
         public const string DeltaUp = "▲{0}";
-        public const string DeltaDown = "▼{0}";
         public const string NewBody = "새 천체";
 
         // Skill tree (12 §9)

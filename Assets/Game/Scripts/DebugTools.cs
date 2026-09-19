@@ -81,6 +81,59 @@ namespace Incremental
             sampleLeft = seconds;
         }
 
+        /// <summary>
+        /// Reproducible run screen for before / after captures (15 §3): tiers unlocked up to <paramref name="unlockTier"/>,
+        /// <paramref name="dust"/> dust from a fixed seed, the pointer held at <paramref name="viewport"/> (0..1), the held
+        /// mass at <paramref name="massShare"/> of the way from the second-highest to the highest unlocked threshold, and
+        /// the run clock reset to 0 (capture with ScheduleCaptures on <c>() =&gt; (float)root.Run.elapsed</c>). The pointer
+        /// moves at <paramref name="velocityPx"/> (screen px per second of run time) so it sweeps into dust as a player does.
+        /// Call <see cref="EndStaging"/> afterwards. Run screen only.
+        /// </summary>
+        public void StageRunScene(int seed, int dust, Vector2 viewport, Vector2 velocityPx, int unlockTier, double massShare)
+        {
+            if (root.Phase != GamePhase.Run || root.Run == null) return;
+            while (root.Meta.unlockedMaxTier < unlockTier && Shop.UnlockNextFree(root.nodeTable, root.Meta) > 0) { }
+            root.Override = new StatsOverride { enabled = true, dustCap = dust, spawnRate = perfSpawnRate };
+            var s = Stats.Compute(root.gameParams, root.nodeTable, root.Meta);
+            s.dustCap = dust;
+            var screen = new Vector2(viewport.x * Screen.width, viewport.y * Screen.height);
+            var run = root.Run;
+            root.InputProvider = () => new PointerState { screenPos = screen + velocityPx * (float)run.elapsed, pressed = true };
+            root.Dust.Reseed(seed);
+            root.Dust.Reset(dust, root.CameraArea(), root.ToWorld(screen), s);
+            var lo = root.celestialTable.Get(Mathf.Max(1, root.Meta.unlockedMaxTier - 1));
+            var hi = root.celestialTable.Get(root.Meta.unlockedMaxTier);
+            double thLo = Stats.Threshold(lo, s), thHi = Stats.Threshold(hi, s);
+            root.Run.mass = thLo + (thHi - thLo) * massShare;
+            root.Run.stamina = s.staminaMax;
+            root.Run.elapsed = 0;
+        }
+
+        readonly System.Collections.Generic.List<DelayedAction> delayed = new System.Collections.Generic.List<DelayedAction>();
+
+        struct DelayedAction
+        {
+            public float at;
+            public System.Action action;
+        }
+
+        /// <summary>
+        /// Runs <paramref name="action"/> after <paramref name="seconds"/> of unscaled frame time. A tool call stalls the editor
+        /// and the next frame's delta time jumps, so an effect started from the call itself cannot be captured at a precise
+        /// moment; start it a second later with this instead.
+        /// </summary>
+        public void After(float seconds, System.Action action)
+        {
+            delayed.Add(new DelayedAction { at = Time.unscaledTime + seconds, action = action });
+        }
+
+        /// <summary>Undoes <see cref="StageRunScene"/>: mouse input and the normal stats again.</summary>
+        public void EndStaging()
+        {
+            root.InputProvider = root.Bot != null && root.Bot.Enabled ? root.InputProvider : null;
+            SetPerfMode(perfMode);
+        }
+
         /// <summary>"frames, avg fps, fps at the 99th percentile frame time, max frame ms", or the state while sampling.</summary>
         public string SampleResult()
         {
@@ -97,6 +150,13 @@ namespace Incremental
 
         void Update()
         {
+            for (int i = delayed.Count - 1; i >= 0; i--)
+            {
+                if (Time.unscaledTime < delayed[i].at) continue;
+                var a = delayed[i].action;
+                delayed.RemoveAt(i);
+                a?.Invoke();
+            }
             if (sampleDelay > 0f) sampleDelay -= Time.unscaledDeltaTime;
             else if (sampleLeft > 0f)
             {
