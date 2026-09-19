@@ -23,6 +23,9 @@ namespace Incremental
     /// <see cref="gateSaving"/> (12 §3): the next gate is bought first when affordable, and the bot saves for it once the
     /// gate costs no more than currency + last run income, instead of spending everything on cheap nodes
     /// (week 1 report: the bot never unlocked tier 2).
+    /// Completion (15 §6): right after buying a gate the save is copied to snapshots/ring_k.json. When the ending run ends
+    /// the bot skips the sequence as soon as it can (after the blast), continues, plays stopAfterEndlessRuns endless runs
+    /// and stops.
     /// </summary>
     public sealed class AutoplayBot : MonoBehaviour
     {
@@ -32,6 +35,10 @@ namespace Incremental
         public int gridY = 7;
         [Tooltip("Stop the bot after this many completed runs (0 = keep going).")]
         public int stopAfterRuns = 0;
+        [Tooltip("After the ending: play this many endless runs, then stop (0 = keep going), 15 §6.1.")]
+        public int stopAfterEndlessRuns = 1;
+        [Tooltip("Copy the save to snapshots/ring_k.json right after buying the gate of ring k (15 §6.2).")]
+        public bool writeRingSnapshots = true;
         [Tooltip("Stop: buy the next gate first and buy nothing else once currency + last run income would pay for it (12 §3). " +
                  "KeepReserve (default, 14 §8): while saving, still spend what exceeds gate − last run income.")]
         public GateSaving gateSaving = GateSaving.KeepReserve;
@@ -42,6 +49,8 @@ namespace Incremental
         int[] counts = new int[0];
         readonly List<NodeDef> scratch = new List<NodeDef>();
         int runsCompleted;
+        int endlessLeft = -1;
+        bool waitingForEnding;
         Func<PointerState> provider;
 
         public bool Enabled { get; private set; }
@@ -61,6 +70,8 @@ namespace Incremental
             if (on)
             {
                 runsCompleted = 0;
+                endlessLeft = -1;
+                waitingForEnding = false;
                 cursor = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
                 pressed = false;
                 root.InputProvider = provider;
@@ -81,6 +92,26 @@ namespace Incremental
         }
 
         PointerState Provide() => new PointerState { screenPos = cursor, pressed = pressed };
+
+        /// <summary>The ending sequence: skip after the blast, then continue and go on with the next (endless) run.</summary>
+        void Update()
+        {
+            if (!Enabled || !waitingForEnding) return;
+            var ending = root.Ending;
+            if (ending == null || !ending.IsPlaying)
+            {
+                waitingForEnding = false;
+                return;
+            }
+            if (ending.CanSkip) ending.Skip();
+            if (!ending.AtEnd) return;
+            ending.Continue();
+            waitingForEnding = false;
+            endlessLeft = stopAfterEndlessRuns;
+            Debug.Log("[Bot] ending skipped; continuing into endless play");
+            BuyCheapestUntilBroke();
+            root.RequestStartRun();
+        }
 
         void FixedUpdate()
         {
@@ -133,9 +164,21 @@ namespace Incremental
         {
             if (!Enabled) return;
             runsCompleted++;
+            if (rec.endReason == EndReason.Ending)
+            {
+                Debug.Log($"[Bot] run {rec.run} reached the ending (income={Fmt.Num(rec.income)}); waiting for the sequence");
+                waitingForEnding = true;
+                return;
+            }
             int bought = BuyCheapestUntilBroke();
             var m = root.Meta;
             Debug.Log($"[Bot] run {rec.run} income={Fmt.Num(rec.income)} bought={bought} currency={Fmt.Num(m.currency)} levels=[{RunLogger.LevelsText(m.upgradeLevels)}] maxTier={m.unlockedMaxTier}");
+            if (endlessLeft > 0 && --endlessLeft == 0 && stopAfterEndlessRuns > 0)
+            {
+                Debug.Log("[Bot] endless run done; stopping (15 §6.1)");
+                SetEnabled(false);
+                return;
+            }
             if (stopAfterRuns > 0 && runsCompleted >= stopAfterRuns)
             {
                 SetEnabled(false);
@@ -153,6 +196,7 @@ namespace Incremental
                 var n = ChooseNext(root.nodeTable, root.Meta, gateSaving, scratch);
                 if (n == null || !root.TryBuy(n.id)) break;
                 bought++;
+                if (n.IsGate && writeRingSnapshots) root.WriteRingSnapshot(root.Meta.unlockedMaxTier);
             }
             return bought;
         }

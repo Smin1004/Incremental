@@ -254,6 +254,8 @@ namespace Incremental
             for (int t = p.orbitMaxTier + 1; t <= root.celestialTable.MaxTier && rec != null; t++)
             {
                 int count = rec.TierCount(t);
+                // The ending run's blue giant is the central star itself; it is not drawn again in the sky.
+                if (ending && t == root.celestialTable.MaxTier) count = Mathf.Max(0, count - 1);
                 var tier = root.celestialTable.Get(t);
                 bool isNew = fresh && ResultMath.IsNewTier(m, rec, t);
                 for (int i = 0; i < count && (stars < p.skyStarsPerRun || (isNew && i == 0)); i++, stars++)
