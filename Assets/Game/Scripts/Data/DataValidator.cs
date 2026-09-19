@@ -28,6 +28,8 @@ namespace Incremental
             if (!r.Ok) return r;
 
             ValidateTiers(c, r);
+            foreach (var key in EndingView.CreditKeys)
+                if (!UIStrings.Has(key)) r.Errors.Add($"UIStrings: missing key '{key}' (credits, 15 §4.4).");
             ValidateNodes(c, t, r);
             ValidateGates(c, t, r);
             ValidateGraph(t, r);
@@ -90,6 +92,7 @@ namespace Incremental
             if (l.spotSize < 0 || l.spotSize > 0.5f || l.spotLatitude < -1 || l.spotLatitude > 1)
                 r.Errors.Add(where + ": look.spotSize must be within 0..0.5 and spotLatitude within -1..1.");
             if (l.surface == SurfaceType.Star && !(l.glowStrength > 0 && l.glowSize > 0)) r.Warnings.Add(where + ": Star look without a corona.");
+            if (l.surface == SurfaceType.BlackHole && !l.HasRing) r.Warnings.Add(where + ": BlackHole look without an accretion disc (ring).");
             if (l.surface == SurfaceType.Terran && l.cloudCover > 0 && l.cloudSpinMult == 0) r.Warnings.Add(where + ": clouds do not move (cloudSpinMult 0).");
         }
 
@@ -127,9 +130,9 @@ namespace Incremental
             {
                 if (c != null)
                 {
-                    int stages = Math.Max(1, c.MaxTier - p.orbitMaxTier + 1);
+                    int stages = CentralStages(p, c);
                     if (p.palettes.Length < stages)
-                        r.Errors.Add($"GameParams: {p.palettes.Length} palettes for {stages} central star stages (protostar + one per star tier).");
+                        r.Errors.Add($"GameParams: {p.palettes.Length} palettes for {stages} central star stages (protostar + one per star tier + remnant, 15 §5).");
                 }
                 for (int i = 0; i < p.palettes.Length; i++)
                 {
@@ -168,13 +171,14 @@ namespace Incremental
                 r.Errors.Add("GameParams: starCorePx and starGlowPx need one entry per central star stage.");
             else if (c != null)
             {
-                int stages = Math.Max(1, c.MaxTier - p.orbitMaxTier + 1);
+                int stages = CentralStages(p, c);
                 if (p.starCorePx.Length < stages || p.starGlowPx.Length < stages)
                     r.Warnings.Add($"GameParams: starCorePx / starGlowPx have fewer than {stages} entries; later stages reuse the last one.");
             }
             if (!(p.skyStarScale > 0) || !(p.skyStarArea.z > p.skyStarArea.x) || !(p.skyStarArea.w > p.skyStarArea.y))
                 r.Errors.Add("GameParams: skyStarScale must be > 0 and skyStarArea must have max > min.");
             if (!(p.newTierHighlightSec > 0) || p.newTierPulses < 1) r.Errors.Add("GameParams: newTierHighlightSec must be > 0 and newTierPulses >= 1.");
+            ValidateEnding(p, r);
             return r;
         }
 
@@ -200,13 +204,47 @@ namespace Incremental
             { "ignitionFlashAlpha", p.ignitionFlashAlpha },
             { "ignitionRepeatFlashAlpha", p.ignitionRepeatFlashAlpha },
             { "resultIgnitionFlashAlpha", p.resultIgnitionFlashAlpha },
+            { "supernovaFlashAlpha", p.supernovaFlashAlpha },
         };
 
         /// <summary>Rise time of every flash in the game, by field name (the result ignition shares ignitionFlashRiseSec).</summary>
         public static Dictionary<string, double> FlashRises(GameParams p) => new Dictionary<string, double>
         {
             { "ignitionFlashRiseSec", p.ignitionFlashRiseSec },
+            { "supernovaFlashRiseSec", p.supernovaFlashRiseSec },
         };
+
+        /// <summary>Central star / palette stages: protostar, one per star tier, and the remnant after the ending (15 §5).</summary>
+        public static int CentralStages(GameParams p, CelestialTable c) => BackdropView.RemnantStage(c.MaxTier, p.orbitMaxTier) + 1;
+
+        /// <summary>Ending (15 §4, §5): a timeline in order, positive durations and counts, a proper black hole look.</summary>
+        static void ValidateEnding(GameParams p, ValidationReport r)
+        {
+            if (!(p.endingPullSec > 0) || !(p.endingFadeSec > 0)) r.Errors.Add("GameParams: endingPullSec and endingFadeSec must be > 0.");
+            if (!(p.endingPullAccelPx > 0) || !(p.endingPullMaxSpeedPx > 0) || p.endingPullDamping < 0)
+                r.Errors.Add("GameParams: the ending pull needs accel and top speed > 0 and damping >= 0.");
+            if (p.endingFadeAlpha < 0 || p.endingFadeAlpha > 1) r.Errors.Add("GameParams: endingFadeAlpha must be within 0..1.");
+            double[] times = { p.resultEntrySec, p.supernovaCalmEndSec, p.supernovaCollapseEndSec, p.supernovaBlastEndSec, p.supernovaShockEndSec, p.supernovaRemnantEndSec };
+            for (int i = 1; i < times.Length; i++)
+                if (!(times[i] > times[i - 1]))
+                    r.Errors.Add("GameParams: the supernova timeline must increase: resultEntrySec < supernovaCalmEndSec < CollapseEnd < BlastEnd < ShockEnd < RemnantEnd.");
+            if (!(p.supernovaShockEase > 0)) r.Errors.Add("GameParams: supernovaShockEase must be > 0.");
+            if (!(p.supernovaShockEndPx > p.supernovaShockStartPx) || !(p.supernovaShockWidthPx > 0))
+                r.Errors.Add("GameParams: the shock ring must grow (supernovaShockEndPx > supernovaShockStartPx) and have a width > 0.");
+            if (p.supernovaShockMinIntensity < 0 || p.supernovaShockMinIntensity > 1) r.Errors.Add("GameParams: supernovaShockMinIntensity must be within 0..1.");
+            if (!(p.supernovaFlashSec > p.supernovaFlashRiseSec)) r.Errors.Add("GameParams: supernovaFlashSec must be longer than supernovaFlashRiseSec.");
+            if (p.supernovaDustPerPlanetMin < 1 || p.supernovaDustPerPlanetMax < p.supernovaDustPerPlanetMin || p.supernovaDustPerBeltDot < 0 || p.supernovaEjectaDust < 0)
+                r.Errors.Add("GameParams: supernova dust counts are invalid (per planet 1 <= min <= max, others >= 0).");
+            if (!(p.supernovaDustSpeedPx > 0) || !(p.supernovaDustDrag > 0) || p.remnantDriftSpeedPx < 0)
+                r.Errors.Add("GameParams: supernova dust speed and drag must be > 0 and the drift speed >= 0.");
+            if (!(p.creditLineSec > 0) || !(p.creditFadeSec > 0) || p.creditFadeSec * 2 > p.creditLineSec)
+                r.Errors.Add("GameParams: creditLineSec must be > 0 and hold two creditFadeSec.");
+            if (p.creditTitleFontSize < 1 || p.creditFontSize < 1 || p.continueFontSize < 1) r.Errors.Add("GameParams: credit and continue font sizes must be >= 1.");
+            if (!(p.blackHoleFadeSec > 0) || !(p.remnantPaletteBlendSec > 0)) r.Errors.Add("GameParams: blackHoleFadeSec and remnantPaletteBlendSec must be > 0.");
+            ValidateLook("GameParams: blackHoleLook", p.blackHoleLook, r);
+            if (p.blackHoleLook != null && p.blackHoleLook.surface != SurfaceType.BlackHole)
+                r.Errors.Add("GameParams: blackHoleLook must be a BlackHole look (15 §5).");
+        }
 
         static bool IsWarm(UnityEngine.Color c) => c.r > c.b + 0.05f;
 

@@ -6,13 +6,13 @@ namespace Incremental
     /// <summary>
     /// Run bookkeeping as pure functions over MetaState: building the run record, applying a finished run
     /// (currency, best, totals, history) and closing a pending run left behind by a killed game.
-    /// Every way a run can end (stamina, quit, crash) goes through <see cref="ApplyRunEnd"/>.
-    /// Only stamina-ended runs are "full" runs: quit and crash runs are recorded and paid, but they get no ratio and
-    /// do not move the ratio base (lastRunIncome) or the best income (12 §10-3).
+    /// Every way a run can end (stamina, ending, quit, crash) goes through <see cref="ApplyRunEnd"/>.
+    /// Stamina and ending runs are "full" runs (15 §4.2): quit and crash runs are recorded and paid, but they get no ratio
+    /// and do not move the ratio base (lastRunIncome) or the best income (12 §10-3).
     /// </summary>
     public static class Session
     {
-        public static bool IsFullRun(string endReason) => endReason == EndReason.Stamina;
+        public static bool IsFullRun(string endReason) => endReason == EndReason.Stamina || endReason == EndReason.Ending;
 
         /// <summary>
         /// Builds the record of a finished run. <paramref name="income"/> is the raw run income (planet incomes keep their
@@ -36,10 +36,18 @@ namespace Incremental
             };
         }
 
-        /// <summary>Income goes into currency; totals and history are updated; ratio base and best only for full runs.</summary>
+        /// <summary>
+        /// Income goes into currency; totals and history are updated; ratio base and best only for full runs. The first
+        /// ending run is remembered (endingRun) with its sequence still unseen (15 §4.5).
+        /// </summary>
         public static void ApplyRunEnd(MetaState meta, RunRecord rec)
         {
             meta.currency += rec.income;
+            if (rec.endReason == EndReason.Ending && meta.endingRun == 0)
+            {
+                meta.endingRun = rec.run;
+                meta.endingSeen = false;
+            }
             if (IsFullRun(rec.endReason))
             {
                 meta.lastRunIncome = rec.income;
@@ -63,11 +71,12 @@ namespace Incremental
         }
 
         public static PendingRun MakePending(int run, double elapsed, double income, int[] tierCounts,
-            List<UpgradeLevel> startLevels, EffectiveStats startStats)
+            List<UpgradeLevel> startLevels, EffectiveStats startStats, bool ending = false)
         {
             return new PendingRun
             {
                 active = true,
+                ending = ending,
                 run = run,
                 elapsed = elapsed,
                 income = income,
@@ -79,12 +88,14 @@ namespace Incremental
 
         /// <summary>
         /// Closes the pending run of a loaded save (the game was killed mid-run): its income is kept and it is recorded
-        /// with <paramref name="endReason"/>. Returns the record, or null when there was no pending run.
+        /// with <paramref name="endReason"/>, or as an ending run when it was killed during its ending (15 §4.5).
+        /// Returns the record, or null when there was no pending run.
         /// </summary>
         public static RunRecord FinalizePending(SaveData data, string endReason)
         {
             var p = data.pending;
             if (p == null || !p.active) return null;
+            if (p.ending) endReason = EndReason.Ending;
             var rec = MakeRecord(data.meta, p.run, p.elapsed, p.income, p.tierCounts, p.startLevels, p.startStats, endReason);
             ApplyRunEnd(data.meta, rec);
             data.pending = new PendingRun();

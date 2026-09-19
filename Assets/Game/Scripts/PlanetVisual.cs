@@ -37,6 +37,8 @@ namespace Incremental
         float diameter;
         float fade = 1f;
         float glowMul = 1f;
+        float glowSizeMul = 1f;
+        float whiten;
         Vector4 extra;
         Vector4 surf4;
 
@@ -100,16 +102,14 @@ namespace Incremental
             extent = l.Extent();
             mpb.SetFloat(IdSurface, (float)l.surface);
             mpb.SetFloat(IdExtent, extent);
-            mpb.SetColor(IdBase, l.baseColor);
-            mpb.SetColor(IdDark, l.darkColor);
             mpb.SetColor(IdAccent, l.accentColor);
-            mpb.SetColor(IdGlow, l.glowColor);
             mpb.SetColor(IdRing, l.ringColor);
             mpb.SetVector(IdSurf1, new Vector4(l.noiseScale, l.patchLevel, l.patchSoftness, seed));
             mpb.SetVector(IdSurf2, new Vector4(l.craterDensity, l.craterSize, l.craterScale, l.polarCap));
             mpb.SetVector(IdSurf3, new Vector4(l.irregularity, l.cloudCover, l.cloudSpinMult, l.emission));
             surf4 = new Vector4(l.bandCount, l.turbulence, l.glowSize, l.glowStrength);
-            mpb.SetVector(IdSurf4, new Vector4(surf4.x, surf4.y, surf4.z, surf4.w * glowMul));
+            ApplySurf4();
+            ApplyColors();
             mpb.SetVector(IdSurf5, new Vector4(l.spotSize, l.spotLatitude, 0f, 0f));
             mpb.SetVector(IdMotion, new Vector4(l.spinDegPerSec * Mathf.Deg2Rad, l.axisTiltDeg * Mathf.Deg2Rad,
                 (float)axisPitchDeg * Mathf.Deg2Rad, seed * 2.399f));
@@ -155,8 +155,36 @@ namespace Incremental
         {
             if (Mathf.Approximately(k, glowMul)) return;
             glowMul = k;
-            mpb.SetVector(IdSurf4, new Vector4(surf4.x, surf4.y, surf4.z, surf4.w * k));
+            ApplySurf4();
             mr.SetPropertyBlock(mpb);
+        }
+
+        /// <summary>Multiplier on the look's glow reach (the supernova collapse draws the corona in, 15 §4.3).</summary>
+        public void SetGlowSizeMul(float k)
+        {
+            if (Mathf.Approximately(k, glowSizeMul)) return;
+            glowSizeMul = k;
+            ApplySurf4();
+            mr.SetPropertyBlock(mpb);
+        }
+
+        /// <summary>0..1: moves the base, dark and glow colors toward white (a star growing unstable, 15 §4.3).</summary>
+        public void SetWhiten(float k)
+        {
+            if (Mathf.Approximately(k, whiten)) return;
+            whiten = k;
+            ApplyColors();
+            mr.SetPropertyBlock(mpb);
+        }
+
+        void ApplySurf4() => mpb.SetVector(IdSurf4, new Vector4(surf4.x, surf4.y, surf4.z * glowSizeMul, surf4.w * glowMul));
+
+        void ApplyColors()
+        {
+            if (look == null) return;
+            mpb.SetColor(IdBase, Color.Lerp(look.baseColor, Color.white, whiten));
+            mpb.SetColor(IdDark, Color.Lerp(look.darkColor, Color.white, whiten));
+            mpb.SetColor(IdGlow, Color.Lerp(look.glowColor, Color.white, whiten));
         }
 
         public void SetSortingOrder(int order) => mr.sortingOrder = order;

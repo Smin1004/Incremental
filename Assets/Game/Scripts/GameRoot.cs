@@ -71,6 +71,8 @@ namespace Incremental
         public TreeView Tree { get; private set; }
         public DebugTools Tools { get; private set; }
         public GalleryView Gallery { get; private set; }
+        public SupernovaRunFx SupernovaRun { get; private set; }
+        public EndingView Ending { get; private set; }
         public AutoplayBot Bot { get; private set; }
         public Vector2 CursorWorld { get; private set; }
         public PointerState LastPointer { get; private set; }
@@ -86,6 +88,10 @@ namespace Incremental
         public Func<PointerState> InputProvider;
         /// <summary>True from the first blue giant ever until the ending run ends (15 §4.2): input is ignored and the dust falls into the star.</summary>
         public bool EndingActive { get; private set; }
+        /// <summary>Logic seconds since the ending started (fixed tick).</summary>
+        public double EndingAge { get; private set; }
+        /// <summary>World position of the blue giant that started the ending.</summary>
+        public Vector2 EndingCenter { get; private set; }
         public event Action<RunRecord> RunEnded;
         public event Action RunStarted;
         /// <summary>Raised on the fixed tick right after a planet is created and sold.</summary>
@@ -96,7 +102,6 @@ namespace Incremental
         readonly Stopwatch tickWatch = new Stopwatch();
         List<UpgradeLevel> runStartLevels = new List<UpgradeLevel>();
         EffectiveStats runStartStats;
-        bool endingLoggedThisRun;
         bool pendingStart;
         bool hasFocus = true;
         bool shownPaused;
@@ -175,6 +180,16 @@ namespace Incremental
             Ignition = ignitionGo.AddComponent<IgnitionFx>();
             Ignition.Init(this, fxMaterial);
 
+            var supernovaGo = new GameObject("SupernovaRun");
+            supernovaGo.transform.SetParent(transform, false);
+            SupernovaRun = supernovaGo.AddComponent<SupernovaRunFx>();
+            SupernovaRun.Init(this);
+
+            var endingGo = new GameObject("Ending");
+            endingGo.transform.SetParent(transform, false);
+            Ending = endingGo.AddComponent<EndingView>();
+            Ending.Init(this);
+
             var galleryGo = new GameObject("Gallery");
             galleryGo.transform.SetParent(transform, false);
             Gallery = galleryGo.AddComponent<GalleryView>();
@@ -187,8 +202,9 @@ namespace Incremental
         }
 
         /// <summary>
-        /// No save: run 1 starts right away. With a save: a run left pending by a killed game is closed as a crash,
-        /// then the game opens on the result / shop screen showing the last run.
+        /// No save: run 1 starts right away. With a save: a run left pending by a killed game is closed as a crash (or as
+        /// the ending run when it died during its ending), then the game opens on the result / shop screen showing the last
+        /// run, or replays the ending sequence when it was not seen to the end (15 §4.5).
         /// </summary>
         void Start()
         {
@@ -199,16 +215,26 @@ namespace Incremental
                 StartRun();
                 return;
             }
+            OpenLoaded(data, status == LoadStatus.RestoredFromBackup);
+            UnityEngine.Debug.Log($"[Save] loaded ({status}): run {Meta.runCount}, currency {Fmt.Num(Meta.currency)}, max tier {Meta.unlockedMaxTier}" +
+                                  (Meta.endingRun > 0 ? $", ending run {Meta.endingRun} (seen {Meta.endingSeen})" : string.Empty));
+        }
 
+        /// <summary>Takes a loaded save: closes a pending run, then shows the ending sequence if it is unseen, else the result screen.</summary>
+        void OpenLoaded(SaveData data, bool saveNow)
+        {
             Meta = data.meta;
+            Run = null;
+            EndingActive = false;
             Shop.RecomputeUnlockedMaxTier(nodeTable, Meta);
             var crashed = Session.FinalizePending(data, EndReason.Crash);
             if (crashed != null) LogRun(crashed);
-            if (crashed != null || status == LoadStatus.RestoredFromBackup) Save();
+            if (crashed != null || saveNow) Save();
             Phase = GamePhase.Result;
             ShowIdleField();
-            Result.Show(Meta.LastRun, false);
-            UnityEngine.Debug.Log($"[Save] loaded ({status}): run {Meta.runCount}, currency {Fmt.Num(Meta.currency)}, max tier {Meta.unlockedMaxTier}");
+            Tree.Hide();
+            if (EndingView.IsUnseen(Meta)) Ending.Play(Meta.EndingRecord, false);
+            else Result.Show(Meta.LastRun, false);
         }
 
         /// <summary>
@@ -235,6 +261,12 @@ namespace Incremental
         {
             if (Phase == GamePhase.Run && Run != null)
             {
+                // Quitting during the ending closes the ending run, so the next launch plays the sequence (15 §4.5).
+                if (EndingActive)
+                {
+                    EndRun(EndReason.Ending, false);
+                    return;
+                }
                 if (Run.holding)
                 {
                     Release();
@@ -274,9 +306,10 @@ namespace Incremental
 
         void Update()
         {
-            // Between runs the result screen and the tree show their own numbers (Space is handled there too).
+            // Between runs the result screen and the tree show their own numbers (Space is handled there too). The dust is
+            // drawn during runs, and on the result screen only as the supernova remnant (15 §4.3).
             Hud.SetRunHudVisible(Phase == GamePhase.Run);
-            DustRenderer.SetVisible(Phase == GamePhase.Run);
+            DustRenderer.SetVisible(Phase == GamePhase.Run || Ending.ShowsDust);
             Hud.SetCurrency(Meta.currency, Meta.runCount);
             if (Run != null)
             {
@@ -303,7 +336,8 @@ namespace Incremental
         {
             Meta.runCount++;
             runStartLevels = Meta.CopyLevels();
-            endingLoggedThisRun = false;
+            EndingActive = false;
+            EndingAge = 0;
             Effective = ComputeStats();
             runStartStats = Effective;
             Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
@@ -323,6 +357,11 @@ namespace Incremental
         {
             Effective = ComputeStats();
             var s = Effective;
+            if (EndingActive)
+            {
+                TickEnding(dt);
+                return;
+            }
 
             var ps = ReadPointer();
             LastPointer = ps;
@@ -367,6 +406,39 @@ namespace Incremental
             }
         }
 
+        /// <summary>
+        /// The ending on the run screen (15 §4.2): input is ignored, nothing spawns, stamina and the run clock stand still,
+        /// every dust falls into the blue giant for endingPullSec, the screen darkens for endingFadeSec, then the run ends as
+        /// an ending run (income, record, ratio and best as for stamina; the stamina left is dropped).
+        /// </summary>
+        void TickEnding(double dt)
+        {
+            EndingAge += dt;
+            var ps = ReadPointer();
+            LastPointer = ps;
+            CursorWorld = ToWorld(ps.screenPos);
+            Run.holding = false;
+            var p = gameParams;
+            float ppu = (float)p.pixelsPerUnit;
+            var star = celestialTable.Get(celestialTable.MaxTier);
+            float captureR = (float)((star != null ? star.sizePx : 100.0) * 0.5 / ppu);
+            Dust.TickPull(dt, EndingCenter, (float)(p.endingPullAccelPx / ppu), (float)(p.endingPullMaxSpeedPx / ppu), (float)p.endingPullDamping, captureR);
+            if (EndingAge >= p.endingPullSec + p.endingFadeSec)
+            {
+                EndRun(EndReason.Ending, true);
+                return;
+            }
+            pendingSaveTimer += dt;
+            if (pendingSaveTimer >= p.pendingSaveIntervalSec)
+            {
+                pendingSaveTimer = 0;
+                Save();
+            }
+        }
+
+        /// <summary>True when making this tier starts the ending: the last tier, and the ending was never reached (15 §4.1).</summary>
+        public static bool StartsEnding(MetaState meta, int tier, int maxTier) => tier == maxTier && meta.endingRun == 0;
+
         /// <summary>Release: create the highest reached tier (excess mass is lost below the top tier), or scatter the dust below tier 1.</summary>
         void Release()
         {
@@ -399,18 +471,22 @@ namespace Incremental
             int idx = tier.tier - 1;
             if (idx >= 0 && idx < Run.planetCounts.Length)
                 Run.planetCounts[idx] = (int)Math.Min((double)int.MaxValue, Run.planetCounts[idx] + count);
-            // The forming body under the cursor becomes this planet (same surface, grows from its drawn size, 14 §4).
+            // The forming body under the cursor becomes this planet (same surface, grows from its drawn size, 14 §4). The
+            // first blue giant stays where it formed and starts the ending (15 §4.2); the others leave for the vanishing point.
             Cursor.TakeFormingBody(out float bodySeed, out double bodyPx);
-            Planets.Show(CursorWorld, tier, bodySeed, bodyPx);
+            bool ending = !EndingActive && StartsEnding(Meta, tier.tier, celestialTable.MaxTier);
+            if (ending)
+            {
+                EndingActive = true;
+                EndingAge = 0;
+                EndingCenter = CursorWorld;
+                Run.holding = false;
+                SupernovaRun.Begin(CursorWorld, tier, bodySeed, bodyPx);
+                UnityEngine.Debug.Log($"[Ending] tier {tier.tier} created in run {Meta.runCount}: the ending starts");
+            }
+            else Planets.Show(CursorWorld, tier, bodySeed, bodyPx);
             if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(CursorWorld), tier.sizePx, count);
             Run.mass = 0;
-
-            // The last tier ends the game in week 4; for now it only sells, and the log marks it once per run.
-            if (tier.tier == celestialTable.MaxTier && !endingLoggedThisRun)
-            {
-                endingLoggedThisRun = true;
-                UnityEngine.Debug.Log($"[Ending] tier {tier.tier} created (ending: week 4)");
-            }
             PlanetCreated?.Invoke(tier);
         }
 
@@ -423,6 +499,7 @@ namespace Incremental
             var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, runStartStats, reason);
             Session.ApplyRunEnd(Meta, rec);
             Phase = GamePhase.Result;
+            EndingActive = false;
             Save();
             LogRun(rec);
             if (showResult) RunEnded?.Invoke(rec);
@@ -441,7 +518,7 @@ namespace Incremental
         {
             var data = new SaveData { meta = Meta };
             if (Phase == GamePhase.Run && Run != null)
-                data.pending = Session.MakePending(Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, runStartStats);
+                data.pending = Session.MakePending(Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, runStartStats, EndingActive);
             try
             {
                 Store.Write(data);
@@ -472,9 +549,49 @@ namespace Incremental
             Store.DeleteSave();
             Meta = new MetaState();
             Run = null;
+            EndingActive = false;
             Phase = GamePhase.Result;
+            Ending.Stop();
             pendingStart = true;
             UnityEngine.Debug.Log("[Save] save deleted; starting again from run 1");
+        }
+
+        // ---------------- ring snapshots (15 §6.2) ----------------
+
+        public const string SnapshotDir = "snapshots";
+
+        public static string SnapshotPath(string dataDir, int ring) => System.IO.Path.Combine(dataDir, SnapshotDir, "ring_" + ring + ".json");
+
+        /// <summary>Copies the current save.json to snapshots/ring_k.json (the bot calls it right after buying the gate of ring k).</summary>
+        public void WriteRingSnapshot(int ring)
+        {
+            try
+            {
+                string path = SnapshotPath(DataDir, ring);
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+                System.IO.File.Copy(Store.SavePath, path, true);
+                UnityEngine.Debug.Log($"[Snapshot] ring {ring}: {path}");
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[Snapshot] write failed: " + e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Replaces the game state with a save file (a ring snapshot) while playing: the run in flight is dropped unrecorded,
+        /// the file becomes save.json and the game opens on its result screen. Returns false when the file cannot be read.
+        /// </summary>
+        public bool LoadSaveFile(string path)
+        {
+            var data = SaveStore.ReadFile(path);
+            if (data == null) return false;
+            Ending.Stop();
+            Phase = GamePhase.Result;
+            pendingStart = false;
+            OpenLoaded(data, true);
+            UnityEngine.Debug.Log($"[Save] loaded {path}: run {Meta.runCount}, max tier {Meta.unlockedMaxTier}");
+            return true;
         }
 
         // ---------------- shop (between runs only) ----------------
@@ -491,6 +608,22 @@ namespace Incremental
 
         /// <summary>F3: currency = max(currency × mult, min).</summary>
         public void DebugBoostCurrency(double mult, double min) => Meta.currency = Math.Max(Meta.currency * mult, min);
+
+        /// <summary>
+        /// End key (15 §4.6): replays the ending sequence with the last run's system, between runs only. The save is not
+        /// touched (endingRun / endingSeen stay); "continue" leads to the tree as usual. Also for trailer captures.
+        /// </summary>
+        public bool DebugReplayEnding()
+        {
+            if (Phase != GamePhase.Result || Ending.IsPlaying)
+            {
+                Hud.ShowToast(UIStrings.EndingReplayBetweenRuns);
+                return false;
+            }
+            Ending.Play(Meta.LastRun, true);
+            Hud.ShowToast(UIStrings.EndingReplay);
+            return true;
+        }
 
         /// <summary>F6: raise the next gate node to level 1 for free (also mid-run). Returns the unlocked tier, or 0.</summary>
         public int DebugUnlockNext()

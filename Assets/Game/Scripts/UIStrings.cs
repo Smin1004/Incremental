@@ -45,6 +45,9 @@ namespace Incremental
         public const string CenterName = "성운";
         public const string CenterDesc = "모든 것이 시작된 곳";
 
+        // Ending (15 §4)
+        public const string EndingContinue = "계속하기  (Space)";
+
         // Debug overlay
         public const string DebugOverlay = "FPS {0:F1}   먼지 {1}   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}";
         public const string EffectIntensity = "연출 강도 {0:0.0}";
@@ -52,6 +55,8 @@ namespace Incremental
         public const string Off = "꺼짐";
         public const string ScreenshotSaved = "스크린샷 저장: {0}";
         public const string GalleryHint = "천체 갤러리   F8 닫기   마우스: 광원 방향   휠: 크기";
+        public const string EndingReplay = "엔딩 시퀀스 재생 (저장은 그대로)";
+        public const string EndingReplayBetweenRuns = "엔딩 재생은 런 사이에만 됩니다";
 
         /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
         static readonly Dictionary<string, string> Keyed = new Dictionary<string, string>
@@ -67,6 +72,13 @@ namespace Incremental
             { "tier.9", "적색 왜성" },
             { "tier.10", "태양형 항성" },
             { "tier.11", "청색 거성" },
+
+            // Credits (15 §4.4): placeholder values exactly as in the spec table; the developer sets them (backlog D11).
+            { "credits.title", "(게임 제목, D7 미정)" },
+            { "credits.made_by", "제작: (개발자 이름)" },
+            { "credits.engine", "Unity로 만들었습니다" },
+            { "credits.thanks", "플레이해 주셔서 감사합니다" },
+            { "credits.last", "먼지는 다시 별이 된다 (제안)" },
 
             // {0} = Stats.EffectDisplayNumber (percent for fraction effects).
             { "stat.spawn_rate.name", "먼지 생성 빈도" },

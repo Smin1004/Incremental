@@ -125,6 +125,18 @@ namespace Incremental
                 if (File.Exists(p)) File.Delete(p);
         }
 
+        /// <summary>Reads and migrates a save file anywhere (a ring snapshot, 15 §6.2). Null when it cannot be read.</summary>
+        public static SaveData ReadFile(string path)
+        {
+            var data = TryRead(path, out string error);
+            if (data == null)
+            {
+                Debug.LogWarning($"[Save] {path} could not be read ({error}).");
+                return null;
+            }
+            return SaveMigration.Migrate(data);
+        }
+
         static SaveData TryRead(string path, out string error)
         {
             error = null;

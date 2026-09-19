@@ -1,12 +1,12 @@
 // Procedural planet (14 §3). One quad per body, no textures: the sphere normal is rebuilt from the quad position,
 // the surface is 3D noise sampled on the rotated normal (spin), and the look comes from per-renderer properties
-// (PlanetVisual fills them from PlanetLook). Four surface types: 0 Rock, 1 Terran, 2 Gas, 3 Star.
+// (PlanetVisual fills them from PlanetLook). Five surface types: 0 Rock, 1 Terran, 2 Gas, 3 Star, 4 BlackHole (15 §5).
 // Output is premultiplied alpha: the disc and the ring are alpha blended, glows and the comet tail are additive (alpha 0).
 Shader "Incremental/Planet"
 {
     Properties
     {
-        _Surface ("Surface (0 Rock, 1 Terran, 2 Gas, 3 Star)", Float) = 0
+        _Surface ("Surface (0 Rock, 1 Terran, 2 Gas, 3 Star, 4 BlackHole)", Float) = 0
         _Extent ("Quad half size in radii", Float) = 1.1
         _BaseColor ("Base", Color) = (0.6, 0.6, 0.6, 1)
         _DarkColor ("Dark", Color) = (0.3, 0.3, 0.3, 1)
@@ -160,7 +160,8 @@ Shader "Incremental/Planet"
                 bool isRock = _Surface < 0.5;
                 bool isTerran = _Surface >= 0.5 && _Surface < 1.5;
                 bool isGas = _Surface >= 1.5 && _Surface < 2.5;
-                bool isStar = _Surface >= 2.5;
+                bool isStar = _Surface >= 2.5 && _Surface < 3.5;
+                bool isHole = _Surface >= 3.5;
                 // Fine detail fades out on tiny discs so it does not shimmer.
                 float lod = saturate((1.0 / px - 3.0) / max(_PlanetDetail.x, 1.0));
 
@@ -186,7 +187,12 @@ Shader "Incremental/Planet"
                 float3 col;
                 float lvl = _Surf1.y, soft = max(_Surf1.z, 1e-3);
 
-                if (isStar)
+                if (isHole)
+                {
+                    // Black hole: the disc is simply black; the light is in the accretion disc and the edge glow below.
+                    col = float3(0, 0, 0);
+                }
+                else if (isStar)
                 {
                     // Large slow convection patches + fine granules (bright cell centers, dark lanes), low contrast.
                     float big = Fbm4(P * 0.45 + float3(0, 0, t * 0.03));
@@ -314,7 +320,23 @@ Shader "Incremental/Planet"
                     float d = length(Pr);
                     float inner = _Extra.y, outer = _Extra.z;
                     float u = (d - inner) / max(outer - inner, 1e-3);
-                    if (u > 0.0 && u < 1.0)
+                    if (u > 0.0 && u < 1.0 && isHole)
+                    {
+                        // Accretion disc: self-lit, hot (base color) at the inner edge to the dark color outside, with
+                        // streaks that turn around the axis at the spin speed. Angle from the body frame, sampled on a circle
+                        // so there is no seam.
+                        float ang = atan2(dot(Pr, i.bz), dot(Pr, i.bx)) + _Motion.x * t + _Motion.w;
+                        float2 cs = float2(cos(ang), sin(ang));
+                        float streak = VNoise(float3(cs * 1.6, u * 9.0 + seed));
+                        float fine = VNoise(float3(cs * 5.0, u * 26.0 + seed * 1.7));
+                        float heat = 1.0 - u;
+                        float3 dc = lerp(_DarkColor.rgb, _BaseColor.rgb, heat * heat) * (0.5 + 0.7 * streak + 0.3 * fine * lod);
+                        float ringA = saturate(_RingColor.a * smoothstep(0.0, 0.08, u) * pow(1.0 - u, 1.3));
+                        float4 ring = float4(dc * ringA * (1.0 + 1.2 * heat), ringA * 0.85);
+                        bool front = zr > n.z || discA <= 0.0;
+                        outc = front ? Over(ring, surf) : Over(surf, ring);
+                    }
+                    else if (u > 0.0 && u < 1.0)
                     {
                         float bands = 0.62 + 0.38 * VNoise(float3(d * 16.0, seed, 0.5));
                         bands *= smoothstep(0.0, 0.06, u) * smoothstep(1.0, 0.9, u);

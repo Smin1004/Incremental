@@ -43,6 +43,18 @@ namespace Incremental
         /// <summary>Every finished run, oldest first.</summary>
         public List<RunRecord> runHistory = new List<RunRecord>();
 
+        // Ending (15 §4.5). Old saves read the defaults (0, false): JsonUtility keeps field defaults, so no version bump.
+        /// <summary>Run number of the run that made the first blue giant and ended in the supernova; 0 = not reached.</summary>
+        public int endingRun;
+        /// <summary>
+        /// The ending sequence was watched to the end or skipped. While endingRun &gt; 0 and this is false (the game was
+        /// closed during the sequence), the next launch plays the sequence again instead of the result screen.
+        /// </summary>
+        public bool endingSeen;
+
+        /// <summary>The ending run's record, or null.</summary>
+        public RunRecord EndingRecord => endingRun > 0 && runHistory != null ? runHistory.Find(r => r != null && r.run == endingRun) : null;
+
         public int GetLevel(string id)
         {
             for (int i = 0; i < upgradeLevels.Count; i++)

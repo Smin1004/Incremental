@@ -86,7 +86,12 @@ namespace Incremental
             UIBuilder.CreateButton("OpenTree", panel, font, 30, UIStrings.OpenTree,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 36f), new Vector2(420f, 80f), OpenTree, out _);
 
-            root.RunEnded += rec => Show(rec, true);
+            // The ending run opens the supernova sequence instead of this panel (15 §4.3).
+            root.RunEnded += rec =>
+            {
+                if (EndingView.PlaysFor(root.Meta, rec)) root.Ending.Play(rec, false);
+                else Show(rec, true);
+            };
             root.RunStarted += Hide;
             canvas.gameObject.SetActive(false);
         }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Incremental
 {
-    /// <summary>Surface type of the planet shader (14 §3). One shader draws all four; everything else is data.</summary>
+    /// <summary>Surface type of the planet shader (14 §3, 15 §5). One shader draws them all; everything else is data.</summary>
     public enum SurfaceType
     {
         /// <summary>Terrain noise, light/dark patches, craters, polar caps. Irregular silhouette for asteroids, tail for comets.</summary>
@@ -15,6 +15,11 @@ namespace Incremental
         Gas,
         /// <summary>Self-lit granulation, limb darkening, corona. Not lit by the light source.</summary>
         Star,
+        /// <summary>
+        /// The central star after the ending (15 §5): a black disc, a faint glow at its edge (glow) and a bright accretion disc
+        /// in the equatorial plane (the ring: base color inside to dark color outside, streaks turning at the spin speed). Self-lit.
+        /// </summary>
+        BlackHole,
     }
 
     /// <summary>

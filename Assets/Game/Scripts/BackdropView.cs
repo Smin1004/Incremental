@@ -6,8 +6,9 @@ namespace Incremental
     /// <summary>
     /// Procedural background shared by the run, result and tree screens (14 §6): one camera-sized quad with the
     /// Incremental/Starfield shader. The palette follows the central star stage of the highest tier ever made (this run
-    /// included), with no save field of its own; a stage change blends over paletteBlendSec, or over the ignition time
-    /// when an ignition asked for it. The light bleed comes from the vanishing point, or from the central star on the
+    /// included), and the remnant nebula once the ending was reached (endingRun &gt; 0, 15 §5); the ending sequence can
+    /// hold a stage for its own timeline. A stage change blends over paletteBlendSec, or over the time an ignition or the
+    /// sequence asked for. The light bleed comes from the vanishing point, or from the central star on the
     /// result screen, and is multiplied by effectIntensity. Also hands the dust its palette colors. Render only.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -21,6 +22,9 @@ namespace Incremental
         static readonly int IdLayerB = Shader.PropertyToID("_LayerB");
         static readonly int IdTwinkle = Shader.PropertyToID("_Twinkle");
         static readonly int IdPpu = Shader.PropertyToID("_PxPerUnit");
+        static readonly int IdNebulaA = Shader.PropertyToID("_NebulaA");
+        static readonly int IdNebulaB = Shader.PropertyToID("_NebulaB");
+        static readonly int IdNebula = Shader.PropertyToID("_Nebula");
 
         GameRoot root;
         GameParams p;
@@ -30,6 +34,7 @@ namespace Incremental
         BackdropPalette from, to;
         float blend = 1f, blendSec = 1f;
         float nextBlendSec = -1f;
+        int stageOverride = -1;
         Vector3? glowCenter;
 
         public int Stage => stage;
@@ -45,6 +50,38 @@ namespace Incremental
             int s = highestTier - first + 1;
             return Mathf.Clamp(s, 0, Mathf.Max(0, stages - 1));
         }
+
+        /// <summary>The stage after the ending (black hole, remnant nebula): one past the last star stage (13 §3 "엔딩 후", 15 §5).</summary>
+        public static int RemnantStage(int maxTier, int orbitMaxTier) => Mathf.Max(1, maxTier - orbitMaxTier + 1);
+
+        /// <summary>
+        /// Stage of the central star and the palette: the remnant once the ending was reached (endingRun &gt; 0, whether or not
+        /// its sequence was seen), else the star stage of the highest tier ever made.
+        /// </summary>
+        public static int NaturalStage(int endingRun, int highestTier, int orbitMaxTier, int maxTier)
+        {
+            int remnant = RemnantStage(maxTier, orbitMaxTier);
+            return endingRun > 0 ? remnant : StarStage(highestTier, orbitMaxTier, remnant);
+        }
+
+        /// <summary>The stage of this game now (no override).</summary>
+        public int CurrentNaturalStage => NaturalStage(root.Meta.endingRun, root.HighestTierEver, p.orbitMaxTier, root.celestialTable.MaxTier);
+
+        /// <summary>
+        /// Holds the palette at <paramref name="s"/> regardless of progress (the ending sequence, 15 §4.3), blending over
+        /// <paramref name="blendSec"/> (0 = at once).
+        /// </summary>
+        public void SetStageOverride(int s, float blendSec)
+        {
+            stageOverride = s;
+            if (blendSec <= 0f) snapNext = true;
+            else nextBlendSec = blendSec;
+        }
+
+        /// <summary>Back to the natural stage (blends if it differs).</summary>
+        public void ClearStageOverride() => stageOverride = -1;
+
+        bool snapNext;
 
         public void Init(GameRoot gameRoot, Material material)
         {
@@ -90,12 +127,13 @@ namespace Incremental
             transform.position = new Vector3(c.x, c.y, 0f);
             transform.localScale = new Vector3(w * 1.02f, h * 1.02f, 1f);
 
-            int s = StarStage(root.HighestTierEver, p.orbitMaxTier, PaletteCount);
-            if (stage < 0)
+            int s = stageOverride >= 0 ? stageOverride : CurrentNaturalStage;
+            if (stage < 0 || (snapNext && (s != stage || blend < 1f)))
             {
                 stage = s;
                 from = to = Palette(s);
                 blend = 1f;
+                nextBlendSec = -1f;
             }
             else if (s != stage)
             {
@@ -106,6 +144,7 @@ namespace Incremental
                 blendSec = nextBlendSec > 0f ? nextBlendSec : Mathf.Max(0.01f, (float)p.paletteBlendSec);
                 nextBlendSec = -1f;
             }
+            snapNext = false;
             if (blend < 1f) blend = Mathf.Min(1f, blend + Time.deltaTime / blendSec);
 
             var cur = Current();
@@ -118,6 +157,9 @@ namespace Incremental
             mpb.SetColor(IdGlowColor, cur.glowColor);
             mpb.SetVector(IdGlow, new Vector4(g.x * ppu, g.y * ppu, cur.glowRadiusPx, cur.glowStrength * root.EffectIntensity));
             mpb.SetColor(IdStarTint, cur.starTint);
+            mpb.SetColor(IdNebulaA, cur.nebulaA);
+            mpb.SetColor(IdNebulaB, cur.nebulaB);
+            mpb.SetVector(IdNebula, new Vector4(cur.nebulaStrength, Mathf.Max(1f, cur.nebulaScalePx), 0f, 0f));
             mr.SetPropertyBlock(mpb);
         }
 
@@ -134,6 +176,10 @@ namespace Incremental
                 dustA = Color.Lerp(from.dustA, to.dustA, k),
                 dustB = Color.Lerp(from.dustB, to.dustB, k),
                 starTint = Color.Lerp(from.starTint, to.starTint, k),
+                nebulaA = Color.Lerp(from.nebulaA, to.nebulaA, k),
+                nebulaB = Color.Lerp(from.nebulaB, to.nebulaB, k),
+                nebulaStrength = Mathf.Lerp(from.nebulaStrength, to.nebulaStrength, k),
+                nebulaScalePx = Mathf.Lerp(from.nebulaScalePx, to.nebulaScalePx, k),
             };
         }
     }

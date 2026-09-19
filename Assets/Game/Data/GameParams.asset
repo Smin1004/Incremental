@@ -104,6 +104,10 @@ MonoBehaviour:
     dustA: {r: 1, g: 0.84, b: 0.58, a: 1}
     dustB: {r: 1, g: 0.74, b: 0.48, a: 1}
     starTint: {r: 0.88, g: 0.9, b: 0.94, a: 1}
+    nebulaA: {r: 0, g: 0, b: 0, a: 1}
+    nebulaB: {r: 0, g: 0, b: 0, a: 1}
+    nebulaStrength: 0
+    nebulaScalePx: 650
   - background: {r: 0.05, g: 0.02, b: 0.07, a: 1}
     glowColor: {r: 0.9, g: 0.25, b: 0.2, a: 1}
     glowStrength: 0.025
@@ -111,6 +115,10 @@ MonoBehaviour:
     dustA: {r: 1, g: 0.72, b: 0.52, a: 1}
     dustB: {r: 1, g: 0.6, b: 0.45, a: 1}
     starTint: {r: 0.88, g: 0.9, b: 0.94, a: 1}
+    nebulaA: {r: 0, g: 0, b: 0, a: 1}
+    nebulaB: {r: 0, g: 0, b: 0, a: 1}
+    nebulaStrength: 0
+    nebulaScalePx: 650
   - background: {r: 0.035, g: 0.045, b: 0.1, a: 1}
     glowColor: {r: 1, g: 0.72, b: 0.38, a: 1}
     glowStrength: 0.04
@@ -118,6 +126,10 @@ MonoBehaviour:
     dustA: {r: 1, g: 0.88, b: 0.55, a: 1}
     dustB: {r: 1, g: 0.78, b: 0.42, a: 1}
     starTint: {r: 0.88, g: 0.9, b: 0.94, a: 1}
+    nebulaA: {r: 0, g: 0, b: 0, a: 1}
+    nebulaB: {r: 0, g: 0, b: 0, a: 1}
+    nebulaStrength: 0
+    nebulaScalePx: 650
   - background: {r: 0.05, g: 0.08, b: 0.18, a: 1}
     glowColor: {r: 0.6, g: 0.78, b: 1, a: 1}
     glowStrength: 0.035
@@ -125,6 +137,21 @@ MonoBehaviour:
     dustA: {r: 1, g: 0.82, b: 0.62, a: 1}
     dustB: {r: 1, g: 0.7, b: 0.56, a: 1}
     starTint: {r: 0.88, g: 0.9, b: 0.94, a: 1}
+    nebulaA: {r: 0, g: 0, b: 0, a: 1}
+    nebulaB: {r: 0, g: 0, b: 0, a: 1}
+    nebulaStrength: 0
+    nebulaScalePx: 650
+  - background: {r: 0.012, g: 0.014, b: 0.03, a: 1}
+    glowColor: {r: 0.55, g: 0.35, b: 0.85, a: 1}
+    glowStrength: 0.012
+    glowRadiusPx: 700
+    dustA: {r: 1, g: 0.8, b: 0.6, a: 1}
+    dustB: {r: 1, g: 0.66, b: 0.6, a: 1}
+    starTint: {r: 0.88, g: 0.9, b: 0.94, a: 1}
+    nebulaA: {r: 0.1, g: 0.55, b: 0.55, a: 1}
+    nebulaB: {r: 0.6, g: 0.12, b: 0.5, a: 1}
+    nebulaStrength: 0.09
+    nebulaScalePx: 650
   paletteBlendSec: 1.5
   bgStarLayerA: {x: 22, y: 0.3, z: 0.6, w: 0.16}
   bgStarLayerB: {x: 110, y: 0.4, z: 0.9, w: 0.34}
@@ -208,14 +235,106 @@ MonoBehaviour:
   - 38
   - 52
   - 72
+  - 56
   starGlowPx:
   - 170
   - 200
   - 260
   - 340
+  - 300
+  blackHoleLook:
+    surface: 4
+    baseColor: {r: 1, g: 0.88, b: 0.66, a: 1}
+    darkColor: {r: 0.85, g: 0.3, b: 0.6, a: 1}
+    accentColor: {r: 1, g: 1, b: 1, a: 1}
+    glowColor: {r: 0.62, g: 0.8, b: 1, a: 1}
+    noiseScale: 3
+    patchLevel: 0.5
+    patchSoftness: 0.2
+    craterDensity: 0
+    craterSize: 0.35
+    craterScale: 3
+    polarCap: 0
+    irregularity: 0
+    cloudCover: 0
+    cloudSpinMult: 1.5
+    bandCount: 0
+    turbulence: 0
+    spotSize: 0
+    spotLatitude: 0
+    emission: 0
+    spinDegPerSec: 35
+    axisTiltDeg: 16
+    glowSize: 0.3
+    glowStrength: 0.9
+    tailLength: 0
+    ringInner: 1.35
+    ringOuter: 3.3
+    ringColor: {r: 1, g: 1, b: 1, a: 0.95}
   ignitionSec: 0.9
   ignitionScale: 4
   resultIgnitionFlashAlpha: 0.3
+  endingPullSec: 2
+  endingFadeSec: 1
+  endingPullAccelPx: 1000
+  endingPullMaxSpeedPx: 1400
+  endingPullDamping: 3
+  endingDustGlowRadiusPx: 420
+  endingFadeAlpha: 1
+  endingStarGlowGain: 0.6
+  supernovaCalmEndSec: 3.5
+  supernovaCollapseEndSec: 4.3
+  supernovaBlastEndSec: 4.8
+  supernovaShockEndSec: 8
+  supernovaRemnantEndSec: 12
+  supernovaPulseStartHz: 0.7
+  supernovaPulseEndHz: 4
+  supernovaPulseStartAmp: 0.02
+  supernovaPulseEndAmp: 0.14
+  supernovaWhiten: 0.85
+  supernovaCalmGlowPulse: 2
+  supernovaCalmGlowGain: 0.5
+  supernovaCollapseGlowGain: 1
+  supernovaFlashAlpha: 0.35
+  supernovaFlashRiseSec: 0.12
+  supernovaFlashSec: 1.4
+  supernovaFlashColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+  supernovaCoreGlow: 1.2
+  supernovaCoreGlowPx: 700
+  supernovaShockStartPx: 60
+  supernovaShockEndPx: 1250
+  supernovaShockWidthPx: 70
+  supernovaShockStrength: 1
+  supernovaShockEase: 1.4
+  supernovaShockColor: {r: 0.72, g: 0.86, b: 1, a: 1}
+  supernovaShockMinIntensity: 0.3
+  supernovaOrbitFadeSec: 0.25
+  supernovaDustPerPx: 0.45
+  supernovaDustPerPlanetMin: 4
+  supernovaDustPerPlanetMax: 26
+  supernovaDustPerBeltDot: 1
+  supernovaEjectaDust: 900
+  supernovaEjectaRadiusPx: 6
+  supernovaDustSpread: 0.35
+  supernovaDustSpeedPx: 420
+  supernovaDustSpeedJitter: 0.55
+  supernovaDustDrag: 1.1
+  remnantDriftSpeedPx: 7
+  remnantDustBrightness: 0.8
+  remnantPaletteBlendSec: 3
+  blackHoleFadeStartSec: 8.5
+  blackHoleFadeSec: 3
+  supernovaSkipSettleSec: 6
+  creditLineSec: 5
+  creditFadeSec: 1
+  creditTitleFontSize: 60
+  creditFontSize: 38
+  creditOffsetPx: {x: 0, y: -230}
+  creditColor: {r: 0.92, g: 0.94, b: 1, a: 1}
+  continueFontSize: 32
+  continueOffsetPx: {x: 0, y: 90}
+  continuePulseDepth: 0.35
+  continuePulseSpeed: 2.2
   orbitLabelAngleDeg: -60
   orbitLabelGapPx: 6
   orbitLabelBacking: {r: 0, g: 0, b: 0, a: 0.6}

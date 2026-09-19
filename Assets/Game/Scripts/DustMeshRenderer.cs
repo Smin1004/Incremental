@@ -8,7 +8,9 @@ namespace Incremental
     /// (Incremental/Dust), per-dust size and brightness variation, stretched along the velocity when fast (up to
     /// dustStretchMax) into a thinner streak whose tail narrows to a point. Only dust in the active gravity field keeps full
     /// brightness (brighter toward the center); the rest is dimmed to dustOutsideDim so the eye goes to the cursor (15 §3).
-    /// Colors are the warm dust hue of the background palette, converted to linear. Render only.
+    /// Colors are the warm dust hue of the background palette, converted to linear. During the ending pull (15 §4.2) every
+    /// dust is being pulled, so none is dimmed and dust near the blue giant glows; the supernova remnant (§4.3) is drawn at
+    /// remnantDustBrightness. Render only.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class DustMeshRenderer : MonoBehaviour
@@ -78,8 +80,11 @@ namespace Incremental
             bool holding = root.Phase == GamePhase.Run && root.Run != null && root.Run.holding && !root.Paused;
             float fade = Mathf.Max(1e-3f, (float)p.dustHoldFadeSec);
             holdGlow = Mathf.MoveTowards(holdGlow, holding ? 1f : 0f, Time.unscaledDeltaTime / fade);
-            Vector2 cursor = root.CursorWorld;
-            float gravR = (float)(root.Effective.gravityRadius / ppu);
+            bool endingPull = root.EndingActive && root.Phase == GamePhase.Run;
+            bool remnant = !endingPull && root.Ending != null && root.Ending.ShowsDust;
+            if (endingPull) holdGlow = 1f;
+            Vector2 cursor = endingPull ? root.EndingCenter : root.CursorWorld;
+            float gravR = endingPull ? (float)(p.endingDustGlowRadiusPx / ppu) : (float)(root.Effective.gravityRadius / ppu);
             float edgeR = gravR + Mathf.Max(1e-3f, (float)(p.dustDimEdgePx / ppu));
             float edgeR2 = edgeR * edgeR;
             Color colA = root.Backdrop.DustColorA.linear;
@@ -109,21 +114,23 @@ namespace Incremental
                 uvs[v + 3] = new Vector3(s, -1f, s);
 
                 // Dust in the gravity field (held) keeps full brightness and gets brighter toward the center; the rest dims.
-                float inField = 0f;
+                float inField = endingPull ? 1f : 0f;
                 float boost = 0f;
-                if (holdGlow > 0f)
+                if (remnant) inField = 1f;
+                else if (holdGlow > 0f)
                 {
                     float dist2 = (c - cursor).sqrMagnitude;
                     if (dist2 < edgeR2)
                     {
                         float dist = Mathf.Sqrt(dist2);
-                        inField = dist <= gravR ? 1f : 1f - (dist - gravR) / (edgeR - gravR);
+                        if (!endingPull) inField = dist <= gravR ? 1f : 1f - (dist - gravR) / (edgeR - gravR);
                         if (dist < gravR) boost = brighten * (1f - dist / gravR);
                         inField *= holdGlow;
                         boost *= holdGlow;
                     }
                 }
                 float b = d.bright * Mathf.Lerp(dim, 1f, inField) * (1f + boost);
+                if (remnant) b *= (float)p.remnantDustBrightness;
                 Color col = Color.Lerp(colA, colB, d.tint);
                 // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
                 float k = Mathf.Min(b, 2f) * 0.5f;

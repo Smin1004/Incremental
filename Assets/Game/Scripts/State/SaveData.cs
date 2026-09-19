@@ -31,6 +31,8 @@ namespace Incremental
         public int[] tierCounts = new int[0];
         public List<UpgradeLevel> startLevels = new List<UpgradeLevel>();
         public EffectiveStats startStats;
+        /// <summary>The run is in its ending (the first blue giant was made, 15 §4.2): if the game dies now, it closes as an ending run.</summary>
+        public bool ending;
     }
 
     /// <summary>Contents of settings.json. Kept apart from save.json so a save reset leaves settings alone.</summary>

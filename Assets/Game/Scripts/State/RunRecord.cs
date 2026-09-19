@@ -9,6 +9,8 @@ namespace Incremental
         public const string Stamina = "stamina";
         public const string Quit = "quit";
         public const string Crash = "crash";
+        /// <summary>The first blue giant ended the run (15 §4.2). Counts as a full run, like stamina.</summary>
+        public const string Ending = "ending";
     }
 
     /// <summary>One finished run. Raised with GameRoot.RunEnded and written to run_log.csv.</summary>

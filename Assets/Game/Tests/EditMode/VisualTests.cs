@@ -205,7 +205,7 @@ namespace Incremental.Tests
             p.palettes = new[] { new BackdropPalette(), new BackdropPalette() };
             var c = TestData.Tiers(11);
             var r = DataValidator.ValidateParams(p, c);
-            Assert.IsTrue(r.Errors.Exists(e => e.Contains("2 palettes for 4 central star stages")), Joined(r.Errors));
+            Assert.IsTrue(r.Errors.Exists(e => e.Contains("2 palettes for 5 central star stages")), Joined(r.Errors));
             Object.DestroyImmediate(p);
         }
 

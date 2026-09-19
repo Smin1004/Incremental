@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Incremental
 {
     /// <summary>
-    /// Background and dust colors for one central-star stage (14 §6): protostar, red dwarf, sun-like, blue giant.
-    /// Shared by the run, result and tree screens.
+    /// Background and dust colors for one central-star stage (14 §6): protostar, red dwarf, sun-like, blue giant, and the
+    /// remnant nebula after the ending (15 §5). Shared by the run, result and tree screens.
     /// </summary>
     [Serializable]
     public sealed class BackdropPalette
@@ -20,6 +20,11 @@ namespace Incremental
         public Color dustB = new Color(0.65f, 0.82f, 1f);
         [Tooltip("Background star tint.")]
         public Color starTint = new Color(0.8f, 0.87f, 1f);
+        [Tooltip("Faint nebula noise between two colors (the remnant palette, 15 §5), added in linear color; strength 0 = none.")]
+        public Color nebulaA = Color.black;
+        public Color nebulaB = Color.black;
+        public float nebulaStrength;
+        public float nebulaScalePx = 650f;
     }
 
     /// <summary>
@@ -141,7 +146,7 @@ namespace Incremental
         public double dustStreakWidth = 0.5;
 
         [Header("Background (14 §6)")]
-        [Tooltip("By central star stage: 0 protostar (below the first star tier), 1 red dwarf, 2 sun-like, 3 blue giant. " +
+        [Tooltip("By central star stage: 0 protostar (below the first star tier), 1 red dwarf, 2 sun-like, 3 blue giant, 4 remnant nebula (after the ending, 15 §5). " +
                  "Dust takes a warm hue of its palette and background stars stay neutral white, so the two never read alike (15 §3).")]
         public BackdropPalette[] palettes =
         {
@@ -164,6 +169,12 @@ namespace Incremental
             {
                 background = new Color(0.05f, 0.08f, 0.18f), glowColor = new Color(0.6f, 0.78f, 1f), glowStrength = 0.035f, glowRadiusPx = 900f,
                 dustA = new Color(1f, 0.82f, 0.62f), dustB = new Color(1f, 0.7f, 0.56f), starTint = new Color(0.88f, 0.9f, 0.94f),
+            },
+            new BackdropPalette
+            {
+                background = new Color(0.012f, 0.014f, 0.03f), glowColor = new Color(0.55f, 0.35f, 0.85f), glowStrength = 0.012f, glowRadiusPx = 700f,
+                dustA = new Color(1f, 0.8f, 0.6f), dustB = new Color(1f, 0.66f, 0.6f), starTint = new Color(0.88f, 0.9f, 0.94f),
+                nebulaA = new Color(0.1f, 0.55f, 0.55f), nebulaB = new Color(0.6f, 0.12f, 0.5f), nebulaStrength = 0.09f, nebulaScalePx = 650f,
             },
         };
         [Tooltip("Palette change when the stage changes outside an ignition, seconds (at load it snaps).")]
@@ -257,13 +268,112 @@ namespace Incremental
         [Tooltip("Protostar glow breathing: depth (share of the glow) and speed (rad/s).")]
         public double protostarPulse = 0.25;
         public double protostarPulseSpeed = 1.3;
-        [Tooltip("Central star disc size and ignition flash base size (px) by stage: protostar, red dwarf, sun-like, blue giant.")]
-        public float[] starCorePx = { 30f, 38f, 52f, 72f };
-        public float[] starGlowPx = { 170f, 200f, 260f, 340f };
+        [Tooltip("Central star disc size and ignition flash base size (px) by stage: protostar, red dwarf, sun-like, blue giant, black hole (15 §5).")]
+        public float[] starCorePx = { 30f, 38f, 52f, 72f, 56f };
+        public float[] starGlowPx = { 170f, 200f, 260f, 340f, 300f };
+        [Tooltip("Central star after the ending (15 §5): a black disc, a tilted bright accretion disc (the ring, turning at the spin speed) and a faint glow at the disc edge.")]
+        public PlanetLook blackHoleLook = new PlanetLook
+        {
+            surface = SurfaceType.BlackHole,
+            baseColor = new Color(1f, 0.88f, 0.66f), darkColor = new Color(0.85f, 0.3f, 0.6f),
+            glowColor = new Color(0.62f, 0.8f, 1f),
+            noiseScale = 3f, spinDegPerSec = 35f, axisTiltDeg = 16f,
+            glowSize = 0.3f, glowStrength = 0.9f,
+            ringInner = 1.35f, ringOuter = 3.3f, ringColor = new Color(1f, 1f, 1f, 0.95f),
+        };
         [Tooltip("Result screen flash when tier 9 is made for the first time: seconds, radius growth relative to the glow, and peak alpha (flash rule, 15 §3).")]
         public double ignitionSec = 0.9;
         public double ignitionScale = 4;
         public double resultIgnitionFlashAlpha = 0.3;
+
+        [Header("Supernova ending, run screen (15 §4.2)")]
+        [Tooltip("After the first blue giant: every dust falls into it for endingPullSec, then the screen darkens over endingFadeSec and the run ends.")]
+        public double endingPullSec = 2;
+        public double endingFadeSec = 1;
+        [Tooltip("The pull toward the blue giant (no radius limit): acceleration and top speed (px/s², px/s) and damping of the sideways speed (1/s) so dust falls in instead of orbiting.")]
+        public double endingPullAccelPx = 1000;
+        public double endingPullMaxSpeedPx = 1400;
+        public double endingPullDamping = 3;
+        [Tooltip("Dust within this distance of the blue giant glows brighter as it falls in, px.")]
+        public double endingDustGlowRadiusPx = 420;
+        [Tooltip("Darkness at the end of the fade (0..1).")]
+        public double endingFadeAlpha = 1;
+        [Tooltip("The blue giant's glow swells by this share while the dust falls in.")]
+        public double endingStarGlowGain = 0.6;
+
+        [Header("Supernova ending, result screen (15 §4.3)")]
+        [Tooltip("Seconds from the result screen entry: end of the calm (the star grows unstable), of the collapse, of the blast and of the shock ring; " +
+                 "the remnant runs until supernovaRemnantEndSec, then the credits.")]
+        public double supernovaCalmEndSec = 3.5;
+        public double supernovaCollapseEndSec = 4.3;
+        public double supernovaBlastEndSec = 4.8;
+        public double supernovaShockEndSec = 8;
+        public double supernovaRemnantEndSec = 12;
+        [Tooltip("Calm: the central star's size pulse goes from start to end frequency (Hz) and amplitude (share of the size), and its colors move this far toward white.")]
+        public double supernovaPulseStartHz = 0.7;
+        public double supernovaPulseEndHz = 4;
+        public double supernovaPulseStartAmp = 0.02;
+        public double supernovaPulseEndAmp = 0.14;
+        public double supernovaWhiten = 0.85;
+        [Tooltip("Glow of the central star: swing per unit of the size pulse, gain by the calm end, and further gain over the collapse.")]
+        public double supernovaCalmGlowPulse = 2;
+        public double supernovaCalmGlowGain = 0.5;
+        public double supernovaCollapseGlowGain = 1;
+        [Tooltip("Blast: flash peak alpha (flash rule, 15 §3), rise and total seconds from the collapse end, color; and the soft light at the center (FxRing center glow): strength at its peak and size px.")]
+        public double supernovaFlashAlpha = 0.35;
+        public double supernovaFlashRiseSec = 0.12;
+        public double supernovaFlashSec = 1.4;
+        public Color supernovaFlashColor = new Color(0.9f, 0.95f, 1f);
+        public double supernovaCoreGlow = 1.2;
+        public double supernovaCoreGlowPx = 700;
+        [Tooltip("Shock ring: start and end radius (px), ring width (px), strength, color; at effect intensity 0 it keeps supernovaShockMinIntensity of its brightness.")]
+        public double supernovaShockStartPx = 60;
+        public double supernovaShockEndPx = 1250;
+        public double supernovaShockWidthPx = 70;
+        public double supernovaShockStrength = 1;
+        [Tooltip("Shock ring growth: radius share = 1 − (1 − t)^ease (1 = constant speed, larger = faster start).")]
+        public double supernovaShockEase = 1.4;
+        public Color supernovaShockColor = new Color(0.72f, 0.86f, 1f);
+        public double supernovaShockMinIntensity = 0.3;
+        [Tooltip("An orbit line fades out over this many seconds once the ring has passed it.")]
+        public double supernovaOrbitFadeSec = 0.25;
+        [Tooltip("Scatter: dust per px of a planet's diameter (clamped to min..max per planet), dust per belt dot, dust thrown out by the star itself at the blast.")]
+        public double supernovaDustPerPx = 0.45;
+        public int supernovaDustPerPlanetMin = 4;
+        public int supernovaDustPerPlanetMax = 26;
+        public int supernovaDustPerBeltDot = 1;
+        public int supernovaEjectaDust = 900;
+        [Tooltip("Ejecta start within this radius of the center, px; scattered dust leaves outward with this much random spread (share of the outward direction).")]
+        public double supernovaEjectaRadiusPx = 6;
+        public double supernovaDustSpread = 0.35;
+        [Tooltip("Scattered dust leaves outward at this speed (px/s) ± the jitter share, slows with the drag (1/s) down to the remnant drift speed (px/s); it bounces off the screen edges so the remnant stays on screen.")]
+        public double supernovaDustSpeedPx = 420;
+        public double supernovaDustSpeedJitter = 0.55;
+        public double supernovaDustDrag = 1.1;
+        public double remnantDriftSpeedPx = 7;
+        [Tooltip("Brightness of the remnant dust (it is not being pulled, but it is the scene).")]
+        public double remnantDustBrightness = 0.8;
+        [Tooltip("Remnant: the palette blends to the remnant nebula over this many seconds from the shock end; the black hole fades in from blackHoleFadeStartSec over blackHoleFadeSec.")]
+        public double remnantPaletteBlendSec = 3;
+        public double blackHoleFadeStartSec = 8.5;
+        public double blackHoleFadeSec = 3;
+        [Tooltip("Skipping (Space / click after the blast) fast-forwards the remnant dust by this many seconds so it has settled.")]
+        public double supernovaSkipSettleSec = 6;
+
+        [Header("Credits (15 §4.4)")]
+        [Tooltip("Each credit line fades in, holds and fades out over creditLineSec (fade in / out creditFadeSec each), one after another from supernovaRemnantEndSec.")]
+        public double creditLineSec = 5;
+        public double creditFadeSec = 1;
+        [Tooltip("Credit text: font sizes (title line / others), position of the line center from the screen center (px, 1080p reference), color.")]
+        public int creditTitleFontSize = 60;
+        public int creditFontSize = 38;
+        public Vector2 creditOffsetPx = new Vector2(0f, -230f);
+        public Color creditColor = new Color(0.92f, 0.94f, 1f);
+        [Tooltip("\"Continue\" prompt at the end: font size, position from the bottom center (px), and its slow breathing (depth 0..1, rad/s).")]
+        public int continueFontSize = 32;
+        public Vector2 continueOffsetPx = new Vector2(0f, 90f);
+        public double continuePulseDepth = 0.35;
+        public double continuePulseSpeed = 2.2;
 
         [Header("Result growth highlight (14 §7)")]
         [Tooltip("×N and \"new\" labels sit outside each orbit at this angle (degrees, 0 = right, counter-clockwise), with a dark backing.")]

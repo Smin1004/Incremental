@@ -11,10 +11,13 @@ namespace Incremental
     /// planet shader, lit from the central star. Tiers up to orbitBeltMaxTier with more than orbitBeltThreshold planets
     /// become an asteroid belt of plain dots; higher tiers show at most orbitIndividualMax planets, then "×N" on a dark
     /// backing at a fixed angle outside the orbit. Stars (tiers above orbitMaxTier) made this run shine in the sky.
-    /// The central star follows the highest tier ever made (a faint protostar before the first star), with an ignition
+    /// The central star follows the highest tier ever made (a faint protostar before the first star, a black hole after
+    /// the ending, 15 §5), with an ignition
     /// flash the first time a star is made (the radial flash rule of 15 §3). A tier made for the first time ever gets a
     /// "new body" label and one pulse of its orbit; a star tier gets them on one of its sky stars (15 §3). On entry the
     /// planets fly in from the vanishing point, lower tiers first. During runs a faint glow marks the vanishing point (13 §2).
+    /// In ending mode (15 §4.3) the system sits at the screen center around a blue giant, with no labels, and the ending
+    /// sequence drives the central star and scatters the bodies with its shock ring.
     /// </summary>
     public sealed class SolarSystemView : MonoBehaviour
     {
@@ -46,6 +49,21 @@ namespace Incremental
         {
             public LineRenderer line;
             public Color color;
+        }
+
+        /// <summary>Anything the supernova shock ring can scatter: a planet, a belt dot or a sky star.</summary>
+        struct Body
+        {
+            public GameObject go;
+            public float diameterPx;
+        }
+
+        sealed class OrbitLine
+        {
+            public LineRenderer line;
+            public float radiusPx;
+            public Color color;
+            public float fadeAge = -1f;
         }
 
         struct NewStar
@@ -82,13 +100,22 @@ namespace Incremental
         readonly List<Fade> fades = new List<Fade>();
         readonly List<NewOrbit> newOrbits = new List<NewOrbit>();
         readonly List<NewStar> newStars = new List<NewStar>();
+        readonly List<Body> bodies = new List<Body>();
+        readonly List<OrbitLine> orbitLines = new List<OrbitLine>();
+        bool endingMode;
         float age;
         bool visible;
         bool ignition;
         int stage;
 
         float Ppu => (float)p.pixelsPerUnit;
-        float EntrySec => Mathf.Max(0.01f, (float)p.resultEntrySec);
+        public float EntrySec => Mathf.Max(0.01f, (float)p.resultEntrySec);
+        /// <summary>World position of the central star.</summary>
+        public Vector3 Center => system.position;
+        public PlanetVisual CentralStar => centralStar;
+        /// <summary>Stage index of the blue giant (the last star stage) and of the black hole (the remnant, 15 §5).</summary>
+        public int BlueGiantStage => RemnantStage - 1;
+        public int RemnantStage => BackdropView.RemnantStage(root.celestialTable.MaxTier, p.orbitMaxTier);
 
         public void Init(GameRoot gameRoot)
         {
@@ -123,11 +150,15 @@ namespace Incremental
         /// <summary>
         /// Builds the system for this run (null: no run yet). <paramref name="fresh"/> is true right after the run ended;
         /// only then do first-ever tiers get the "new body" highlight (14 §7), so reopening a save does not repeat it.
+        /// <paramref name="ending"/>: the supernova sequence's system (15 §4.3), centered on screen around a blue giant,
+        /// without labels or highlights.
         /// </summary>
-        public void Show(RunRecord rec, bool fresh)
+        public void Show(RunRecord rec, bool fresh, bool ending = false)
         {
             var m = root.Meta;
-            Vector3 center = CamCenter() + new Vector3((float)(p.starOffsetPx / Ppu), 0f, 0f);
+            endingMode = ending;
+            if (ending) fresh = false;
+            Vector3 center = CamCenter() + (ending ? Vector3.zero : new Vector3((float)(p.starOffsetPx / Ppu), 0f, 0f));
             system.position = center;
             if (content != null) Destroy(content.gameObject);
             content = new GameObject("Content").transform;
@@ -137,12 +168,14 @@ namespace Incremental
             fades.Clear();
             newOrbits.Clear();
             newStars.Clear();
+            bodies.Clear();
+            orbitLines.Clear();
             foreach (var l in labels) l.root.gameObject.SetActive(false);
             int labelIndex = 0;
             var rng = new System.Random(rec != null ? rec.run * 7919 : 1);
 
-            stage = StarStage(root.HighestTierEver);
-            ignition = rec != null && MadeStar(rec) && !MadeStarBefore(m, rec);
+            stage = ending ? BlueGiantStage : CentralStage();
+            ignition = !ending && rec != null && MadeStar(rec) && !MadeStarBefore(m, rec);
             SetStar(stage);
 
             // Orbits and planets, tier 1 inside.
@@ -159,6 +192,7 @@ namespace Incremental
                 var tier = root.celestialTable.Get(t);
                 bool isNew = fresh && rec != null && ResultMath.IsNewTier(m, rec, t);
                 var line = AddOrbitLine(t, r, count > 0 ? (float)p.orbitAlphaUsed : (float)p.orbitAlpha);
+                orbitLines.Add(new OrbitLine { line = line, radiusPx = rPx, color = line.startColor });
                 if (isNew) newOrbits.Add(new NewOrbit { line = line, color = tier != null ? tier.color : Color.white });
 
                 var pivot = new GameObject("Orbit" + t).transform;
@@ -188,8 +222,9 @@ namespace Incremental
                         var c = new Color(Mathf.Clamp01(color.r * shade), Mathf.Clamp01(color.g * shade), Mathf.Clamp01(color.b * shade), 1f);
                         fades.Add(new Fade { sr = sr, color = c, start = start });
                         sr.color = Color.clear;
+                        bodies.Add(new Body { go = sr.gameObject, diameterPx = size });
                     }
-                    PlaceLabel(labelIndex++, rPx + (float)p.orbitBeltJitterPx, count, isNew);
+                    if (!ending) PlaceLabel(labelIndex++, rPx + (float)p.orbitBeltJitterPx, count, isNew);
                     continue;
                 }
 
@@ -207,8 +242,9 @@ namespace Incremental
                     v.transform.localPosition = local;
                     v.SetDiameter(diameterPx / Ppu);
                     fliers.Add(new Flier { v = v, pivot = pivot, local = local, diameter = diameterPx / Ppu, start = start });
+                    bodies.Add(new Body { go = v.gameObject, diameterPx = diameterPx });
                 }
-                if (count > n || isNew) PlaceLabel(labelIndex++, rPx + diameterPx * 0.5f, count > n ? count : 0, isNew);
+                if (!ending && (count > n || isNew)) PlaceLabel(labelIndex++, rPx + diameterPx * 0.5f, count > n ? count : 0, isNew);
             }
 
             // Stars made this run shine in the sky (at most skyStarsPerRun), outside the outermost orbit. A star tier made
@@ -229,6 +265,7 @@ namespace Incremental
                     v.SetDiameter(diameter);
                     v.SetFade(0f);
                     fades.Add(new Fade { v = v, start = (1f - EntryTravel) * EntrySec });
+                    bodies.Add(new Body { go = v.gameObject, diameterPx = diameter * Ppu });
                     if (!isNew || i > 0) continue;
                     newStars.Add(new NewStar { v = v, diameter = diameter });
                     PlaceLabelBelow(labelIndex++, v.transform.position, diameter * Ppu * 0.5f, NewTag());
@@ -240,7 +277,51 @@ namespace Incremental
             Tick(0f);
         }
 
-        public void Hide() => SetVisible(false);
+        public void Hide()
+        {
+            SetVisible(false);
+            endingMode = false;
+        }
+
+        /// <summary>
+        /// Supernova shock (15 §4.3): every body within <paramref name="radiusPx"/> of the center that is still there is
+        /// removed and handed to <paramref name="scatter"/> (world position, diameter px) to become dust; orbit lines inside
+        /// the radius start fading out. Returns how many bodies were scattered.
+        /// </summary>
+        public int Shock(float radiusPx, System.Action<Vector3, float> scatter)
+        {
+            int n = 0;
+            Vector3 c = system.position;
+            float r = radiusPx / Ppu;
+            for (int i = 0; i < bodies.Count; i++)
+            {
+                var b = bodies[i];
+                if (b.go == null || !b.go.activeSelf) continue;
+                Vector3 pos = b.go.transform.position;
+                if ((pos - c).sqrMagnitude > r * r) continue;
+                b.go.SetActive(false);
+                scatter?.Invoke(pos, b.diameterPx);
+                n++;
+            }
+            foreach (var o in orbitLines)
+                if (o.fadeAge < 0f && o.radiusPx <= radiusPx) o.fadeAge = 0f;
+            return n;
+        }
+
+        /// <summary>Central star look and size (the ending sequence switches it to the black hole).</summary>
+        public void SetCentralLook(PlanetLook look, float diameterPx)
+        {
+            centralStar.SetLook(look, 3.7f, p.planetAxisPitchDeg);
+            centralStar.SetDiameter(diameterPx / Ppu);
+            centralStar.SetGlowMul(1f);
+            centralStar.SetGlowSizeMul(1f);
+            centralStar.SetWhiten(0f);
+            centralStar.SetFade(1f);
+            centralStar.gameObject.SetActive(true);
+        }
+
+        /// <summary>Disc size (px) of the central star at a stage.</summary>
+        public float CentralSizePx(int s) => StarSize(p.starCorePx, s);
 
         /// <summary>Jumps the entry animation to its final state (click on the result screen).</summary>
         public void Skip()
@@ -305,8 +386,20 @@ namespace Incremental
                     }
                 }
 
-            // Central star: the protostar's glow breathes.
-            centralStar.SetGlowMul(stage == 0 ? 1f + (float)p.protostarPulse * Mathf.Sin(age * (float)p.protostarPulseSpeed) : 1f);
+            // Central star: the protostar's glow breathes (the ending sequence drives the star itself).
+            if (!endingMode)
+                centralStar.SetGlowMul(stage == 0 ? 1f + (float)p.protostarPulse * Mathf.Sin(age * (float)p.protostarPulseSpeed) : 1f);
+
+            // Orbit lines the shock ring has passed fade out.
+            float fadeSec = Mathf.Max(0.01f, (float)p.supernovaOrbitFadeSec);
+            foreach (var o in orbitLines)
+            {
+                if (o.fadeAge < 0f) continue;
+                o.fadeAge += dt;
+                var c = o.color;
+                c.a *= Mathf.Clamp01(1f - o.fadeAge / fadeSec);
+                o.line.startColor = o.line.endColor = c;
+            }
 
             UpdateNewOrbits();
 
@@ -357,30 +450,35 @@ namespace Incremental
             vanishGlow.position = root.Planets.VanishPoint();
             float s = (float)(p.vanishGlowPx / Ppu) / dotUnit;
             vanishGlow.localScale = new Vector3(s, s, 1f);
-            var c = StageColor(StarStage(root.HighestTierEver));
+            var c = StageColor(CentralStage());
             c.a = (float)p.vanishGlowAlpha;
             vanishGlowSr.color = c;
         }
 
         // ---------------- central star ----------------
 
-        int StarStage(int highestTier) => BackdropView.StarStage(highestTier, p.orbitMaxTier, 4);
+        /// <summary>Central star stage now: by the highest tier ever made, the black hole once the ending was reached (15 §5).</summary>
+        int CentralStage() => BackdropView.NaturalStage(root.Meta.endingRun, root.HighestTierEver, p.orbitMaxTier, root.celestialTable.MaxTier);
 
         Color StageColor(int s)
         {
             if (s == 0) return p.protostarColor;
+            if (s >= RemnantStage) return p.blackHoleLook.glowColor;
             var tier = root.celestialTable.Get(p.orbitMaxTier + s);
             return tier != null ? tier.color : Color.white;
         }
 
-        /// <summary>Protostar: the faint Star look from GameParams. Later stages: the look of that star tier.</summary>
+        /// <summary>Protostar: the faint Star look from GameParams. Star stages: the look of that star tier. Remnant: the black hole.</summary>
         void SetStar(int s)
         {
-            var tier = s > 0 ? root.celestialTable.Get(p.orbitMaxTier + s) : null;
-            var look = tier != null ? tier.look : p.protostarLook;
-            centralStar.SetLook(look, 3.7f, p.planetAxisPitchDeg);
-            centralStar.SetDiameter(StarSize(p.starCorePx, s) / Ppu);
-            centralStar.SetGlowMul(1f);
+            PlanetLook look;
+            if (s >= RemnantStage) look = p.blackHoleLook;
+            else
+            {
+                var tier = s > 0 ? root.celestialTable.Get(p.orbitMaxTier + s) : null;
+                look = tier != null ? tier.look : p.protostarLook;
+            }
+            SetCentralLook(look, StarSize(p.starCorePx, s));
             flash.Hide();
         }
 
