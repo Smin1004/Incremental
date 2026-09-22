@@ -610,6 +610,23 @@ namespace Incremental
         public void DebugBoostCurrency(double mult, double min) => Meta.currency = Math.Max(Meta.currency * mult, min);
 
         /// <summary>
+        /// Home key: drains the stamina at once, so the run ends on the next tick the normal way (held mass is released,
+        /// income and the result screen as usual). Ignored between runs and during the ending.
+        /// </summary>
+        public bool DebugDrainStamina()
+        {
+            if (Phase != GamePhase.Run || Run == null || EndingActive)
+            {
+                Hud.ShowToast(UIStrings.DebugDuringRunOnly);
+                return false;
+            }
+            Run.stamina = 0;
+            Hud.ShowToast(UIStrings.DebugStaminaDrained);
+            UnityEngine.Debug.Log("[Debug] stamina drained: the run ends now");
+            return true;
+        }
+
+        /// <summary>
         /// End key (15 §4.6): replays the ending sequence with the last run's system, between runs only. The save is not
         /// touched (endingRun / endingSeen stay); "continue" leads to the tree as usual. Also for trailer captures.
         /// </summary>

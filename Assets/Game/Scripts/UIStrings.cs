@@ -57,6 +57,8 @@ namespace Incremental
         public const string GalleryHint = "천체 갤러리   F8 닫기   마우스: 광원 방향   휠: 크기";
         public const string EndingReplay = "엔딩 시퀀스 재생 (저장은 그대로)";
         public const string EndingReplayBetweenRuns = "엔딩 재생은 런 사이에만 됩니다";
+        public const string DebugStaminaDrained = "스태미나 0 (런 종료)";
+        public const string DebugDuringRunOnly = "런 중에만 됩니다";
 
         /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
         static readonly Dictionary<string, string> Keyed = new Dictionary<string, string>

@@ -11,6 +11,7 @@ namespace Incremental
     /// F4: autoplay bot toggle. F5: save now. F6: unlock the next tier for free. F7: toggle number notation (settings.json).
     /// F8: tier gallery (14 §3). Shift+F9: delete the save and start again from run 1. F11: effect intensity 1 → 0.5 → 0 (14 §6).
     /// F12: screenshot to persistentDataPath. End: replay the ending sequence between runs without touching the save (15 §4.6).
+    /// Home: drain the stamina, ending the run at once.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -195,6 +196,7 @@ namespace Incremental
                 if (kb.f11Key.wasPressedThisFrame) CycleEffectIntensity();
                 if (kb.f12Key.wasPressedThisFrame) Screenshot();
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
+                if (kb.homeKey.wasPressedThisFrame) root.DebugDrainStamina();
             }
 #endif
 
