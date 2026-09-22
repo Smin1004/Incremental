@@ -27,7 +27,7 @@
 - 업그레이드 축: 먼지 생성 빈도, 필요 먼지 수, 모으는 힘, 판매 비용, 행성 해금, 스태미나
 - 플레이 경험: 플레이 타임은 길지 않다. 매 런의 결과 화면과 항성 점화, 초신성에서 "폭발적 성장"을 체감시킨다
 
-핵심 루프 상세는 [10_Core_Loop.md](10_Core_Loop.md). 현재 인계 문서는 [15_Ending_Spec.md](15_Ending_Spec.md) (5주차). 프로토타입([11](11_Prototype_Spec.md)), 스킬트리([12](12_SkillTree_Spec.md)), 결과 태양계([13](13_Result_SolarSystem_Spec.md)), 행성 비주얼([14](14_Planet_Visual_Spec.md))은 구현 완료.
+핵심 루프 상세는 [10_Core_Loop.md](10_Core_Loop.md). **출시까지의 일정과 남은 일은 [16_Release_Roadmap.md](16_Release_Roadmap.md).** 11~15는 구현 완료. 다음 인계 문서(6주차 밸런스)는 사람 플레이 기록과 S9, S16 결정 뒤에 쓴다.
 
 ## 3. 레퍼런스 규모 (2026-09-17 확인)
 
@@ -74,13 +74,15 @@
 
 ## 7. 마일스톤 (9주)
 
+**2026-09-19부터 이 표 대신 [16_Release_Roadmap.md](16_Release_Roadmap.md)의 날짜 일정을 따른다.** 아래는 기록으로 남긴다.
+
 | 주차 | 목표 | 산출물 |
 |---|---|---|
 | 1 | 손맛 프로토타입 (완료) | [11_Prototype_Spec.md](11_Prototype_Spec.md), [Reports/Prototype_Week1.md](Reports/Prototype_Week1.md) |
 | 2 | 경제 (완료) | 티어 11개 데이터, 업그레이드 10종, 저장, 런 통계, 테스트 99개. [Reports/Week2.md](Reports/Week2.md). 평면 상점 구조로 끝남. 밸런스는 하지 않음 |
 | 3 | 트리 전환, 두 화면 (완료) | 스킬트리 데이터 모델(노드 67개), 별자리 트리 화면, 결과 태양계 전체 버전, 퇴장 연출. 테스트 120개. [Reports/SkillTree_Step1.md](Reports/SkillTree_Step1.md), [Reports/Week3_Tree_SolarSystem.md](Reports/Week3_Tree_SolarSystem.md) |
 | 4 | 행성 비주얼 (완료) | 행성 셰이더 표면 4종, 티어별 외형, 형성 중인 천체, 먼지, 항성 점화와 팔레트, 결과 화면 성장 강조, 링 1~3 재측정. 테스트 137개. [Reports/Week4_Visuals.md](Reports/Week4_Visuals.md) |
-| 5 | 엔딩과 완주 (**다음 작업**) | [15_Ending_Spec.md](15_Ending_Spec.md): 4주차 검토 반영, 초신성 엔딩 시퀀스, 엔들리스 상태(블랙홀, 잔해 팔레트), 봇 완주와 링 스냅샷. 링 4~11 노드와 엔들리스 노드는 3주차에 이미 입력됨. 프롬프트는 [Prompts/Week5_Prompt.md](Prompts/Week5_Prompt.md) |
+| 5 | 엔딩과 완주 (완료, [Reports/Week5_Ending.md](Reports/Week5_Ending.md). 봇 완주 31런 50분) | [15_Ending_Spec.md](15_Ending_Spec.md): 4주차 검토 반영, 초신성 엔딩 시퀀스, 엔들리스 상태(블랙홀, 잔해 팔레트), 봇 완주와 링 스냅샷. 링 4~11 노드와 엔들리스 노드는 3주차에 이미 입력됨. 프롬프트는 [Prompts/Week5_Prompt.md](Prompts/Week5_Prompt.md) |
 | 6 | 밸런스 | 링 스냅샷에서 링별 실측과 조정([12](12_SkillTree_Spec.md) §7), **사람 플레이 시간 기준**으로 목표 재설정, S9·S16 반영 여부, 도전과제 설계 |
 | 7 | Steam 연동, 옵션 | 도전과제, 클라우드 세이브, 토글 홀드, 해상도, 한/영. 스토어 페이지 초안 공개 |
 | 8 | 스토어, 데모 | 캡슐, 스크린샷, 트레일러, 데모 빌드 |
