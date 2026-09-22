@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace Incremental
@@ -28,6 +28,7 @@ namespace Incremental
         static readonly int IdSurf5 = Shader.PropertyToID("_Surf5");
         static readonly int IdMotion = Shader.PropertyToID("_Motion");
         static readonly int IdExtra = Shader.PropertyToID("_Extra");
+        static readonly int IdTail = Shader.PropertyToID("_Tail");
         static readonly int IdLight = Shader.PropertyToID("_Light");
 
         MeshRenderer mr;
@@ -115,6 +116,7 @@ namespace Incremental
                 (float)axisPitchDeg * Mathf.Deg2Rad, seed * 2.399f));
             extra = new Vector4(l.tailLength, l.ringInner, l.ringOuter, fade);
             mpb.SetVector(IdExtra, extra);
+            mpb.SetVector(IdTail, new Vector4(l.tailWidth, l.tailSpread, l.tailFadePower, 0f));
             ApplyScale();
             mr.SetPropertyBlock(mpb);
         }

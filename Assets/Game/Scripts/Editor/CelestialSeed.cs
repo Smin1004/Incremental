@@ -41,6 +41,7 @@ namespace Incremental.EditorTools
         };
 
         // Rock, bright blue-white nucleus, coma and a tail away from the light. No spin.
+        // 18 §A3: a shorter, narrower tail that dies out at its end, and a wider coma, instead of the cone it was.
         static PlanetLook Comet() => new PlanetLook
         {
             surface = SurfaceType.Rock,
@@ -48,8 +49,8 @@ namespace Incremental.EditorTools
             glowColor = new Color(0.5f, 0.78f, 1f),
             noiseScale = 2.6f, patchLevel = 0.5f, patchSoftness = 0.3f,
             irregularity = 0.12f,
-            glowSize = 0.9f, glowStrength = 0.75f,
-            tailLength = 6f,
+            glowSize = 1.1f, glowStrength = 0.75f,
+            tailLength = 3.5f, tailWidth = 0.4f, tailSpread = 0.2f, tailFadePower = 1.8f,
         };
 
         // Rock: round, brown, cratered.

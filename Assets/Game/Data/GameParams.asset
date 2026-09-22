@@ -22,8 +22,18 @@ MonoBehaviour:
   dustMaxSpeed: 400
   captureRadius: 30
   staminaMax: 60
-  staminaHoldDrain: 1
-  staminaIdleDrain: 0.2
+  staminaHoldDrain: 1.5
+  staminaIdleDrain: 0.3
+  staminaPresets:
+  - id: loose
+    holdDrain: 1
+    idleDrain: 0.2
+  - id: proposed
+    holdDrain: 1.5
+    idleDrain: 0.3
+  - id: fast
+    holdDrain: 2
+    idleDrain: 0.4
   saleMult: 1
   thresholdMult: 1
   pixelsPerUnit: 100
@@ -33,8 +43,8 @@ MonoBehaviour:
   scatterSpeedPx: 200
   planetPopScale: 0.5
   planetPopDurationSec: 0.15
-  planetHoldSec: 0.4
-  planetDepartSec: 0.8
+  planetHoldSec: 0.15
+  planetDepartSec: 0.45
   vanishPoint: {x: 1.05, y: 1.05}
   vanishGlowPx: 520
   vanishGlowAlpha: 0.18
@@ -71,6 +81,9 @@ MonoBehaviour:
     glowSize: 0
     glowStrength: 0
     tailLength: 0
+    tailWidth: 0.5
+    tailSpread: 0.3
+    tailFadePower: 1.3
     ringInner: 0
     ringOuter: 0
     ringColor: {r: 1, g: 1, b: 1, a: 0}
@@ -225,6 +238,9 @@ MonoBehaviour:
     glowSize: 1.8
     glowStrength: 0.6
     tailLength: 0
+    tailWidth: 0.5
+    tailSpread: 0.3
+    tailFadePower: 1.3
     ringInner: 0
     ringOuter: 0
     ringColor: {r: 1, g: 1, b: 1, a: 0}
@@ -268,6 +284,9 @@ MonoBehaviour:
     glowSize: 0.3
     glowStrength: 0.9
     tailLength: 0
+    tailWidth: 0.5
+    tailSpread: 0.3
+    tailFadePower: 1.3
     ringInner: 1.35
     ringOuter: 3.3
     ringColor: {r: 1, g: 1, b: 1, a: 0.95}

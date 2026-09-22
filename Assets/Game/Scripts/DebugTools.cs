@@ -9,7 +9,8 @@ namespace Incremental
     /// Debug keys (editor and development builds only). F1: overlay (FPS, dust count, tick ms). F2: performance mode
     /// (runtime override of dust_cap / spawn_rate, assets untouched). F3: currency = max(currency × 10, 1,000).
     /// F4: autoplay bot toggle. F5: save now. F6: unlock the next tier for free. F7: toggle number notation (settings.json).
-    /// F8: tier gallery (14 §3). Shift+F9: delete the save and start again from run 1. F11: effect intensity 1 → 0.5 → 0 (14 §6).
+    /// F8: tier gallery (14 §3). Shift+F9: delete the save and start again from run 1.
+    /// F10: next stamina drain preset, in effect at once, never saved (18 §A1). F11: effect intensity 1 → 0.5 → 0 (14 §6).
     /// F12: screenshot to persistentDataPath. End: replay the ending sequence between runs without touching the save (15 §4.6).
     /// Home: drain the stamina, ending the run at once.
     /// </summary>
@@ -193,6 +194,7 @@ namespace Incremental
                 if (kb.f7Key.wasPressedThisFrame) ToggleNotation();
                 if (kb.f8Key.wasPressedThisFrame && root.Gallery != null) root.Gallery.Toggle();
                 if (kb.f9Key.wasPressedThisFrame && kb.shiftKey.isPressed) root.ResetProgress();
+                if (kb.f10Key.wasPressedThisFrame) CycleStaminaPreset();
                 if (kb.f11Key.wasPressedThisFrame) CycleEffectIntensity();
                 if (kb.f12Key.wasPressedThisFrame) Screenshot();
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
@@ -204,6 +206,22 @@ namespace Incremental
                 ? string.Format(UIStrings.DebugOverlay, fps, root.Dust.Count, root.LastTickMs, root.MaxTickMs,
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity)
                 : string.Empty);
+        }
+
+        /// <summary>
+        /// F10: the next stamina drain preset (18 §A1). A run in progress feels it on its next tick, because the effective
+        /// stats are recomputed every tick. Runtime only: nothing is written to the asset or the save.
+        /// </summary>
+        public void CycleStaminaPreset()
+        {
+            var p = root.gameParams;
+            double hold = root.StaminaDrain.enabled ? root.StaminaDrain.holdDrain : p.staminaHoldDrain;
+            double idle = root.StaminaDrain.enabled ? root.StaminaDrain.idleDrain : p.staminaIdleDrain;
+            var next = p.NextStaminaPreset(hold, idle);
+            if (next == null) return;
+            root.StaminaDrain = new StaminaOverride { enabled = true, holdDrain = next.holdDrain, idleDrain = next.idleDrain };
+            root.Hud.ShowToast(string.Format(UIStrings.StaminaPreset, UIStrings.StaminaPresetName(next.id), next.holdDrain, next.idleDrain));
+            Debug.Log($"[Debug] stamina preset: {next.id} hold={next.holdDrain} idle={next.idleDrain}");
         }
 
         /// <summary>F11: next value of <see cref="effectSteps"/> after the current intensity.</summary>

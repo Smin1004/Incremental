@@ -23,6 +23,17 @@ namespace Incremental
     }
 
     /// <summary>
+    /// Runtime stamina drain used by the debug tools (F10 preset cycle, 18 §A1). The two values replace the GameParams
+    /// bases; node reductions still apply. Nothing is saved, and it takes effect on the next tick of the running run.
+    /// </summary>
+    public struct StaminaOverride
+    {
+        public bool enabled;
+        public double holdDrain;
+        public double idleDrain;
+    }
+
+    /// <summary>
     /// Owns the two state objects and the fixed-tick game logic. Builds every other runtime object from code in Awake,
     /// so the scene only needs a camera, a light and this component with its asset references.
     /// Game logic runs in FixedUpdate only; Update / LateUpdate is rendering and input-edge handling.
@@ -79,6 +90,8 @@ namespace Incremental
         public double LastTickMs { get; private set; }
         public double MaxTickMs { get; private set; }
         public StatsOverride Override;
+        /// <summary>Runtime stamina drain from the debug preset key (18 §A1); disabled = the GameParams values.</summary>
+        public StaminaOverride StaminaDrain;
         /// <summary>
         /// 0..1, multiplies every flash, light bleed and pop (10 §8). Starts at GameParams.effectIntensity; the debug key
         /// cycles it at runtime (the options screen is week 7), so the asset is never modified.
@@ -740,7 +753,9 @@ namespace Incremental
 
         EffectiveStats ComputeStats()
         {
-            var s = Stats.Compute(gameParams, nodeTable, Meta);
+            var s = StaminaDrain.enabled
+                ? Stats.Compute(gameParams, nodeTable, Meta, StaminaDrain.holdDrain, StaminaDrain.idleDrain)
+                : Stats.Compute(gameParams, nodeTable, Meta);
             if (Override.enabled)
             {
                 s.dustCap = Override.dustCap;

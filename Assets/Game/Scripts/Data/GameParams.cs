@@ -28,6 +28,20 @@ namespace Incremental
     }
 
     /// <summary>
+    /// One stamina drain setting the debug key cycles through (18 §A1). The feel is a matter of taste, so the values are
+    /// picked in a playtest instead of being fixed here; <see cref="id"/> names the UIStrings key
+    /// <c>stamina.preset.&lt;id&gt;</c> shown in the toast.
+    /// </summary>
+    [Serializable]
+    public sealed class StaminaPreset
+    {
+        public string id = string.Empty;
+        [Tooltip("Per second while holding (additional) and per second always.")]
+        public double holdDrain = 1;
+        public double idleDrain = 0.2;
+    }
+
+    /// <summary>
     /// Balance parameters. Fields map 1:1 to the spec §6 parameter table (snake_case → camelCase),
     /// plus presentation values that the spec leaves open. All numbers are double; no constants in code.
     /// Pixel values are relative to 1920x1080 and converted through <see cref="pixelsPerUnit"/>.
@@ -50,8 +64,16 @@ namespace Incremental
 
         [Header("Stamina (spec §6)")]
         public double staminaMax = 60;        // upgrade target
-        public double staminaHoldDrain = 1.0; // per second while holding (additional)
-        public double staminaIdleDrain = 0.2; // per second, always
+        public double staminaHoldDrain = 1.5; // per second while holding (additional)
+        public double staminaIdleDrain = 0.3; // per second, always
+        [Tooltip("The stamina debug key (F10) cycles the runtime drain through these, in order (18 §A1); the asset values above " +
+                 "must be one of them. Runtime only: nothing is saved, and the next launch is back to the values above.")]
+        public StaminaPreset[] staminaPresets =
+        {
+            new StaminaPreset { id = "loose", holdDrain = 1.0, idleDrain = 0.2 },
+            new StaminaPreset { id = "proposed", holdDrain = 1.5, idleDrain = 0.3 },
+            new StaminaPreset { id = "fast", holdDrain = 2.0, idleDrain = 0.4 },
+        };
 
         [Header("Economy (spec §6)")]
         public double saleMult = 1.0;         // upgrade target
@@ -71,11 +93,11 @@ namespace Incremental
         public double planetPopScale = 0.5;
         public double planetPopDurationSec = 0.15;
 
-        [Header("Planet departure (13 §2)")]
+        [Header("Planet departure (13 §2, 18 §A2)")]
         [Tooltip("After the pop, the planet stays in place this long.")]
-        public double planetHoldSec = 0.4;
+        public double planetHoldSec = 0.15;
         [Tooltip("Then it flies to the vanishing point, shrinking and fading.")]
-        public double planetDepartSec = 0.8;
+        public double planetDepartSec = 0.45;
         [Tooltip("Vanishing point in viewport coordinates (0..1); beyond 1 is outside the screen.")]
         public Vector2 vanishPoint = new Vector2(1.05f, 1.05f);
         [Tooltip("Faint glow at the screen edge toward the vanishing point: size (px) and alpha.")]
@@ -406,5 +428,28 @@ namespace Incremental
         [Header("Save (02 §6)")]
         [Tooltip("While a run is going, its progress is saved this often (seconds) so a killed game keeps the run's income.")]
         public double pendingSaveIntervalSec = 5;
+
+        /// <summary>Index of the stamina preset holding these two drains, or -1 when none does (18 §A1).</summary>
+        public int StaminaPresetIndex(double holdDrain, double idleDrain)
+        {
+            if (staminaPresets == null) return -1;
+            for (int i = 0; i < staminaPresets.Length; i++)
+            {
+                var s = staminaPresets[i];
+                if (s == null) continue;
+                if (Math.Abs(s.holdDrain - holdDrain) < 1e-9 && Math.Abs(s.idleDrain - idleDrain) < 1e-9) return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// The stamina preset after the one holding these two drains, wrapping around; the first one when none matches
+        /// (so a hand-edited asset value lands on a known preset), and null when there are no presets.
+        /// </summary>
+        public StaminaPreset NextStaminaPreset(double holdDrain, double idleDrain)
+        {
+            if (staminaPresets == null || staminaPresets.Length == 0) return null;
+            return staminaPresets[(StaminaPresetIndex(holdDrain, idleDrain) + 1) % staminaPresets.Length];
+        }
     }
 }

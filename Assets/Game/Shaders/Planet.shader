@@ -20,6 +20,7 @@ Shader "Incremental/Planet"
         _Surf5 ("spotSize, spotLatitude", Vector) = (0, 0, 0, 0)
         _Motion ("spin rad/s, axis roll rad, axis pitch rad, spin phase rad", Vector) = (0, 0, 0.35, 0)
         _Extra ("tailLength, ringInner, ringOuter, fade", Vector) = (0, 0, 0, 1)
+        _Tail ("tailWidth, tailSpread, tailFadePower", Vector) = (0.5, 0.3, 1.3, 0)
         _Light ("light: xy world point (w 0) or direction (w 1)", Vector) = (1, 1, 0, 1)
     }
 
@@ -54,6 +55,7 @@ Shader "Incremental/Planet"
                 float4 _Surf5;
                 float4 _Motion;
                 float4 _Extra;
+                float4 _Tail;
                 float4 _Light;
             CBUFFER_END
 
@@ -374,9 +376,9 @@ Shader "Incremental/Planet"
                     float2 td = -litDir2;
                     float a = dot(p, td);
                     float b = dot(p, float2(-td.y, td.x));
-                    float w = 0.5 + max(a, 0.0) * 0.3;
+                    float w = max(_Tail.x, 1e-3) + max(a, 0.0) * _Tail.y;
                     float along = saturate(a / _Extra.x);
-                    float tail = exp(-(b * b) / (w * w) * 2.0) * smoothstep(-0.2, 0.6, a) * pow(1.0 - along, 1.3);
+                    float tail = exp(-(b * b) / (w * w) * 2.0) * smoothstep(-0.2, 0.6, a) * pow(1.0 - along, max(_Tail.z, 0.01));
                     tail *= 0.7 + 0.3 * VNoise(float3(b * 4.0, a * 1.2 - t * 1.6, seed));
                     outc.rgb += _GlowColor.rgb * tail * 1.1 * (1.0 - discA);
                 }

@@ -71,6 +71,13 @@ namespace Incremental
             if (!(l.noiseScale > 0)) r.Errors.Add(where + ": look.noiseScale must be > 0.");
             if (l.glowSize < 0 || l.glowStrength < 0) r.Errors.Add(where + ": look.glowSize and glowStrength must be >= 0.");
             if (l.tailLength < 0) r.Errors.Add(where + ": look.tailLength must be >= 0.");
+            if (l.tailLength > 0)
+            {
+                // 18 §A3: a tail needs a width, may only widen, and must fade toward its end.
+                if (!(l.tailWidth > 0)) r.Errors.Add(where + ": look.tailWidth must be > 0 when there is a tail.");
+                if (l.tailSpread < 0) r.Errors.Add(where + ": look.tailSpread must be >= 0.");
+                if (!(l.tailFadePower > 0)) r.Errors.Add(where + ": look.tailFadePower must be > 0.");
+            }
             if (l.patchLevel < 0 || l.patchLevel > 1 || l.patchSoftness < 0 || l.patchSoftness > 1)
                 r.Errors.Add(where + ": look.patchLevel and patchSoftness must be within 0..1.");
             if (l.craterDensity < 0 || l.craterDensity > 1) r.Errors.Add(where + ": look.craterDensity must be within 0..1.");
@@ -108,6 +115,10 @@ namespace Incremental
                 r.Errors.Add("GameParams is missing.");
                 return r;
             }
+            ValidateStamina(p, r);
+            // 18 §A2: the pop, the stay in place and the flight to the vanishing point.
+            if (p.planetPopDurationSec < 0 || p.planetHoldSec < 0) r.Errors.Add("GameParams: planetPopDurationSec and planetHoldSec must be >= 0.");
+            if (!(p.planetDepartSec > 0)) r.Errors.Add("GameParams: planetDepartSec must be > 0.");
             if (p.planetAmbient < 0 || p.planetAmbient > 1) r.Errors.Add("GameParams: planetAmbient must be within 0..1.");
             if (!(p.planetLightZ >= 0)) r.Errors.Add("GameParams: planetLightZ must be >= 0.");
             if (!(p.planetDetailPx > 0)) r.Errors.Add("GameParams: planetDetailPx must be > 0.");
@@ -180,6 +191,41 @@ namespace Incremental
             if (!(p.newTierHighlightSec > 0) || p.newTierPulses < 1) r.Errors.Add("GameParams: newTierHighlightSec must be > 0 and newTierPulses >= 1.");
             ValidateEnding(p, r);
             return r;
+        }
+
+        /// <summary>
+        /// Stamina (spec §6) and the debug key's drain presets (18 §A1): positive drains, a display name per preset id, and
+        /// the asset's own drains must be one of the presets so the key starts from a known one.
+        /// </summary>
+        static void ValidateStamina(GameParams p, ValidationReport r)
+        {
+            if (!(p.staminaMax > 0)) r.Errors.Add("GameParams: staminaMax must be > 0.");
+            if (!(p.staminaHoldDrain > 0) || !(p.staminaIdleDrain > 0))
+                r.Errors.Add("GameParams: staminaHoldDrain and staminaIdleDrain must be > 0.");
+            if (p.staminaPresets == null || p.staminaPresets.Length == 0)
+            {
+                r.Errors.Add("GameParams: staminaPresets is empty (the debug key has nothing to cycle, 18 §A1).");
+                return;
+            }
+            var ids = new HashSet<string>();
+            for (int i = 0; i < p.staminaPresets.Length; i++)
+            {
+                var s = p.staminaPresets[i];
+                if (s == null)
+                {
+                    r.Errors.Add($"GameParams: staminaPresets[{i}] is missing.");
+                    continue;
+                }
+                if (string.IsNullOrEmpty(s.id)) r.Errors.Add($"GameParams: staminaPresets[{i}] has no id.");
+                else if (!ids.Add(s.id)) r.Errors.Add($"GameParams: staminaPresets id '{s.id}' appears twice.");
+                else if (!UIStrings.Has(UIStrings.StaminaPresetKey(s.id)))
+                    r.Errors.Add($"UIStrings: missing key '{UIStrings.StaminaPresetKey(s.id)}' (stamina preset, 18 §A1).");
+                if (!(s.holdDrain > 0) || !(s.idleDrain > 0))
+                    r.Errors.Add($"GameParams: staminaPresets[{i}] drains must be > 0.");
+            }
+            if (p.StaminaPresetIndex(p.staminaHoldDrain, p.staminaIdleDrain) < 0)
+                r.Warnings.Add($"GameParams: the stamina drains ({p.staminaHoldDrain} / {p.staminaIdleDrain}) are not one of staminaPresets; " +
+                               "the debug key starts from the first preset (18 §A1).");
         }
 
         /// <summary>

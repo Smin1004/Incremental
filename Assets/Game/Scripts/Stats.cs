@@ -32,7 +32,14 @@ namespace Incremental
         /// <summary>Largest total reduction for threshold_mult and stamina_drain.</summary>
         public const double MaxReduction = 0.9;
 
-        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m)
+        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m) =>
+            Compute(p, t, m, p.staminaHoldDrain, p.staminaIdleDrain);
+
+        /// <summary>
+        /// Same, with the two stamina drains taken from somewhere else than the asset: the stamina debug key hands its
+        /// preset in (18 §A1) so the node reduction still applies to it. The asset is untouched.
+        /// </summary>
+        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase)
         {
             double spawn = 0, pull = 0, sale = 0, stamina = 0, threshold = 0, cap = 0, radius = 0, drain = 0, start = 0;
             double mass = 1;
@@ -72,8 +79,8 @@ namespace Incremental
                 gravityRadius = p.gravityRadius * (1.0 + radius),
             };
             double drainMult = 1.0 - Math.Min(drain, MaxReduction);
-            s.staminaIdleDrain = p.staminaIdleDrain * drainMult;
-            s.staminaHoldDrain = p.staminaHoldDrain * drainMult;
+            s.staminaIdleDrain = idleDrainBase * drainMult;
+            s.staminaHoldDrain = holdDrainBase * drainMult;
             s.dustInitial = Math.Min(p.dustInitial + start, s.dustCap);
             return s;
         }

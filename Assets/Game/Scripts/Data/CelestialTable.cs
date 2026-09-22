@@ -84,6 +84,11 @@ namespace Incremental
         public float glowStrength;
         [Tooltip("Comet tail length, radii (0 = none). Points away from the light.")]
         public float tailLength;
+        [Tooltip("Tail half width at the nucleus, radii, and how much wider it gets per radius along the tail (18 §A3).")]
+        public float tailWidth = 0.5f;
+        public float tailSpread = 0.3f;
+        [Tooltip("Fade toward the tail end: brightness = (1 − along) ^ this. Higher = the end dies out sooner (18 §A3).")]
+        public float tailFadePower = 1.3f;
         [Tooltip("Ring radii (ringOuter 0 = no ring). The ring lies in the equatorial plane.")]
         public float ringInner;
         public float ringOuter;
@@ -115,7 +120,8 @@ namespace Incremental
                    turbulence == o.turbulence && spotSize == o.spotSize && spotLatitude == o.spotLatitude &&
                    emission == o.emission && spinDegPerSec == o.spinDegPerSec &&
                    axisTiltDeg == o.axisTiltDeg && glowSize == o.glowSize && glowStrength == o.glowStrength &&
-                   tailLength == o.tailLength && ringInner == o.ringInner && ringOuter == o.ringOuter && ringColor == o.ringColor;
+                   tailLength == o.tailLength && tailWidth == o.tailWidth && tailSpread == o.tailSpread &&
+                   tailFadePower == o.tailFadePower && ringInner == o.ringInner && ringOuter == o.ringOuter && ringColor == o.ringColor;
         }
     }
 

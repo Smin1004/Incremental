@@ -58,6 +58,7 @@ namespace Incremental
         public const string EndingReplay = "엔딩 시퀀스 재생 (저장은 그대로)";
         public const string EndingReplayBetweenRuns = "엔딩 재생은 런 사이에만 됩니다";
         public const string DebugStaminaDrained = "스태미나 0 (런 종료)";
+        public const string StaminaPreset = "스태미나 소모: {0} (홀드 {1:0.0}/초, 대기 {2:0.0}/초)";
         public const string DebugDuringRunOnly = "런 중에만 됩니다";
 
         /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
@@ -103,6 +104,11 @@ namespace Incremental
             { "stat.stamina_drain.effect", "−{0}%" },
             { "stat.start_bonus.name", "시작 보너스" },
             { "stat.start_bonus.effect", "먼지 +{0}" },
+
+            // Stamina drain presets of the debug key (18 §A1); Validate Data checks that every preset id has a key.
+            { "stamina.preset.loose", "느슨함" },
+            { "stamina.preset.proposed", "제안" },
+            { "stamina.preset.fast", "빠름" },
         };
 
         public static bool Has(string key) => key != null && Keyed.ContainsKey(key);
@@ -111,10 +117,12 @@ namespace Incremental
         public static string Get(string key) => key != null && Keyed.TryGetValue(key, out var s) ? s : key;
 
         public static string TierKey(int tier) => "tier." + tier;
+        public static string StaminaPresetKey(string id) => "stamina.preset." + id;
         public static string StatNameKey(string statId) => "stat." + statId + ".name";
         public static string StatEffectKey(string statId) => "stat." + statId + ".effect";
 
         public static string TierName(int tier) => Get(TierKey(tier));
+        public static string StaminaPresetName(string id) => Get(StaminaPresetKey(id));
         public static string StatName(string statId) => Get(StatNameKey(statId));
 
         /// <summary>Effect of one level of a stat node, e.g. "+20%", "×1.5". Empty for gates.</summary>
