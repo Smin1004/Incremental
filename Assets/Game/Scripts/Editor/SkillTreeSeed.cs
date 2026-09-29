@@ -11,19 +11,22 @@ namespace Incremental.EditorTools
     /// significant digits like the draft. Gate costs keep the week-2 unlock costs (tier 2: 30, tier 3: 300).
     /// 20 §4: the 60° axis is the dust kind axis. The compound dust_mass nodes are gone; rings 3, 5, 7 and 9 unlock a
     /// dust kind and rings 4, 6, 8 and 10 raise its share.
+    /// 20 §5: the fragment nodes run along 140°, beside the threshold nodes of the planet axis, in rings 3 to 8.
     /// </summary>
     public static class SkillTreeSeed
     {
         // Axis angles (12 §5). Two nodes of one axis in one ring sit at ±10°.
+        const float Pair = 10f;
         public const float GateAxis = 90f;
         public const float DustAxis = 30f;
         /// <summary>60°: the dust kind axis since 20 §4 (it used to carry the compound dust mass nodes).</summary>
         public const float MassAxis = 60f;
         public const float PlanetAxis = 150f;
+        /// <summary>The fragment nodes share the planet axis, offset so they never sit on a threshold node (20 §5).</summary>
+        public const float FragmentAxis = PlanetAxis - Pair;
         public const float StaminaAxis = 210f;
         public const float SaleAxis = 270f;
         public const float GravityAxis = 330f;
-        const float Pair = 10f;
 
         /// <summary>Rings 1..11; index 0 is unused.</summary>
         public const int RingCount = 11;
@@ -45,6 +48,27 @@ namespace Incremental.EditorTools
         static double StatCost(int ring) => Nice(0.4 * EntryIncome(ring));
         /// <summary>A dust kind unlock is the ring's headline purchase, like the old dust mass node (20 §4).</summary>
         static double KindCost(int ring) => Nice(1.1 * EntryIncome(ring));
+
+        /// <summary>
+        /// The fragment axis (20 §5), by ring: 3 unlocks fragments at 30% with the base offset, 4, 6 and 8 add 15%p each,
+        /// and 5 and 7 move the tier cap one tier up. They sit beside the threshold nodes on the planet axis.
+        /// </summary>
+        static NodeDef FragmentNode(int ring)
+        {
+            switch (ring)
+            {
+                case 3: return Frag("frag_unlock", 3, StatIds.FragUnlock, 0.30, "gate_t3");
+                case 4: return Frag("r4_frag_chance", 4, StatIds.FragChance, 0.15, "frag_unlock");
+                case 5: return Frag("r5_frag_range", 5, StatIds.FragOffset, 1, "r4_frag_chance");
+                case 6: return Frag("r6_frag_chance", 6, StatIds.FragChance, 0.15, "r5_frag_range");
+                case 7: return Frag("r7_frag_range", 7, StatIds.FragOffset, 1, "r6_frag_chance");
+                case 8: return Frag("r8_frag_chance", 8, StatIds.FragChance, 0.15, "r7_frag_range");
+                default: return null;
+            }
+        }
+
+        static NodeDef Frag(string id, int ring, string stat, double effect, params string[] prereqs) =>
+            Stat(id, ring, FragmentAxis, stat, effect, 1, StatCost(ring), 1, prereqs);
 
         /// <summary>
         /// The dust kind axis (20 §4), by ring: 3, 5, 7 and 9 unlock a kind, the ring after it raises that kind's share
@@ -127,6 +151,7 @@ namespace Incremental.EditorTools
             n.Add(Stat("r3_drain", 3, StaminaAxis, drain, 0.05, 2, 300, 1.5, "r2_stamina"));
             n.Add(Stat("r3_threshold", 3, PlanetAxis, threshold, 0.05, 2, 300, 1.5, "r2_threshold"));
             n.Add(DustKindNode(3));
+            n.Add(FragmentNode(3));
             n.Add(Gate(4));
 
             // Rings 4-10: one node per axis (two levels each) + the dust kind axis node; prereq = the same axis in the ring before.
@@ -160,6 +185,8 @@ namespace Incremental.EditorTools
                 n.Add(Stat("r" + ring + "_" + ShortName(a.stat), ring, a.angle, a.stat, a.effect, 2, StatCost(ring), 1.5, a.prereqs.Split('|')));
             var dust = DustKindNode(ring);
             if (dust != null) n.Add(dust);
+            var frag = FragmentNode(ring);
+            if (frag != null) n.Add(frag);
             if (ring + 1 <= RingCount) n.Add(Gate(ring + 1));
         }
 
@@ -177,6 +204,9 @@ namespace Incremental.EditorTools
                 case StatIds.GravityRadius: return "radius";
                 case StatIds.StaminaDrain: return "drain";
                 case StatIds.StartBonus: return "start";
+                case StatIds.FragUnlock: return "frag";
+                case StatIds.FragChance: return "fragchance";
+                case StatIds.FragOffset: return "fragrange";
                 default: return stat;
             }
         }

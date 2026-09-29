@@ -54,14 +54,21 @@ namespace Incremental
         /// Shows a planet of this tier at <paramref name="pos"/>. <paramref name="seed"/> keeps the forming body's surface;
         /// <paramref name="fromDiameterPx"/> (> 0) is the forming body's size, so the pop starts from it.
         /// </summary>
-        public void Show(Vector2 pos, CelestialTier tier, float seed, double fromDiameterPx)
+        public void Show(Vector2 pos, CelestialTier tier, float seed, double fromDiameterPx) =>
+            Show(pos, tier, seed, fromDiameterPx, 1.0);
+
+        /// <summary>
+        /// Same, at <paramref name="scale"/> of the tier's display size: a fragment is drawn smaller than the body it
+        /// fell off (20 §5). It leaves for the vanishing point like any other body.
+        /// </summary>
+        public void Show(Vector2 pos, CelestialTier tier, float seed, double fromDiameterPx, double scale)
         {
             ref Slot s = ref slots[next];
             next = (next + 1) % slots.Length;
             s.active = true;
             s.age = 0f;
             s.start = new Vector3(pos.x, pos.y, 0f);
-            s.diameter = (float)(tier.sizePx / p.pixelsPerUnit);
+            s.diameter = (float)(tier.sizePx * scale / p.pixelsPerUnit);
             s.fromDiameter = fromDiameterPx > 0 ? (float)(fromDiameterPx / p.pixelsPerUnit) : s.diameter;
             s.v.transform.position = s.start;
             s.v.SetLook(tier.look, seed, p.planetAxisPitchDeg);

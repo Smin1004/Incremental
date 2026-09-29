@@ -172,6 +172,18 @@ namespace Incremental
             },
         };
 
+        [Header("Fragments (20 §5)")]
+        [Tooltip("A fragment sells for this share of its tier's price. The tree decides whether fragments happen at all " +
+                 "and how likely they are; this is the lever if they end up worth too much of a run.")]
+        public double fragmentSaleShare = 0.5;
+        [Tooltip("Fragments only come from tiers up to unlockedMaxTier − this, before the frag_offset nodes reduce it. " +
+                 "The cap never falls below tier 1, so the first fragment node is worth something the ring it is bought in.")]
+        public int fragmentBaseOffset = 4;
+        [Tooltip("A fragment is drawn at this share of its tier's display size, and starts this far (in forming-body radii) " +
+                 "off the body it fell from.")]
+        public double fragmentScale = 0.6;
+        public double fragmentSpawnRadii = 1.0;
+
         [Header("Economy (spec §6)")]
         public double saleMult = 1.0;         // upgrade target
         public double thresholdMult = 1.0;    // upgrade target (required mass multiplier)

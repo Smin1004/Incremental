@@ -19,7 +19,8 @@ namespace Incremental
         /// fractions); the record holds it rounded up once, which is what the currency, the ratio and the log get (14 §8).
         /// </summary>
         public static RunRecord MakeRecord(MetaState meta, int run, double durationSec, double income, int[] tierCounts,
-            List<UpgradeLevel> startLevels, EffectiveStats startStats, string endReason)
+            List<UpgradeLevel> startLevels, EffectiveStats startStats, string endReason,
+            int[] fragmentCounts = null, double fragmentIncome = 0)
         {
             income = Stats.RunIncome(income);
             return new RunRecord
@@ -28,6 +29,8 @@ namespace Incremental
                 durationSec = durationSec,
                 income = income,
                 tierCounts = tierCounts != null ? (int[])tierCounts.Clone() : new int[0],
+                fragmentCounts = fragmentCounts != null ? (int[])fragmentCounts.Clone() : new int[0],
+                fragmentIncome = fragmentIncome,
                 ratioVsLast = IsFullRun(endReason) && meta.lastRunIncome > 0 ? income / meta.lastRunIncome : -1.0,
                 startLevels = MetaState.CopyLevels(startLevels),
                 startStats = startStats,
@@ -63,15 +66,22 @@ namespace Incremental
             for (int i = 0; i < n; i++)
             {
                 meta.totalPlanets[i] += rec.tierCounts[i];
+                // Only bodies the player made from held mass raise the highest tier: a fragment is a chip off one of them
+                // and must not move the central star stage or the ending on its own (20 §5).
                 if (rec.tierCounts[i] > 0 && i + 1 > meta.highestTierCreated) meta.highestTierCreated = i + 1;
             }
+            int f = rec.fragmentCounts != null ? rec.fragmentCounts.Length : 0;
+            if (meta.totalFragments == null) meta.totalFragments = new int[0];
+            if (meta.totalFragments.Length < f) Array.Resize(ref meta.totalFragments, f);
+            for (int i = 0; i < f; i++) meta.totalFragments[i] += rec.fragmentCounts[i];
 
             if (meta.runHistory == null) meta.runHistory = new List<RunRecord>();
             meta.runHistory.Add(rec);
         }
 
         public static PendingRun MakePending(int run, double elapsed, double income, int[] tierCounts,
-            List<UpgradeLevel> startLevels, EffectiveStats startStats, bool ending = false)
+            List<UpgradeLevel> startLevels, EffectiveStats startStats, bool ending = false,
+            int[] fragmentCounts = null, double fragmentIncome = 0)
         {
             return new PendingRun
             {
@@ -81,6 +91,8 @@ namespace Incremental
                 elapsed = elapsed,
                 income = income,
                 tierCounts = tierCounts != null ? (int[])tierCounts.Clone() : new int[0],
+                fragmentCounts = fragmentCounts != null ? (int[])fragmentCounts.Clone() : new int[0],
+                fragmentIncome = fragmentIncome,
                 startLevels = MetaState.CopyLevels(startLevels),
                 startStats = startStats,
             };
@@ -96,7 +108,8 @@ namespace Incremental
             var p = data.pending;
             if (p == null || !p.active) return null;
             if (p.ending) endReason = EndReason.Ending;
-            var rec = MakeRecord(data.meta, p.run, p.elapsed, p.income, p.tierCounts, p.startLevels, p.startStats, endReason);
+            var rec = MakeRecord(data.meta, p.run, p.elapsed, p.income, p.tierCounts, p.startLevels, p.startStats, endReason,
+                p.fragmentCounts, p.fragmentIncome);
             ApplyRunEnd(data.meta, rec);
             data.pending = new PendingRun();
             return rec;

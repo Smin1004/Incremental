@@ -36,8 +36,10 @@ namespace Incremental
         public double totalIncome;
         /// <summary>Sum of run lengths, seconds.</summary>
         public double totalPlayTimeSec;
-        /// <summary>Planets created over all runs. Index = tier - 1.</summary>
+        /// <summary>Planets created over all runs. Index = tier - 1. Fragments are counted apart (20 §5).</summary>
         public int[] totalPlanets = new int[0];
+        /// <summary>Fragments dropped over all runs. Index = tier - 1 (20 §5).</summary>
+        public int[] totalFragments = new int[0];
         /// <summary>0 until the first planet.</summary>
         public int highestTierCreated;
         /// <summary>Every finished run, oldest first.</summary>

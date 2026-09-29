@@ -35,6 +35,9 @@ namespace Incremental
         {
             var sb = new StringBuilder("run,duration_s,income");
             for (int i = 0; i < c.tiers.Count; i++) sb.Append(",t").Append(c.tiers[i].tier);
+            // 20 §5: fragments are counted apart from the bodies made from held mass, and their income is its own column.
+            for (int i = 0; i < c.tiers.Count; i++) sb.Append(",f").Append(c.tiers[i].tier);
+            sb.Append(",frag_income");
             sb.Append(",ratio_vs_last,max_tier,node_levels");
             for (int i = 0; i < StatColumns.Length; i++) sb.Append(',').Append(StatColumns[i]);
             if (p != null)
@@ -47,7 +50,9 @@ namespace Incremental
         {
             var sb = new StringBuilder();
             sb.Append(r.run).Append(',').Append(Fmt.Sec(r.durationSec)).Append(',').Append(Fmt.Csv(r.income));
-            for (int i = 0; i < c.tiers.Count; i++) sb.Append(',').Append(r.TierCount(c.tiers[i].tier));
+            for (int i = 0; i < c.tiers.Count; i++) sb.Append(',').Append(r.DirectCount(c.tiers[i].tier));
+            for (int i = 0; i < c.tiers.Count; i++) sb.Append(',').Append(r.FragmentCount(c.tiers[i].tier));
+            sb.Append(',').Append(Fmt.Csv(r.fragmentIncome));
             sb.Append(',').Append(r.HasRatio ? r.ratioVsLast.ToString("F3", CultureInfo.InvariantCulture) : string.Empty);
             sb.Append(',').Append(r.unlockedMaxTier).Append(',').Append(TotalLevels(r.startLevels));
             var s = r.startStats;
@@ -113,7 +118,11 @@ namespace Incremental
                     first = false;
                 }
             }
-            sb.Append("] ratio=").Append(ratio).Append(" maxTier=").Append(r.unlockedMaxTier)
+            sb.Append(']');
+            if (r.fragmentIncome > 0)
+                sb.Append(" frag=").Append(Fmt.Num(r.fragmentIncome)).Append(" (")
+                  .Append((r.income > 0 ? r.fragmentIncome / r.income * 100.0 : 0).ToString("F1")).Append("%)");
+            sb.Append(" ratio=").Append(ratio).Append(" maxTier=").Append(r.unlockedMaxTier)
               .Append(" levels=[").Append(LevelsText(r.startLevels)).Append("] end=").Append(r.endReason);
             return sb.ToString();
         }

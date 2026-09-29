@@ -20,8 +20,16 @@ namespace Incremental
         public int run;
         public double durationSec;
         public double income;
-        /// <summary>Index = tier - 1.</summary>
+        /// <summary>Bodies made from the held mass, index = tier - 1. Fragments are kept apart in <see cref="fragmentCounts"/>.</summary>
         public int[] tierCounts = new int[0];
+        /// <summary>
+        /// Fragments dropped this run, index = tier - 1 (20 §5). The result panel and the solar system show the two added
+        /// up (<see cref="TierCount"/>); the save and run_log.csv keep them apart, so a later rule can count only the
+        /// bodies the player chose to make (19 §6).
+        /// </summary>
+        public int[] fragmentCounts = new int[0];
+        /// <summary>Part of <see cref="income"/> that came from fragments (20 §5: it has to stay under 5% of a run).</summary>
+        public double fragmentIncome;
         /// <summary>
         /// Income / income of the most recent stamina-ended run. -1 when there is no ratio: quit and crash runs, the first
         /// full run, or a previous full run without income (12 §10-3).
@@ -37,10 +45,19 @@ namespace Incremental
 
         public bool HasRatio => ratioVsLast >= 0 && !double.IsNaN(ratioVsLast) && !double.IsInfinity(ratioVsLast);
 
-        public int TierCount(int tier)
+        /// <summary>Bodies of that tier on screen this run: the ones made from held mass plus the fragments (20 §5).</summary>
+        public int TierCount(int tier) => DirectCount(tier) + FragmentCount(tier);
+
+        /// <summary>Bodies of that tier made from the held mass, fragments not counted.</summary>
+        public int DirectCount(int tier) => At(tierCounts, tier);
+
+        /// <summary>Fragments of that tier dropped this run (20 §5).</summary>
+        public int FragmentCount(int tier) => At(fragmentCounts, tier);
+
+        static int At(int[] counts, int tier)
         {
             int idx = tier - 1;
-            return tierCounts != null && idx >= 0 && idx < tierCounts.Length ? tierCounts[idx] : 0;
+            return counts != null && idx >= 0 && idx < counts.Length ? counts[idx] : 0;
         }
     }
 }

@@ -25,12 +25,24 @@ namespace Incremental
         /// so two nodes of this stat only add up when they name the same kind.
         /// </summary>
         public const string DustChance = "dust_chance";
+        /// <summary>
+        /// 20 §5: turns fragments on and gives them their starting chance. It adds to <see cref="FragChance"/>; fragments
+        /// happen while the two together are above 0.
+        /// </summary>
+        public const string FragUnlock = "frag_unlock";
+        /// <summary>20 §5: added chance that crossing a tier threshold drops a fragment of that tier.</summary>
+        public const string FragChance = "frag_chance";
+        /// <summary>
+        /// 20 §5: moves the fragment tier cap one tier up per level. The cap is
+        /// unlockedMaxTier − (GameParams.fragmentBaseOffset − this), never below tier 1.
+        /// </summary>
+        public const string FragOffset = "frag_offset";
 
         public static readonly string[] All =
         {
             SpawnRate, PullAccel, SaleMult, StaminaMax, ThresholdMult,
             DustCap, DustMass, GravityRadius, StaminaDrain, StartBonus,
-            DustChance,
+            DustChance, FragUnlock, FragChance, FragOffset,
         };
 
         /// <summary>Stats that act on one dust kind and therefore need <see cref="NodeDef.dustKindId"/>.</summary>

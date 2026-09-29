@@ -107,6 +107,14 @@ namespace Incremental
             { "stat.dust_chance.name", "출현 확률" },
             { "stat.dust_chance.effect", "+{0}%p" },
 
+            // Fragments (20 §5).
+            { "stat.frag_unlock.name", "파편 해금" },
+            { "stat.frag_unlock.effect", "파편 생성 시작, 확률 {0}%" },
+            { "stat.frag_chance.name", "파편 확률" },
+            { "stat.frag_chance.effect", "+{0}%p" },
+            { "stat.frag_offset.name", "파편 범위" },
+            { "stat.frag_offset.effect", "티어 +{0}" },
+
             // Dust kinds (20 §4): the name is the node name of the unlock and the prefix of its chance node.
             { "dust.base", "기본 먼지" },
             { "dust.medium", "중형 먼지" },

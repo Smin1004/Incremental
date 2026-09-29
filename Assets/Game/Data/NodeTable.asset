@@ -260,6 +260,20 @@ MonoBehaviour:
     - gate_t3
     angleDeg: 60
     enabled: 1
+  - id: frag_unlock
+    kind: 0
+    statId: frag_unlock
+    effectPerLevel: 0.3
+    maxLevel: 1
+    baseCost: 310
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 140
+    enabled: 1
   - id: gate_t4
     kind: 1
     statId: 
@@ -357,6 +371,20 @@ MonoBehaviour:
     prereqs:
     - dust_medium
     angleDeg: 60
+    enabled: 1
+  - id: r4_frag_chance
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 2500
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 4
+    prereqs:
+    - frag_unlock
+    angleDeg: 140
     enabled: 1
   - id: gate_t5
     kind: 1
@@ -456,6 +484,20 @@ MonoBehaviour:
     - r4_chance_medium
     angleDeg: 60
     enabled: 1
+  - id: r5_frag_range
+    kind: 0
+    statId: frag_offset
+    effectPerLevel: 1
+    maxLevel: 1
+    baseCost: 20000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 5
+    prereqs:
+    - r4_frag_chance
+    angleDeg: 140
+    enabled: 1
   - id: gate_t6
     kind: 1
     statId: 
@@ -540,6 +582,20 @@ MonoBehaviour:
     - dust_large
     angleDeg: 60
     enabled: 1
+  - id: r6_frag_chance
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 160000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 6
+    prereqs:
+    - r5_frag_range
+    angleDeg: 140
+    enabled: 1
   - id: gate_t7
     kind: 1
     statId: 
@@ -623,6 +679,20 @@ MonoBehaviour:
     prereqs:
     - r6_chance_large
     angleDeg: 60
+    enabled: 1
+  - id: r7_frag_range
+    kind: 0
+    statId: frag_offset
+    effectPerLevel: 1
+    maxLevel: 1
+    baseCost: 1300000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 7
+    prereqs:
+    - r6_frag_chance
+    angleDeg: 140
     enabled: 1
   - id: gate_t8
     kind: 1
@@ -721,6 +791,20 @@ MonoBehaviour:
     prereqs:
     - dust_crystal
     angleDeg: 60
+    enabled: 1
+  - id: r8_frag_chance
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 10000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 8
+    prereqs:
+    - r7_frag_range
+    angleDeg: 140
     enabled: 1
   - id: gate_t9
     kind: 1

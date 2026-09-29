@@ -111,6 +111,8 @@ namespace Incremental.Tests
                 // dustMassAvg also moves with dust_mass, so the dust kind axis is checked on the shares themselves.
                 if (UnityEngine.JsonUtility.ToJson(new ChanceBag { c = s.dustKindChance }) !=
                     UnityEngine.JsonUtility.ToJson(new ChanceBag { c = b.dustKindChance })) changed++;
+                if (s.fragChance != b.fragChance) changed++;
+                if (s.fragOffset != b.fragOffset) changed++;
                 Assert.AreEqual(1, changed, n.id + " should change exactly one effective value");
             }
         }

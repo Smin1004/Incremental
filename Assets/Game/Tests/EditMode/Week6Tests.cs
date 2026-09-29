@@ -230,6 +230,132 @@ namespace Incremental.Tests
             Object.DestroyImmediate(p);
         }
 
+        // ---------------- §5 C. fragments ----------------
+
+        [Test]
+        public void FragmentAxis_HasTheSixNodesOfTheSpecTable()
+        {
+            var n = ProjectNodes();
+            var expected = new (string id, int ring, string stat, double effect)[]
+            {
+                ("frag_unlock", 3, StatIds.FragUnlock, 0.30),
+                ("r4_frag_chance", 4, StatIds.FragChance, 0.15),
+                ("r5_frag_range", 5, StatIds.FragOffset, 1),
+                ("r6_frag_chance", 6, StatIds.FragChance, 0.15),
+                ("r7_frag_range", 7, StatIds.FragOffset, 1),
+                ("r8_frag_chance", 8, StatIds.FragChance, 0.15),
+            };
+            foreach (var e in expected)
+            {
+                var node = n.Get(e.id);
+                Assert.IsNotNull(node, e.id);
+                Assert.AreEqual(e.ring, node.minTier, e.id + " ring");
+                Assert.AreEqual(e.stat, node.statId, e.id + " stat");
+                Assert.AreEqual(e.effect, node.effectPerLevel, Eps, e.id + " effect");
+                Assert.AreEqual(1, node.maxLevel, e.id + " is a one-off");
+                Assert.AreEqual(140f, node.angleDeg, 1e-3, "the fragment nodes sit beside the planet axis (20 §5)");
+            }
+        }
+
+        [Test]
+        public void FragmentChanceAndRange_AddUpAlongTheAxis()
+        {
+            var p = ProjectParams();
+            var n = ProjectNodes();
+            var m = new MetaState();
+            Assert.AreEqual(0, Stats.Compute(p, n, m).fragChance, Eps, "fragments are off before the unlock");
+            Assert.AreEqual(0, Stats.FragmentMaxTier(8, Stats.Compute(p, n, m)), "and nothing drops");
+
+            m.SetLevel("frag_unlock", 1);
+            var s = Stats.Compute(p, n, m);
+            Assert.AreEqual(0.30, s.fragChance, Eps, "unlock: 30%");
+            Assert.AreEqual(4, s.fragOffset, "unlock: offset 4");
+
+            m.SetLevel("r4_frag_chance", 1);
+            Assert.AreEqual(0.45, Stats.Compute(p, n, m).fragChance, Eps);
+            m.SetLevel("r5_frag_range", 1);
+            Assert.AreEqual(3, Stats.Compute(p, n, m).fragOffset);
+            m.SetLevel("r6_frag_chance", 1);
+            Assert.AreEqual(0.60, Stats.Compute(p, n, m).fragChance, Eps);
+            m.SetLevel("r7_frag_range", 1);
+            Assert.AreEqual(2, Stats.Compute(p, n, m).fragOffset);
+            m.SetLevel("r8_frag_chance", 1);
+            var full = Stats.Compute(p, n, m);
+            Assert.AreEqual(0.75, full.fragChance, Eps, "the whole axis: 75%");
+            Assert.AreEqual(2, full.fragOffset);
+            Assert.AreEqual(9, Stats.FragmentMaxTier(11, full), "at the top ring a fragment can be two tiers below");
+        }
+
+        [Test]
+        public void FragmentTierCap_NeverFallsBelowTierOne()
+        {
+            var p = ProjectParams();
+            var m = new MetaState();
+            m.SetLevel("frag_unlock", 1);
+            var s = Stats.Compute(p, ProjectNodes(), m);
+            // 20 §5 leaves this open: with offset 4 the cap would be below 1 in rings 3 and 4, and the node the player
+            // just bought would do nothing at all, so the cap is clamped to tier 1.
+            Assert.AreEqual(1, Stats.FragmentMaxTier(3, s), "ring 3 drops asteroids");
+            Assert.AreEqual(1, Stats.FragmentMaxTier(4, s));
+            Assert.AreEqual(1, Stats.FragmentMaxTier(5, s));
+            Assert.AreEqual(2, Stats.FragmentMaxTier(6, s));
+            Assert.AreEqual(7, Stats.FragmentMaxTier(11, s));
+        }
+
+        [Test]
+        public void FragmentSellsForHalfItsTier()
+        {
+            var p = ProjectParams();
+            var c = ProjectTiers();
+            Assert.AreEqual(0.5, p.fragmentSaleShare, Eps, "20 §5");
+            Assert.AreEqual(4, p.fragmentBaseOffset);
+            var s = Stats.Compute(p, ProjectNodes(), new MetaState());
+            var tier = c.Get(5);
+            Assert.AreEqual(Stats.SaleIncome(tier, s) * 0.5, Stats.FragmentIncome(p, tier, s), Eps);
+        }
+
+        [Test]
+        public void FragmentsAreCountedApartButShownTogether()
+        {
+            var rec = new RunRecord { tierCounts = new[] { 2, 1, 0 }, fragmentCounts = new[] { 5, 0, 3 } };
+            Assert.AreEqual(2, rec.DirectCount(1));
+            Assert.AreEqual(5, rec.FragmentCount(1));
+            Assert.AreEqual(7, rec.TierCount(1), "the result panel adds them up (20 §5)");
+            Assert.AreEqual(1, rec.TierCount(2));
+            Assert.AreEqual(3, rec.TierCount(3), "a tier reached only by fragments still shows");
+            Assert.AreEqual(0, rec.TierCount(9), "out of range");
+        }
+
+        [Test]
+        public void FragmentsDoNotRaiseTheHighestTierMade()
+        {
+            var meta = new MetaState();
+            var rec = new RunRecord
+            {
+                run = 1, income = 10, endReason = EndReason.Stamina,
+                tierCounts = new[] { 3, 0, 0 }, fragmentCounts = new[] { 0, 0, 4 }, fragmentIncome = 2,
+            };
+            Session.ApplyRunEnd(meta, rec);
+            Assert.AreEqual(1, meta.highestTierCreated, "only bodies made from held mass move the central star stage");
+            Assert.AreEqual(3, meta.totalPlanets[0]);
+            Assert.AreEqual(4, meta.totalFragments[2]);
+            Assert.AreEqual(0, meta.totalFragments[0]);
+        }
+
+        [Test]
+        public void BrokenFragmentData_IsReported()
+        {
+            var p = TestData.Params();
+            p.fragmentSaleShare = 1.5;
+            p.fragmentBaseOffset = 0;
+            p.fragmentScale = 0;
+            var r = DataValidator.ValidateParams(p);
+            Assert.IsTrue(r.Errors.Exists(e => e.Contains("fragmentSaleShare")), Joined(r.Errors));
+            Assert.IsTrue(r.Errors.Exists(e => e.Contains("fragmentBaseOffset")), Joined(r.Errors));
+            Assert.IsTrue(r.Errors.Exists(e => e.Contains("fragmentScale")), Joined(r.Errors));
+            Object.DestroyImmediate(p);
+        }
+
         static string Joined(List<string> list) => string.Join("\n", list);
     }
 }

@@ -174,6 +174,7 @@ namespace Incremental
             ValidateStamina(p, r);
             ValidatePull(p, r);
             ValidateDustKinds(p, r);
+            ValidateFragments(p, r);
             // 18 §A2: the pop, the stay in place and the flight to the vanishing point.
             if (p.planetPopDurationSec < 0 || p.planetHoldSec < 0) r.Errors.Add("GameParams: planetPopDurationSec and planetHoldSec must be >= 0.");
             if (!(p.planetDepartSec > 0)) r.Errors.Add("GameParams: planetDepartSec must be > 0.");
@@ -369,6 +370,18 @@ namespace Incremental
                     r.Warnings.Add($"GameParams: followSpeedPx {p.followSpeedPx} is not one of followSpeedSteps (20 §7).");
             }
             if (!(p.followLineWidthPx > 0)) r.Errors.Add("GameParams: followLineWidthPx must be > 0.");
+        }
+
+        /// <summary>Fragments (20 §5): a fragment is worth part of its tier, comes from below the top tier and is drawn smaller.</summary>
+        static void ValidateFragments(GameParams p, ValidationReport r)
+        {
+            if (!(p.fragmentSaleShare > 0) || !(p.fragmentSaleShare < 1))
+                r.Errors.Add("GameParams: fragmentSaleShare must be within 0..1 (both excluded); a fragment is worth part of its tier (20 §5).");
+            if (p.fragmentBaseOffset < 1)
+                r.Errors.Add("GameParams: fragmentBaseOffset must be >= 1, or fragments would come from the top tier itself (20 §5).");
+            if (!(p.fragmentScale > 0) || !(p.fragmentScale < 1))
+                r.Errors.Add("GameParams: fragmentScale must be within 0..1 (both excluded); a fragment is smaller than its tier.");
+            if (p.fragmentSpawnRadii < 0) r.Errors.Add("GameParams: fragmentSpawnRadii must be >= 0.");
         }
 
         /// <summary>

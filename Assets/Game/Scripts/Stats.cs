@@ -27,6 +27,10 @@ namespace Incremental
         public double[] dustKindChance;
         /// <summary>Expected mass of one spawned dust with those chances (20 §4: the "링별 평균 먼지 질량").</summary>
         public double dustMassAvg;
+        /// <summary>20 §5: chance that crossing a tier threshold drops a fragment. 0 = fragments are not unlocked yet.</summary>
+        public double fragChance;
+        /// <summary>20 §5: fragments only come from tiers up to unlockedMaxTier − this (never below tier 1).</summary>
+        public int fragOffset;
 
         /// <summary>Share of spawned dust of that kind index, 0 when it is out of range (a save written before 20 §4).</summary>
         public double KindChance(int index) =>
@@ -53,7 +57,7 @@ namespace Incremental
         public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase)
         {
             double spawn = 0, pull = 0, sale = 0, stamina = 0, threshold = 0, cap = 0, radius = 0, drain = 0, start = 0;
-            double mass = 1;
+            double mass = 1, frag = 0, fragRange = 0;
             // 20 §4: extra share per dust kind from its chance node; the kind only appears once its unlock node is owned.
             int kinds = p.DustKindCount;
             var kindAdd = kinds > 0 ? new double[kinds] : System.Array.Empty<double>();
@@ -84,6 +88,9 @@ namespace Incremental
                     case StatIds.GravityRadius: radius += add; break;
                     case StatIds.StaminaDrain: drain += add; break;
                     case StatIds.StartBonus: start += add; break;
+                    case StatIds.FragUnlock:
+                    case StatIds.FragChance: frag += add; break;
+                    case StatIds.FragOffset: fragRange += add; break;
                 }
             }
 
@@ -102,6 +109,8 @@ namespace Incremental
             s.staminaIdleDrain = idleDrainBase * drainMult;
             s.staminaHoldDrain = holdDrainBase * drainMult;
             s.dustInitial = Math.Min(p.dustInitial + start, s.dustCap);
+            s.fragChance = Math.Clamp(frag, 0.0, 1.0);
+            s.fragOffset = (int)Math.Max(0, p.fragmentBaseOffset - Math.Round(fragRange));
             FillDustKinds(p, t, m, kindAdd, ref s);
             return s;
         }
@@ -151,13 +160,26 @@ namespace Incremental
         public static bool IsPercentEffect(string statId) =>
             statId == StatIds.PullAccel || statId == StatIds.SaleMult || statId == StatIds.ThresholdMult ||
             statId == StatIds.GravityRadius || statId == StatIds.StaminaDrain ||
-            statId == StatIds.DustChance;
+            statId == StatIds.DustChance || statId == StatIds.FragUnlock || statId == StatIds.FragChance;
 
         /// <summary>Number substituted into the stat.&lt;id&gt;.effect string: percent for fraction effects, raw otherwise.</summary>
         public static double EffectDisplayNumber(NodeDef n) =>
             IsPercentEffect(n.statId) ? n.effectPerLevel * 100.0 : n.effectPerLevel;
 
         public static double Threshold(CelestialTier tier, in EffectiveStats s) => tier.requiredMass * s.thresholdMult;
+
+        /// <summary>
+        /// 20 §5: the highest tier a fragment can be, given the tiers unlocked so far. It is the unlocked maximum minus
+        /// the offset, but never below tier 1, so the first fragment node already drops something in the ring it is
+        /// bought in (the spec leaves the early rings, where the offset is larger than the unlocked maximum, open).
+        /// Returns 0 while fragments are locked.
+        /// </summary>
+        public static int FragmentMaxTier(int unlockedMaxTier, in EffectiveStats s) =>
+            s.fragChance > 0 ? Math.Clamp(unlockedMaxTier - s.fragOffset, 1, Math.Max(unlockedMaxTier, 1)) : 0;
+
+        /// <summary>Income of one fragment of this tier: its tier's income times the fragment share (20 §5).</summary>
+        public static double FragmentIncome(GameParams p, CelestialTier tier, in EffectiveStats s) =>
+            SaleIncome(tier, s) * p.fragmentSaleShare;
 
         /// <summary>
         /// Income of one planet of this tier: sale price × sale multiplier, fractions kept. The run total is rounded up once

@@ -29,6 +29,9 @@ namespace Incremental
         public double income;
         /// <summary>Index = tier - 1.</summary>
         public int[] tierCounts = new int[0];
+        /// <summary>Fragments so far, index = tier - 1, and their share of the income (20 §5).</summary>
+        public int[] fragmentCounts = new int[0];
+        public double fragmentIncome;
         public List<UpgradeLevel> startLevels = new List<UpgradeLevel>();
         public EffectiveStats startStats;
         /// <summary>The run is in its ending (the first blue giant was made, 15 §4.2): if the game dies now, it closes as an ending run.</summary>

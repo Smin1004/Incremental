@@ -98,6 +98,10 @@ MonoBehaviour:
     accelMult: 0.3
     brightMult: 1.6
     shape: 4
+  fragmentSaleShare: 0.5
+  fragmentBaseOffset: 4
+  fragmentScale: 0.6
+  fragmentSpawnRadii: 1
   saleMult: 1
   thresholdMult: 1
   pixelsPerUnit: 100

@@ -33,7 +33,7 @@ namespace Incremental.Tests
         /// ring 3: c_threshold (−50%, max 3, prereq b_spawn), c_drain (−50%, max 3, prereq b_mass), gate_t4 (cost 3000);
         /// ring 4: d_sale (+100%, unlimited, prereq c_threshold).
         /// One node per remaining stat in ring 1 (e_*) with max 1, cost 5, for the per-stat tests, plus the dust kind
-        /// unlock dust_medium and its chance node e_chance (20 §4).
+        /// unlock dust_medium and its chance node e_chance (20 §4) and the three fragment nodes e_frag* (20 §5).
         /// </summary>
         public static NodeTable Nodes()
         {
@@ -52,6 +52,9 @@ namespace Incremental.Tests
                 Stat("e_mass", 1, 60, StatIds.DustMass, 1.5, 3, 5, 1),
                 DustUnlock("dust_medium", "medium", 1, 100, 5),
                 DustChance("e_chance", "medium", 1, 110, 0.02, 4, 5, "dust_medium"),
+                Stat("e_frag", 1, 120, StatIds.FragUnlock, 0.3, 1, 5, 1),
+                Stat("e_fragchance", 1, 130, StatIds.FragChance, 0.15, 2, 5, 1, "e_frag"),
+                Stat("e_fragrange", 1, 140, StatIds.FragOffset, 1, 2, 5, 1, "e_frag"),
                 Gate("gate_t2", 2, 1, 30),
                 Stat("b_spawn", 2, 30, StatIds.SpawnRate, 2, 2, 40, 1.5, "a_spawn"),
                 Stat("b_mass", 2, 60, StatIds.DustMass, 1.5, 2, 100, 2, "a_spawn", "a_pull"),

@@ -54,10 +54,12 @@ namespace Incremental
             if (m.upgradeLevels == null) m.upgradeLevels = new List<UpgradeLevel>();
             m.upgradeLevels.RemoveAll(l => l == null || string.IsNullOrEmpty(l.id));
             if (m.totalPlanets == null) m.totalPlanets = new int[0];
+            if (m.totalFragments == null) m.totalFragments = new int[0];
             if (m.runHistory == null) m.runHistory = new List<RunRecord>();
             if (m.unlockedMaxTier < 1) m.unlockedMaxTier = 1;
             if (m.runCount < 0) m.runCount = 0;
             if (d.pending.tierCounts == null) d.pending.tierCounts = new int[0];
+            if (d.pending.fragmentCounts == null) d.pending.fragmentCounts = new int[0];
             if (d.pending.startLevels == null) d.pending.startLevels = new List<UpgradeLevel>();
         }
     }

@@ -58,7 +58,9 @@ namespace Incremental
         [Tooltip("Incremental/Flash: radial flashes (15 §3 flash rule).")]
         public Material flashMaterial;
         public Sprite circleSprite;
-        public int planetPoolSize = 8;
+        [Tooltip("Bodies on screen at once. A hold can drop several fragments on top of the body it makes (20 §5), so this " +
+                 "is above the 8 that the bodies alone needed.")]
+        public int planetPoolSize = 16;
 
         public MetaState Meta { get; private set; } = new MetaState();
         public Settings Settings { get; private set; } = new Settings();
@@ -390,6 +392,9 @@ namespace Incremental
             double captured = Dust.Tick(dt, CameraArea(), CursorWorld, holding, s);
             if (captured > 0) Run.mass += captured * s.dustMass;
 
+            // 20 §5: the moment the held mass passes a tier threshold, that tier may drop a fragment. No mass is spent.
+            if (holding && captured > 0) DropFragments(s);
+
             // Reaching the highest unlocked tier creates immediately, without releasing.
             if (holding)
             {
@@ -465,6 +470,42 @@ namespace Incremental
             int n = dustMass > 0 ? (int)Math.Round(Run.mass / dustMass) : 0;
             if (n > 0) Dust.Scatter(n, CursorWorld);
             Run.mass = 0;
+            Run.crossedTier = 0;
+        }
+
+        /// <summary>Randomness of the fragment rolls (20 §5). Apart from the dust and visual RNGs.</summary>
+        readonly System.Random fragRng = new System.Random();
+
+        /// <summary>
+        /// 20 §5: walks the thresholds the held mass has newly crossed and rolls once for each. A hit drops a fragment of
+        /// that tier, which pays a share of the tier's price and flies off to the vanishing point. The mass is untouched,
+        /// so the body being formed is not slowed down, and the top tiers are out of reach through the offset.
+        /// </summary>
+        void DropFragments(in EffectiveStats s)
+        {
+            int cap = Stats.FragmentMaxTier(Meta.unlockedMaxTier, s);
+            if (cap <= 0) return;
+            for (int t = Run.crossedTier + 1; t <= celestialTable.MaxTier; t++)
+            {
+                var def = celestialTable.Get(t);
+                if (def == null || Run.mass < Stats.Threshold(def, s)) break;
+                Run.crossedTier = t;
+                if (t <= cap && fragRng.NextDouble() < s.fragChance) DropFragment(def, s);
+            }
+        }
+
+        void DropFragment(CelestialTier tier, in EffectiveStats s)
+        {
+            double income = Stats.FragmentIncome(gameParams, tier, s);
+            Run.runIncome += income;
+            Run.fragmentIncome += income;
+            int idx = tier.tier - 1;
+            if (idx >= 0 && idx < Run.fragmentCounts.Length) Run.fragmentCounts[idx]++;
+            // It chips off the edge of the body being formed, so it starts beside the cursor rather than on it.
+            double radius = Cursor.FormingDiameterPx * 0.5 * gameParams.fragmentSpawnRadii / gameParams.pixelsPerUnit;
+            double angle = fragRng.NextDouble() * Math.PI * 2.0;
+            var at = CursorWorld + new Vector2((float)(Math.Cos(angle) * radius), (float)(Math.Sin(angle) * radius));
+            Planets.Show(at, tier, NextVisualSeed(), 0, gameParams.fragmentScale);
         }
 
         /// <summary>
@@ -500,6 +541,7 @@ namespace Incremental
             else Planets.Show(CursorWorld, tier, bodySeed, bodyPx);
             if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(CursorWorld), tier.sizePx, count);
             Run.mass = 0;
+            Run.crossedTier = 0;
             PlanetCreated?.Invoke(tier);
         }
 
@@ -509,7 +551,8 @@ namespace Incremental
         /// </summary>
         void EndRun(string reason, bool showResult)
         {
-            var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, runStartStats, reason);
+            var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels,
+                runStartStats, reason, Run.fragmentCounts, Run.fragmentIncome);
             Session.ApplyRunEnd(Meta, rec);
             Phase = GamePhase.Result;
             EndingActive = false;
@@ -531,7 +574,8 @@ namespace Incremental
         {
             var data = new SaveData { meta = Meta };
             if (Phase == GamePhase.Run && Run != null)
-                data.pending = Session.MakePending(Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels, runStartStats, EndingActive);
+                data.pending = Session.MakePending(Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels,
+                    runStartStats, EndingActive, Run.fragmentCounts, Run.fragmentIncome);
             try
             {
                 Store.Write(data);
