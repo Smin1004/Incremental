@@ -42,10 +42,11 @@ namespace Incremental.Tests
             Assert.AreEqual(10, gates, "gates for tiers 2-11");
             Assert.AreEqual(3, endless, "ring 11 endless nodes");
             Assert.That(stats, Is.InRange(45, 60), "about 50 stat nodes (12 §6)");
-            // Ring 1 draft (12 §6): two nodes affordable after the first run (income 12), gate 30.
-            Assert.AreEqual(5, n.Get("r1_spawn").baseCost);
-            Assert.AreEqual(30, n.Get("gate_t2").baseCost);
-            Assert.AreEqual(300, n.Get("gate_t3").baseCost);
+            // 20 §8.2: every cost comes from the measured entry income of its ring, 0.4 × I_k for a node and 3 × I_k
+            // for a gate, so ring 1 (I = 9) is a node at 3.6 and the tier 2 gate at 27.
+            Assert.AreEqual(3.6, n.Get("r1_spawn").baseCost, 1e-9);
+            Assert.AreEqual(27, n.Get("gate_t2").baseCost, 1e-9);
+            Assert.AreEqual(63, n.Get("gate_t3").baseCost, 1e-9);
             Assert.AreEqual(2, n.Get("r2_cap").minTier, "dust cap in ring 2 (12 §10-1)");
             Assert.AreEqual(3, n.Get("dust_medium").minTier, "the first dust kind unlocks in ring 3 (20 §4)");
         }

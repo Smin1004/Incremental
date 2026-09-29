@@ -52,7 +52,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 2
     requiredMass: 25
-    salePrice: 6
+    salePrice: 4
     sizePx: 26
     color: {r: 0.55, g: 0.8, b: 1, a: 1}
     look:
@@ -89,7 +89,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 3
     requiredMass: 60
-    salePrice: 40
+    salePrice: 15
     sizePx: 34
     color: {r: 0.62, g: 0.42, b: 0.25, a: 1}
     look:
@@ -126,7 +126,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 4
     requiredMass: 150
-    salePrice: 250
+    salePrice: 61
     sizePx: 42
     color: {r: 0.8, g: 0.8, b: 0.82, a: 1}
     look:
@@ -163,7 +163,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 5
     requiredMass: 400
-    salePrice: 2000
+    salePrice: 262
     sizePx: 50
     color: {r: 0.6, g: 0.3, b: 0.2, a: 1}
     look:
@@ -200,7 +200,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 6
     requiredMass: 1000
-    salePrice: 15000
+    salePrice: 1050
     sizePx: 60
     color: {r: 0.25, g: 0.5, b: 0.95, a: 1}
     look:
@@ -237,7 +237,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 7
     requiredMass: 2500
-    salePrice: 120000
+    salePrice: 4190
     sizePx: 76
     color: {r: 0.8, g: 0.65, b: 0.35, a: 1}
     look:
@@ -274,7 +274,7 @@ MonoBehaviour:
       ringColor: {r: 0.9, g: 0.82, b: 0.64, a: 0.85}
   - tier: 8
     requiredMass: 6000
-    salePrice: 1000000
+    salePrice: 16100
     sizePx: 88
     color: {r: 0.45, g: 0.2, b: 0.14, a: 1}
     look:
@@ -311,7 +311,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 9
     requiredMass: 15000
-    salePrice: 10000000
+    salePrice: 64400
     sizePx: 104
     color: {r: 0.95, g: 0.25, b: 0.2, a: 1}
     look:
@@ -348,7 +348,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 10
     requiredMass: 40000
-    salePrice: 100000000
+    salePrice: 275000
     sizePx: 124
     color: {r: 1, g: 0.9, b: 0.35, a: 1}
     look:
@@ -385,7 +385,7 @@ MonoBehaviour:
       ringColor: {r: 1, g: 1, b: 1, a: 0}
   - tier: 11
     requiredMass: 100000
-    salePrice: 1000000000
+    salePrice: 1100000
     sizePx: 148
     color: {r: 0.72, g: 0.85, b: 1, a: 1}
     look:

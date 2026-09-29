@@ -6,23 +6,32 @@ namespace Incremental.EditorTools
 {
     /// <summary>
     /// Seed data of the celestial table (keep equal to Assets/Game/Data/CelestialTable.asset; Validate Data warns on drift).
-    /// Mass and price: tiers 1-3 week-1 values, tiers 4-11 from 10 §3.4. Display size and look: 14 §3.
+    /// Required mass: tiers 1-3 week-1 values, tiers 4-11 from 10 §3.4. Display size and look: 14 §3.
+    /// Sale price: 20 §8.1 replaced the old curve with <c>required mass × PriceBase × PriceStep^(tier−1)</c>, so the value
+    /// of a unit of mass grows by ×1.6 per tier instead of ×3. The written numbers are that formula rounded for reading.
     /// </summary>
     public static class CelestialSeed
     {
+        /// <summary>20 §8.1: sale price = required mass × PriceBase × PriceStep^(tier − 1).</summary>
+        public const double PriceBase = 0.1;
+        public const double PriceStep = 1.6;
+
+        /// <summary>The formula price of a tier, before the rounding the table writes down (20 §8.1).</summary>
+        public static double RawPrice(double requiredMass, int tier) => requiredMass * PriceBase * System.Math.Pow(PriceStep, tier - 1);
+
         public static List<CelestialTier> Tiers() => new List<CelestialTier>
         {
             Tier(1, 10, 1, 20, new Color(0.62f, 0.62f, 0.62f), Asteroid()),
-            Tier(2, 25, 6, 26, new Color(0.55f, 0.8f, 1f), Comet()),
-            Tier(3, 60, 40, 34, new Color(0.62f, 0.42f, 0.25f), DwarfPlanet()),
-            Tier(4, 150, 250, 42, new Color(0.8f, 0.8f, 0.82f), Moon()),
-            Tier(5, 400, 2000, 50, new Color(0.6f, 0.3f, 0.2f), RockyPlanet()),
-            Tier(6, 1000, 15000, 60, new Color(0.25f, 0.5f, 0.95f), Terran()),
-            Tier(7, 2500, 1.2e5, 76, new Color(0.8f, 0.65f, 0.35f), GasGiant()),
-            Tier(8, 6000, 1e6, 88, new Color(0.45f, 0.2f, 0.14f), BrownDwarf()),
-            Tier(9, 15000, 1e7, 104, new Color(0.95f, 0.25f, 0.2f), RedDwarf()),
-            Tier(10, 40000, 1e8, 124, new Color(1f, 0.9f, 0.35f), SunLike()),
-            Tier(11, 1e5, 1e9, 148, new Color(0.72f, 0.85f, 1f), BlueGiant()),
+            Tier(2, 25, 4, 26, new Color(0.55f, 0.8f, 1f), Comet()),
+            Tier(3, 60, 15, 34, new Color(0.62f, 0.42f, 0.25f), DwarfPlanet()),
+            Tier(4, 150, 61, 42, new Color(0.8f, 0.8f, 0.82f), Moon()),
+            Tier(5, 400, 262, 50, new Color(0.6f, 0.3f, 0.2f), RockyPlanet()),
+            Tier(6, 1000, 1050, 60, new Color(0.25f, 0.5f, 0.95f), Terran()),
+            Tier(7, 2500, 4190, 76, new Color(0.8f, 0.65f, 0.35f), GasGiant()),
+            Tier(8, 6000, 16100, 88, new Color(0.45f, 0.2f, 0.14f), BrownDwarf()),
+            Tier(9, 15000, 64400, 104, new Color(0.95f, 0.25f, 0.2f), RedDwarf()),
+            Tier(10, 40000, 275000, 124, new Color(1f, 0.9f, 0.35f), SunLike()),
+            Tier(11, 1e5, 1100000, 148, new Color(0.72f, 0.85f, 1f), BlueGiant()),
         };
 
         static CelestialTier Tier(int tier, double mass, double price, double sizePx, Color color, PlanetLook look) =>
@@ -178,6 +187,34 @@ namespace Incremental.EditorTools
             EditorUtility.SetDirty(c);
             AssetDatabase.SaveAssets();
             Debug.Log($"[Setup] seed looks applied to {n} tiers");
+        }
+
+        /// <summary>
+        /// Menu: copies the numbers (required mass, sale price, color) of every seed tier into the asset. The balance pass
+        /// changes the price curve in the seed (20 §8.1), and this is how the asset follows.
+        /// </summary>
+        [MenuItem("Incremental/Setup/6. Apply Seed Tier Numbers")]
+        public static void ApplySeedNumbers()
+        {
+            var c = AssetDatabase.LoadAssetAtPath<CelestialTable>("Assets/Game/Data/CelestialTable.asset");
+            if (c == null)
+            {
+                Debug.LogError("[Setup] CelestialTable asset not found.");
+                return;
+            }
+            int n = 0;
+            foreach (var s in Tiers())
+            {
+                var a = c.Get(s.tier);
+                if (a == null) continue;
+                a.requiredMass = s.requiredMass;
+                a.salePrice = s.salePrice;
+                a.color = s.color;
+                n++;
+            }
+            EditorUtility.SetDirty(c);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Setup] seed tier numbers applied to {n} tiers");
         }
     }
 }

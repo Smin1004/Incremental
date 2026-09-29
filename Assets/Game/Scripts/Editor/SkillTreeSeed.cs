@@ -31,11 +31,56 @@ namespace Incremental.EditorTools
         /// <summary>Rings 1..11; index 0 is unused.</summary>
         public const int RingCount = 11;
 
-        /// <summary>Gate cost by tier (index = tier).</summary>
-        static readonly double[] GateCosts = { 0, 0, 30, 300, 2500, 2e4, 1.5e5, 1.2e6, 1e7, 1e8, 1e9, 1e10 };
+        /// <summary>
+        /// Income of a run at the start of ring k, measured with the bot (20 §8.3 step 1; index = ring, 0 = not measured).
+        /// Every node cost is derived from it, so the balance pass changes these numbers and nothing else.
+        /// The measurement and the runs behind it: Docs/Reports/Week6.md.
+        /// </summary>
+        static readonly double[] MeasuredIncome =
+        {
+            0,          // index 0 is unused
+            9,          // ring 1
+            21,         // ring 2
+            130,        // ring 3
+            713,        // ring 4
+            3893,       // ring 5
+            19872,      // ring 6
+            171177,     // ring 7
+            717207,     // ring 8
+            7506047,    // ring 9
+            39107361,   // ring 10
+            416034083,  // ring 11
+        };
 
-        /// <summary>Draft entry income of ring k: I_1 = 12, I_(k+1) = 8 × I_k (12 §6).</summary>
-        public static double EntryIncome(int ring) => 12.0 * Math.Pow(8, ring - 1);
+        /// <summary>
+        /// The balance pass (20 §8.3) measures I_k ring by ring and feeds the numbers back in here before rebuilding the
+        /// node table, instead of editing this file once per ring. The values that survive are written into
+        /// <see cref="MeasuredIncome"/> and <see cref="RingCostMult"/> at the end of the pass, so the seed stays the truth.
+        /// </summary>
+        public static void SetMeasuredIncome(int ring, double income)
+        {
+            if (ring >= 0 && ring < MeasuredIncome.Length) MeasuredIncome[ring] = income;
+        }
+
+        public static double[] MeasuredIncomes() => (double[])MeasuredIncome.Clone();
+
+        static double[] ringMultOverride;
+
+        public static void SetRingCostMult(int ring, double mult)
+        {
+            if (ringMultOverride == null) ringMultOverride = RingCostMult();
+            if (ring >= 0 && ring < ringMultOverride.Length) ringMultOverride[ring] = mult;
+        }
+
+        /// <summary>
+        /// Entry income of ring k. The measurement when there is one, else the 12 §6 draft
+        /// (I_1 = 12, I_(k+1) = 8 × I_k), which is what the first pass of the balance run uses.
+        /// </summary>
+        public static double EntryIncome(int ring)
+        {
+            if (ring >= 0 && ring < MeasuredIncome.Length && MeasuredIncome[ring] > 0) return MeasuredIncome[ring];
+            return 12.0 * Math.Pow(8, ring - 1);
+        }
 
         /// <summary>Two significant digits (2457.6 → 2500, 6758.4 → 6800).</summary>
         public static double Nice(double v)
@@ -45,9 +90,20 @@ namespace Incremental.EditorTools
             return Math.Round(v / scale) * scale;
         }
 
-        static double StatCost(int ring) => Nice(0.4 * EntryIncome(ring));
-        /// <summary>A dust kind unlock is the ring's headline purchase, like the old dust mass node (20 §4).</summary>
-        static double KindCost(int ring) => Nice(1.1 * EntryIncome(ring));
+        /// <summary>
+        /// 20 §8.2: every node of ring k costs 0.4 × I_k at level 1 and grows ×1.5, and a gate costs 3 × I_k. Rounded to
+        /// two significant digits so the shop reads well. This is the only place node costs come from; the balance pass
+        /// turns <see cref="RingCostMult"/>, never a single node.
+        /// </summary>
+        public const double StatCostShare = 0.4;
+        public const double StatCostGrowth = 1.5;
+        public const double GateCostShare = 3.0;
+        /// <summary>Ring 11 endless nodes climb faster than the capped ones, so they stay a money sink (12 §6).</summary>
+        public const double EndlessGrowth = 1.6;
+
+        static double StatCost(int ring) => Nice(StatCostShare * EntryIncome(ring));
+        static double GateCost(int ring) => Nice(GateCostShare * EntryIncome(ring));
+        static double KindCost(int ring) => StatCost(ring);
 
         /// <summary>
         /// The fragment axis (20 §5), by ring: 3 unlocks fragments at 30% with the base offset, 4, 6 and 8 add 15%p each,
@@ -69,6 +125,10 @@ namespace Incremental.EditorTools
 
         static NodeDef Frag(string id, int ring, string stat, double effect, params string[] prereqs) =>
             Stat(id, ring, FragmentAxis, stat, effect, 1, StatCost(ring), 1, prereqs);
+
+        /// <summary>An axis node of ring k: the 20 §8.2 cost formula, so only the effect and the level count are written down.</summary>
+        static NodeDef Ax(string id, int ring, float angle, string stat, double effect, int maxLevel, params string[] prereqs) =>
+            Stat(id, ring, angle, stat, effect, maxLevel, StatCost(ring), StatCostGrowth, prereqs);
 
         /// <summary>
         /// The dust kind axis (20 §4), by ring: 3, 5, 7 and 9 unlock a kind, the ring after it raises that kind's share
@@ -106,18 +166,21 @@ namespace Incremental.EditorTools
         }
 
         /// <summary>
-        /// Per-ring cost multiplier (index = ring), the only knob turned to pace rings (12 §7). Rings without a
-        /// measurement stay 1. Values and the bot runs behind them: Docs/Reports/SkillTree_Step1.md ([2]),
-        /// Docs/Reports/Week4_Visuals.md ([3], re-measured after the run-level rounding of 14 §8) and 15 §3 ([1] 1.5 → 1.3,
-        /// measured in the completion run of Docs/Reports/Week5_Ending.md).
+        /// Per-ring cost multiplier (index = ring), the only knob turned to pace rings (12 §7, 20 §8.3 step 4). The
+        /// costs themselves come from the measured I_k; a ring that still takes too many or too few runs is nudged here
+        /// and nowhere else. Every value was re-measured in the 20 §8 balance pass, so the week 2-5 numbers are gone:
+        /// the bot runs behind these are in Docs/Reports/Week6.md.
         /// </summary>
         public static double[] RingCostMult()
         {
+            if (ringMultOverride != null) return (double[])ringMultOverride.Clone();
             var m = new double[RingCount + 1];
             for (int i = 0; i < m.Length; i++) m[i] = 1;
-            m[1] = 1.3;
-            m[2] = 0.75;
-            m[3] = 0.8;
+            m[2] = 1.4;    // cleared in 3 runs at 1.0 (target 4-6)
+            m[5] = 0.75;   // took 6 runs at 1.0 (target 3-5)
+            m[7] = 0.55;   // took 6 runs at 1.0 and still 6 at 0.75
+            m[9] = 0.8;    // took 6 runs at 1.0
+            m[10] = 0.8;   // took 6 runs at 1.0
             return m;
         }
 
@@ -128,28 +191,28 @@ namespace Incremental.EditorTools
                 drain = StatIds.StaminaDrain, start = StatIds.StartBonus;
             var n = new List<NodeDef>();
 
-            // Ring 1 (I = 12): two nodes after the first run, gate around run 3-4.
-            n.Add(Stat("r1_spawn", 1, DustAxis, spawn, 1, 2, 5, 1.5));
-            n.Add(Stat("r1_pull", 1, GravityAxis, pull, 0.2, 2, 5, 1.5));
-            n.Add(Stat("r1_sale", 1, SaleAxis, sale, 0.25, 1, 8, 1));
-            n.Add(Stat("r1_stamina", 1, StaminaAxis, stamina, 10, 1, 8, 1));
+            // Ring 1: two nodes after the first run, gate around run 3-4.
+            n.Add(Ax("r1_spawn", 1, DustAxis, spawn, 1, 2));
+            n.Add(Ax("r1_pull", 1, GravityAxis, pull, 0.2, 2));
+            n.Add(Ax("r1_sale", 1, SaleAxis, sale, 0.25, 1));
+            n.Add(Ax("r1_stamina", 1, StaminaAxis, stamina, 10, 1));
             n.Add(Gate(2));
 
             // Ring 2 (I = 96): dust cap and gravity radius arrive ("dust surge", 10 §4.3); the planet axis starts here.
-            n.Add(Stat("r2_spawn", 2, DustAxis - Pair, spawn, 2, 2, 40, 1.5, "r1_spawn"));
-            n.Add(Stat("r2_cap", 2, DustAxis + Pair, cap, 100, 2, 40, 1.5, "r1_spawn"));
-            n.Add(Stat("r2_radius", 2, GravityAxis, radius, 0.10, 2, 40, 1.5, "r1_pull"));
-            n.Add(Stat("r2_sale", 2, SaleAxis, sale, 0.25, 2, 40, 1.5, "r1_sale"));
-            n.Add(Stat("r2_stamina", 2, StaminaAxis, stamina, 10, 2, 40, 1.5, "r1_stamina"));
-            n.Add(Stat("r2_threshold", 2, PlanetAxis, threshold, 0.05, 2, 40, 1.5, "gate_t2"));
+            n.Add(Ax("r2_spawn", 2, DustAxis - Pair, spawn, 2, 2, "r1_spawn"));
+            n.Add(Ax("r2_cap", 2, DustAxis + Pair, cap, 100, 2, "r1_spawn"));
+            n.Add(Ax("r2_radius", 2, GravityAxis, radius, 0.10, 2, "r1_pull"));
+            n.Add(Ax("r2_sale", 2, SaleAxis, sale, 0.25, 2, "r1_sale"));
+            n.Add(Ax("r2_stamina", 2, StaminaAxis, stamina, 10, 2, "r1_stamina"));
+            n.Add(Ax("r2_threshold", 2, PlanetAxis, threshold, 0.05, 2, "gate_t2"));
             n.Add(Gate(3));
 
             // Ring 3 (I = 768): start bonus, stamina drain and the first dust kind unlock (20 §4).
-            n.Add(Stat("r3_start", 3, DustAxis, start, 50, 2, 300, 1.5, "r2_cap"));
-            n.Add(Stat("r3_pull", 3, GravityAxis, pull, 0.30, 2, 300, 1.5, "r2_radius"));
-            n.Add(Stat("r3_sale", 3, SaleAxis, sale, 0.25, 2, 300, 1.5, "r2_sale"));
-            n.Add(Stat("r3_drain", 3, StaminaAxis, drain, 0.05, 2, 300, 1.5, "r2_stamina"));
-            n.Add(Stat("r3_threshold", 3, PlanetAxis, threshold, 0.05, 2, 300, 1.5, "r2_threshold"));
+            n.Add(Ax("r3_start", 3, DustAxis, start, 50, 2, "r2_cap"));
+            n.Add(Ax("r3_pull", 3, GravityAxis, pull, 0.30, 2, "r2_radius"));
+            n.Add(Ax("r3_sale", 3, SaleAxis, sale, 0.25, 2, "r2_sale"));
+            n.Add(Ax("r3_drain", 3, StaminaAxis, drain, 0.05, 2, "r2_stamina"));
+            n.Add(Ax("r3_threshold", 3, PlanetAxis, threshold, 0.05, 2, "r2_threshold"));
             n.Add(DustKindNode(3));
             n.Add(FragmentNode(3));
             n.Add(Gate(4));
@@ -172,9 +235,9 @@ namespace Incremental.EditorTools
 
             // Ring 11: endless nodes with unlimited levels. The dust kind axis ends at ring 10, so the third endless node
             // sits on the dust axis instead of the old compound mass node (20 §4).
-            n.Add(Stat("r11_sale", 11, SaleAxis, sale, 1.00, 0, StatCost(11), 1.6, "r10_sale"));
-            n.Add(Stat("r11_spawn", 11, DustAxis, spawn, 12, 0, StatCost(11), 1.6, "r10_spawn"));
-            n.Add(Stat("r11_stamina", 11, StaminaAxis, stamina, 30, 0, StatCost(11), 1.6, "r10_stamina"));
+            n.Add(Stat("r11_sale", 11, SaleAxis, sale, 1.00, 0, StatCost(11), EndlessGrowth, "r10_sale"));
+            n.Add(Stat("r11_spawn", 11, DustAxis, spawn, 12, 0, StatCost(11), EndlessGrowth, "r10_spawn"));
+            n.Add(Stat("r11_stamina", 11, StaminaAxis, stamina, 30, 0, StatCost(11), EndlessGrowth, "r10_stamina"));
             return n;
         }
 
@@ -182,7 +245,7 @@ namespace Incremental.EditorTools
         static void Ring(List<NodeDef> n, int ring, params (string stat, double effect, float angle, string prereqs)[] axes)
         {
             foreach (var a in axes)
-                n.Add(Stat("r" + ring + "_" + ShortName(a.stat), ring, a.angle, a.stat, a.effect, 2, StatCost(ring), 1.5, a.prereqs.Split('|')));
+                n.Add(Ax("r" + ring + "_" + ShortName(a.stat), ring, a.angle, a.stat, a.effect, 2, a.prereqs.Split('|')));
             var dust = DustKindNode(ring);
             if (dust != null) n.Add(dust);
             var frag = FragmentNode(ring);
@@ -219,11 +282,11 @@ namespace Incremental.EditorTools
                 baseCost = baseCost, growth = growth, minTier = ring, prereqs = new List<string>(prereqs), angleDeg = angle, enabled = true,
             };
 
-        /// <summary>Gate to tier t: in ring t - 1, after the previous gate.</summary>
+        /// <summary>Gate to tier t: in ring t - 1, after the previous gate. 3 × the entry income of its ring (20 §8.2).</summary>
         static NodeDef Gate(int tier) =>
             new NodeDef
             {
-                id = "gate_t" + tier, kind = NodeKind.TierUnlock, tier = tier, maxLevel = 1, baseCost = GateCosts[tier], growth = 1,
+                id = "gate_t" + tier, kind = NodeKind.TierUnlock, tier = tier, maxLevel = 1, baseCost = GateCost(tier - 1), growth = 1,
                 minTier = tier - 1, prereqs = tier > 2 ? new List<string> { "gate_t" + (tier - 1) } : new List<string>(),
                 angleDeg = GateAxis, enabled = true,
             };

@@ -112,6 +112,88 @@ namespace Incremental
             root.Run.elapsed = 0;
         }
 
+        // ---------------- ring entry income measurement (20 §8.3) ----------------
+
+        int measureRing;
+        int measureRunsLeft;
+        readonly System.Collections.Generic.List<double> measureIncomes = new System.Collections.Generic.List<double>();
+        readonly System.Collections.Generic.List<double> measureDurations = new System.Collections.Generic.List<double>();
+        bool measureHooked;
+
+        /// <summary>"I_k = mean income" of the last finished ring measurement, or null while one is running.</summary>
+        public string RingMeasureResult { get; private set; }
+
+        /// <summary>Mean income of the last finished ring measurement (20 §8.3 step 1), or 0.</summary>
+        public double RingMeasureIncome { get; private set; }
+
+        /// <summary>
+        /// 20 §8.3 step 1: puts the save into the state a player is in when ring <paramref name="ring"/> opens and has
+        /// the bot play <paramref name="runs"/> runs from it, without letting it spend anything, so the runs measure the
+        /// income of that ring's entry and nothing else. The mean is I_k, which every node cost of the ring is built from.
+        /// </summary>
+        public void BeginRingMeasure(int ring, int runs)
+        {
+            measureRing = ring;
+            measureRunsLeft = Mathf.Max(1, runs);
+            measureIncomes.Clear();
+            measureDurations.Clear();
+            RingMeasureResult = null;
+            if (!measureHooked)
+            {
+                root.RunEnded += OnMeasureRunEnded;
+                measureHooked = true;
+            }
+            ApplyRingStartState(ring);
+            root.Bot.stopAfterRuns = 0;
+            root.Bot.SetEnabled(false);
+            root.Bot.SetEnabled(true);
+        }
+
+        /// <summary>
+        /// The save as it looks the moment ring <paramref name="ring"/> opens: every gate up to it bought and every node
+        /// of the rings below it at full level, with no currency. An approximation of a real run of play, but a
+        /// reproducible one, so two measurements of the same ring can be compared.
+        /// </summary>
+        public void ApplyRingStartState(int ring)
+        {
+            var m = root.Meta;
+            m.upgradeLevels.Clear();
+            for (int tier = 2; tier <= ring; tier++)
+            {
+                var gate = root.nodeTable.Gate(tier);
+                if (gate != null) m.SetLevel(gate.id, 1);
+            }
+            foreach (var n in root.nodeTable.nodes)
+            {
+                if (n == null || n.IsGate || !n.enabled || n.minTier >= ring) continue;
+                m.SetLevel(n.id, n.maxLevel > 0 ? n.maxLevel : 1);
+            }
+            Shop.RecomputeUnlockedMaxTier(root.nodeTable, m);
+            m.currency = 0;
+        }
+
+        void OnMeasureRunEnded(RunRecord rec)
+        {
+            if (measureRunsLeft <= 0) return;
+            measureIncomes.Add(rec.income);
+            measureDurations.Add(rec.durationSec);
+            measureRunsLeft--;
+            // The bot has already shopped by now; putting the ring start state back undoes it, so every run of the
+            // measurement starts from the same place.
+            ApplyRingStartState(measureRing);
+            if (measureRunsLeft > 0) return;
+            root.Bot.SetEnabled(false);
+            double income = 0, secs = 0;
+            foreach (var v in measureIncomes) income += v;
+            foreach (var v in measureDurations) secs += v;
+            RingMeasureIncome = income / measureIncomes.Count;
+            RingMeasureResult = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "ring {0}: I = {1:F0} over {2} runs ({3}), {4:F1}s each",
+                measureRing, RingMeasureIncome, measureIncomes.Count, string.Join("/", measureIncomes.ConvertAll(v => v.ToString("F0"))),
+                secs / measureDurations.Count);
+            Debug.Log("[Measure] " + RingMeasureResult);
+        }
+
         // ---------------- still-hold capture measurement (20 §3) ----------------
 
         string measureLabel;

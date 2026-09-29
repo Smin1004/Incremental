@@ -432,6 +432,83 @@ namespace Incremental.Tests
             CollectionAssert.AreEqual(new double[] { 160, 220, 300 }, p.followSpeedSteps, "the three speeds of 20 §7");
         }
 
+        // ---------------- §8 E. price curve and costs ----------------
+
+        [Test]
+        public void PriceCurve_IsTheSpecTable()
+        {
+            var c = ProjectTiers();
+            double[] expected = { 1, 4, 15, 61, 262, 1050, 4190, 16100, 64400, 275000, 1100000 };
+            for (int i = 0; i < expected.Length; i++)
+                Assert.AreEqual(expected[i], c.Get(i + 1).salePrice, Eps, "tier " + (i + 1) + " sale price (20 §8.1)");
+        }
+
+        [Test]
+        public void PriceCurve_RaisesTheValueOfOneUnitOfMassBy16PercentPerTier()
+        {
+            var c = ProjectTiers();
+            double prev = 0;
+            for (int t = 1; t <= c.MaxTier; t++)
+            {
+                var tier = c.Get(t);
+                // The written price is the formula rounded for reading, so allow 3%.
+                double raw = tier.requiredMass * 0.1 * System.Math.Pow(1.6, t - 1);
+                Assert.AreEqual(raw, tier.salePrice, raw * 0.03, "tier " + t + " is off its formula price");
+                double perMass = tier.salePrice / tier.requiredMass;
+                if (t > 1) Assert.AreEqual(1.6, perMass / prev, 0.05, "tier " + t + " value per unit of mass");
+                prev = perMass;
+            }
+            // 19 §1: tier 11 used to be 100,000 times tier 1 per unit of mass; the point of the change is that it is not.
+            Assert.AreEqual(110, (c.Get(11).salePrice / c.Get(11).requiredMass) / (c.Get(1).salePrice / c.Get(1).requiredMass), 3,
+                "tier 11 is about 110 times tier 1 per unit of mass, not 100,000");
+        }
+
+        [Test]
+        public void EveryNodeCost_ComesFromTheRingFormula()
+        {
+            var t = ProjectNodes();
+            // 20 §8.2: a node is 0.4 × I_k with growth 1.5, a gate is 3 × I_k. Only ringCostMult differs between rings,
+            // so within one ring every capped node must start at the same price.
+            for (int ring = 1; ring <= 11; ring++)
+            {
+                double baseCost = -1;
+                foreach (var n in t.nodes)
+                {
+                    if (n.minTier != ring || n.IsGate || n.maxLevel == 0) continue;
+                    if (baseCost < 0) baseCost = n.baseCost;
+                    Assert.AreEqual(baseCost, n.baseCost, Eps, "'" + n.id + "' does not use its ring's node price (20 §8.2)");
+                }
+                var gate = t.Gate(ring + 1);
+                if (gate == null || baseCost < 0) continue;
+                // gate / node = 3 / 0.4 = 7.5, up to the two-significant-digit rounding of both.
+                Assert.AreEqual(7.5, gate.baseCost / baseCost, 0.4, "gate of ring " + ring + " against its node price");
+            }
+        }
+
+        [Test]
+        public void CappedNodes_GrowByHalfPerLevel()
+        {
+            var t = ProjectNodes();
+            foreach (var n in t.nodes)
+            {
+                if (n.IsGate || n.maxLevel == 1) continue;
+                if (n.maxLevel == 0) Assert.AreEqual(1.6, n.growth, Eps, "'" + n.id + "' is endless (12 §6)");
+                else Assert.AreEqual(1.5, n.growth, Eps, "'" + n.id + "' growth (20 §8.2)");
+            }
+        }
+
+        [Test]
+        public void RingCostMult_IsTheOnlyPerRingKnob_AndStaysSane()
+        {
+            var t = ProjectNodes();
+            Assert.AreEqual(12, t.ringCostMult.Length, "one entry per ring, plus the unused index 0");
+            foreach (var mult in t.ringCostMult)
+            {
+                Assert.Greater(mult, 0.0);
+                Assert.That(mult, Is.InRange(0.3, 3.0), "a multiplier this far from 1 means the measured I_k is wrong");
+            }
+        }
+
         static string Joined(List<string> list) => string.Join("\n", list);
     }
 }
