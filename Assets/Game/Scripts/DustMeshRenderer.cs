@@ -83,7 +83,7 @@ namespace Incremental
             bool endingPull = root.EndingActive && root.Phase == GamePhase.Run;
             bool remnant = !endingPull && root.Ending != null && root.Ending.ShowsDust;
             if (endingPull) holdGlow = 1f;
-            Vector2 cursor = endingPull ? root.EndingCenter : root.CursorWorld;
+            Vector2 cursor = endingPull ? root.EndingCenter : root.GravityWorld;
             float gravR = endingPull ? (float)(p.endingDustGlowRadiusPx / ppu) : (float)(root.Effective.gravityRadius / ppu);
             float edgeR = gravR + Mathf.Max(1e-3f, (float)(p.dustDimEdgePx / ppu));
             float edgeR2 = edgeR * edgeR;

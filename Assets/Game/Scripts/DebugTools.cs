@@ -13,6 +13,7 @@ namespace Incremental
     /// F10: next stamina drain preset, in effect at once, never saved (18 §A1). F11: effect intensity 1 → 0.5 → 0 (14 §6).
     /// F12: screenshot to persistentDataPath. End: replay the ending sequence between runs without touching the save (15 §4.6).
     /// Home: drain the stamina, ending the run at once.
+    /// Insert: the gravity source follow experiment (20 §7), off → each speed in GameParams.followSpeedSteps → off.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -148,7 +149,7 @@ namespace Incremental
         public int DustWithin(double radiusPx)
         {
             float r = (float)(radiusPx / root.gameParams.pixelsPerUnit);
-            var g = root.CursorWorld;
+            var g = root.GravityWorld;
             var items = root.Dust.Items;
             int n = 0;
             for (int i = 0; i < root.Dust.Count; i++)
@@ -267,6 +268,7 @@ namespace Incremental
                 if (kb.f12Key.wasPressedThisFrame) Screenshot();
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
                 if (kb.homeKey.wasPressedThisFrame) root.DebugDrainStamina();
+                if (kb.insertKey.wasPressedThisFrame) CycleFollow();
             }
 #endif
 
@@ -290,6 +292,28 @@ namespace Incremental
             root.StaminaDrain = new StaminaOverride { enabled = true, holdDrain = next.holdDrain, idleDrain = next.idleDrain };
             root.Hud.ShowToast(string.Format(UIStrings.StaminaPreset, UIStrings.StaminaPresetName(next.id), next.holdDrain, next.idleDrain));
             Debug.Log($"[Debug] stamina preset: {next.id} hold={next.holdDrain} idle={next.idleDrain}");
+        }
+
+        /// <summary>
+        /// Insert (20 §7): off → the first speed → … → the last speed → off. The running hold feels it at once, because
+        /// the gravity source is moved on the fixed tick. Runtime only: neither the asset nor the save is touched.
+        /// </summary>
+        public void CycleFollow()
+        {
+            var steps = root.gameParams.followSpeedSteps;
+            if (steps == null || steps.Length == 0) return;
+            int next = root.FollowEnabled ? System.Array.IndexOf(steps, root.FollowSpeedPx) + 1 : 0;
+            if (next <= 0 && root.FollowEnabled) next = 1;   // a speed that is not in the list: move on to the second one
+            if (next >= steps.Length)
+            {
+                root.Follow = new FollowOverride { set = true, enabled = false, speedPx = root.gameParams.followSpeedPx };
+                root.Hud.ShowToast(UIStrings.FollowOff);
+                Debug.Log("[Debug] gravity source follow: off");
+                return;
+            }
+            root.Follow = new FollowOverride { set = true, enabled = true, speedPx = steps[next] };
+            root.Hud.ShowToast(string.Format(UIStrings.FollowOn, steps[next]));
+            Debug.Log("[Debug] gravity source follow: " + steps[next] + " px/s");
         }
 
         /// <summary>F11: next value of <see cref="effectSteps"/> after the current intensity.</summary>

@@ -356,6 +356,82 @@ namespace Incremental.Tests
             Object.DestroyImmediate(p);
         }
 
+        // ---------------- §6 D-1. the three week-5 answers ----------------
+
+        [Test]
+        public void W5_1_FlashEdgeShareIsHalved()
+        {
+            Assert.AreEqual(0.15, ProjectParams().flashEdgeShare, Eps, "0.3 → 0.15 (20 §6 W5-1)");
+        }
+
+        [Test]
+        public void W5_2_EndingShowsWhicheverSystemIsFuller()
+        {
+            var poor = new RunRecord { run = 9, tierCounts = new[] { 1 }, endReason = EndReason.Ending };
+            var rich = new RunRecord { run = 5, tierCounts = new[] { 4, 2 }, fragmentCounts = new[] { 3 }, endReason = EndReason.Stamina };
+            Assert.AreSame(rich, Session.RicherSystem(poor, rich), "a two-second ending run must not leave the sky empty");
+            Assert.AreSame(rich, Session.RicherSystem(rich, poor));
+            Assert.AreSame(rich, Session.RicherSystem(null, rich));
+            Assert.AreSame(poor, Session.RicherSystem(poor, null));
+            Assert.IsNull(Session.RicherSystem(null, null));
+            Assert.AreEqual(9, Session.TotalBodies(rich), "fragments count toward how full a system looks");
+            // A tie keeps this run's own system.
+            var same = new RunRecord { run = 5, tierCounts = new[] { 1 }, endReason = EndReason.Stamina };
+            Assert.AreSame(poor, Session.RicherSystem(poor, same));
+        }
+
+        [Test]
+        public void W5_2_BestRunIsTheStaminaRunWithTheHighestIncome()
+        {
+            var m = new MetaState();
+            Session.ApplyRunEnd(m, new RunRecord { run = 1, income = 100, endReason = EndReason.Stamina });
+            Session.ApplyRunEnd(m, new RunRecord { run = 2, income = 500, endReason = EndReason.Stamina });
+            Session.ApplyRunEnd(m, new RunRecord { run = 3, income = 900, endReason = EndReason.Quit });
+            Session.ApplyRunEnd(m, new RunRecord { run = 4, income = 300, endReason = EndReason.Stamina });
+            Assert.AreEqual(2, m.BestRun.run, "quit runs are not the best, however rich");
+            Assert.AreEqual(500, m.bestRunIncome, Eps);
+        }
+
+        [Test]
+        public void W5_3_EndingRunIsOutOfTheRatioAndTheBest()
+        {
+            var m = new MetaState();
+            Session.ApplyRunEnd(m, Session.MakeRecord(m, 1, 60, 100, new[] { 3 }, null, default(EffectiveStats), EndReason.Stamina));
+            var ending = Session.MakeRecord(m, 2, 2, 5000, new[] { 0, 0, 1 }, null, default(EffectiveStats), EndReason.Ending);
+            Assert.AreEqual(-1, ending.ratioVsLast, Eps, "no ratio, like a quit run");
+            Session.ApplyRunEnd(m, ending);
+            Assert.AreEqual(100, m.lastRunIncome, Eps, "the ratio base stays the last stamina run");
+            Assert.AreEqual(100, m.bestRunIncome, Eps, "and so does the best");
+            Assert.AreEqual(5100, m.totalIncome, Eps, "the income and the statistics still count it");
+            Assert.AreEqual(2, m.endingRun, "and it is still the ending run");
+
+            var after = Session.MakeRecord(m, 3, 60, 200, new[] { 4 }, null, default(EffectiveStats), EndReason.Stamina);
+            Assert.AreEqual(2.0, after.ratioVsLast, Eps, "the run after the ending is measured against run 1, not the ending");
+        }
+
+        [Test]
+        public void ComparisonRun_SkipsTheEndingRun()
+        {
+            var history = new List<RunRecord>
+            {
+                new RunRecord { run = 1, endReason = EndReason.Stamina, tierCounts = new[] { 2 } },
+                new RunRecord { run = 2, endReason = EndReason.Ending, tierCounts = new[] { 0 } },
+                new RunRecord { run = 3, endReason = EndReason.Stamina, tierCounts = new[] { 5 } },
+            };
+            Assert.AreEqual(1, ResultMath.ComparisonRun(history, history[2]).run);
+        }
+
+        // ---------------- §7 D-2. gravity source follow ----------------
+
+        [Test]
+        public void Follow_IsOffByDefault_WithThreeSpeeds()
+        {
+            var p = ProjectParams();
+            Assert.IsFalse(p.followEnabled, "the experiment starts off (20 §7)");
+            Assert.AreEqual(220, p.followSpeedPx, Eps, "default top speed");
+            CollectionAssert.AreEqual(new double[] { 160, 220, 300 }, p.followSpeedSteps, "the three speeds of 20 §7");
+        }
+
         static string Joined(List<string> list) => string.Join("\n", list);
     }
 }

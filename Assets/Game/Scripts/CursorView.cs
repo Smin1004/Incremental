@@ -7,7 +7,8 @@ namespace Incremental
     /// body (14 §4) and the mass gauge as a thin ring around it. The body wears the look of the tier a release would make
     /// now (a dark clump below tier 1) and grows from that tier's display size toward the next one with the mass; crossing a
     /// threshold pops it into the next look. On creation the body is handed to the planet pool (same surface, same size)
-    /// and a new clump starts. Render only.
+    /// and a new clump starts. All of it sits on the gravity source, which is the cursor unless the follow experiment is
+    /// on (20 §7); then a thin line joins the two. Render only.
     /// </summary>
     public sealed class CursorView : MonoBehaviour
     {
@@ -16,6 +17,8 @@ namespace Incremental
         GameRoot root;
         GameParams p;
         LineRenderer ring;
+        /// <summary>20 §7: the thin line from the cursor to the gravity source while the follow experiment is on.</summary>
+        LineRenderer leash;
         double ringRadiusPx = -1;
         RectTransform canvasRect;
         RectTransform gaugeRoot;
@@ -50,6 +53,21 @@ namespace Incremental
             UIBuilder.UseWhiteTexture(ring);
             ring.positionCount = RingSegments;
             SetRingRadius(p.gravityRadius);
+
+            leash = new GameObject("FollowLine").AddComponent<LineRenderer>();
+            leash.transform.SetParent(transform.parent, false);
+            leash.useWorldSpace = true;
+            leash.positionCount = 2;
+            leash.alignment = LineAlignment.TransformZ;
+            leash.textureMode = LineTextureMode.Stretch;
+            leash.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            leash.receiveShadows = false;
+            if (lineMaterial != null) leash.sharedMaterial = lineMaterial;
+            leash.widthMultiplier = (float)(p.followLineWidthPx / p.pixelsPerUnit);
+            leash.startColor = leash.endColor = p.followLineColor;
+            leash.sortingOrder = 5;
+            UIBuilder.UseWhiteTexture(leash);
+            leash.enabled = false;
 
             body = PlanetVisual.Create("FormingBody", transform.parent, root.planetMaterial, 11);
 
@@ -110,9 +128,18 @@ namespace Incremental
 
             if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
             var ps = root.ReadPointer();
-            Vector2 w = root.ToWorld(ps.screenPos);
+            // 20 §7: everything about the hold sits on the gravity source, which is the cursor unless it is trailing it.
+            Vector2 w = root.GravityWorld;
+            Vector2 cursor = root.ToWorld(ps.screenPos);
             transform.position = new Vector3(w.x, w.y, 0f);
             body.transform.position = new Vector3(w.x, w.y, 0f);
+            bool leashOn = root.FollowEnabled && (cursor - w).sqrMagnitude > 1e-6f;
+            if (leash.enabled != leashOn) leash.enabled = leashOn;
+            if (leashOn)
+            {
+                leash.SetPosition(0, new Vector3(cursor.x, cursor.y, 0f));
+                leash.SetPosition(1, new Vector3(w.x, w.y, 0f));
+            }
 
             // Current look and target size.
             var reached = root.HighestReachedTier();
@@ -159,8 +186,9 @@ namespace Incremental
             float drawnPx = sizePx * (1f + pop);
             body.SetDiameter(drawnPx / (float)p.pixelsPerUnit);
 
-            // Gauge: a thin ring just outside the body (and its ring, if any).
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, ps.screenPos, null, out var local))
+            // Gauge: a thin ring just outside the body (and its ring, if any), around the gravity source.
+            var bodyScreen = (Vector2)root.Cam.WorldToScreenPoint(new Vector3(w.x, w.y, 0f));
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, bodyScreen, null, out var local))
                 gaugeRoot.anchoredPosition = local;
             float canvasPerRefPx = Screen.height / (2f * root.Cam.orthographicSize * (float)p.pixelsPerUnit) / Mathf.Max(root.Hud.Canvas.scaleFactor, 1e-3f);
             var look = body.Look;
@@ -190,6 +218,7 @@ namespace Incremental
         void SetVisible(bool v)
         {
             if (ring.enabled != v) ring.enabled = v;
+            if (!v && leash.enabled) leash.enabled = false;
             if (body.gameObject.activeSelf != v) body.gameObject.SetActive(v);
             if (gaugeRoot.gameObject.activeSelf != v) gaugeRoot.gameObject.SetActive(v);
         }

@@ -240,7 +240,7 @@ MonoBehaviour:
   bgTwinkleDepth: 0.5
   flashAlphaCap: 0.35
   flashMinRiseSec: 0.1
-  flashEdgeShare: 0.3
+  flashEdgeShare: 0.15
   flashRadiusPx: 540
   ignitionFirstSec: 1.5
   ignitionRepeatSec: 0.4

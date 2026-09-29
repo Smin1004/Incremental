@@ -125,9 +125,15 @@ namespace Incremental
         /// <summary>
         /// Starts the sequence for this run (null: an empty system around the blue giant). <paramref name="isReplay"/>: the
         /// debug replay, which leaves the save alone.
+        /// 20 §6 (W5-2): the system on screen is this run's or the best run's, whichever made more bodies, so an ending
+        /// reached in a two-second run does not blow up an empty sky.
         /// </summary>
         public void Play(RunRecord rec, bool isReplay)
         {
+            var shown = Session.RicherSystem(rec, root.Meta.BestRun);
+            if (shown != rec && shown != null)
+                Debug.Log($"[Ending] run {(rec != null ? rec.run : 0)} made {Session.TotalBodies(rec)} bodies; " +
+                          $"showing the best run {shown.run} with {Session.TotalBodies(shown)} instead (20 §6 W5-2)");
             replay = isReplay;
             playing = true;
             atEnd = false;
@@ -139,7 +145,7 @@ namespace Incremental
             root.Result.Hide();
             root.Tree.Hide();
             root.Dust.Clear();
-            root.Solar.Show(rec, false, true);
+            root.Solar.Show(shown, false, true);
             root.Backdrop.SetStageOverride(root.Solar.BlueGiantStage, 0f);
             canvas.gameObject.SetActive(true);
             foreach (var t in credits) t.gameObject.SetActive(false);

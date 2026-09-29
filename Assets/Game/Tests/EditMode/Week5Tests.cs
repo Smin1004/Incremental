@@ -41,7 +41,7 @@ namespace Incremental.Tests
             foreach (var f in DataValidator.FlashPeaks(p)) Assert.LessOrEqual(f.Value, p.flashAlphaCap, f.Key);
             foreach (var f in DataValidator.FlashRises(p)) Assert.GreaterOrEqual(f.Value, p.flashMinRiseSec, f.Key);
             Assert.AreEqual(0.3, p.ignitionFlashAlpha, 1e-9, "first ignition peak 0.7 → 0.3 (15 §3)");
-            Assert.AreEqual(0.3, p.flashEdgeShare, 1e-9, "screen edge at 0.3 × the center");
+            Assert.AreEqual(0.15, p.flashEdgeShare, 1e-9, "screen edge at 0.15 × the center (20 §6 W5-1: was 0.3)");
             Object.DestroyImmediate(p);
         }
 
@@ -108,10 +108,12 @@ namespace Incremental.Tests
             var m = new MetaState();
             Session.ApplyRunEnd(m, Session.MakeRecord(m, 1, 60, 100, new[] { 3 }, null, default(EffectiveStats), EndReason.Stamina));
             var rec = Session.MakeRecord(m, 2, 50, 250, new[] { 1 }, null, default(EffectiveStats), EndReason.Ending);
-            Assert.AreEqual(2.5, rec.ratioVsLast, 1e-9, "the ending run has a ratio, like a stamina run");
+            // 20 §6 (W5-3): the ending run is left out of the ratio and the best, like a quit run.
+            Assert.AreEqual(-1, rec.ratioVsLast, 1e-9, "the ending run gets no ratio");
             Session.ApplyRunEnd(m, rec);
-            Assert.AreEqual(250, m.lastRunIncome, 1e-9, "and moves the ratio base");
-            Assert.AreEqual(250, m.bestRunIncome, 1e-9, "and the best");
+            Assert.AreEqual(100, m.lastRunIncome, 1e-9, "and does not move the ratio base");
+            Assert.AreEqual(100, m.bestRunIncome, 1e-9, "nor the best");
+            Assert.AreEqual(350, m.totalIncome, 1e-9, "its income still counts");
             Assert.AreEqual(2, m.endingRun);
             Assert.IsFalse(m.endingSeen);
             Assert.IsTrue(EndingView.IsUnseen(m));

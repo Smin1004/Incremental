@@ -96,5 +96,31 @@ namespace Incremental
 
         /// <summary>Most recent finished run, or null.</summary>
         public RunRecord LastRun => runHistory != null && runHistory.Count > 0 ? runHistory[runHistory.Count - 1] : null;
+
+        /// <summary>
+        /// The run behind <see cref="bestRunIncome"/>: the stamina-ended run with the highest income, latest one on a tie
+        /// (20 §6 W5-2 needs its system). Null when there is none yet.
+        /// </summary>
+        public RunRecord BestRun
+        {
+            get
+            {
+                RunRecord best = null;
+                if (runHistory == null) return null;
+                foreach (var r in runHistory)
+                    if (r != null && Session.CountsForBest(r.endReason) && (best == null || r.income >= best.income)) best = r;
+                return best;
+            }
+        }
+
+        /// <summary>Bodies of that tier over all runs, fragments included (20 §5). Tier is 1-based.</summary>
+        public int TotalBodies(int tier)
+        {
+            int idx = tier - 1;
+            int n = 0;
+            if (totalPlanets != null && idx >= 0 && idx < totalPlanets.Length) n += totalPlanets[idx];
+            if (totalFragments != null && idx >= 0 && idx < totalFragments.Length) n += totalFragments[idx];
+            return n;
+        }
     }
 }

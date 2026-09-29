@@ -9,10 +9,41 @@ namespace Incremental
     /// Every way a run can end (stamina, ending, quit, crash) goes through <see cref="ApplyRunEnd"/>.
     /// Stamina and ending runs are "full" runs (15 §4.2): quit and crash runs are recorded and paid, but they get no ratio
     /// and do not move the ratio base (lastRunIncome) or the best income (12 §10-3).
+    /// 20 §6 (W5-3): an ending run no longer counts for the ratio or the best either. It is cut short by the supernova,
+    /// so measuring the next run against it would punish the player for reaching the ending. Its income and its numbers
+    /// still go into the currency, the totals and the history.
     /// </summary>
     public static class Session
     {
+        /// <summary>A run the player played to the end: stamina or the ending (15 §4.2). Drives the comparison run.</summary>
         public static bool IsFullRun(string endReason) => endReason == EndReason.Stamina || endReason == EndReason.Ending;
+
+        /// <summary>
+        /// A run that sets the ratio base and the best income: stamina only (20 §6 W5-3). Quit, crash and ending runs
+        /// are all left out.
+        /// </summary>
+        public static bool CountsForBest(string endReason) => endReason == EndReason.Stamina;
+
+        /// <summary>
+        /// 20 §6 (W5-2): the system the ending sequence shows. An ending run can be over in two seconds, which would
+        /// leave the final screen almost empty, so whichever of the two runs made more bodies is used.
+        /// </summary>
+        public static RunRecord RicherSystem(RunRecord a, RunRecord b)
+        {
+            if (a == null) return b;
+            if (b == null) return a;
+            return TotalBodies(b) > TotalBodies(a) ? b : a;
+        }
+
+        /// <summary>Bodies of every tier in a run's result system, fragments included (20 §5).</summary>
+        public static int TotalBodies(RunRecord r)
+        {
+            if (r == null) return 0;
+            int n = 0;
+            if (r.tierCounts != null) foreach (var c in r.tierCounts) n += c;
+            if (r.fragmentCounts != null) foreach (var c in r.fragmentCounts) n += c;
+            return n;
+        }
 
         /// <summary>
         /// Builds the record of a finished run. <paramref name="income"/> is the raw run income (planet incomes keep their
@@ -31,7 +62,7 @@ namespace Incremental
                 tierCounts = tierCounts != null ? (int[])tierCounts.Clone() : new int[0],
                 fragmentCounts = fragmentCounts != null ? (int[])fragmentCounts.Clone() : new int[0],
                 fragmentIncome = fragmentIncome,
-                ratioVsLast = IsFullRun(endReason) && meta.lastRunIncome > 0 ? income / meta.lastRunIncome : -1.0,
+                ratioVsLast = CountsForBest(endReason) && meta.lastRunIncome > 0 ? income / meta.lastRunIncome : -1.0,
                 startLevels = MetaState.CopyLevels(startLevels),
                 startStats = startStats,
                 unlockedMaxTier = meta.unlockedMaxTier,
@@ -51,7 +82,7 @@ namespace Incremental
                 meta.endingRun = rec.run;
                 meta.endingSeen = false;
             }
-            if (IsFullRun(rec.endReason))
+            if (CountsForBest(rec.endReason))
             {
                 meta.lastRunIncome = rec.income;
                 if (rec.income > meta.bestRunIncome) meta.bestRunIncome = rec.income;

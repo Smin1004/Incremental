@@ -34,6 +34,17 @@ namespace Incremental
     }
 
     /// <summary>
+    /// Runtime setting of the gravity source follow experiment (20 §7). The debug key cycles it; nothing is saved, and
+    /// the GameParams values decide what a fresh launch does.
+    /// </summary>
+    public struct FollowOverride
+    {
+        public bool set;
+        public bool enabled;
+        public double speedPx;
+    }
+
+    /// <summary>
     /// Owns the two state objects and the fixed-tick game logic. Builds every other runtime object from code in Awake,
     /// so the scene only needs a camera, a light and this component with its asset references.
     /// Game logic runs in FixedUpdate only; Update / LateUpdate is rendering and input-edge handling.
@@ -88,6 +99,17 @@ namespace Incremental
         public EndingView Ending { get; private set; }
         public AutoplayBot Bot { get; private set; }
         public Vector2 CursorWorld { get; private set; }
+        /// <summary>
+        /// Where the gravity actually pulls from (20 §7). The cursor itself unless the follow experiment is on, in which
+        /// case it trails the cursor at a top speed. Bodies form here too, so the whole hold follows this point.
+        /// </summary>
+        public Vector2 GravityWorld { get; private set; }
+        /// <summary>Runtime state of the follow experiment (20 §7); unset = the GameParams values.</summary>
+        public FollowOverride Follow;
+        /// <summary>True while the gravity source trails the cursor instead of sitting on it (20 §7).</summary>
+        public bool FollowEnabled => Follow.set ? Follow.enabled : gameParams.followEnabled;
+        /// <summary>Top speed of the gravity source, px per second (20 §7).</summary>
+        public double FollowSpeedPx => Follow.set ? Follow.speedPx : gameParams.followSpeedPx;
         public PointerState LastPointer { get; private set; }
         public double LastTickMs { get; private set; }
         public double MaxTickMs { get; private set; }
@@ -265,6 +287,7 @@ namespace Incremental
             var ps = ReadPointer();
             LastPointer = ps;
             CursorWorld = ToWorld(ps.screenPos);
+            GravityWorld = CursorWorld;
             Dust.Reset((int)Effective.dustInitial, CameraArea(), CursorWorld, Effective);
         }
 
@@ -360,6 +383,7 @@ namespace Incremental
             var ps = ReadPointer();
             LastPointer = ps;
             CursorWorld = ToWorld(ps.screenPos);
+            GravityWorld = CursorWorld;
             Dust.Reset((int)Effective.dustInitial, CameraArea(), CursorWorld, Effective);
             Planets.Clear();
             Phase = GamePhase.Run;
@@ -381,6 +405,7 @@ namespace Incremental
             var ps = ReadPointer();
             LastPointer = ps;
             CursorWorld = ToWorld(ps.screenPos);
+            MoveGravitySource(dt);
 
             bool wasHolding = Run.holding;
             bool holding = ps.pressed;
@@ -389,7 +414,7 @@ namespace Incremental
             Run.stamina -= s.staminaIdleDrain * dt;
             if (holding) Run.stamina -= s.staminaHoldDrain * dt;
 
-            double captured = Dust.Tick(dt, CameraArea(), CursorWorld, holding, s);
+            double captured = Dust.Tick(dt, CameraArea(), GravityWorld, holding, s);
             if (captured > 0) Run.mass += captured * s.dustMass;
 
             // 20 §5: the moment the held mass passes a tier threshold, that tier may drop a fragment. No mass is spent.
@@ -422,6 +447,24 @@ namespace Incremental
                 pendingSaveTimer = 0;
                 Save();
             }
+        }
+
+        /// <summary>
+        /// 20 §7 experiment: the gravity source trails the cursor at a top speed instead of sitting on it, so a fast
+        /// sweep leaves it behind and letting go to grab again becomes worth it. Off by default, in which case the
+        /// source is the cursor exactly and nothing about the game changes.
+        /// </summary>
+        void MoveGravitySource(double dt)
+        {
+            if (!FollowEnabled)
+            {
+                GravityWorld = CursorWorld;
+                return;
+            }
+            float step = (float)(FollowSpeedPx / gameParams.pixelsPerUnit * dt);
+            Vector2 to = CursorWorld - GravityWorld;
+            float d = to.magnitude;
+            GravityWorld = d <= step || d < 1e-6f ? CursorWorld : GravityWorld + to * (step / d);
         }
 
         /// <summary>
@@ -468,7 +511,7 @@ namespace Incremental
             }
             double dustMass = Effective.dustMass;
             int n = dustMass > 0 ? (int)Math.Round(Run.mass / dustMass) : 0;
-            if (n > 0) Dust.Scatter(n, CursorWorld);
+            if (n > 0) Dust.Scatter(n, GravityWorld);
             Run.mass = 0;
             Run.crossedTier = 0;
         }
@@ -504,7 +547,7 @@ namespace Incremental
             // It chips off the edge of the body being formed, so it starts beside the cursor rather than on it.
             double radius = Cursor.FormingDiameterPx * 0.5 * gameParams.fragmentSpawnRadii / gameParams.pixelsPerUnit;
             double angle = fragRng.NextDouble() * Math.PI * 2.0;
-            var at = CursorWorld + new Vector2((float)(Math.Cos(angle) * radius), (float)(Math.Sin(angle) * radius));
+            var at = GravityWorld + new Vector2((float)(Math.Cos(angle) * radius), (float)(Math.Sin(angle) * radius));
             Planets.Show(at, tier, NextVisualSeed(), 0, gameParams.fragmentScale);
         }
 
@@ -533,13 +576,13 @@ namespace Incremental
             {
                 EndingActive = true;
                 EndingAge = 0;
-                EndingCenter = CursorWorld;
+                EndingCenter = GravityWorld;
                 Run.holding = false;
-                SupernovaRun.Begin(CursorWorld, tier, bodySeed, bodyPx);
+                SupernovaRun.Begin(GravityWorld, tier, bodySeed, bodyPx);
                 UnityEngine.Debug.Log($"[Ending] tier {tier.tier} created in run {Meta.runCount}: the ending starts");
             }
-            else Planets.Show(CursorWorld, tier, bodySeed, bodyPx);
-            if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(CursorWorld), tier.sizePx, count);
+            else Planets.Show(GravityWorld, tier, bodySeed, bodyPx);
+            if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(GravityWorld), tier.sizePx, count);
             Run.mass = 0;
             Run.crossedTier = 0;
             PlanetCreated?.Invoke(tier);

@@ -320,10 +320,11 @@ namespace Incremental
         [Header("Flash rule (15 §3)")]
         [Tooltip("Every flash (star ignition, result ignition, supernova): peak alpha at most flashAlphaCap (then × effectIntensity), " +
                  "rise at least flashMinRiseSec, and a radial falloff from its source: flashEdgeShare of the center brightness at flashRadiusPx " +
-                 "(540 = half the 1080p screen height, so a flash at the screen center is at most 0.3 × at every edge).")]
+                 "(540 = half the 1080p screen height, so a flash at the screen center is at most flashEdgeShare × at every edge). " +
+                 "20 §6 (W5-1): 0.3 → 0.15, so the edges of the screen stay darker at a blast's brightest frame.")]
         public double flashAlphaCap = 0.35;
         public double flashMinRiseSec = 0.1;
-        public double flashEdgeShare = 0.3;
+        public double flashEdgeShare = 0.15;
         public double flashRadiusPx = 540;
 
         [Header("Star ignition (14 §6, 10 §4.3)")]

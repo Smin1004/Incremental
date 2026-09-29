@@ -17,7 +17,7 @@ namespace Incremental
             for (int i = start - 1; i >= 0; i--)
             {
                 var h = history[i];
-                if (h != null && h.run < rec.run && Session.IsFullRun(h.endReason)) return h;
+                if (h != null && h.run < rec.run && Session.CountsForBest(h.endReason)) return h;
             }
             return null;
         }
@@ -37,9 +37,8 @@ namespace Incremental
         {
             int made = rec != null ? rec.TierCount(tier) : 0;
             if (made <= 0 || meta?.totalPlanets == null) return false;
-            int idx = tier - 1;
-            int after = idx >= 0 && idx < meta.totalPlanets.Length ? meta.totalPlanets[idx] : 0;
-            return after - made <= 0;
+            // Fragments count on both sides (20 §5), or a tier only fragments ever fill would read as new every run.
+            return meta.TotalBodies(tier) - made <= 0;
         }
     }
 }
