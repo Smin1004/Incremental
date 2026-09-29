@@ -35,6 +35,8 @@ namespace Incremental
         Vector2[] trail = System.Array.Empty<Vector2>();
         int trailLen;
         double trailClock;
+        double[] kindMass = { 1.0 };
+        float[] kindAccel = { 1f };
         double spawnAcc;
         System.Random rng = new System.Random();
         // Render-only variation draws from its own RNG so the simulation sequence is the same as before (bot measurements).
@@ -69,6 +71,24 @@ namespace Incremental
             p = gameParams;
             trailLen = Mathf.Max(0, p.trailPoints);
             EnsureTrail();
+            ReadKinds();
+        }
+
+        /// <summary>
+        /// 22 §7: the mass and the pull multiplier of every dust kind, read out of the data once instead of once per dust
+        /// per tick. The values are fixed data (20 §4), so one read at startup is enough.
+        /// </summary>
+        void ReadKinds()
+        {
+            int kinds = Mathf.Max(1, p.DustKindCount);
+            kindMass = new double[kinds];
+            kindAccel = new float[kinds];
+            for (int k = 0; k < kinds; k++)
+            {
+                var def = p.DustKind(k);
+                kindMass[k] = def != null ? def.mass : 1.0;
+                kindAccel[k] = def != null ? (float)def.accelMult : 1f;
+            }
         }
 
         void EnsureTrail()
@@ -371,18 +391,10 @@ namespace Incremental
         }
 
         /// <summary>Mass of a dust of that kind (20 §4); the base dust is 1.</summary>
-        public double KindMass(int kind)
-        {
-            var def = p.DustKind(kind);
-            return def != null ? def.mass : 1.0;
-        }
+        public double KindMass(int kind) => kind >= 0 && kind < kindMass.Length ? kindMass[kind] : 1.0;
 
         /// <summary>Pull acceleration of that kind relative to the base dust: heavier dust is drawn in more slowly.</summary>
-        public float KindAccel(int kind)
-        {
-            var def = p.DustKind(kind);
-            return def != null ? (float)def.accelMult : 1f;
-        }
+        public float KindAccel(int kind) => kind >= 0 && kind < kindAccel.Length ? kindAccel[kind] : 1f;
 
         /// <summary>
         /// One roll over the effective chances picks the kind of a new dust (20 §4). The shares do not overlap and

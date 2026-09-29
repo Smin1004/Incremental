@@ -122,9 +122,10 @@ namespace Incremental
         public double tangentialKeepPerSec = 0.6;
 
         [Header("Widening world (22 §6)")]
-        [Tooltip("How much wider the play world gets per ring: the linear scale of ring k is 1 + this x (k - 1), so 0.06 " +
-                 "makes ring 11 1.60 wide and 2.56 in area. 0 keeps the world the size it was before 22 §6.")]
-        public double worldScalePerRing = 0.06;
+        [Tooltip("How much wider the play world gets per ring: the linear scale of ring k is 1 + this x (k - 1). 22 §6 asked " +
+                 "for 0.06 (ring 11: 1.60 wide, 2.56 in area); 22 §7 measured the dust cap that follows and brought it down " +
+                 "to 0.0375 (1.375 wide, 1.89 in area), which keeps the density and holds the frame budget. 0 keeps one size.")]
+        public double worldScalePerRing = 0.0375;
         [Tooltip("How long the world takes to grow after a gate is bought (seconds).")]
         public double worldExpandSec = 0.6;
         [Tooltip("Smallest a body may be drawn on screen (px), so an asteroid or a fragment does not become a dot as the " +
@@ -559,9 +560,17 @@ namespace Incremental
         [Tooltip("Seconds of the camera move to the frontier when the tree opens.")]
         public double treeFocusSec = 0.35;
 
+        [Header("Dust cap policy (22 §7)")]
+        [Tooltip("The largest dust count the game will ever ask for. The renderers size their buffers for it once, so a " +
+                 "run never stalls growing them, and Validate Data checks the last ring's effective cap stays under it.")]
+        public double dustCapCeiling = 8000;
+        [Tooltip("Reserved for the options screen's dust quality (22 §7): the shares of the effective cap the settings " +
+                 "offer, highest first. Only the data is prepared this week; nothing reads it yet.")]
+        public double[] dustQualityShares = { 1, 0.7, 0.45 };
+
         [Header("Performance measurement (22 §4)")]
         [Tooltip("Dust counts the benchmark measures the run screen at, in order.")]
-        public double[] perfBenchDustCounts = { 1000, 3700, 8000 };
+        public double[] perfBenchDustCounts = { 1000, 3700, 6995, 8000 };
         [Tooltip("Seconds of each scene that are thrown away before the sample starts, and how long the sample lasts.")]
         public double perfBenchWarmupSec = 2;
         public double perfBenchSampleSec = 6;

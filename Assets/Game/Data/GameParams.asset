@@ -26,7 +26,7 @@ MonoBehaviour:
   pullOuterRatio: 1.4
   captureAssistRatio: 2.5
   tangentialKeepPerSec: 0.6
-  worldScalePerRing: 0.06
+  worldScalePerRing: 0.0375
   worldExpandSec: 0.6
   bodyMinScreenPx: 8
   vortexShare: 0.25
@@ -447,9 +447,15 @@ MonoBehaviour:
   treeZoomMin: 0.3
   treeZoomMax: 1.6
   treeFocusSec: 0.35
+  dustCapCeiling: 8000
+  dustQualityShares:
+  - 1
+  - 0.7
+  - 0.45
   perfBenchDustCounts:
   - 1000
   - 3700
+  - 6995
   - 8000
   perfBenchWarmupSec: 2
   perfBenchSampleSec: 6

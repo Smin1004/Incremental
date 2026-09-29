@@ -97,16 +97,20 @@ namespace Incremental.Tests
         // ---------------- §6 D. widening world ----------------
 
         [Test]
-        public void WorldScale_IsOneAtRingOneAndSixtyPercentWiderAtRingEleven()
+        public void WorldScale_IsOneAtRingOneAndWiderAtEveryRingAbove()
         {
             var p = ProjectParams();
-            Assert.AreEqual(0.06, p.worldScalePerRing, Eps, "22 §6: 6% per ring");
+            // 22 §6 asked for 0.06 per ring; 22 §7 measured the dust cap that followed and brought it to 0.0375, which
+            // keeps the density at a frame budget the build can hold (Reports/Week7.md).
+            Assert.AreEqual(0.0375, p.worldScalePerRing, Eps, "22 §7's value after the measurement");
             Assert.AreEqual(0.6, p.worldExpandSec, Eps, "the world takes 0.6s to grow");
             Assert.AreEqual(8, p.bodyMinScreenPx, Eps, "a body never falls below 8px on screen");
             Assert.AreEqual(1.00, Stats.WorldScale(p, 1), 1e-9, "ring 1");
-            Assert.AreEqual(1.24, Stats.WorldScale(p, 5), 1e-9, "ring 5");
-            Assert.AreEqual(1.60, Stats.WorldScale(p, 11), 1e-9, "ring 11");
-            Assert.AreEqual(2.56, Stats.WorldScale(p, 11) * Stats.WorldScale(p, 11), 1e-9, "2.56x the area");
+            Assert.AreEqual(1.15, Stats.WorldScale(p, 5), 1e-9, "ring 5");
+            Assert.AreEqual(1.375, Stats.WorldScale(p, 11), 1e-9, "ring 11");
+            Assert.AreEqual(1.890625, Stats.WorldScale(p, 11) * Stats.WorldScale(p, 11), 1e-9, "1.89x the area");
+            for (int ring = 2; ring <= 11; ring++)
+                Assert.Greater(Stats.WorldScale(p, ring), Stats.WorldScale(p, ring - 1), "ring " + ring + " is wider than the one below");
         }
 
         [Test]
@@ -120,7 +124,7 @@ namespace Incremental.Tests
         public void DustCapAndStartingDust_FollowTheArea()
         {
             var p = TestData.Params();
-            p.worldScalePerRing = 0.06;
+            p.worldScalePerRing = 0.06;   // the rule, not the shipped value: round numbers keep the expected results readable
             p.dustCap = 300;
             p.dustInitial = 100;
             var t = TestData.Nodes();
@@ -141,7 +145,7 @@ namespace Incremental.Tests
         }
 
         [Test]
-        public void DustCap_AtRingElevenIsTwoPointFiveSixTimesTheRingOneCap()
+        public void DustCap_AtRingElevenFollowsTheAreaOfTheLastRing()
         {
             var p = ProjectParams();
             var t = ProjectNodes();
@@ -151,7 +155,8 @@ namespace Incremental.Tests
             Shop.RecomputeUnlockedMaxTier(t, m);
             double ring11 = Stats.Compute(p, t, m).dustCap;
             // Only the gates are owned, so the node part of the cap is the same on both sides and the ratio is the area.
-            Assert.AreEqual(2.56, ring11 / ring1, 1e-6, "22 §6: the cap at ring 11 is 2.56x the ring 1 cap");
+            double area = Stats.WorldScale(p, 11) * Stats.WorldScale(p, 11);
+            Assert.AreEqual(area, ring11 / ring1, 1e-6, "22 §6: the cap at the last ring is its area times the ring 1 cap");
         }
 
         [Test]
@@ -163,7 +168,7 @@ namespace Incremental.Tests
             double floorAtRing1 = p.bodyMinScreenPx * Stats.WorldScale(p, 1);
             double floorAtRing11 = p.bodyMinScreenPx * Stats.WorldScale(p, 11);
             Assert.AreEqual(8, floorAtRing1, 1e-9);
-            Assert.AreEqual(12.8, floorAtRing11, 1e-9);
+            Assert.AreEqual(8 * Stats.WorldScale(p, 11), floorAtRing11, 1e-9);
             Assert.AreEqual(floorAtRing1 / Stats.WorldScale(p, 1), floorAtRing11 / Stats.WorldScale(p, 11), 1e-9,
                 "the same number of screen px at both rings");
         }
@@ -351,6 +356,56 @@ namespace Incremental.Tests
             finally
             {
                 Object.DestroyImmediate(field.gameObject);
+            }
+        }
+
+        // ---------------- §7 E. dust cap policy ----------------
+
+        [Test]
+        public void DustCapCeiling_HoldsTheCapTheLastRingReaches()
+        {
+            var p = ProjectParams();
+            var t = ProjectNodes();
+            var m = new MetaState();
+            foreach (var n in t.nodes)
+                if (n != null && n.enabled) m.SetLevel(n.id, n.maxLevel > 0 ? n.maxLevel : 1);
+            Shop.RecomputeUnlockedMaxTier(t, m);
+            double cap = Stats.Compute(p, t, m).dustCap;
+            Assert.AreEqual(6995, cap, 1.0, "22 §7: the measured cap, 3,700 x the area of ring 11");
+            Assert.LessOrEqual(cap, p.dustCapCeiling, "the renderers size their buffers for dustCapCeiling");
+        }
+
+        [Test]
+        public void DustCapCeiling_IsCheckedByTheValidator()
+        {
+            var p = ProjectParams();
+            var c = AssetDatabase.LoadAssetAtPath<CelestialTable>("Assets/Game/Data/CelestialTable.asset");
+            var t = ProjectNodes();
+            double keep = p.dustCapCeiling;
+            try
+            {
+                p.dustCapCeiling = 100;
+                var r = DataValidator.Validate(c, t, p);
+                Assert.IsTrue(r.Errors.Exists(e => e.Contains("dustCapCeiling")), string.Join("; ", r.Errors));
+            }
+            finally
+            {
+                p.dustCapCeiling = keep;
+            }
+        }
+
+        [Test]
+        public void DustQualityShares_StartAtFullAndOnlyGoDown()
+        {
+            // 22 §7 only asks for the data this week; the options screen reads it later.
+            var p = ProjectParams();
+            Assert.IsNotNull(p.dustQualityShares);
+            Assert.Greater(p.dustQualityShares.Length, 1, "a quality setting needs something to go down to");
+            Assert.AreEqual(1, p.dustQualityShares[0], Eps, "the first share is the effective cap itself");
+            for (int i = 1; i < p.dustQualityShares.Length; i++)
+            {
+                Assert.Greater(p.dustQualityShares[i], 0, "share " + i);
+                Assert.Less(p.dustQualityShares[i], p.dustQualityShares[i - 1], "share " + i + " is below the one before");
             }
         }
 

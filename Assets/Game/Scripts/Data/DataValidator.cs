@@ -40,6 +40,7 @@ namespace Incremental
             ValidateAngles(t, r);
             ValidateRingCostMult(c, t, r);
             if (p != null) ValidateDustNodes(p, t, r);
+            if (p != null) ValidateDustCapCeiling(p, c, t, r);
             return r;
         }
 
@@ -397,11 +398,42 @@ namespace Incremental
             if (!(p.trailWidthShare > 0) || !(p.trailWidthShare <= 1))
                 r.Errors.Add("GameParams: trailWidthShare must be within 0..1 (0 excluded); it is a share of the dust's drawn size (22 §5).");
             if (p.trailBudget < 0) r.Errors.Add("GameParams: trailBudget must be >= 0 (22 §5).");
+            if (!(p.dustCapCeiling > 0)) r.Errors.Add("GameParams: dustCapCeiling must be > 0 (22 §7).");
+            if (p.dustQualityShares == null || p.dustQualityShares.Length == 0)
+                r.Errors.Add("GameParams: dustQualityShares is empty; the options screen needs at least the full-quality share (22 §7).");
+            else
+            {
+                if (p.dustQualityShares[0] != 1)
+                    r.Errors.Add("GameParams: dustQualityShares[0] must be 1, the effective cap itself (22 §7).");
+                for (int i = 1; i < p.dustQualityShares.Length; i++)
+                    if (!(p.dustQualityShares[i] > 0) || p.dustQualityShares[i] >= p.dustQualityShares[i - 1])
+                        r.Errors.Add($"GameParams: dustQualityShares[{i}] must be above 0 and below the share before it (22 §7).");
+            }
             if (p.perfBenchDustCounts == null || p.perfBenchDustCounts.Length == 0)
                 r.Errors.Add("GameParams: perfBenchDustCounts is empty (the 22 §4 measurement has no run scene).");
             if (!(p.perfBenchSampleSec > 0)) r.Errors.Add("GameParams: perfBenchSampleSec must be > 0 (22 §4).");
             if (p.perfBenchWarmupSec < 0) r.Errors.Add("GameParams: perfBenchWarmupSec must be >= 0 (22 §4).");
             if (p.perfBenchSettleSec < 0) r.Errors.Add("GameParams: perfBenchSettleSec must be >= 0 (22 §4).");
+        }
+
+        /// <summary>
+        /// 22 §7: the dust cap the last ring reaches has to stay inside dustCapCeiling, because that is what the renderers
+        /// size their buffers for. Needs the node table and the tier count, so it is its own check.
+        /// </summary>
+        static void ValidateDustCapCeiling(GameParams p, CelestialTable c, NodeTable t, ValidationReport r)
+        {
+            if (c == null || t == null || !(p.dustCapCeiling > 0)) return;
+            var m = new MetaState();
+            foreach (var n in t.nodes)
+            {
+                if (n == null || !n.enabled) continue;
+                m.SetLevel(n.id, n.maxLevel > 0 ? n.maxLevel : 1);
+            }
+            Shop.RecomputeUnlockedMaxTier(t, m);
+            double cap = Stats.Compute(p, t, m).dustCap;
+            if (cap > p.dustCapCeiling)
+                r.Errors.Add($"GameParams: with every node bought the dust cap reaches {cap:F0}, past dustCapCeiling {p.dustCapCeiling} (22 §7). " +
+                             "Either raise the ceiling after measuring again, or lower the cap nodes / worldScalePerRing.");
         }
 
         /// <summary>Fragments (20 §5): a fragment is worth part of its tier, comes from below the top tier and is drawn smaller.</summary>

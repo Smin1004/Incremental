@@ -173,6 +173,16 @@ namespace Incremental
             stepName = "결과 화면, 셰이더 천체 129개";
             root.Tools.EndStaging();
             root.Tree.Hide();
+            // The result screen is only the result screen once the run has actually ended: the phase is what stops the
+            // dust simulation and hides the run's dust. Draining the stamina ends it the normal way on the next tick, and
+            // the staged system goes up once that has happened (well inside the warmup).
+            root.DebugDrainStamina();
+            root.Tools.After(0.5f, ShowStagedSystem);
+        }
+
+        /// <summary>The 14 §9 measurement system, put up once the run has ended and the result screen is the screen.</summary>
+        void ShowStagedSystem()
+        {
             // Back to the blue giant the 14 §9 scene was measured with, not the black hole the run scene left behind.
             root.Meta.endingRun = 0;
             root.Meta.endingSeen = false;
@@ -192,13 +202,17 @@ namespace Incremental
             };
             root.Meta.highestTierCreated = c.MaxTier;
             root.Result.Show(rec, false);
+            stagedSystem = rec;
         }
+
+        RunRecord stagedSystem;
 
         /// <summary>Tree screen with every ring open, zoomed out until the outer ring is on screen.</summary>
         void StageTree()
         {
             stepName = "트리 화면, 노드 전부";
             root.Result.Hide();
+            if (stagedSystem == null) root.DebugDrainStamina();
             IdleDust();
             while (Shop.UnlockNextFree(root.nodeTable, root.Meta) > 0) { }
             root.Tree.Show();
