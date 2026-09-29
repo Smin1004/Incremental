@@ -13,7 +13,7 @@ namespace Incremental
     /// F10: next stamina drain preset, in effect at once, never saved (18 §A1). F11: effect intensity 1 → 0.5 → 0 (14 §6).
     /// F12: screenshot to persistentDataPath. End: replay the ending sequence between runs without touching the save (15 §4.6).
     /// Home: drain the stamina, ending the run at once.
-    /// Insert: the gravity source follow experiment (20 §7), off → each speed in GameParams.followSpeedSteps → off.
+    /// Insert: the gravity source follow (22 §3), off → the effective speed × each GameParams.followDebugMults → off.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -377,25 +377,32 @@ namespace Incremental
         }
 
         /// <summary>
-        /// Insert (20 §7): off → the first speed → … → the last speed → off. The running hold feels it at once, because
-        /// the gravity source is moved on the fixed tick. Runtime only: neither the asset nor the save is touched.
+        /// Index into GameParams.followDebugMults the Insert key is on, or −1 for "off" (22 §3). The cycle is relative to
+        /// the effective speed, which the follow nodes raise during a playthrough, so it is kept as an index.
+        /// </summary>
+        int followStep = -1;
+
+        /// <summary>
+        /// Insert (22 §3): off → the effective speed → × the next multiple → … → off. The running hold feels it at once,
+        /// because the gravity source is moved on the fixed tick. Runtime only: neither the asset nor the save is touched.
         /// </summary>
         public void CycleFollow()
         {
-            var steps = root.gameParams.followSpeedSteps;
-            if (steps == null || steps.Length == 0) return;
-            int next = root.FollowEnabled ? System.Array.IndexOf(steps, root.FollowSpeedPx) + 1 : 0;
-            if (next <= 0 && root.FollowEnabled) next = 1;   // a speed that is not in the list: move on to the second one
-            if (next >= steps.Length)
+            var mults = root.gameParams.followDebugMults;
+            if (mults == null || mults.Length == 0) return;
+            followStep = root.FollowEnabled ? followStep + 1 : 0;
+            if (followStep >= mults.Length || followStep < 0)
             {
-                root.Follow = new FollowOverride { set = true, enabled = false, speedPx = root.gameParams.followSpeedPx };
+                followStep = -1;
+                root.Follow = new FollowOverride { set = true, enabled = false, speedPx = root.Effective.followSpeedPx };
                 root.Hud.ShowToast(UIStrings.FollowOff);
                 Debug.Log("[Debug] gravity source follow: off");
                 return;
             }
-            root.Follow = new FollowOverride { set = true, enabled = true, speedPx = steps[next] };
-            root.Hud.ShowToast(string.Format(UIStrings.FollowOn, steps[next]));
-            Debug.Log("[Debug] gravity source follow: " + steps[next] + " px/s");
+            double speed = root.Effective.followSpeedPx * mults[followStep];
+            root.Follow = new FollowOverride { set = true, enabled = true, speedPx = speed };
+            root.Hud.ShowToast(string.Format(UIStrings.FollowOn, speed));
+            Debug.Log("[Debug] gravity source follow: " + speed + " px/s (x" + mults[followStep] + ")");
         }
 
         /// <summary>F11: next value of <see cref="effectSteps"/> after the current intensity.</summary>

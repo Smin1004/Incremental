@@ -21,6 +21,11 @@ namespace Incremental
         public double staminaHoldDrain;
         public double dustInitial;
         /// <summary>
+        /// 22 §3: top speed the gravity source follows the cursor at, px per second. The base is GameParams.followSpeedPx
+        /// and the follow nodes add to it; whether it is used at all is GameParams.followEnabled.
+        /// </summary>
+        public double followSpeedPx;
+        /// <summary>
         /// 20 §4: share of newly spawned dust per dust kind, same indices as GameParams.dustKinds. Index 0 is the base
         /// dust and holds whatever the others leave; a locked kind is 0. Never null after <see cref="Stats.Compute"/>.
         /// </summary>
@@ -56,7 +61,7 @@ namespace Incremental
         /// </summary>
         public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase)
         {
-            double spawn = 0, pull = 0, sale = 0, stamina = 0, threshold = 0, cap = 0, radius = 0, drain = 0, start = 0;
+            double spawn = 0, pull = 0, sale = 0, stamina = 0, threshold = 0, cap = 0, radius = 0, drain = 0, start = 0, follow = 0;
             double mass = 1, frag = 0, fragRange = 0;
             // 20 §4: extra share per dust kind from its chance node; the kind only appears once its unlock node is owned.
             int kinds = p.DustKindCount;
@@ -86,6 +91,7 @@ namespace Incremental
                     case StatIds.DustCap: cap += add; break;
                     case StatIds.DustMass: mass *= Math.Pow(n.effectPerLevel, level); break;
                     case StatIds.GravityRadius: radius += add; break;
+                    case StatIds.FollowSpeed: follow += add; break;
                     case StatIds.StaminaDrain: drain += add; break;
                     case StatIds.StartBonus: start += add; break;
                     case StatIds.FragUnlock:
@@ -104,6 +110,7 @@ namespace Incremental
                 dustCap = p.dustCap + cap,
                 dustMass = p.dustMass * mass,
                 gravityRadius = p.gravityRadius * (1.0 + radius),
+                followSpeedPx = p.followSpeedPx * (1.0 + follow),
             };
             double drainMult = 1.0 - Math.Min(drain, MaxReduction);
             s.staminaIdleDrain = idleDrainBase * drainMult;
@@ -159,7 +166,7 @@ namespace Incremental
         /// <summary>True for stats whose effectPerLevel is a fraction shown as a percent.</summary>
         public static bool IsPercentEffect(string statId) =>
             statId == StatIds.PullAccel || statId == StatIds.SaleMult || statId == StatIds.ThresholdMult ||
-            statId == StatIds.GravityRadius || statId == StatIds.StaminaDrain ||
+            statId == StatIds.GravityRadius || statId == StatIds.StaminaDrain || statId == StatIds.FollowSpeed ||
             statId == StatIds.DustChance || statId == StatIds.FragUnlock || statId == StatIds.FragChance;
 
         /// <summary>Number substituted into the stat.&lt;id&gt;.effect string: percent for fraction effects, raw otherwise.</summary>

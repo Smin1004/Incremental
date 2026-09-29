@@ -422,15 +422,8 @@ namespace Incremental.Tests
         }
 
         // ---------------- §7 D-2. gravity source follow ----------------
-
-        [Test]
-        public void Follow_IsOffByDefault_WithThreeSpeeds()
-        {
-            var p = ProjectParams();
-            Assert.IsFalse(p.followEnabled, "the experiment starts off (20 §7)");
-            Assert.AreEqual(220, p.followSpeedPx, Eps, "default top speed");
-            CollectionAssert.AreEqual(new double[] { 160, 220, 300 }, p.followSpeedSteps, "the three speeds of 20 §7");
-        }
+        // The 20 §7 experiment became a rule in 22 §3 (on by default, five tree nodes), so what it does now is
+        // checked in Week7Tests instead.
 
         // ---------------- §8 E. price curve and costs ----------------
 

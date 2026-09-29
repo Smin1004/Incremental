@@ -33,6 +33,11 @@ namespace Incremental
         /// <summary>20 §5: added chance that crossing a tier threshold drops a fragment of that tier.</summary>
         public const string FragChance = "frag_chance";
         /// <summary>
+        /// 22 §3: raises the top speed the gravity source follows the cursor at, as a share of GameParams.followSpeedPx
+        /// (0.15 = +15%p of the base). Additive, so five nodes of +15%p make 1.75 × the base.
+        /// </summary>
+        public const string FollowSpeed = "follow_speed";
+        /// <summary>
         /// 20 §5: moves the fragment tier cap one tier up per level. The cap is
         /// unlockedMaxTier − (GameParams.fragmentBaseOffset − this), never below tier 1.
         /// </summary>
@@ -42,7 +47,7 @@ namespace Incremental
         {
             SpawnRate, PullAccel, SaleMult, StaminaMax, ThresholdMult,
             DustCap, DustMass, GravityRadius, StaminaDrain, StartBonus,
-            DustChance, FragUnlock, FragChance, FragOffset,
+            DustChance, FragUnlock, FragChance, FragOffset, FollowSpeed,
         };
 
         /// <summary>Stats that act on one dust kind and therefore need <see cref="NodeDef.dustKindId"/>.</summary>

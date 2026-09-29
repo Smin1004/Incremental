@@ -106,6 +106,7 @@ namespace Incremental.Tests
                 if (s.dustCap != b.dustCap) changed++;
                 if (s.dustMass != b.dustMass) changed++;
                 if (s.gravityRadius != b.gravityRadius) changed++;
+                if (s.followSpeedPx != b.followSpeedPx) changed++;
                 if (s.staminaIdleDrain != b.staminaIdleDrain || s.staminaHoldDrain != b.staminaHoldDrain) changed++;
                 if (s.dustInitial != b.dustInitial) changed++;
                 // dustMassAvg also moves with dust_mass, so the dust kind axis is checked on the shares themselves.

@@ -118,7 +118,21 @@ MonoBehaviour:
     minTier: 2
     prereqs:
     - r1_pull
-    angleDeg: 330
+    angleDeg: 340
+    enabled: 1
+  - id: r2_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 8.4
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 2
+    prereqs:
+    - r1_pull
+    angleDeg: 320
     enabled: 1
   - id: r2_sale
     kind: 0
@@ -314,7 +328,7 @@ MonoBehaviour:
     minTier: 4
     prereqs:
     - r3_pull
-    angleDeg: 330
+    angleDeg: 340
     enabled: 1
   - id: r4_threshold
     kind: 0
@@ -385,6 +399,20 @@ MonoBehaviour:
     prereqs:
     - frag_unlock
     angleDeg: 140
+    enabled: 1
+  - id: r4_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 290
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 4
+    prereqs:
+    - r2_follow
+    angleDeg: 320
     enabled: 1
   - id: gate_t5
     kind: 1
@@ -538,7 +566,7 @@ MonoBehaviour:
     minTier: 6
     prereqs:
     - r5_pull
-    angleDeg: 330
+    angleDeg: 340
     enabled: 1
   - id: r6_sale
     kind: 0
@@ -595,6 +623,20 @@ MonoBehaviour:
     prereqs:
     - r5_frag_range
     angleDeg: 140
+    enabled: 1
+  - id: r6_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 7900
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 6
+    prereqs:
+    - r4_follow
+    angleDeg: 320
     enabled: 1
   - id: gate_t7
     kind: 1
@@ -748,7 +790,7 @@ MonoBehaviour:
     minTier: 8
     prereqs:
     - r7_pull
-    angleDeg: 330
+    angleDeg: 340
     enabled: 1
   - id: r8_sale
     kind: 0
@@ -805,6 +847,20 @@ MonoBehaviour:
     prereqs:
     - r7_frag_range
     angleDeg: 140
+    enabled: 1
+  - id: r8_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 290000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 8
+    prereqs:
+    - r6_follow
+    angleDeg: 320
     enabled: 1
   - id: gate_t9
     kind: 1
@@ -931,7 +987,7 @@ MonoBehaviour:
     minTier: 10
     prereqs:
     - r9_pull
-    angleDeg: 330
+    angleDeg: 340
     enabled: 1
   - id: r10_sale
     kind: 0
@@ -974,6 +1030,20 @@ MonoBehaviour:
     prereqs:
     - dust_interstellar
     angleDeg: 60
+    enabled: 1
+  - id: r10_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 16000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    minTier: 10
+    prereqs:
+    - r8_follow
+    angleDeg: 320
     enabled: 1
   - id: gate_t11
     kind: 1

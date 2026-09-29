@@ -345,7 +345,7 @@ namespace Incremental
         /// <summary>
         /// Dust pull shaping (20 §3): the force curve only makes sense when the full-strength ring is inside the gravity
         /// radius, the radius keeps a share of the pull, the weak band reaches outside it, and the tangential damping bites.
-        /// Also the gravity source follow experiment (20 §7).
+        /// Also the gravity source follow (22 §3).
         /// </summary>
         static void ValidatePull(GameParams p, ValidationReport r)
         {
@@ -359,15 +359,17 @@ namespace Incremental
                 r.Errors.Add("GameParams: captureAssistRatio must be >= 1 (it is measured in capture radii).");
             if (!(p.tangentialKeepPerSec > 0) || !(p.tangentialKeepPerSec < 1))
                 r.Errors.Add("GameParams: tangentialKeepPerSec must be within 0..1 (both excluded); 1 damps nothing, 0 kills the sideways speed.");
-            if (!(p.followSpeedPx > 0)) r.Errors.Add("GameParams: followSpeedPx must be > 0 (20 §7).");
-            if (p.followSpeedSteps == null || p.followSpeedSteps.Length == 0)
-                r.Errors.Add("GameParams: followSpeedSteps is empty (the debug key has nothing to cycle, 20 §7).");
+            if (!(p.followSpeedPx > 0)) r.Errors.Add("GameParams: followSpeedPx must be > 0 (22 §3).");
+            if (!p.followEnabled)
+                r.Warnings.Add("GameParams: followEnabled is off; 22 §3 turned the gravity source follow on as a rule.");
+            if (p.followDebugMults == null || p.followDebugMults.Length == 0)
+                r.Errors.Add("GameParams: followDebugMults is empty (the debug key has nothing to cycle, 22 §3).");
             else
             {
-                for (int i = 0; i < p.followSpeedSteps.Length; i++)
-                    if (!(p.followSpeedSteps[i] > 0)) r.Errors.Add($"GameParams: followSpeedSteps[{i}] must be > 0.");
-                if (System.Array.IndexOf(p.followSpeedSteps, p.followSpeedPx) < 0)
-                    r.Warnings.Add($"GameParams: followSpeedPx {p.followSpeedPx} is not one of followSpeedSteps (20 §7).");
+                for (int i = 0; i < p.followDebugMults.Length; i++)
+                    if (!(p.followDebugMults[i] > 0)) r.Errors.Add($"GameParams: followDebugMults[{i}] must be > 0.");
+                if (p.followDebugMults[0] != 1)
+                    r.Warnings.Add("GameParams: followDebugMults[0] should be 1, the effective speed itself (22 §3).");
             }
             if (!(p.followLineWidthPx > 0)) r.Errors.Add("GameParams: followLineWidthPx must be > 0.");
         }

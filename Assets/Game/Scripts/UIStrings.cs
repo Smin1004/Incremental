@@ -60,9 +60,9 @@ namespace Incremental
         public const string DebugStaminaDrained = "스태미나 0 (런 종료)";
         public const string StaminaPreset = "스태미나 소모: {0} (홀드 {1:0.0}/초, 대기 {2:0.0}/초)";
         public const string DebugDuringRunOnly = "런 중에만 됩니다";
-        /// <summary>20 §7: the follow experiment's toast; {0} = the top speed in px/s.</summary>
+        /// <summary>22 §3: the follow debug key's toast; {0} = the top speed in px/s.</summary>
         public const string FollowOn = "중력원 추종: 켜짐 (최대 {0:0} px/초)";
-        public const string FollowOff = "중력원 추종: 꾼짐 (커서에 고정)";
+        public const string FollowOff = "중력원 추종: 꺼짐 (커서에 고정)";
 
         /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
         static readonly Dictionary<string, string> Keyed = new Dictionary<string, string>
@@ -103,6 +103,8 @@ namespace Incremental
             { "stat.dust_mass.effect", "×{0}" },
             { "stat.gravity_radius.name", "중력 반경" },
             { "stat.gravity_radius.effect", "+{0}%" },
+            { "stat.follow_speed.name", "중력원 추종 속도" },
+            { "stat.follow_speed.effect", "+{0}%p" },
             { "stat.stamina_drain.name", "스태미나 소모 감소" },
             { "stat.stamina_drain.effect", "−{0}%" },
             { "stat.start_bonus.name", "시작 보너스" },

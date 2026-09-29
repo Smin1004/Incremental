@@ -121,12 +121,14 @@ namespace Incremental
         [Tooltip("What is left of the tangential speed after one second inside the assist radius (0.6 = 40% damped per second).")]
         public double tangentialKeepPerSec = 0.6;
 
-        [Header("Gravity source follow (20 §7, experiment)")]
-        [Tooltip("Off by default: the gravity source sits on the cursor. On, it follows the cursor at followSpeedPx at most " +
-                 "and a thin line joins the two. The debug key (Insert) cycles off → the speeds below → off.")]
-        public bool followEnabled;
+        [Header("Gravity source follow (22 §3)")]
+        [Tooltip("On since 22 §3: the gravity source follows the cursor at its effective top speed at most and a thin line " +
+                 "joins the two, so a fast sweep leaves the gravity behind. Off puts it back on the cursor exactly.")]
+        public bool followEnabled = true;
+        [Tooltip("Base top speed, px/s. The follow_speed nodes add to it (22 §3: five nodes of +15%p make 1.75 ×).")]
         public double followSpeedPx = 220;
-        public double[] followSpeedSteps = { 160, 220, 300 };
+        [Tooltip("The debug key (Insert) cycles off → these multiples of the effective speed → off (22 §3).")]
+        public double[] followDebugMults = { 1, 1.5, 2 };
         [Tooltip("The line drawn from the cursor to the gravity source while following: width (px) and color.")]
         public double followLineWidthPx = 1.5;
         public Color followLineColor = new Color(1f, 1f, 1f, 0.35f);

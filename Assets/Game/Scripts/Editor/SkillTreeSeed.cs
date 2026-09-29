@@ -12,6 +12,8 @@ namespace Incremental.EditorTools
     /// 20 §4: the 60° axis is the dust kind axis. The compound dust_mass nodes are gone; rings 3, 5, 7 and 9 unlock a
     /// dust kind and rings 4, 6, 8 and 10 raise its share.
     /// 20 §5: the fragment nodes run along 140°, beside the threshold nodes of the planet axis, in rings 3 to 8.
+    /// 22 §3: the gravity axis carries a follow speed node in rings 2, 4, 6, 8 and 10, beside that ring's pull or radius
+    /// node; the five together bring the gravity source from 220 to 385 px/s.
     /// </summary>
     public static class SkillTreeSeed
     {
@@ -27,6 +29,8 @@ namespace Incremental.EditorTools
         public const float StaminaAxis = 210f;
         public const float SaleAxis = 270f;
         public const float GravityAxis = 330f;
+        /// <summary>22 §3: the follow speed nodes share the gravity axis, offset so they never sit on its pull / radius node.</summary>
+        public const float FollowAxis = GravityAxis - Pair;
 
         /// <summary>Rings 1..11; index 0 is unused.</summary>
         public const int RingCount = 11;
@@ -126,6 +130,27 @@ namespace Incremental.EditorTools
         static NodeDef Frag(string id, int ring, string stat, double effect, params string[] prereqs) =>
             Stat(id, ring, FragmentAxis, stat, effect, 1, StatCost(ring), 1, prereqs);
 
+        /// <summary>
+        /// The follow speed axis (22 §3): one node in every even ring up to 10, +15%p of the base speed each, one level.
+        /// They chain along the gravity axis, so the first one needs the ring 1 pull node.
+        /// </summary>
+        static NodeDef FollowNode(int ring)
+        {
+            switch (ring)
+            {
+                case 2: return Follow("r2_follow", 2, "r1_pull");
+                case 4: return Follow("r4_follow", 4, "r2_follow");
+                case 6: return Follow("r6_follow", 6, "r4_follow");
+                case 8: return Follow("r8_follow", 8, "r6_follow");
+                case 10: return Follow("r10_follow", 10, "r8_follow");
+                default: return null;
+            }
+        }
+
+        /// <summary>22 §3: +15 percentage points of GameParams.followSpeedPx, one level, on the follow axis.</summary>
+        static NodeDef Follow(string id, int ring, params string[] prereqs) =>
+            Stat(id, ring, FollowAxis, StatIds.FollowSpeed, 0.15, 1, StatCost(ring), 1, prereqs);
+
         /// <summary>An axis node of ring k: the 20 §8.2 cost formula, so only the effect and the level count are written down.</summary>
         static NodeDef Ax(string id, int ring, float angle, string stat, double effect, int maxLevel, params string[] prereqs) =>
             Stat(id, ring, angle, stat, effect, maxLevel, StatCost(ring), StatCostGrowth, prereqs);
@@ -201,7 +226,8 @@ namespace Incremental.EditorTools
             // Ring 2 (I = 96): dust cap and gravity radius arrive ("dust surge", 10 §4.3); the planet axis starts here.
             n.Add(Ax("r2_spawn", 2, DustAxis - Pair, spawn, 2, 2, "r1_spawn"));
             n.Add(Ax("r2_cap", 2, DustAxis + Pair, cap, 100, 2, "r1_spawn"));
-            n.Add(Ax("r2_radius", 2, GravityAxis, radius, 0.10, 2, "r1_pull"));
+            n.Add(Ax("r2_radius", 2, GravityAxis + Pair, radius, 0.10, 2, "r1_pull"));
+            n.Add(FollowNode(2));
             n.Add(Ax("r2_sale", 2, SaleAxis, sale, 0.25, 2, "r1_sale"));
             n.Add(Ax("r2_stamina", 2, StaminaAxis, stamina, 10, 2, "r1_stamina"));
             n.Add(Ax("r2_threshold", 2, PlanetAxis, threshold, 0.05, 2, "gate_t2"));
@@ -218,19 +244,19 @@ namespace Incremental.EditorTools
             n.Add(Gate(4));
 
             // Rings 4-10: one node per axis (two levels each) + the dust kind axis node; prereq = the same axis in the ring before.
-            Ring(n, 4, (spawn, 3, DustAxis, "r3_start"), (radius, 0.10, GravityAxis, "r3_pull"), (threshold, 0.05, PlanetAxis, "r3_threshold"),
+            Ring(n, 4, (spawn, 3, DustAxis, "r3_start"), (radius, 0.10, GravityAxis + Pair, "r3_pull"), (threshold, 0.05, PlanetAxis, "r3_threshold"),
                 (sale, 0.50, SaleAxis, "r3_sale"), (stamina, 20, StaminaAxis, "r3_drain"));
             Ring(n, 5, (cap, 300, DustAxis, "r4_spawn"), (pull, 0.40, GravityAxis, "r4_radius"), (threshold, 0.05, PlanetAxis, "r4_threshold"),
                 (sale, 0.50, SaleAxis, "r4_sale"), (drain, 0.05, StaminaAxis, "r4_stamina"));
-            Ring(n, 6, (spawn, 5, DustAxis, "r5_cap"), (radius, 0.15, GravityAxis, "r5_pull"),
+            Ring(n, 6, (spawn, 5, DustAxis, "r5_cap"), (radius, 0.15, GravityAxis + Pair, "r5_pull"),
                 (sale, 1.00, SaleAxis, "r5_sale"), (stamina, 30, StaminaAxis, "r5_drain"));
             Ring(n, 7, (cap, 500, DustAxis, "r6_spawn"), (pull, 0.50, GravityAxis, "r6_radius"),
                 (sale, 1.00, SaleAxis, "r6_sale"), (drain, 0.05, StaminaAxis, "r6_stamina"));
-            Ring(n, 8, (spawn, 8, DustAxis - Pair, "r7_cap"), (start, 200, DustAxis + Pair, "r7_cap"), (radius, 0.15, GravityAxis, "r7_pull"),
+            Ring(n, 8, (spawn, 8, DustAxis - Pair, "r7_cap"), (start, 200, DustAxis + Pair, "r7_cap"), (radius, 0.15, GravityAxis + Pair, "r7_pull"),
                 (sale, 2.00, SaleAxis, "r7_sale"), (stamina, 40, StaminaAxis, "r7_drain"));
             Ring(n, 9, (cap, 800, DustAxis, "r8_spawn|r8_start"), (pull, 0.60, GravityAxis, "r8_radius"),
                 (sale, 2.00, SaleAxis, "r8_sale"), (drain, 0.05, StaminaAxis, "r8_stamina"));
-            Ring(n, 10, (spawn, 12, DustAxis, "r9_cap"), (radius, 0.20, GravityAxis, "r9_pull"),
+            Ring(n, 10, (spawn, 12, DustAxis, "r9_cap"), (radius, 0.20, GravityAxis + Pair, "r9_pull"),
                 (sale, 4.00, SaleAxis, "r9_sale"), (stamina, 60, StaminaAxis, "r9_drain"));
 
             // Ring 11: endless nodes with unlimited levels. The dust kind axis ends at ring 10, so the third endless node
@@ -250,6 +276,8 @@ namespace Incremental.EditorTools
             if (dust != null) n.Add(dust);
             var frag = FragmentNode(ring);
             if (frag != null) n.Add(frag);
+            var follow = FollowNode(ring);
+            if (follow != null) n.Add(follow);
             if (ring + 1 <= RingCount) n.Add(Gate(ring + 1));
         }
 
@@ -270,6 +298,7 @@ namespace Incremental.EditorTools
                 case StatIds.FragUnlock: return "frag";
                 case StatIds.FragChance: return "fragchance";
                 case StatIds.FragOffset: return "fragrange";
+                case StatIds.FollowSpeed: return "follow";
                 default: return stat;
             }
         }

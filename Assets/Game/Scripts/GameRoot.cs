@@ -34,8 +34,8 @@ namespace Incremental
     }
 
     /// <summary>
-    /// Runtime setting of the gravity source follow experiment (20 §7). The debug key cycles it; nothing is saved, and
-    /// the GameParams values decide what a fresh launch does.
+    /// Runtime setting of the gravity source follow (22 §3). The debug key cycles it; nothing is saved, and the
+    /// GameParams value plus the follow nodes decide what a fresh launch does.
     /// </summary>
     public struct FollowOverride
     {
@@ -104,12 +104,12 @@ namespace Incremental
         /// case it trails the cursor at a top speed. Bodies form here too, so the whole hold follows this point.
         /// </summary>
         public Vector2 GravityWorld { get; private set; }
-        /// <summary>Runtime state of the follow experiment (20 §7); unset = the GameParams values.</summary>
+        /// <summary>Runtime state of the follow debug key (22 §3); unset = the asset and the tree decide.</summary>
         public FollowOverride Follow;
-        /// <summary>True while the gravity source trails the cursor instead of sitting on it (20 §7).</summary>
+        /// <summary>True while the gravity source trails the cursor instead of sitting on it (22 §3).</summary>
         public bool FollowEnabled => Follow.set ? Follow.enabled : gameParams.followEnabled;
-        /// <summary>Top speed of the gravity source, px per second (20 §7).</summary>
-        public double FollowSpeedPx => Follow.set ? Follow.speedPx : gameParams.followSpeedPx;
+        /// <summary>Top speed of the gravity source, px per second: the follow nodes' value unless the debug key set one (22 §3).</summary>
+        public double FollowSpeedPx => Follow.set ? Follow.speedPx : Effective.followSpeedPx;
         public PointerState LastPointer { get; private set; }
         public double LastTickMs { get; private set; }
         public double MaxTickMs { get; private set; }
@@ -450,9 +450,8 @@ namespace Incremental
         }
 
         /// <summary>
-        /// 20 §7 experiment: the gravity source trails the cursor at a top speed instead of sitting on it, so a fast
-        /// sweep leaves it behind and letting go to grab again becomes worth it. Off by default, in which case the
-        /// source is the cursor exactly and nothing about the game changes.
+        /// 22 §3: the gravity source trails the cursor at a top speed instead of sitting on it, so a fast sweep leaves it
+        /// behind and letting go to grab again becomes worth it. Switched off, the source is the cursor exactly.
         /// </summary>
         void MoveGravitySource(double dt)
         {

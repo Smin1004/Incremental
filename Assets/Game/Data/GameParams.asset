@@ -26,12 +26,12 @@ MonoBehaviour:
   pullOuterRatio: 1.4
   captureAssistRatio: 2.5
   tangentialKeepPerSec: 0.6
-  followEnabled: 0
+  followEnabled: 1
   followSpeedPx: 220
-  followSpeedSteps:
-  - 160
-  - 220
-  - 300
+  followDebugMults:
+  - 1
+  - 1.5
+  - 2
   followLineWidthPx: 1.5
   followLineColor: {r: 1, g: 1, b: 1, a: 0.35}
   staminaMax: 60
