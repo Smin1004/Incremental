@@ -62,6 +62,28 @@ namespace Incremental
         public double dustMaxSpeed = 400;     // px/s
         public double captureRadius = 30;     // px
 
+        [Header("Dust pull shaping (20 §3)")]
+        [Tooltip("Share of the gravity radius the pull is at full strength within (20 §3 force curve).")]
+        public double pullFullRatio = 0.75;
+        [Tooltip("Pull left at the gravity radius itself, as a share of full; it falls to 0 at pullOuterRatio × the radius, " +
+                 "so a still cursor keeps drawing dust in from outside the ring.")]
+        public double pullEdgeShare = 0.15;
+        public double pullOuterRatio = 1.4;
+        [Tooltip("Within this many capture radii the sideways (tangential) speed is damped, so dust stops orbiting the cursor.")]
+        public double captureAssistRatio = 2.5;
+        [Tooltip("What is left of the tangential speed after one second inside the assist radius (0.6 = 40% damped per second).")]
+        public double tangentialKeepPerSec = 0.6;
+
+        [Header("Gravity source follow (20 §7, experiment)")]
+        [Tooltip("Off by default: the gravity source sits on the cursor. On, it follows the cursor at followSpeedPx at most " +
+                 "and a thin line joins the two. The debug key (Insert) cycles off → the speeds below → off.")]
+        public bool followEnabled;
+        public double followSpeedPx = 220;
+        public double[] followSpeedSteps = { 160, 220, 300 };
+        [Tooltip("The line drawn from the cursor to the gravity source while following: width (px) and color.")]
+        public double followLineWidthPx = 1.5;
+        public Color followLineColor = new Color(1f, 1f, 1f, 0.35f);
+
         [Header("Stamina (spec §6)")]
         public double staminaMax = 60;        // upgrade target
         public double staminaHoldDrain = 1.5; // per second while holding (additional)

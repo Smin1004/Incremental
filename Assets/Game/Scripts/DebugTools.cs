@@ -111,6 +111,73 @@ namespace Incremental
             root.Run.elapsed = 0;
         }
 
+        // ---------------- still-hold capture measurement (20 §3) ----------------
+
+        string measureLabel;
+        double measureUntil = -1;
+        int measureFrom;
+        double measureStart;
+
+        /// <summary>
+        /// 20 §3 acceptance: pins the pointer to the middle of the screen, holds, and after <paramref name="runSeconds"/>
+        /// of run time logs how much dust was captured per second. The dust is reseeded and refilled to
+        /// <paramref name="dust"/> (0 = the run's starting dust) so two measurements start from the same field, and the
+        /// stamina is topped up so the run cannot end mid-measurement. Run screen only; the pointer goes back to the mouse
+        /// afterwards.
+        /// </summary>
+        public void BeginStillHoldMeasure(string label, float runSeconds, int seed, int dust = 0)
+        {
+            if (root.Phase != GamePhase.Run || root.Run == null)
+            {
+                Debug.LogWarning("[Measure] still hold needs a run in progress");
+                return;
+            }
+            var screen = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            var s = root.Effective;
+            root.InputProvider = () => new PointerState { screenPos = screen, pressed = true };
+            root.Dust.Reseed(seed);
+            root.Dust.Reset(dust > 0 ? dust : (int)s.dustInitial, root.CameraArea(), root.ToWorld(screen), s);
+            root.Run.stamina = Math.Max(s.staminaMax, (s.staminaHoldDrain + s.staminaIdleDrain) * runSeconds * 1.2);
+            measureLabel = label;
+            measureFrom = root.Dust.CapturedCount;
+            measureStart = root.Run.elapsed;
+            measureUntil = root.Run.elapsed + runSeconds;
+        }
+
+        /// <summary>Dust within <paramref name="radiusPx"/> of the gravity source right now (20 §3 diagnostics).</summary>
+        public int DustWithin(double radiusPx)
+        {
+            float r = (float)(radiusPx / root.gameParams.pixelsPerUnit);
+            var g = root.CursorWorld;
+            var items = root.Dust.Items;
+            int n = 0;
+            for (int i = 0; i < root.Dust.Count; i++)
+                if ((items[i].pos - g).sqrMagnitude <= r * r) n++;
+            return n;
+        }
+
+        /// <summary>Result of the last finished measurement: "captured/second", or null while one is running.</summary>
+        public string MeasureResult { get; private set; }
+
+        void TickMeasure()
+        {
+            if (measureUntil < 0) return;
+            if (root.Phase != GamePhase.Run || root.Run == null)
+            {
+                measureUntil = -1;
+                return;
+            }
+            if (root.Run.elapsed < measureUntil) return;
+            double secs = root.Run.elapsed - measureStart;
+            int captured = root.Dust.CapturedCount - measureFrom;
+            MeasureResult = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "{0}: {1} dust in {2:F1}s = {3:F2}/s (field {4}, inside the radius {5})",
+                measureLabel, captured, secs, captured / System.Math.Max(secs, 1e-6), root.Dust.Count, DustWithin(root.Effective.gravityRadius));
+            measureUntil = -1;
+            EndStaging();
+            Debug.Log("[Measure] " + MeasureResult);
+        }
+
         readonly System.Collections.Generic.List<DelayedAction> delayed = new System.Collections.Generic.List<DelayedAction>();
 
         struct DelayedAction
@@ -152,6 +219,7 @@ namespace Incremental
 
         void Update()
         {
+            TickMeasure();
             for (int i = delayed.Count - 1; i >= 0; i--)
             {
                 if (Time.unscaledTime < delayed[i].at) continue;

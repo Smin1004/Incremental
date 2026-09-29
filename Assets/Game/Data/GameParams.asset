@@ -21,6 +21,19 @@ MonoBehaviour:
   pullAccel: 600
   dustMaxSpeed: 400
   captureRadius: 30
+  pullFullRatio: 0.75
+  pullEdgeShare: 0.15
+  pullOuterRatio: 1.4
+  captureAssistRatio: 2.5
+  tangentialKeepPerSec: 0.6
+  followEnabled: 0
+  followSpeedPx: 220
+  followSpeedSteps:
+  - 160
+  - 220
+  - 300
+  followLineWidthPx: 1.5
+  followLineColor: {r: 1, g: 1, b: 1, a: 0.35}
   staminaMax: 60
   staminaHoldDrain: 1.5
   staminaIdleDrain: 0.3

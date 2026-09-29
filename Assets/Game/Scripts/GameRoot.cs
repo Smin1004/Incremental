@@ -387,7 +387,7 @@ namespace Incremental
             Run.stamina -= s.staminaIdleDrain * dt;
             if (holding) Run.stamina -= s.staminaHoldDrain * dt;
 
-            int captured = Dust.Tick(dt, CameraArea(), CursorWorld, holding, s);
+            double captured = Dust.Tick(dt, CameraArea(), CursorWorld, holding, s);
             if (captured > 0) Run.mass += captured * s.dustMass;
 
             // Reaching the highest unlocked tier creates immediately, without releasing.

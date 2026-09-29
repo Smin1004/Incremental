@@ -30,6 +30,9 @@ namespace Incremental
 
         public Dust[] Items => items;
         public int Count => count;
+        /// <summary>Dust captured since the last <see cref="Reset"/>: the number and the mass. Measurement only (20 §3).</summary>
+        public int CapturedCount { get; private set; }
+        public double CapturedMass { get; private set; }
         /// <summary>Visible area the dust is confined to (camera rect, world units).</summary>
         public Rect Area { get; private set; }
 
@@ -42,13 +45,53 @@ namespace Incremental
         {
             count = 0;
             spawnAcc = 0;
+            CapturedCount = 0;
+            CapturedMass = 0;
             Area = area;
             float gravR = Px(s.gravityRadius);
             for (int i = 0; i < initial; i++) SpawnRandom(cursor, gravR);
         }
 
-        /// <summary>Advances one fixed tick. Returns the number of dust captured this tick.</summary>
-        public int Tick(double dt, Rect area, Vector2 cursor, bool holding, in EffectiveStats s)
+        /// <summary>
+        /// Pull strength at distance <paramref name="dist"/> as a share of the full acceleration (20 §3). Full within
+        /// <paramref name="fullRatio"/> × the radius, smoothstep down to <paramref name="edgeShare"/> at the radius itself,
+        /// then linearly to 0 at <paramref name="outerRatio"/> × the radius. A pure function so the tests can read the curve.
+        /// </summary>
+        public static double PullFactor(double dist, double radius, double fullRatio, double edgeShare, double outerRatio)
+        {
+            if (!(radius > 0)) return 0;
+            double full = radius * fullRatio;
+            if (dist <= full) return 1;
+            if (dist <= radius)
+            {
+                // smoothstep 1 → edgeShare over full..radius
+                double x = radius > full ? (dist - full) / (radius - full) : 1.0;
+                double sm = x * x * (3.0 - 2.0 * x);
+                return 1.0 + (edgeShare - 1.0) * sm;
+            }
+            double outer = radius * outerRatio;
+            if (dist >= outer) return 0;
+            return edgeShare * (1.0 - (dist - radius) / (outer - radius));
+        }
+
+        /// <summary>
+        /// True when the segment a → b comes within <paramref name="r"/> of <paramref name="c"/> (20 §3 "통과 방지"):
+        /// a fast dust cannot step across the capture circle without being caught.
+        /// </summary>
+        public static bool SegmentHitsCircle(Vector2 a, Vector2 b, Vector2 c, float r)
+        {
+            Vector2 ab = b - a;
+            Vector2 ac = c - a;
+            float len2 = ab.sqrMagnitude;
+            float t = len2 > 1e-12f ? Mathf.Clamp01(Vector2.Dot(ac, ab) / len2) : 0f;
+            return (a + ab * t - c).sqrMagnitude <= r * r;
+        }
+
+        /// <summary>
+        /// Advances one fixed tick. Returns the mass captured this tick;
+        /// <paramref name="gravity"/> is the gravity source, which is the cursor unless the follow experiment is on (20 §7).
+        /// </summary>
+        public double Tick(double dt, Rect area, Vector2 gravity, bool holding, in EffectiveStats s)
         {
             Area = area;
             float fdt = (float)dt;
@@ -57,31 +100,34 @@ namespace Incremental
             float capR = Px(p.captureRadius);
             float maxSpeed = Px(p.dustMaxSpeed);
             float accel = Px(s.pullAccel);
-            float gravR2 = gravR * gravR;
-            float capR2 = capR * capR;
+            float outerR = gravR * (float)p.pullOuterRatio;
+            float outerR2 = outerR * outerR;
+            float assistR = capR * (float)p.captureAssistRatio;
+            float assistR2 = assistR * assistR;
+            float tangentKeep = Mathf.Pow(Mathf.Clamp01((float)p.tangentialKeepPerSec), fdt);
             float maxSpeed2 = maxSpeed * maxSpeed;
             float noise = (float)p.driftNoise;
             float relax = Mathf.Clamp01((float)p.driftRelaxRate * fdt);
-            int captured = 0;
+            double captured = 0;
 
             for (int i = 0; i < count; i++)
             {
                 ref Dust d = ref items[i];
-                Vector2 toCursor = cursor - d.pos;
+                Vector2 toCursor = gravity - d.pos;
                 float dist2 = toCursor.sqrMagnitude;
 
-                if (holding && dist2 < gravR2)
+                if (holding && dist2 < outerR2)
                 {
-                    if (dist2 < capR2)
-                    {
-                        items[i] = items[count - 1];
-                        count--;
-                        i--;
-                        captured++;
-                        continue;
-                    }
                     float dist = Mathf.Sqrt(dist2);
-                    d.vel += toCursor * (accel * fdt / dist);
+                    float f = (float)PullFactor(dist, gravR, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
+                    if (f > 0f && dist > 1e-6f) d.vel += toCursor * (accel * f * fdt / dist);
+                    // Near the capture circle the sideways speed is damped, so dust falls in instead of orbiting.
+                    if (dist2 < assistR2 && dist > 1e-6f)
+                    {
+                        Vector2 dir = toCursor / dist;
+                        Vector2 radial = dir * Vector2.Dot(d.vel, dir);
+                        d.vel = radial + (d.vel - radial) * tangentKeep;
+                    }
                     float sp2 = d.vel.sqrMagnitude;
                     if (sp2 > maxSpeed2) d.vel *= maxSpeed / Mathf.Sqrt(sp2);
                 }
@@ -97,7 +143,19 @@ namespace Incremental
                     d.vel = dir * speed;
                 }
 
-                d.pos += d.vel * fdt;
+                Vector2 from = d.pos;
+                Vector2 to = from + d.vel * fdt;
+                // Capture on the swept segment, not on the end point: a fast dust cannot jump over the capture circle.
+                if (holding && SegmentHitsCircle(from, to, gravity, capR))
+                {
+                    captured += 1;
+                    CapturedCount++;
+                    items[i] = items[count - 1];
+                    count--;
+                    i--;
+                    continue;
+                }
+                d.pos = to;
 
                 // Reflect at the visible bounds.
                 if (d.pos.x < area.xMin) { d.pos.x = area.xMin; d.vel.x = Mathf.Abs(d.vel.x); }
@@ -112,9 +170,10 @@ namespace Incremental
             while (spawnAcc >= 1.0)
             {
                 spawnAcc -= 1.0;
-                if (count < cap) SpawnRandom(cursor, gravR);
+                if (count < cap) SpawnRandom(gravity, gravR);
             }
 
+            CapturedMass += captured;
             return captured;
         }
 

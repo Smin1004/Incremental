@@ -116,6 +116,7 @@ namespace Incremental
                 return r;
             }
             ValidateStamina(p, r);
+            ValidatePull(p, r);
             // 18 §A2: the pop, the stay in place and the flight to the vanishing point.
             if (p.planetPopDurationSec < 0 || p.planetHoldSec < 0) r.Errors.Add("GameParams: planetPopDurationSec and planetHoldSec must be >= 0.");
             if (!(p.planetDepartSec > 0)) r.Errors.Add("GameParams: planetDepartSec must be > 0.");
@@ -226,6 +227,36 @@ namespace Incremental
             if (p.StaminaPresetIndex(p.staminaHoldDrain, p.staminaIdleDrain) < 0)
                 r.Warnings.Add($"GameParams: the stamina drains ({p.staminaHoldDrain} / {p.staminaIdleDrain}) are not one of staminaPresets; " +
                                "the debug key starts from the first preset (18 §A1).");
+        }
+
+        /// <summary>
+        /// Dust pull shaping (20 §3): the force curve only makes sense when the full-strength ring is inside the gravity
+        /// radius, the radius keeps a share of the pull, the weak band reaches outside it, and the tangential damping bites.
+        /// Also the gravity source follow experiment (20 §7).
+        /// </summary>
+        static void ValidatePull(GameParams p, ValidationReport r)
+        {
+            if (!(p.pullFullRatio > 0) || !(p.pullFullRatio < 1))
+                r.Errors.Add("GameParams: pullFullRatio must be within 0..1 (both excluded); it is where the pull starts falling off.");
+            if (!(p.pullEdgeShare > 0) || !(p.pullEdgeShare < 1))
+                r.Errors.Add("GameParams: pullEdgeShare must be within 0..1 (both excluded); 0 brings back the hard edge of 18 §B.");
+            if (!(p.pullOuterRatio > 1))
+                r.Errors.Add("GameParams: pullOuterRatio must be > 1; the weak pull has to reach outside the gravity radius (20 §3).");
+            if (!(p.captureAssistRatio >= 1))
+                r.Errors.Add("GameParams: captureAssistRatio must be >= 1 (it is measured in capture radii).");
+            if (!(p.tangentialKeepPerSec > 0) || !(p.tangentialKeepPerSec < 1))
+                r.Errors.Add("GameParams: tangentialKeepPerSec must be within 0..1 (both excluded); 1 damps nothing, 0 kills the sideways speed.");
+            if (!(p.followSpeedPx > 0)) r.Errors.Add("GameParams: followSpeedPx must be > 0 (20 §7).");
+            if (p.followSpeedSteps == null || p.followSpeedSteps.Length == 0)
+                r.Errors.Add("GameParams: followSpeedSteps is empty (the debug key has nothing to cycle, 20 §7).");
+            else
+            {
+                for (int i = 0; i < p.followSpeedSteps.Length; i++)
+                    if (!(p.followSpeedSteps[i] > 0)) r.Errors.Add($"GameParams: followSpeedSteps[{i}] must be > 0.");
+                if (System.Array.IndexOf(p.followSpeedSteps, p.followSpeedPx) < 0)
+                    r.Warnings.Add($"GameParams: followSpeedPx {p.followSpeedPx} is not one of followSpeedSteps (20 §7).");
+            }
+            if (!(p.followLineWidthPx > 0)) r.Errors.Add("GameParams: followLineWidthPx must be > 0.");
         }
 
         /// <summary>
