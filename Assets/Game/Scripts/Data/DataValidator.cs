@@ -359,6 +359,7 @@ namespace Incremental
                 r.Errors.Add("GameParams: captureAssistRatio must be >= 1 (it is measured in capture radii).");
             if (!(p.tangentialKeepPerSec > 0) || !(p.tangentialKeepPerSec < 1))
                 r.Errors.Add("GameParams: tangentialKeepPerSec must be within 0..1 (both excluded); 1 damps nothing, 0 kills the sideways speed.");
+            ValidateVortexAndTrails(p, r);
             if (!(p.followSpeedPx > 0)) r.Errors.Add("GameParams: followSpeedPx must be > 0 (22 §3).");
             if (!p.followEnabled)
                 r.Warnings.Add("GameParams: followEnabled is off; 22 §3 turned the gravity source follow on as a rule.");
@@ -372,6 +373,35 @@ namespace Incremental
                     r.Warnings.Add("GameParams: followDebugMults[0] should be 1, the effective speed itself (22 §3).");
             }
             if (!(p.followLineWidthPx > 0)) r.Errors.Add("GameParams: followLineWidthPx must be > 0.");
+        }
+
+        /// <summary>
+        /// The widening world (22 §6), the vortex and the trails (22 §5), and the measurement values (22 §4). The
+        /// sideways share of the pull has to leave the pull itself the larger part or the dust orbits forever, a ribbon
+        /// needs at least two points, and a body needs a floor on its screen size.
+        /// </summary>
+        static void ValidateVortexAndTrails(GameParams p, ValidationReport r)
+        {
+            if (p.worldScalePerRing < 0)
+                r.Errors.Add("GameParams: worldScalePerRing must be >= 0 (22 §6); 0 keeps the world one size.");
+            else if (p.worldScalePerRing > 0.2)
+                r.Warnings.Add($"GameParams: worldScalePerRing {p.worldScalePerRing} makes the last ring more than 3x wide; " +
+                               "everything in the world would be a speck (22 §6).");
+            if (!(p.worldExpandSec > 0)) r.Errors.Add("GameParams: worldExpandSec must be > 0 (22 §6); the world grows over time, not in one frame.");
+            if (!(p.bodyMinScreenPx > 0)) r.Errors.Add("GameParams: bodyMinScreenPx must be > 0 (22 §6); it is the floor on a body's screen size.");
+            if (p.vortexShare < 0) r.Errors.Add("GameParams: vortexShare must be >= 0 (22 §5); 0 is the straight pull of 20 §3.");
+            else if (p.vortexShare >= 1)
+                r.Errors.Add("GameParams: vortexShare must be < 1 (22 §5); at or above 1 the sideways push wins and dust orbits instead of falling in.");
+            if (p.trailPoints < 2) r.Errors.Add("GameParams: trailPoints must be >= 2 (22 §5); one point is not a ribbon.");
+            if (!(p.trailSampleSec > 0)) r.Errors.Add("GameParams: trailSampleSec must be > 0 (22 §5).");
+            if (!(p.trailWidthShare > 0) || !(p.trailWidthShare <= 1))
+                r.Errors.Add("GameParams: trailWidthShare must be within 0..1 (0 excluded); it is a share of the dust's drawn size (22 §5).");
+            if (p.trailBudget < 0) r.Errors.Add("GameParams: trailBudget must be >= 0 (22 §5).");
+            if (p.perfBenchDustCounts == null || p.perfBenchDustCounts.Length == 0)
+                r.Errors.Add("GameParams: perfBenchDustCounts is empty (the 22 §4 measurement has no run scene).");
+            if (!(p.perfBenchSampleSec > 0)) r.Errors.Add("GameParams: perfBenchSampleSec must be > 0 (22 §4).");
+            if (p.perfBenchWarmupSec < 0) r.Errors.Add("GameParams: perfBenchWarmupSec must be >= 0 (22 §4).");
+            if (p.perfBenchSettleSec < 0) r.Errors.Add("GameParams: perfBenchSettleSec must be >= 0 (22 §4).");
         }
 
         /// <summary>Fragments (20 §5): a fragment is worth part of its tier, comes from below the top tier and is drawn smaller.</summary>

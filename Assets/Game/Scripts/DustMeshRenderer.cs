@@ -29,6 +29,19 @@ namespace Incremental
         Color32[] cols = new Color32[0];
         int[] tris = new int[0];
         float holdGlow;
+        readonly System.Diagnostics.Stopwatch rebuildWatch = new System.Diagnostics.Stopwatch();
+        double rebuildMsAcc;
+
+        /// <summary>
+        /// 22 §4: milliseconds spent rebuilding the dust mesh since the last call, and zero after it. Read once a frame
+        /// by the performance measurement.
+        /// </summary>
+        public double TakeRebuildMs()
+        {
+            double v = rebuildMsAcc;
+            rebuildMsAcc = 0;
+            return v;
+        }
 
         public void Init(GameRoot gameRoot, DustField dustField, Material material)
         {
@@ -61,6 +74,14 @@ namespace Incremental
         void LateUpdate()
         {
             if (field == null || mesh == null) return;
+            rebuildWatch.Restart();
+            Rebuild();
+            rebuildWatch.Stop();
+            rebuildMsAcc += rebuildWatch.Elapsed.TotalMilliseconds;
+        }
+
+        void Rebuild()
+        {
             int n = field.Count;
             if (n == 0)
             {

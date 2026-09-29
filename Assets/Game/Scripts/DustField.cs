@@ -14,6 +14,13 @@ namespace Incremental
         public float bright;
         /// <summary>Index into GameParams.dustKinds (20 §4); 0 is the base dust. Decided once, when the dust is spawned.</summary>
         public int kind;
+        /// <summary>
+        /// 22 §5: how many of this dust's trail slots hold a position, and where the next one goes. The positions
+        /// themselves live in <see cref="DustField.Trail"/>, one block of GameParams.trailPoints per dust, because a
+        /// struct cannot hold an array of its own. Render only.
+        /// </summary>
+        public int trailFill;
+        public int trailHead;
     }
 
     /// <summary>
@@ -24,6 +31,10 @@ namespace Incremental
     {
         Dust[] items = new Dust[512];
         int count;
+        /// <summary>22 §5: trailLen positions per dust, in the ring buffer that dust owns.</summary>
+        Vector2[] trail = System.Array.Empty<Vector2>();
+        int trailLen;
+        double trailClock;
         double spawnAcc;
         System.Random rng = new System.Random();
         // Render-only variation draws from its own RNG so the simulation sequence is the same as before (bot measurements).
@@ -32,13 +43,58 @@ namespace Incremental
 
         public Dust[] Items => items;
         public int Count => count;
+        /// <summary>22 §5: the shared trail buffer; dust i owns [i x <see cref="TrailLen"/>, +TrailLen). Render only.</summary>
+        public Vector2[] Trail => trail;
+        public int TrailLen => trailLen;
+
+        /// <summary>
+        /// 22 §5: the <paramref name="age"/>-th most recent kept position of dust <paramref name="i"/> (0 = the newest),
+        /// or its current position when that slot is empty.
+        /// </summary>
+        public Vector2 TrailPoint(int i, int age)
+        {
+            if (trailLen <= 0 || age >= items[i].trailFill) return items[i].pos;
+            int slot = (items[i].trailHead - 1 - age) % trailLen;
+            if (slot < 0) slot += trailLen;
+            return trail[i * trailLen + slot];
+        }
         /// <summary>Dust captured since the last <see cref="Reset"/>: the number and the mass. Measurement only (20 §3).</summary>
         public int CapturedCount { get; private set; }
         public double CapturedMass { get; private set; }
         /// <summary>Visible area the dust is confined to (camera rect, world units).</summary>
         public Rect Area { get; private set; }
 
-        public void Init(GameParams gameParams) { p = gameParams; }
+        public void Init(GameParams gameParams)
+        {
+            p = gameParams;
+            trailLen = Mathf.Max(0, p.trailPoints);
+            EnsureTrail();
+        }
+
+        void EnsureTrail()
+        {
+            int need = items.Length * trailLen;
+            if (trail.Length != need) trail = new Vector2[need];
+        }
+
+        /// <summary>22 §5: pushes the current position of every trailed dust, once every trailSampleSec of game time.</summary>
+        void TickTrails(double dt)
+        {
+            if (trailLen <= 0) return;
+            trailClock += dt;
+            double step = Math.Max(1e-4, p.trailSampleSec);
+            if (trailClock < step) return;
+            // One push per call even after a long stall: a trail is a picture of the recent path, not a log.
+            trailClock = 0;
+            for (int i = 0; i < count; i++)
+            {
+                ref Dust d = ref items[i];
+                if (d.kind <= 0) continue;
+                trail[i * trailLen + d.trailHead] = d.pos;
+                d.trailHead = (d.trailHead + 1) % trailLen;
+                if (d.trailFill < trailLen) d.trailFill++;
+            }
+        }
 
         public void Reseed(int seed) { rng = new System.Random(seed); }
 
@@ -47,6 +103,7 @@ namespace Incremental
         {
             count = 0;
             spawnAcc = 0;
+            trailClock = 0;
             CapturedCount = 0;
             CapturedMass = 0;
             Area = area;
@@ -107,6 +164,7 @@ namespace Incremental
             float assistR = capR * (float)p.captureAssistRatio;
             float assistR2 = assistR * assistR;
             float tangentKeep = Mathf.Pow(Mathf.Clamp01((float)p.tangentialKeepPerSec), fdt);
+            float vortex = (float)p.vortexShare;
             float maxSpeed2 = maxSpeed * maxSpeed;
             float noise = (float)p.driftNoise;
             float relax = Mathf.Clamp01((float)p.driftRelaxRate * fdt);
@@ -122,7 +180,13 @@ namespace Incremental
                 {
                     float dist = Mathf.Sqrt(dist2);
                     float f = (float)PullFactor(dist, gravR, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
-                    if (f > 0f && dist > 1e-6f) d.vel += toCursor * (accel * KindAccel(d.kind) * f * fdt / dist);
+                    if (f > 0f && dist > 1e-6f)
+                    {
+                        // 22 §5: part of the pull is turned sideways (counter-clockwise), so the dust spirals in.
+                        Vector2 inward = toCursor / dist;
+                        Vector2 swirl = new Vector2(inward.y, -inward.x);
+                        d.vel += (inward + swirl * vortex) * (accel * KindAccel(d.kind) * f * fdt);
+                    }
                     // Near the capture circle the sideways speed is damped, so dust falls in instead of orbiting.
                     if (dist2 < assistR2 && dist > 1e-6f)
                     {
@@ -152,8 +216,7 @@ namespace Incremental
                 {
                     captured += KindMass(d.kind);
                     CapturedCount++;
-                    items[i] = items[count - 1];
-                    count--;
+                    SwapRemove(i);
                     i--;
                     continue;
                 }
@@ -175,8 +238,22 @@ namespace Incremental
                 if (count < cap) SpawnRandom(gravity, gravR, s);
             }
 
+            TickTrails(dt);
             CapturedMass += captured;
             return captured;
+        }
+
+        /// <summary>
+        /// Removes dust <paramref name="i"/> by moving the last one into its place. The trail block moves with it, so
+        /// the two arrays stay lined up (22 §5).
+        /// </summary>
+        void SwapRemove(int i)
+        {
+            int last = count - 1;
+            items[i] = items[last];
+            if (trailLen > 0 && i != last)
+                Array.Copy(trail, last * trailLen, trail, i * trailLen, trailLen);
+            count--;
         }
 
         /// <summary>
@@ -198,8 +275,7 @@ namespace Incremental
                 float dist2 = to.sqrMagnitude;
                 if (dist2 < capR2)
                 {
-                    items[i] = items[count - 1];
-                    count--;
+                    SwapRemove(i);
                     i--;
                     absorbed++;
                     continue;
@@ -223,6 +299,7 @@ namespace Incremental
         {
             count = 0;
             spawnAcc = 0;
+            trailClock = 0;
         }
 
         /// <summary>
@@ -231,7 +308,7 @@ namespace Incremental
         /// </summary>
         public void AddFree(Vector2 pos, Vector2 vel)
         {
-            if (count >= items.Length) Array.Resize(ref items, items.Length * 2);
+            if (count >= items.Length) Grow();
             items[count++] = new Dust
             {
                 pos = pos,
@@ -341,7 +418,7 @@ namespace Incremental
 
         void Add(Vector2 pos, Vector2 vel, int kind = 0)
         {
-            if (count >= items.Length) Array.Resize(ref items, items.Length * 2);
+            if (count >= items.Length) Grow();
             items[count++] = new Dust
             {
                 pos = pos,
@@ -351,6 +428,13 @@ namespace Incremental
                 size = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustSizeJitter),
                 bright = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustBrightJitter),
             };
+        }
+
+        /// <summary>Doubles both arrays together so a dust and its trail block keep the same index (22 §5).</summary>
+        void Grow()
+        {
+            Array.Resize(ref items, items.Length * 2);
+            EnsureTrail();
         }
 
         Vector2 RandomDir()

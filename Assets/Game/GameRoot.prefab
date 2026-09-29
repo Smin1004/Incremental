@@ -50,6 +50,7 @@ MonoBehaviour:
   unlitMaterial: {fileID: 2100000, guid: 319a5615ae4d94947aa6fdaa04d30eb2, type: 2}
   planetMaterial: {fileID: 2100000, guid: c44782bd835645a449856ae3cd7c07ce, type: 2}
   dustMaterial: {fileID: 2100000, guid: 340bd9276808c8a4fb84faca9d650b50, type: 2}
+  dustTrailMaterial: {fileID: 2100000, guid: ec9b2caca0715d54db7f80e66f4effce, type: 2}
   backgroundMaterial: {fileID: 2100000, guid: 7d25517b3e7dc7c4b803b1471cbbc444, type: 2}
   fxMaterial: {fileID: 2100000, guid: c56a5e4dd6397114ba8c9d5652e62a25, type: 2}
   flashMaterial: {fileID: 2100000, guid: d86618f3d10fab349b7cd1a33181878c, type: 2}

@@ -26,6 +26,14 @@ MonoBehaviour:
   pullOuterRatio: 1.4
   captureAssistRatio: 2.5
   tangentialKeepPerSec: 0.6
+  worldScalePerRing: 0.06
+  worldExpandSec: 0.6
+  bodyMinScreenPx: 8
+  vortexShare: 0.25
+  trailPoints: 6
+  trailSampleSec: 0.05
+  trailWidthShare: 0.6
+  trailBudget: 300
   followEnabled: 1
   followSpeedPx: 220
   followDebugMults:
@@ -439,4 +447,11 @@ MonoBehaviour:
   treeZoomMin: 0.3
   treeZoomMax: 1.6
   treeFocusSec: 0.35
+  perfBenchDustCounts:
+  - 1000
+  - 3700
+  - 8000
+  perfBenchWarmupSec: 2
+  perfBenchSampleSec: 6
+  perfBenchSettleSec: 4
   pendingSaveIntervalSec: 5

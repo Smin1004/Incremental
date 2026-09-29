@@ -26,6 +26,11 @@ namespace Incremental
         /// </summary>
         public double followSpeedPx;
         /// <summary>
+        /// 22 §6: how much wider the play world is than at ring 1. The camera zooms out by it, the dust cap and the
+        /// starting dust go up with its square (area), and everything in the world keeps its own size.
+        /// </summary>
+        public double worldScale;
+        /// <summary>
         /// 20 §4: share of newly spawned dust per dust kind, same indices as GameParams.dustKinds. Index 0 is the base
         /// dust and holds whatever the others leave; a locked kind is 0. Never null after <see cref="Stats.Compute"/>.
         /// </summary>
@@ -100,14 +105,18 @@ namespace Incremental
                 }
             }
 
+            double world = WorldScale(p, m.unlockedMaxTier);
+            double area = world * world;
             var s = new EffectiveStats
             {
+                worldScale = world,
                 spawnRate = p.spawnRate + spawn,
                 pullAccel = p.pullAccel * (1.0 + pull),
                 saleMult = p.saleMult * (1.0 + sale),
                 staminaMax = p.staminaMax + stamina,
                 thresholdMult = p.thresholdMult * (1.0 - Math.Min(threshold, MaxReduction)),
-                dustCap = p.dustCap + cap,
+                // 22 §6: the cap follows the area, so a wider world holds the same density of dust.
+                dustCap = (p.dustCap + cap) * area,
                 dustMass = p.dustMass * mass,
                 gravityRadius = p.gravityRadius * (1.0 + radius),
                 followSpeedPx = p.followSpeedPx * (1.0 + follow),
@@ -115,7 +124,9 @@ namespace Incremental
             double drainMult = 1.0 - Math.Min(drain, MaxReduction);
             s.staminaIdleDrain = idleDrainBase * drainMult;
             s.staminaHoldDrain = holdDrainBase * drainMult;
-            s.dustInitial = Math.Min(p.dustInitial + start, s.dustCap);
+            // The starting dust follows the area for the same reason: without it a late run would open on an empty
+            // world and take longer than the run itself to fill up.
+            s.dustInitial = Math.Min((p.dustInitial + start) * area, s.dustCap);
             s.fragChance = Math.Clamp(frag, 0.0, 1.0);
             s.fragOffset = (int)Math.Max(0, p.fragmentBaseOffset - Math.Round(fragRange));
             FillDustKinds(p, t, m, kindAdd, ref s);
@@ -172,6 +183,14 @@ namespace Incremental
         /// <summary>Number substituted into the stat.&lt;id&gt;.effect string: percent for fraction effects, raw otherwise.</summary>
         public static double EffectDisplayNumber(NodeDef n) =>
             IsPercentEffect(n.statId) ? n.effectPerLevel * 100.0 : n.effectPerLevel;
+
+        /// <summary>
+        /// 22 §6: linear size of the play world at ring <paramref name="ring"/>, 1 + worldScalePerRing x (ring - 1).
+        /// Ring 1 is 1 and ring 11 is 1.60 at the spec value. A pure function, so the tests can read the rule and the
+        /// camera can ask for the target before the effective stats are recomputed.
+        /// </summary>
+        public static double WorldScale(GameParams p, int ring) =>
+            1.0 + p.worldScalePerRing * Math.Max(0, ring - 1);
 
         public static double Threshold(CelestialTier tier, in EffectiveStats s) => tier.requiredMass * s.thresholdMult;
 

@@ -127,6 +127,9 @@ namespace Incremental
             }
 
             if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
+            // 22 §6: the two lines are drawn in world units, so a zoomed-out camera would thin them to nothing. Their
+            // width follows the scale, which keeps them the same thickness on screen.
+            SetLineWidths((float)root.WorldScale);
             var ps = root.ReadPointer();
             // 20 §7: everything about the hold sits on the gravity source, which is the cursor unless it is trailing it.
             Vector2 w = root.GravityWorld;
@@ -183,7 +186,7 @@ namespace Incremental
                 pop = Mathf.Sin(popAge / popSec * Mathf.PI) * (float)p.formingPopScale * root.EffectIntensity;
                 popAge += dt;
             }
-            float drawnPx = sizePx * (1f + pop);
+            float drawnPx = (float)root.RunBodyPx(sizePx * (1f + pop));
             body.SetDiameter(drawnPx / (float)p.pixelsPerUnit);
 
             // Gauge: a thin ring just outside the body (and its ring, if any), around the gravity source.
@@ -202,6 +205,17 @@ namespace Incremental
             }
             gaugeFill.Fill = (float)root.GaugeFill();
         }
+
+        /// <summary>22 §6: keeps the ring and the leash the same thickness on screen however far the camera has pulled back.</summary>
+        void SetLineWidths(float worldScale)
+        {
+            if (Mathf.Approximately(lineScale, worldScale)) return;
+            lineScale = worldScale;
+            ring.widthMultiplier = (float)(2.0 * worldScale / p.pixelsPerUnit);
+            leash.widthMultiplier = (float)(p.followLineWidthPx * worldScale / p.pixelsPerUnit);
+        }
+
+        float lineScale = -1f;
 
         /// <summary>Rebuilds the ring for the effective gravity radius (the gravity_radius upgrade changes it between runs).</summary>
         void SetRingRadius(double radiusPx)

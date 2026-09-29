@@ -121,6 +121,28 @@ namespace Incremental
         [Tooltip("What is left of the tangential speed after one second inside the assist radius (0.6 = 40% damped per second).")]
         public double tangentialKeepPerSec = 0.6;
 
+        [Header("Widening world (22 §6)")]
+        [Tooltip("How much wider the play world gets per ring: the linear scale of ring k is 1 + this x (k - 1), so 0.06 " +
+                 "makes ring 11 1.60 wide and 2.56 in area. 0 keeps the world the size it was before 22 §6.")]
+        public double worldScalePerRing = 0.06;
+        [Tooltip("How long the world takes to grow after a gate is bought (seconds).")]
+        public double worldExpandSec = 0.6;
+        [Tooltip("Smallest a body may be drawn on screen (px), so an asteroid or a fragment does not become a dot as the " +
+                 "camera pulls back (22 §6).")]
+        public double bodyMinScreenPx = 8;
+
+        [Header("Vortex and trails (22 §5)")]
+        [Tooltip("Share of the pull that is turned sideways (counter-clockwise), so dust spirals in instead of falling " +
+                 "straight. 0 brings back the straight lines of 20 §3.")]
+        public double vortexShare = 0.25;
+        [Tooltip("Positions kept per trailed dust, and the fixed time between two of them (seconds).")]
+        public int trailPoints = 6;
+        public double trailSampleSec = 0.05;
+        [Tooltip("Width of the head of a trail as a share of that dust's drawn size; it narrows to 0 at the tail.")]
+        public double trailWidthShare = 0.6;
+        [Tooltip("Trails drawn at once. Over it, the heavier kinds win, then the ones closer to the gravity source.")]
+        public int trailBudget = 300;
+
         [Header("Gravity source follow (22 §3)")]
         [Tooltip("On since 22 §3: the gravity source follows the cursor at its effective top speed at most and a thin line " +
                  "joins the two, so a fast sweep leaves the gravity behind. Off puts it back on the cursor exactly.")]
@@ -536,6 +558,16 @@ namespace Incremental
         public double treeZoomMax = 1.6;
         [Tooltip("Seconds of the camera move to the frontier when the tree opens.")]
         public double treeFocusSec = 0.35;
+
+        [Header("Performance measurement (22 §4)")]
+        [Tooltip("Dust counts the benchmark measures the run screen at, in order.")]
+        public double[] perfBenchDustCounts = { 1000, 3700, 8000 };
+        [Tooltip("Seconds of each scene that are thrown away before the sample starts, and how long the sample lasts.")]
+        public double perfBenchWarmupSec = 2;
+        public double perfBenchSampleSec = 6;
+        [Tooltip("Seconds before the very first scene is measured: the window opening and the first shader variants are " +
+                 "one-off stalls that would otherwise land in scene 1.")]
+        public double perfBenchSettleSec = 4;
 
         [Header("Save (02 §6)")]
         [Tooltip("While a run is going, its progress is saved this often (seconds) so a killed game keeps the run's income.")]

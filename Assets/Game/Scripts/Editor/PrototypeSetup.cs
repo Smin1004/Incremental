@@ -28,6 +28,8 @@ namespace Incremental.EditorTools
         const string PlanetShaderName = "Incremental/Planet";
         const string DustMaterialPath = MaterialsDir + "/Dust.mat";
         const string DustShaderName = "Incremental/Dust";
+        const string DustTrailMaterialPath = MaterialsDir + "/DustTrail.mat";
+        const string DustTrailShaderName = "Incremental/DustTrail";
         const string BackgroundMaterialPath = MaterialsDir + "/Starfield.mat";
         const string BackgroundShaderName = "Incremental/Starfield";
         const string FxMaterialPath = MaterialsDir + "/FxRing.mat";
@@ -126,6 +128,7 @@ namespace Incremental.EditorTools
 
             EnsureMaterial(PlanetMaterialPath, PlanetShaderName);
             EnsureMaterial(DustMaterialPath, DustShaderName);
+            EnsureMaterial(DustTrailMaterialPath, DustTrailShaderName);
             EnsureMaterial(BackgroundMaterialPath, BackgroundShaderName);
             EnsureMaterial(FxMaterialPath, FxShaderName);
             EnsureMaterial(FlashMaterialPath, FlashShaderName);
@@ -221,6 +224,7 @@ namespace Incremental.EditorTools
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
             root.planetMaterial = AssetDatabase.LoadAssetAtPath<Material>(PlanetMaterialPath);
             root.dustMaterial = AssetDatabase.LoadAssetAtPath<Material>(DustMaterialPath);
+            root.dustTrailMaterial = AssetDatabase.LoadAssetAtPath<Material>(DustTrailMaterialPath);
             root.backgroundMaterial = AssetDatabase.LoadAssetAtPath<Material>(BackgroundMaterialPath);
             root.fxMaterial = AssetDatabase.LoadAssetAtPath<Material>(FxMaterialPath);
             root.flashMaterial = AssetDatabase.LoadAssetAtPath<Material>(FlashMaterialPath);

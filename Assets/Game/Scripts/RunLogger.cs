@@ -24,7 +24,7 @@ namespace Incremental
         public static readonly string[] StatColumns =
         {
             "spawn_rate", "pull_accel", "sale_mult", "stamina_max", "threshold_mult", "dust_cap", "dust_mass",
-            "gravity_radius", "follow_speed", "stamina_idle_drain", "stamina_hold_drain", "dust_initial", "dust_mass_avg",
+            "gravity_radius", "follow_speed", "world_scale", "stamina_idle_drain", "stamina_hold_drain", "dust_initial", "dust_mass_avg",
         };
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace Incremental
             sb.Append(',').Append(r.unlockedMaxTier).Append(',').Append(TotalLevels(r.startLevels));
             var s = r.startStats;
             foreach (double v in new[] { s.spawnRate, s.pullAccel, s.saleMult, s.staminaMax, s.thresholdMult, s.dustCap, s.dustMass,
-                         s.gravityRadius, s.followSpeedPx, s.staminaIdleDrain, s.staminaHoldDrain, s.dustInitial, s.dustMassAvg })
+                         s.gravityRadius, s.followSpeedPx, s.worldScale, s.staminaIdleDrain, s.staminaHoldDrain, s.dustInitial, s.dustMassAvg })
                 sb.Append(',').Append(Fmt.Csv(v));
             if (p != null)
                 for (int k = 1; k < p.DustKindCount; k++) sb.Append(',').Append(Fmt.Csv(s.KindChance(k)));

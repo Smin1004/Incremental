@@ -153,7 +153,7 @@ namespace Incremental.Tests
                 string header = RunLogger.Header(c);
                 Assert.AreEqual("run,duration_s,income,t1,t2,t3,t4,f1,f2,f3,f4,frag_income,ratio_vs_last,max_tier,node_levels," +
                                 "spawn_rate,pull_accel,sale_mult,stamina_max,threshold_mult,dust_cap,dust_mass,gravity_radius," +
-                                "follow_speed,stamina_idle_drain,stamina_hold_drain,dust_initial,dust_mass_avg,end_reason", header);
+                                "follow_speed,world_scale,stamina_idle_drain,stamina_hold_drain,dust_initial,dust_mass_avg,end_reason", header);
 
                 var stats = Stats.Compute(TestData.Params(), TestData.Nodes(), TestData.Meta(("a_spawn", 2)));
                 var rec = new RunRecord
@@ -166,7 +166,7 @@ namespace Incremental.Tests
                 var lines = File.ReadAllLines(RunLogger.FilePath(dir));
                 Assert.AreEqual(2, lines.Length);
                 Assert.AreEqual(header.Split(',').Length, lines[1].Split(',').Length);
-                Assert.AreEqual("2,50.0,13,12,1,0,0,0,0,0,0,0,1.250,2,3,6,600,1,60,1,300,1,180,220,0.2,1,100,1,stamina", lines[1]);
+                Assert.AreEqual("2,50.0,13,12,1,0,0,0,0,0,0,0,1.250,2,3,6,600,1,60,1,300,1,180,220,1,0.2,1,100,1,stamina", lines[1]);
 
                 string rotated = RunLogger.Append(dir, rec, TestData.Tiers(5));
                 Assert.IsNotNull(rotated);

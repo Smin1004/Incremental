@@ -62,6 +62,8 @@ namespace Incremental
         public Material planetMaterial;
         [Tooltip("Incremental/Dust: glowing dust points (14 §5).")]
         public Material dustMaterial;
+        [Tooltip("Incremental/DustTrail: the trail ribbons of heavier dust (22 §5).")]
+        public Material dustTrailMaterial;
         [Tooltip("Incremental/Starfield: the shared procedural background (14 §6).")]
         public Material backgroundMaterial;
         [Tooltip("Incremental/FxRing: light rings of star ignition (14 §6).")]
@@ -87,7 +89,10 @@ namespace Incremental
         public IgnitionFx Ignition { get; private set; }
         public DustField Dust { get; private set; }
         public DustMeshRenderer DustRenderer { get; private set; }
+        /// <summary>22 §5: the trail ribbons of dust above the base kind.</summary>
+        public DustTrailRenderer TrailRenderer { get; private set; }
         public PlanetPool Planets { get; private set; }
+        public PerfBench Perf { get; private set; }
         public HudView Hud { get; private set; }
         public CursorView Cursor { get; private set; }
         public ResultView Result { get; private set; }
@@ -99,6 +104,30 @@ namespace Incremental
         public EndingView Ending { get; private set; }
         public AutoplayBot Bot { get; private set; }
         public Vector2 CursorWorld { get; private set; }
+
+        /// <summary>
+        /// 22 §6: how much wider the play world is than at ring 1, as it is being drawn now. It follows
+        /// <see cref="Stats.WorldScale"/> for the rings bought so far, but takes worldExpandSec to get there so the world
+        /// visibly opens up the moment a gate is bought.
+        /// </summary>
+        public double WorldScale { get; private set; } = 1;
+        /// <summary>Where <see cref="WorldScale"/> is heading: the scale of the rings bought so far.</summary>
+        public double WorldScaleTarget => Stats.WorldScale(gameParams, Meta.unlockedMaxTier);
+        /// <summary>
+        /// The screens the world scale applies to (22 §6): the run screen, and the tree screen, where the background
+        /// pulling back is what makes a gate purchase read as growth. The result screen keeps its own scale, because the
+        /// solar system there is drawn in world space and has nothing to do with the play area.
+        /// </summary>
+        public bool WorldScaleActive => Phase == GamePhase.Run || (Tree != null && Tree.IsVisible);
+        double worldScaleFrom = 1, worldScaleTo = 1, worldScaleAge = double.MaxValue;
+        float baseOrthoSize = 5f;
+
+        /// <summary>
+        /// 22 §6: a body's drawn size in reference px, never so small that the zoomed-out camera turns it into a dot.
+        /// The world size of a body does not change with the scale, so its screen size is its size over the scale; the
+        /// floor is bodyMinScreenPx on screen.
+        /// </summary>
+        public double RunBodyPx(double px) => Math.Max(px, gameParams.bodyMinScreenPx * WorldScale);
         /// <summary>
         /// Where the gravity actually pulls from (20 §7). The cursor itself unless the follow experiment is on, in which
         /// case it trails the cursor at a top speed. Bodies form here too, so the whole hold follows this point.
@@ -113,6 +142,17 @@ namespace Incremental
         public PointerState LastPointer { get; private set; }
         public double LastTickMs { get; private set; }
         public double MaxTickMs { get; private set; }
+
+        /// <summary>
+        /// 22 §4: milliseconds spent in the dust simulation since the last call, and zero after it. The performance
+        /// measurement reads it once a frame; nothing else does, so the counter cannot go stale.
+        /// </summary>
+        public double TakeDustTickMs()
+        {
+            double v = dustTickMsAcc;
+            dustTickMsAcc = 0;
+            return v;
+        }
         public StatsOverride Override;
         /// <summary>Runtime stamina drain from the debug preset key (18 §A1); disabled = the GameParams values.</summary>
         public StaminaOverride StaminaDrain;
@@ -137,6 +177,9 @@ namespace Incremental
         public string DataDir { get; private set; }
 
         readonly Stopwatch tickWatch = new Stopwatch();
+        /// <summary>22 §4: the dust simulation tick alone, so the measurement can split it out of the frame.</summary>
+        readonly Stopwatch dustWatch = new Stopwatch();
+        double dustTickMsAcc;
         List<UpgradeLevel> runStartLevels = new List<UpgradeLevel>();
         EffectiveStats runStartStats;
         bool pendingStart;
@@ -161,6 +204,8 @@ namespace Incremental
 
             Cam = Camera.main;
             if (Cam == null) Cam = FindFirstObjectByType<Camera>();
+            if (Cam != null) baseOrthoSize = Cam.orthographicSize;
+            WorldScale = worldScaleFrom = worldScaleTo = Stats.WorldScale(gameParams, Meta.unlockedMaxTier);
 
             var planetPoolGo = new GameObject("PlanetPool");
             planetPoolGo.transform.SetParent(transform, false);
@@ -178,6 +223,11 @@ namespace Incremental
             Dust.Init(gameParams);
             DustRenderer = dustGo.AddComponent<DustMeshRenderer>();
             DustRenderer.Init(this, Dust, dustMaterial);
+
+            var trailGo = new GameObject("DustTrails", typeof(MeshFilter), typeof(MeshRenderer));
+            trailGo.transform.SetParent(transform, false);
+            TrailRenderer = trailGo.AddComponent<DustTrailRenderer>();
+            TrailRenderer.Init(this, Dust, dustTrailMaterial);
 
 
             var hudGo = new GameObject("HudView");
@@ -236,6 +286,11 @@ namespace Incremental
             botGo.transform.SetParent(transform, false);
             Bot = botGo.AddComponent<AutoplayBot>();
             Bot.Init(this);
+
+            var perfGo = new GameObject("PerfBench");
+            perfGo.transform.SetParent(transform, false);
+            Perf = perfGo.AddComponent<PerfBench>();
+            Perf.Init(this);
         }
 
         /// <summary>
@@ -250,11 +305,23 @@ namespace Incremental
             {
                 Meta = new MetaState();
                 StartRun();
+                StartPerfBenchIfAsked();
                 return;
             }
             OpenLoaded(data, status == LoadStatus.RestoredFromBackup);
             UnityEngine.Debug.Log($"[Save] loaded ({status}): run {Meta.runCount}, currency {Fmt.Num(Meta.currency)}, max tier {Meta.unlockedMaxTier}" +
                                   (Meta.endingRun > 0 ? $", ending run {Meta.endingRun} (seen {Meta.endingSeen})" : string.Empty));
+            StartPerfBenchIfAsked();
+        }
+
+        /// <summary>
+        /// 22 §4: started with <c>-perfbench</c> the build measures itself instead of being played, writes the table and
+        /// quits. It is the only way to get build numbers without a person at the keyboard.
+        /// </summary>
+        void StartPerfBenchIfAsked()
+        {
+            if (!PerfBench.WantedOnCommandLine) return;
+            Perf.Begin(PerfBench.OutFileArg, PerfBench.LabelArg, true);
         }
 
         /// <summary>Takes a loaded save: closes a pending run, then shows the ending sequence if it is unseen, else the result screen.</summary>
@@ -322,6 +389,7 @@ namespace Incremental
 
         void FixedUpdate()
         {
+            TickWorldScale(Time.fixedDeltaTime);
             tickWatch.Restart();
             if (pendingStart)
             {
@@ -342,12 +410,48 @@ namespace Incremental
             }
         }
 
+        /// <summary>
+        /// 22 §6: moves the drawn world scale toward the scale of the rings bought so far, over worldExpandSec, and puts
+        /// it on the camera. A new target restarts the move from wherever the scale is now, so buying two gates in a row
+        /// still looks like one continuous opening up.
+        /// </summary>
+        void TickWorldScale(double dt)
+        {
+            double target = WorldScaleTarget;
+            if (target != worldScaleTo)
+            {
+                worldScaleFrom = WorldScale;
+                worldScaleTo = target;
+                worldScaleAge = 0;
+            }
+            double sec = Math.Max(1e-4, gameParams.worldExpandSec);
+            if (worldScaleAge < sec)
+            {
+                worldScaleAge += dt;
+                double k = Math.Clamp(worldScaleAge / sec, 0, 1);
+                WorldScale = worldScaleFrom + (worldScaleTo - worldScaleFrom) * (k * k * (3.0 - 2.0 * k));
+            }
+            else WorldScale = worldScaleTo;
+            ApplyWorldScale();
+        }
+
+        /// <summary>Puts the drawn world scale on the camera. Everything that reads the camera follows from here.</summary>
+        void ApplyWorldScale()
+        {
+            if (Cam == null) return;
+            float want = baseOrthoSize * (float)(WorldScaleActive ? WorldScale : 1.0);
+            if (!Mathf.Approximately(Cam.orthographicSize, want)) Cam.orthographicSize = want;
+        }
+
         void Update()
         {
+            ApplyWorldScale();
             // Between runs the result screen and the tree show their own numbers (Space is handled there too). The dust is
             // drawn during runs, and on the result screen only as the supernova remnant (15 §4.3).
             Hud.SetRunHudVisible(Phase == GamePhase.Run);
-            DustRenderer.SetVisible(Phase == GamePhase.Run || Ending.ShowsDust);
+            bool dustVisible = Phase == GamePhase.Run || Ending.ShowsDust;
+            DustRenderer.SetVisible(dustVisible);
+            TrailRenderer.SetVisible(dustVisible);
             Hud.SetCurrency(Meta.currency, Meta.runCount);
             if (Run != null)
             {
@@ -414,7 +518,10 @@ namespace Incremental
             Run.stamina -= s.staminaIdleDrain * dt;
             if (holding) Run.stamina -= s.staminaHoldDrain * dt;
 
+            dustWatch.Restart();
             double captured = Dust.Tick(dt, CameraArea(), GravityWorld, holding, s);
+            dustWatch.Stop();
+            dustTickMsAcc += dustWatch.Elapsed.TotalMilliseconds;
             if (captured > 0) Run.mass += captured * s.dustMass;
 
             // 20 §5: the moment the held mass passes a tier threshold, that tier may drop a fragment. No mass is spent.

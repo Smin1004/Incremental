@@ -68,7 +68,9 @@ namespace Incremental
             s.active = true;
             s.age = 0f;
             s.start = new Vector3(pos.x, pos.y, 0f);
-            s.diameter = (float)(tier.sizePx * scale / p.pixelsPerUnit);
+            // 22 §6: the body keeps its world size as the camera pulls back, but never shrinks past bodyMinScreenPx
+            // on screen, so an asteroid or a fragment is still a body at ring 11 and not a dot.
+            s.diameter = (float)(root.RunBodyPx(tier.sizePx * scale) / p.pixelsPerUnit);
             s.fromDiameter = fromDiameterPx > 0 ? (float)(fromDiameterPx / p.pixelsPerUnit) : s.diameter;
             s.v.transform.position = s.start;
             s.v.SetLook(tier.look, seed, p.planetAxisPitchDeg);
