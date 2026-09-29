@@ -26,16 +26,17 @@ namespace Incremental.EditorTools
             var c = celestial[0];
             var n = nodes[0];
 
-            var report = DataValidator.Validate(c, n);
-            foreach (var e in report.Errors) Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : n);
-            foreach (var w in report.Warnings) Debug.LogWarning("[Validate] " + w, n);
-
             var gameParams = LoadAll<GameParams>();
             if (gameParams.Count != 1)
             {
                 Debug.LogError($"[Validate] expected exactly one GameParams, found {gameParams.Count}.");
-                return report.Errors.Count + 1;
+                return 1;
             }
+
+            var report = DataValidator.Validate(c, n, gameParams[0]);
+            foreach (var e in report.Errors) Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : n);
+            foreach (var w in report.Warnings) Debug.LogWarning("[Validate] " + w, n);
+
             var paramReport = DataValidator.ValidateParams(gameParams[0], c);
             foreach (var e in paramReport.Errors) Debug.LogError("[Validate] " + e, gameParams[0]);
             foreach (var w in paramReport.Warnings) Debug.LogWarning("[Validate] " + w, gameParams[0]);

@@ -12,6 +12,8 @@ namespace Incremental
         /// <summary>Size and brightness multipliers, 1 ± dustSizeJitter / dustBrightJitter (render only, 14 §5).</summary>
         public float size;
         public float bright;
+        /// <summary>Index into GameParams.dustKinds (20 §4); 0 is the base dust. Decided once, when the dust is spawned.</summary>
+        public int kind;
     }
 
     /// <summary>
@@ -49,7 +51,7 @@ namespace Incremental
             CapturedMass = 0;
             Area = area;
             float gravR = Px(s.gravityRadius);
-            for (int i = 0; i < initial; i++) SpawnRandom(cursor, gravR);
+            for (int i = 0; i < initial; i++) SpawnRandom(cursor, gravR, s);
         }
 
         /// <summary>
@@ -120,7 +122,7 @@ namespace Incremental
                 {
                     float dist = Mathf.Sqrt(dist2);
                     float f = (float)PullFactor(dist, gravR, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
-                    if (f > 0f && dist > 1e-6f) d.vel += toCursor * (accel * f * fdt / dist);
+                    if (f > 0f && dist > 1e-6f) d.vel += toCursor * (accel * KindAccel(d.kind) * f * fdt / dist);
                     // Near the capture circle the sideways speed is damped, so dust falls in instead of orbiting.
                     if (dist2 < assistR2 && dist > 1e-6f)
                     {
@@ -148,7 +150,7 @@ namespace Incremental
                 // Capture on the swept segment, not on the end point: a fast dust cannot jump over the capture circle.
                 if (holding && SegmentHitsCircle(from, to, gravity, capR))
                 {
-                    captured += 1;
+                    captured += KindMass(d.kind);
                     CapturedCount++;
                     items[i] = items[count - 1];
                     count--;
@@ -170,7 +172,7 @@ namespace Incremental
             while (spawnAcc >= 1.0)
             {
                 spawnAcc -= 1.0;
-                if (count < cap) SpawnRandom(gravity, gravR);
+                if (count < cap) SpawnRandom(gravity, gravR, s);
             }
 
             CapturedMass += captured;
@@ -291,8 +293,40 @@ namespace Incremental
             }
         }
 
+        /// <summary>Mass of a dust of that kind (20 §4); the base dust is 1.</summary>
+        public double KindMass(int kind)
+        {
+            var def = p.DustKind(kind);
+            return def != null ? def.mass : 1.0;
+        }
+
+        /// <summary>Pull acceleration of that kind relative to the base dust: heavier dust is drawn in more slowly.</summary>
+        public float KindAccel(int kind)
+        {
+            var def = p.DustKind(kind);
+            return def != null ? (float)def.accelMult : 1f;
+        }
+
+        /// <summary>
+        /// One roll over the effective chances picks the kind of a new dust (20 §4). The shares do not overlap and
+        /// whatever they leave is base dust, so a locked kind can never come out.
+        /// </summary>
+        int RollKind(in EffectiveStats s)
+        {
+            var chance = s.dustKindChance;
+            if (chance == null || chance.Length < 2) return 0;
+            double u = rng.NextDouble();
+            double acc = 0;
+            for (int k = 1; k < chance.Length; k++)
+            {
+                acc += chance[k];
+                if (u < acc) return k;
+            }
+            return 0;
+        }
+
         /// <summary>Random position inside the area, outside gravityRadius of the cursor (best effort).</summary>
-        void SpawnRandom(Vector2 cursor, float gravR)
+        void SpawnRandom(Vector2 cursor, float gravR, in EffectiveStats s)
         {
             Rect a = Area;
             float gravR2 = gravR * gravR;
@@ -302,16 +336,17 @@ namespace Incremental
                 pos = new Vector2(a.xMin + (float)rng.NextDouble() * a.width, a.yMin + (float)rng.NextDouble() * a.height);
                 if ((pos - cursor).sqrMagnitude >= gravR2) break;
             }
-            Add(pos, RandomDir() * Px(p.driftSpeed));
+            Add(pos, RandomDir() * Px(p.driftSpeed), RollKind(s));
         }
 
-        void Add(Vector2 pos, Vector2 vel)
+        void Add(Vector2 pos, Vector2 vel, int kind = 0)
         {
             if (count >= items.Length) Array.Resize(ref items, items.Length * 2);
             items[count++] = new Dust
             {
                 pos = pos,
                 vel = vel,
+                kind = kind,
                 tint = (float)rng.NextDouble(),
                 size = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustSizeJitter),
                 bright = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustBrightJitter),

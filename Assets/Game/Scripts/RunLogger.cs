@@ -24,20 +24,26 @@ namespace Incremental
         public static readonly string[] StatColumns =
         {
             "spawn_rate", "pull_accel", "sale_mult", "stamina_max", "threshold_mult", "dust_cap", "dust_mass",
-            "gravity_radius", "stamina_idle_drain", "stamina_hold_drain", "dust_initial",
+            "gravity_radius", "stamina_idle_drain", "stamina_hold_drain", "dust_initial", "dust_mass_avg",
         };
 
-        public static string Header(CelestialTable c)
+        /// <summary>
+        /// With <paramref name="p"/> one more column per dust kind holds its share of spawned dust (20 §4): those and
+        /// dust_mass_avg are what the balance pass reads to check the per-ring growth of the average dust mass.
+        /// </summary>
+        public static string Header(CelestialTable c, GameParams p = null)
         {
             var sb = new StringBuilder("run,duration_s,income");
             for (int i = 0; i < c.tiers.Count; i++) sb.Append(",t").Append(c.tiers[i].tier);
             sb.Append(",ratio_vs_last,max_tier,node_levels");
             for (int i = 0; i < StatColumns.Length; i++) sb.Append(',').Append(StatColumns[i]);
+            if (p != null)
+                for (int k = 1; k < p.DustKindCount; k++) sb.Append(",p_").Append(p.DustKind(k).id);
             sb.Append(",end_reason");
             return sb.ToString();
         }
 
-        public static string Row(RunRecord r, CelestialTable c)
+        public static string Row(RunRecord r, CelestialTable c, GameParams p = null)
         {
             var sb = new StringBuilder();
             sb.Append(r.run).Append(',').Append(Fmt.Sec(r.durationSec)).Append(',').Append(Fmt.Csv(r.income));
@@ -46,8 +52,10 @@ namespace Incremental
             sb.Append(',').Append(r.unlockedMaxTier).Append(',').Append(TotalLevels(r.startLevels));
             var s = r.startStats;
             foreach (double v in new[] { s.spawnRate, s.pullAccel, s.saleMult, s.staminaMax, s.thresholdMult, s.dustCap, s.dustMass,
-                         s.gravityRadius, s.staminaIdleDrain, s.staminaHoldDrain, s.dustInitial })
+                         s.gravityRadius, s.staminaIdleDrain, s.staminaHoldDrain, s.dustInitial, s.dustMassAvg })
                 sb.Append(',').Append(Fmt.Csv(v));
+            if (p != null)
+                for (int k = 1; k < p.DustKindCount; k++) sb.Append(',').Append(Fmt.Csv(s.KindChance(k)));
             sb.Append(',').Append(r.endReason);
             return sb.ToString();
         }
@@ -60,14 +68,14 @@ namespace Incremental
         }
 
         /// <summary>Appends a row. Returns the path the old file was moved to when the header changed, else null.</summary>
-        public static string Append(string dir, RunRecord r, CelestialTable c)
+        public static string Append(string dir, RunRecord r, CelestialTable c, GameParams p = null)
         {
             string rotated = null;
             try
             {
                 Directory.CreateDirectory(dir);
                 string path = FilePath(dir);
-                string header = Header(c);
+                string header = Header(c, p);
                 if (File.Exists(path) && ReadFirstLine(path) != header)
                 {
                     rotated = Path.Combine(dir, "run_log_" + DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + ".csv");
@@ -78,7 +86,7 @@ namespace Incremental
                 using (var w = new StreamWriter(path, true, new UTF8Encoding(false)))
                 {
                     if (!exists) w.WriteLine(header);
-                    w.WriteLine(Row(r, c));
+                    w.WriteLine(Row(r, c, p));
                 }
             }
             catch (Exception e)

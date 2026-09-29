@@ -520,7 +520,7 @@ namespace Incremental
 
         void LogRun(RunRecord rec)
         {
-            RunLogger.Append(DataDir, rec, celestialTable);
+            RunLogger.Append(DataDir, rec, celestialTable, gameParams);
             UnityEngine.Debug.Log(RunLogger.Summary(rec));
         }
 

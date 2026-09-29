@@ -138,7 +138,7 @@ namespace Incremental.Tests
         public void MissingId_StartsAtLevelZero()
         {
             // A save written before b_mass existed.
-            WriteRaw(store.SavePath, "{\"version\":2,\"meta\":{\"currency\":50.0,\"upgradeLevels\":[{\"id\":\"a_spawn\",\"level\":2}],\"unlockedMaxTier\":1,\"runCount\":4}}");
+            WriteRaw(store.SavePath, "{\"version\":3,\"meta\":{\"currency\":50.0,\"upgradeLevels\":[{\"id\":\"a_spawn\",\"level\":2}],\"unlockedMaxTier\":1,\"runCount\":4}}");
             var loaded = store.Load(out var status);
             Assert.AreEqual(LoadStatus.Loaded, status);
             Assert.AreEqual(2, loaded.meta.GetLevel("a_spawn"));
@@ -322,7 +322,7 @@ namespace Incremental.Tests
             var loaded = store.Load(out var status);
 
             Assert.AreEqual(LoadStatus.Loaded, status);
-            Assert.AreEqual(2, loaded.version);
+            Assert.AreEqual(SaveMigration.CurrentVersion, loaded.version);
             Assert.AreEqual(0, loaded.meta.currency);
             Assert.AreEqual(0, loaded.meta.runCount);
             Assert.AreEqual(0, loaded.meta.totalIncome, "statistics reset too");
@@ -333,7 +333,7 @@ namespace Incremental.Tests
         }
 
         [Test]
-        public void V2Save_IsKept()
+        public void CurrentVersionSave_IsKept()
         {
             store.Write(new SaveData { meta = FullMeta() });
             var loaded = store.Load(out _);
@@ -344,8 +344,8 @@ namespace Incremental.Tests
         [Test]
         public void Migrate_FillsMissingPartsAndClamps()
         {
-            var d = new SaveData { version = 2, meta = new MetaState { upgradeLevels = null, runHistory = null, totalPlanets = null, unlockedMaxTier = 0 }, pending = null };
-            SaveMigration.Migrate(d);
+            var d = new SaveData { version = SaveMigration.CurrentVersion, meta = new MetaState { upgradeLevels = null, runHistory = null, totalPlanets = null, unlockedMaxTier = 0 }, pending = null };
+            d = SaveMigration.Migrate(d);
             Assert.AreEqual(SaveMigration.CurrentVersion, d.version);
             Assert.IsNotNull(d.meta.upgradeLevels);
             Assert.IsNotNull(d.meta.runHistory);

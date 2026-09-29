@@ -1,6 +1,7 @@
 // Dust (14 §5): soft glowing points, additive. One quad per dust in a dynamic mesh (DustMeshRenderer).
 // UV = (along, across, stretch): along runs −stretch..stretch, across −1..1, so a stretched quad draws a streak along the
-// velocity with a round head and a tail that narrows to a point. Vertex color = tint × brightness / 2.
+// velocity with a round head and a tail that narrows to a point. Vertex color rgb = tint × brightness / 2, alpha = the
+// dust kind's shape id / 255 (20 §4): the silhouette branch, while the hue stays the palette's.
 Shader "Incremental/Dust"
 {
     Properties
@@ -53,6 +54,19 @@ Shader "Incremental/Dust"
                 return o;
             }
 
+            // Silhouette of a dust kind (20 §4), as "how far out the shape reaches" in the direction of (x, y):
+            // 1 = all the way to the quad edge, smaller = pulled in. Shapes stay inside the quad, so nothing is clipped.
+            // 0 dot, 1 shard (a slanted chip), 2 clump (lumpy), 3 crystal (six points), 4 interstellar (a haze with four spikes).
+            float ShapeReach(int shape, float x, float y)
+            {
+                if (shape == 0) return 1.0;
+                float a = atan2(y, x);
+                if (shape == 1) return lerp(0.40, 1.0, pow(abs(cos(a - 0.52)), 2.0));
+                if (shape == 2) return lerp(0.72, 1.0, 0.5 + 0.5 * cos(3.0 * a + 0.7));
+                if (shape == 3) return lerp(0.30, 1.0, pow(abs(cos(3.0 * a)), 6.0));
+                return lerp(0.45, 1.0, max(pow(abs(cos(2.0 * a)), 8.0), 0.30));
+            }
+
             float4 frag(Varyings i) : SV_Target
             {
                 float s = max(i.uv.z, 1.0);
@@ -63,6 +77,10 @@ Shader "Incremental/Dust"
                 float d = x > s - 1.0
                     ? length(float2(x - (s - 1.0), i.uv.y))
                     : length(float2(max(-x - (s - 1.0), 0.0), i.uv.y / w));
+                // The kind's shape rides on the still dot; a fast streak is already a shape of its own, so it fades out.
+                int shape = (int)round(i.color.a * 255.0);
+                float reach = lerp(ShapeReach(shape, x, i.uv.y), 1.0, taper);
+                d /= max(reach, 1e-3);
                 float aa = max(fwidth(d), 1e-3);
                 float core = smoothstep(_Core + aa, _Core - aa, d);
                 float halo = exp(-d * d * 5.0) * saturate(1.0 - d);

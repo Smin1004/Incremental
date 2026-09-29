@@ -41,6 +41,53 @@ namespace Incremental
         public double idleDrain = 0.2;
     }
 
+    /// <summary>Silhouette the dust shader draws for a dust kind (20 §4). Only the shape branches; the hue is the palette's.</summary>
+    public enum DustShape
+    {
+        /// <summary>Base dust: a round point.</summary>
+        Dot = 0,
+        /// <summary>Medium: a slanted chip.</summary>
+        Shard = 1,
+        /// <summary>Large: a lumpy clump.</summary>
+        Clump = 2,
+        /// <summary>Crystal: a six-pointed sparkle.</summary>
+        Crystal = 3,
+        /// <summary>Interstellar: a wide haze with four diffraction spikes.</summary>
+        Interstellar = 4,
+    }
+
+    /// <summary>
+    /// One kind of dust (20 §4). The first entry is the base dust: it is always there, its chance is whatever the others
+    /// leave, and its mass / size / acceleration are the reference 1. Every other kind stays out of the field until its
+    /// tree node is bought, then it is mixed in at <see cref="baseChance"/>, which the kind's chance node raises.
+    /// Size is the cube root of the mass and the acceleration multiplier the −0.18 power of it, so heavier dust is bigger
+    /// and slower; the numbers are written down here (rounded as in the spec table) instead of computed, and Validate Data
+    /// checks that they still follow the two formulas.
+    /// </summary>
+    [Serializable]
+    public sealed class DustKindDef
+    {
+        [Tooltip("Stable key for the tree nodes, the log and the string key dust.<id>.")]
+        public string id = string.Empty;
+        public double mass = 1;
+        [Tooltip("The ring holding the unlock node (0 = the base dust, always there). Validate Data checks the tree against it.")]
+        public int unlockRing;
+        [Tooltip("Share of newly spawned dust once unlocked, before the chance node (0.03 = 3%).")]
+        public double baseChance;
+        [Tooltip("The kind's chance node: added share per level, and how many levels it has.")]
+        public double chancePerLevel;
+        public int chanceMaxLevel = 4;
+        [Tooltip("Drawn size and pull acceleration relative to the base dust.")]
+        public double sizeMult = 1;
+        public double accelMult = 1;
+        [Tooltip("Brightness relative to the base dust: heavier dust reads a little brighter.")]
+        public double brightMult = 1;
+        public DustShape shape = DustShape.Dot;
+
+        /// <summary>Largest share this kind can reach, with its chance node at full level.</summary>
+        public double MaxChance => baseChance + chancePerLevel * chanceMaxLevel;
+    }
+
     /// <summary>
     /// Balance parameters. Fields map 1:1 to the spec §6 parameter table (snake_case → camelCase),
     /// plus presentation values that the spec leaves open. All numbers are double; no constants in code.
@@ -95,6 +142,34 @@ namespace Incremental
             new StaminaPreset { id = "loose", holdDrain = 1.0, idleDrain = 0.2 },
             new StaminaPreset { id = "proposed", holdDrain = 1.5, idleDrain = 0.3 },
             new StaminaPreset { id = "fast", holdDrain = 2.0, idleDrain = 0.4 },
+        };
+
+        [Header("Dust kinds (20 §4)")]
+        [Tooltip("Entry 0 is the base dust and is always in the field; the rest are unlocked in the tree and mixed in by " +
+                 "chance. The chances never overlap: one roll at spawn picks the kind, and whatever is left over is base dust.")]
+        public DustKindDef[] dustKinds =
+        {
+            new DustKindDef { id = "base", mass = 1, unlockRing = 0, sizeMult = 1, accelMult = 1, brightMult = 1, shape = DustShape.Dot },
+            new DustKindDef
+            {
+                id = "medium", mass = 5, unlockRing = 3, baseChance = 0.03, chancePerLevel = 0.015, chanceMaxLevel = 4,
+                sizeMult = 1.7, accelMult = 0.75, brightMult = 1.15, shape = DustShape.Shard,
+            },
+            new DustKindDef
+            {
+                id = "large", mass = 25, unlockRing = 5, baseChance = 0.03, chancePerLevel = 0.015, chanceMaxLevel = 4,
+                sizeMult = 2.9, accelMult = 0.55, brightMult = 1.3, shape = DustShape.Clump,
+            },
+            new DustKindDef
+            {
+                id = "crystal", mass = 125, unlockRing = 7, baseChance = 0.02, chancePerLevel = 0.01, chanceMaxLevel = 4,
+                sizeMult = 4.9, accelMult = 0.40, brightMult = 1.45, shape = DustShape.Crystal,
+            },
+            new DustKindDef
+            {
+                id = "interstellar", mass = 625, unlockRing = 9, baseChance = 0.015, chancePerLevel = 0.0075, chanceMaxLevel = 4,
+                sizeMult = 8.5, accelMult = 0.30, brightMult = 1.6, shape = DustShape.Interstellar,
+            },
         };
 
         [Header("Economy (spec §6)")]
@@ -450,6 +525,22 @@ namespace Incremental
         [Header("Save (02 §6)")]
         [Tooltip("While a run is going, its progress is saved this often (seconds) so a killed game keeps the run's income.")]
         public double pendingSaveIntervalSec = 5;
+
+        /// <summary>Number of dust kinds, the base dust included (20 §4).</summary>
+        public int DustKindCount => dustKinds != null ? dustKinds.Length : 0;
+
+        /// <summary>The kind at that index, or null. Index 0 is the base dust.</summary>
+        public DustKindDef DustKind(int index) =>
+            dustKinds != null && index >= 0 && index < dustKinds.Length ? dustKinds[index] : null;
+
+        /// <summary>Index of the dust kind with this id, or -1.</summary>
+        public int DustKindIndex(string id)
+        {
+            if (dustKinds == null || id == null) return -1;
+            for (int i = 0; i < dustKinds.Length; i++)
+                if (dustKinds[i] != null && dustKinds[i].id == id) return i;
+            return -1;
+        }
 
         /// <summary>Index of the stamina preset holding these two drains, or -1 when none does (18 §A1).</summary>
         public int StaminaPresetIndex(double holdDrain, double idleDrain)

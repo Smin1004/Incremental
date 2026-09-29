@@ -32,7 +32,8 @@ namespace Incremental.Tests
         /// ring 2: b_spawn (spawn +2, prereq a_spawn), b_mass (dust_mass ×1.5, max 2, cost 100 ×2, prereq a_spawn | a_pull), gate_t3 (cost 300);
         /// ring 3: c_threshold (−50%, max 3, prereq b_spawn), c_drain (−50%, max 3, prereq b_mass), gate_t4 (cost 3000);
         /// ring 4: d_sale (+100%, unlimited, prereq c_threshold).
-        /// One node per remaining stat in ring 1 (e_*) with max 1, cost 5, for the per-stat tests.
+        /// One node per remaining stat in ring 1 (e_*) with max 1, cost 5, for the per-stat tests, plus the dust kind
+        /// unlock dust_medium and its chance node e_chance (20 §4).
         /// </summary>
         public static NodeTable Nodes()
         {
@@ -49,6 +50,8 @@ namespace Incremental.Tests
                 Stat("e_threshold", 1, 150, StatIds.ThresholdMult, 0.04, 5, 5, 1),
                 Stat("e_drain", 1, 200, StatIds.StaminaDrain, 0.05, 4, 5, 1),
                 Stat("e_mass", 1, 60, StatIds.DustMass, 1.5, 3, 5, 1),
+                DustUnlock("dust_medium", "medium", 1, 100, 5),
+                DustChance("e_chance", "medium", 1, 110, 0.02, 4, 5, "dust_medium"),
                 Gate("gate_t2", 2, 1, 30),
                 Stat("b_spawn", 2, 30, StatIds.SpawnRate, 2, 2, 40, 1.5, "a_spawn"),
                 Stat("b_mass", 2, 60, StatIds.DustMass, 1.5, 2, 100, 2, "a_spawn", "a_pull"),
@@ -83,6 +86,23 @@ namespace Incremental.Tests
                 id = id, kind = NodeKind.Stat, statId = stat, effectPerLevel = effect, maxLevel = maxLevel, baseCost = baseCost,
                 growth = growth, minTier = ring, angleDeg = angle, prereqs = new List<string>(prereqs), enabled = true,
             };
+
+        /// <summary>A dust kind unlock node (20 §4).</summary>
+        public static NodeDef DustUnlock(string id, string dustKindId, int ring, float angle, double cost, params string[] prereqs) =>
+            new NodeDef
+            {
+                id = id, kind = NodeKind.DustKindUnlock, dustKindId = dustKindId, maxLevel = 1, baseCost = cost, growth = 1,
+                minTier = ring, angleDeg = angle, prereqs = new List<string>(prereqs), enabled = true,
+            };
+
+        /// <summary>A dust kind chance node (20 §4): a stat node that also names the kind it raises.</summary>
+        public static NodeDef DustChance(string id, string dustKindId, int ring, float angle, double effect, int maxLevel,
+            double cost, params string[] prereqs)
+        {
+            var n = Stat(id, ring, angle, StatIds.DustChance, effect, maxLevel, cost, 1, prereqs);
+            n.dustKindId = dustKindId;
+            return n;
+        }
 
         public static NodeDef Gate(string id, int tier, int ring, double cost, params string[] prereqs) =>
             new NodeDef

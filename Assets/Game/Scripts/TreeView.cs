@@ -434,9 +434,14 @@ namespace Incremental
                     double mass = tier != null ? Stats.Threshold(tier, s) : 0;
                     sb.Append(string.Format(UIStrings.GateEffect, n.tier, Fmt.Price(price), Fmt.Num(mass, Rounding.Up)));
                 }
+                else if (n.IsDustUnlock)
+                {
+                    // 20 §4: a dust kind unlock has one level, so "per level" would read oddly.
+                    sb.Append(UIStrings.NodeEffect(n, p));
+                }
                 else
                 {
-                    sb.Append(string.Format(UIStrings.EffectPerLevel, UIStrings.NodeEffect(n)));
+                    sb.Append(string.Format(UIStrings.EffectPerLevel, UIStrings.NodeEffect(n, p)));
                 }
                 int level = m.GetLevel(n.id);
                 sb.Append('\n').Append(n.maxLevel > 0 ? string.Format(UIStrings.LevelOf, level, n.maxLevel) : string.Format(UIStrings.Level, level));

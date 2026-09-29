@@ -245,6 +245,29 @@ namespace Incremental.EditorTools
             Debug.Log("[Setup] Scene built and set as build scene 0: " + ScenePath);
         }
 
+        /// <summary>
+        /// Menu: replaces the node list and the ring multipliers of the NodeTable asset with the seed. Unlike
+        /// <see cref="AddMissing"/> this also drops nodes the seed no longer has, which is what a changed axis needs
+        /// (20 §4). Saves in the tree are keyed by node id, so old saves have to be thrown away with a version bump.
+        /// </summary>
+        [MenuItem("Incremental/Setup/5. Rebuild Node Table From Seed")]
+        public static void RebuildNodeTable()
+        {
+            var n = AssetDatabase.LoadAssetAtPath<NodeTable>(NodePath);
+            if (n == null)
+            {
+                Debug.LogError("[Setup] NodeTable asset not found.");
+                return;
+            }
+            int before = n.nodes.Count;
+            n.nodes = SkillTreeSeed.Nodes();
+            n.ringCostMult = SkillTreeSeed.RingCostMult();
+            n.Invalidate();
+            EditorUtility.SetDirty(n);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Setup] node table rebuilt from the seed: {before} → {n.nodes.Count} nodes");
+        }
+
         static T LoadOrCreate<T>(string path, System.Action<T> seed) where T : ScriptableObject
         {
             var asset = AssetDatabase.LoadAssetAtPath<T>(path);

@@ -20,6 +20,17 @@ namespace Incremental
         public double staminaIdleDrain;
         public double staminaHoldDrain;
         public double dustInitial;
+        /// <summary>
+        /// 20 §4: share of newly spawned dust per dust kind, same indices as GameParams.dustKinds. Index 0 is the base
+        /// dust and holds whatever the others leave; a locked kind is 0. Never null after <see cref="Stats.Compute"/>.
+        /// </summary>
+        public double[] dustKindChance;
+        /// <summary>Expected mass of one spawned dust with those chances (20 §4: the "링별 평균 먼지 질량").</summary>
+        public double dustMassAvg;
+
+        /// <summary>Share of spawned dust of that kind index, 0 when it is out of range (a save written before 20 §4).</summary>
+        public double KindChance(int index) =>
+            dustKindChance != null && index >= 0 && index < dustKindChance.Length ? dustKindChance[index] : 0;
     }
 
     /// <summary>
@@ -43,6 +54,9 @@ namespace Incremental
         {
             double spawn = 0, pull = 0, sale = 0, stamina = 0, threshold = 0, cap = 0, radius = 0, drain = 0, start = 0;
             double mass = 1;
+            // 20 §4: extra share per dust kind from its chance node; the kind only appears once its unlock node is owned.
+            int kinds = p.DustKindCount;
+            var kindAdd = kinds > 0 ? new double[kinds] : System.Array.Empty<double>();
             var levels = m.upgradeLevels;
             for (int i = 0; i < levels.Count; i++)
             {
@@ -54,6 +68,12 @@ namespace Incremental
                 double add = n.effectPerLevel * level;
                 switch (n.statId)
                 {
+                    case StatIds.DustChance:
+                    {
+                        int k = p.DustKindIndex(n.dustKindId);
+                        if (k > 0) kindAdd[k] += add;
+                        break;
+                    }
                     case StatIds.SpawnRate: spawn += add; break;
                     case StatIds.PullAccel: pull += add; break;
                     case StatIds.SaleMult: sale += add; break;
@@ -82,13 +102,56 @@ namespace Incremental
             s.staminaIdleDrain = idleDrainBase * drainMult;
             s.staminaHoldDrain = holdDrainBase * drainMult;
             s.dustInitial = Math.Min(p.dustInitial + start, s.dustCap);
+            FillDustKinds(p, t, m, kindAdd, ref s);
             return s;
+        }
+
+        /// <summary>
+        /// 20 §4: turns the owned unlock nodes and chance levels into one share per dust kind. Shares do not overlap; if
+        /// they ever added up past 1 they are scaled down together, and the base dust keeps the rest. Also works out the
+        /// expected mass of a spawned dust, which is what the balance pass reads per ring.
+        /// </summary>
+        static void FillDustKinds(GameParams p, NodeTable t, MetaState m, double[] kindAdd, ref EffectiveStats s)
+        {
+            int kinds = p.DustKindCount;
+            s.dustKindChance = new double[kinds];
+            if (kinds == 0)
+            {
+                s.dustMassAvg = p.dustMass;
+                return;
+            }
+            double taken = 0;
+            for (int k = 1; k < kinds; k++)
+            {
+                var def = p.DustKind(k);
+                if (def == null || t == null) continue;
+                var unlock = t.DustUnlock(def.id);
+                if (unlock == null || !unlock.enabled || m.GetLevel(unlock.id) < 1) continue;
+                double c = def.baseChance + kindAdd[k];
+                if (c < 0) c = 0;
+                s.dustKindChance[k] = c;
+                taken += c;
+            }
+            if (taken > 1)
+            {
+                for (int k = 1; k < kinds; k++) s.dustKindChance[k] /= taken;
+                taken = 1;
+            }
+            s.dustKindChance[0] = 1.0 - taken;
+            double avg = 0;
+            for (int k = 0; k < kinds; k++)
+            {
+                var def = p.DustKind(k);
+                avg += s.dustKindChance[k] * (def != null ? def.mass : 1.0);
+            }
+            s.dustMassAvg = avg * s.dustMass;
         }
 
         /// <summary>True for stats whose effectPerLevel is a fraction shown as a percent.</summary>
         public static bool IsPercentEffect(string statId) =>
             statId == StatIds.PullAccel || statId == StatIds.SaleMult || statId == StatIds.ThresholdMult ||
-            statId == StatIds.GravityRadius || statId == StatIds.StaminaDrain;
+            statId == StatIds.GravityRadius || statId == StatIds.StaminaDrain ||
+            statId == StatIds.DustChance;
 
         /// <summary>Number substituted into the stat.&lt;id&gt;.effect string: percent for fraction effects, raw otherwise.</summary>
         public static double EffectDisplayNumber(NodeDef n) =>

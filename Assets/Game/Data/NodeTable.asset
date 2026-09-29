@@ -21,6 +21,7 @@ MonoBehaviour:
     baseCost: 5
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 1
     prereqs: []
     angleDeg: 30
@@ -33,6 +34,7 @@ MonoBehaviour:
     baseCost: 5
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 1
     prereqs: []
     angleDeg: 330
@@ -45,6 +47,7 @@ MonoBehaviour:
     baseCost: 8
     growth: 1
     tier: 0
+    dustKindId: 
     minTier: 1
     prereqs: []
     angleDeg: 270
@@ -57,6 +60,7 @@ MonoBehaviour:
     baseCost: 8
     growth: 1
     tier: 0
+    dustKindId: 
     minTier: 1
     prereqs: []
     angleDeg: 210
@@ -69,6 +73,7 @@ MonoBehaviour:
     baseCost: 30
     growth: 1
     tier: 2
+    dustKindId: 
     minTier: 1
     prereqs: []
     angleDeg: 90
@@ -81,6 +86,7 @@ MonoBehaviour:
     baseCost: 40
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 2
     prereqs:
     - r1_spawn
@@ -94,6 +100,7 @@ MonoBehaviour:
     baseCost: 40
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 2
     prereqs:
     - r1_spawn
@@ -107,6 +114,7 @@ MonoBehaviour:
     baseCost: 40
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 2
     prereqs:
     - r1_pull
@@ -120,6 +128,7 @@ MonoBehaviour:
     baseCost: 40
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 2
     prereqs:
     - r1_sale
@@ -133,6 +142,7 @@ MonoBehaviour:
     baseCost: 40
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 2
     prereqs:
     - r1_stamina
@@ -146,6 +156,7 @@ MonoBehaviour:
     baseCost: 40
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 2
     prereqs:
     - gate_t2
@@ -159,6 +170,7 @@ MonoBehaviour:
     baseCost: 300
     growth: 1
     tier: 3
+    dustKindId: 
     minTier: 2
     prereqs:
     - gate_t2
@@ -172,6 +184,7 @@ MonoBehaviour:
     baseCost: 300
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 3
     prereqs:
     - r2_cap
@@ -185,6 +198,7 @@ MonoBehaviour:
     baseCost: 300
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 3
     prereqs:
     - r2_radius
@@ -198,6 +212,7 @@ MonoBehaviour:
     baseCost: 300
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 3
     prereqs:
     - r2_sale
@@ -211,6 +226,7 @@ MonoBehaviour:
     baseCost: 300
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 3
     prereqs:
     - r2_stamina
@@ -224,19 +240,21 @@ MonoBehaviour:
     baseCost: 300
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 3
     prereqs:
     - r2_threshold
     angleDeg: 150
     enabled: 1
-  - id: r3_mass
-    kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
+  - id: dust_medium
+    kind: 2
+    statId: 
+    effectPerLevel: 0
     maxLevel: 1
-    baseCost: 850
+    baseCost: 840
     growth: 1
     tier: 0
+    dustKindId: medium
     minTier: 3
     prereqs:
     - gate_t3
@@ -250,6 +268,7 @@ MonoBehaviour:
     baseCost: 2500
     growth: 1
     tier: 4
+    dustKindId: 
     minTier: 3
     prereqs:
     - gate_t3
@@ -263,6 +282,7 @@ MonoBehaviour:
     baseCost: 2500
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 4
     prereqs:
     - r3_start
@@ -276,6 +296,7 @@ MonoBehaviour:
     baseCost: 2500
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 4
     prereqs:
     - r3_pull
@@ -289,6 +310,7 @@ MonoBehaviour:
     baseCost: 2500
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 4
     prereqs:
     - r3_threshold
@@ -302,6 +324,7 @@ MonoBehaviour:
     baseCost: 2500
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 4
     prereqs:
     - r3_sale
@@ -315,22 +338,24 @@ MonoBehaviour:
     baseCost: 2500
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 4
     prereqs:
     - r3_drain
     angleDeg: 210
     enabled: 1
-  - id: r4_mass
+  - id: r4_chance_medium
     kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
-    maxLevel: 2
-    baseCost: 6800
-    growth: 1.8
+    statId: dust_chance
+    effectPerLevel: 0.015
+    maxLevel: 4
+    baseCost: 2500
+    growth: 1.5
     tier: 0
+    dustKindId: medium
     minTier: 4
     prereqs:
-    - r3_mass
+    - dust_medium
     angleDeg: 60
     enabled: 1
   - id: gate_t5
@@ -341,6 +366,7 @@ MonoBehaviour:
     baseCost: 20000
     growth: 1
     tier: 5
+    dustKindId: 
     minTier: 4
     prereqs:
     - gate_t4
@@ -354,6 +380,7 @@ MonoBehaviour:
     baseCost: 20000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 5
     prereqs:
     - r4_spawn
@@ -367,6 +394,7 @@ MonoBehaviour:
     baseCost: 20000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 5
     prereqs:
     - r4_radius
@@ -380,6 +408,7 @@ MonoBehaviour:
     baseCost: 20000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 5
     prereqs:
     - r4_threshold
@@ -393,6 +422,7 @@ MonoBehaviour:
     baseCost: 20000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 5
     prereqs:
     - r4_sale
@@ -406,22 +436,24 @@ MonoBehaviour:
     baseCost: 20000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 5
     prereqs:
     - r4_stamina
     angleDeg: 210
     enabled: 1
-  - id: r5_mass
-    kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
-    maxLevel: 2
+  - id: dust_large
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
     baseCost: 54000
-    growth: 1.8
+    growth: 1
     tier: 0
+    dustKindId: large
     minTier: 5
     prereqs:
-    - r4_mass
+    - r4_chance_medium
     angleDeg: 60
     enabled: 1
   - id: gate_t6
@@ -432,6 +464,7 @@ MonoBehaviour:
     baseCost: 150000
     growth: 1
     tier: 6
+    dustKindId: 
     minTier: 5
     prereqs:
     - gate_t5
@@ -445,6 +478,7 @@ MonoBehaviour:
     baseCost: 160000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 6
     prereqs:
     - r5_cap
@@ -458,6 +492,7 @@ MonoBehaviour:
     baseCost: 160000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 6
     prereqs:
     - r5_pull
@@ -471,6 +506,7 @@ MonoBehaviour:
     baseCost: 160000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 6
     prereqs:
     - r5_sale
@@ -484,22 +520,24 @@ MonoBehaviour:
     baseCost: 160000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 6
     prereqs:
     - r5_drain
     angleDeg: 210
     enabled: 1
-  - id: r6_mass
+  - id: r6_chance_large
     kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
-    maxLevel: 2
-    baseCost: 430000
-    growth: 1.8
+    statId: dust_chance
+    effectPerLevel: 0.015
+    maxLevel: 4
+    baseCost: 160000
+    growth: 1.5
     tier: 0
+    dustKindId: large
     minTier: 6
     prereqs:
-    - r5_mass
+    - dust_large
     angleDeg: 60
     enabled: 1
   - id: gate_t7
@@ -510,6 +548,7 @@ MonoBehaviour:
     baseCost: 1200000
     growth: 1
     tier: 7
+    dustKindId: 
     minTier: 6
     prereqs:
     - gate_t6
@@ -523,6 +562,7 @@ MonoBehaviour:
     baseCost: 1300000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 7
     prereqs:
     - r6_spawn
@@ -536,6 +576,7 @@ MonoBehaviour:
     baseCost: 1300000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 7
     prereqs:
     - r6_radius
@@ -549,6 +590,7 @@ MonoBehaviour:
     baseCost: 1300000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 7
     prereqs:
     - r6_sale
@@ -562,22 +604,24 @@ MonoBehaviour:
     baseCost: 1300000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 7
     prereqs:
     - r6_stamina
     angleDeg: 210
     enabled: 1
-  - id: r7_mass
-    kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
-    maxLevel: 2
+  - id: dust_crystal
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
     baseCost: 3500000
-    growth: 1.8
+    growth: 1
     tier: 0
+    dustKindId: crystal
     minTier: 7
     prereqs:
-    - r6_mass
+    - r6_chance_large
     angleDeg: 60
     enabled: 1
   - id: gate_t8
@@ -588,6 +632,7 @@ MonoBehaviour:
     baseCost: 10000000
     growth: 1
     tier: 8
+    dustKindId: 
     minTier: 7
     prereqs:
     - gate_t7
@@ -601,6 +646,7 @@ MonoBehaviour:
     baseCost: 10000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 8
     prereqs:
     - r7_cap
@@ -614,6 +660,7 @@ MonoBehaviour:
     baseCost: 10000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 8
     prereqs:
     - r7_cap
@@ -627,6 +674,7 @@ MonoBehaviour:
     baseCost: 10000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 8
     prereqs:
     - r7_pull
@@ -640,6 +688,7 @@ MonoBehaviour:
     baseCost: 10000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 8
     prereqs:
     - r7_sale
@@ -653,22 +702,24 @@ MonoBehaviour:
     baseCost: 10000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 8
     prereqs:
     - r7_drain
     angleDeg: 210
     enabled: 1
-  - id: r8_mass
+  - id: r8_chance_crystal
     kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
-    maxLevel: 2
-    baseCost: 28000000
-    growth: 1.8
+    statId: dust_chance
+    effectPerLevel: 0.01
+    maxLevel: 4
+    baseCost: 10000000
+    growth: 1.5
     tier: 0
+    dustKindId: crystal
     minTier: 8
     prereqs:
-    - r7_mass
+    - dust_crystal
     angleDeg: 60
     enabled: 1
   - id: gate_t9
@@ -679,6 +730,7 @@ MonoBehaviour:
     baseCost: 100000000
     growth: 1
     tier: 9
+    dustKindId: 
     minTier: 8
     prereqs:
     - gate_t8
@@ -692,6 +744,7 @@ MonoBehaviour:
     baseCost: 81000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 9
     prereqs:
     - r8_spawn
@@ -706,6 +759,7 @@ MonoBehaviour:
     baseCost: 81000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 9
     prereqs:
     - r8_radius
@@ -719,6 +773,7 @@ MonoBehaviour:
     baseCost: 81000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 9
     prereqs:
     - r8_sale
@@ -732,22 +787,24 @@ MonoBehaviour:
     baseCost: 81000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 9
     prereqs:
     - r8_stamina
     angleDeg: 210
     enabled: 1
-  - id: r9_mass
-    kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
-    maxLevel: 2
+  - id: dust_interstellar
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
     baseCost: 220000000
-    growth: 1.8
+    growth: 1
     tier: 0
+    dustKindId: interstellar
     minTier: 9
     prereqs:
-    - r8_mass
+    - r8_chance_crystal
     angleDeg: 60
     enabled: 1
   - id: gate_t10
@@ -758,6 +815,7 @@ MonoBehaviour:
     baseCost: 1000000000
     growth: 1
     tier: 10
+    dustKindId: 
     minTier: 9
     prereqs:
     - gate_t9
@@ -771,6 +829,7 @@ MonoBehaviour:
     baseCost: 640000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 10
     prereqs:
     - r9_cap
@@ -784,6 +843,7 @@ MonoBehaviour:
     baseCost: 640000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 10
     prereqs:
     - r9_pull
@@ -797,6 +857,7 @@ MonoBehaviour:
     baseCost: 640000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 10
     prereqs:
     - r9_sale
@@ -810,22 +871,24 @@ MonoBehaviour:
     baseCost: 640000000
     growth: 1.5
     tier: 0
+    dustKindId: 
     minTier: 10
     prereqs:
     - r9_drain
     angleDeg: 210
     enabled: 1
-  - id: r10_mass
+  - id: r10_chance_interstellar
     kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
-    maxLevel: 2
-    baseCost: 1800000000
-    growth: 1.8
+    statId: dust_chance
+    effectPerLevel: 0.0075
+    maxLevel: 4
+    baseCost: 640000000
+    growth: 1.5
     tier: 0
+    dustKindId: interstellar
     minTier: 10
     prereqs:
-    - r9_mass
+    - dust_interstellar
     angleDeg: 60
     enabled: 1
   - id: gate_t11
@@ -836,6 +899,7 @@ MonoBehaviour:
     baseCost: 10000000000
     growth: 1
     tier: 11
+    dustKindId: 
     minTier: 10
     prereqs:
     - gate_t10
@@ -849,23 +913,25 @@ MonoBehaviour:
     baseCost: 5200000000
     growth: 1.6
     tier: 0
+    dustKindId: 
     minTier: 11
     prereqs:
     - r10_sale
     angleDeg: 270
     enabled: 1
-  - id: r11_mass
+  - id: r11_spawn
     kind: 0
-    statId: dust_mass
-    effectPerLevel: 1.5
+    statId: spawn_rate
+    effectPerLevel: 12
     maxLevel: 0
-    baseCost: 14000000000
-    growth: 2
+    baseCost: 5200000000
+    growth: 1.6
     tier: 0
+    dustKindId: 
     minTier: 11
     prereqs:
-    - r10_mass
-    angleDeg: 60
+    - r10_spawn
+    angleDeg: 30
     enabled: 1
   - id: r11_stamina
     kind: 0
@@ -875,6 +941,7 @@ MonoBehaviour:
     baseCost: 5200000000
     growth: 1.6
     tier: 0
+    dustKindId: 
     minTier: 11
     prereqs:
     - r10_stamina

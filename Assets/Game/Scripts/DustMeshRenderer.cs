@@ -94,12 +94,16 @@ namespace Incremental
             for (int i = 0; i < n; i++)
             {
                 ref Dust d = ref items[i];
+                var kindDef = p.DustKind(d.kind);
+                float kindSize = kindDef != null ? (float)kindDef.sizeMult : 1f;
+                float kindBright = kindDef != null ? (float)kindDef.brightMult : 1f;
+                float kindShape = kindDef != null ? (float)(int)kindDef.shape : 0f;
                 Vector2 c = d.pos;
                 float speed = d.vel.magnitude;
                 Vector2 axis = speed > 1e-5f ? d.vel / speed : new Vector2(1f, 0f);
                 float stretch = Mathf.Clamp01((speed - drift) / (full - drift));
                 float s = 1f + (stretchMax - 1f) * stretch;
-                float h = halo * d.size;
+                float h = halo * d.size * kindSize;
                 Vector2 along = axis * (h * s);
                 Vector2 across = new Vector2(-axis.y, axis.x) * (h * Mathf.Lerp(1f, widthAtFull, stretch));
 
@@ -129,12 +133,13 @@ namespace Incremental
                         boost *= holdGlow;
                     }
                 }
-                float b = d.bright * Mathf.Lerp(dim, 1f, inField) * (1f + boost);
+                float b = d.bright * kindBright * Mathf.Lerp(dim, 1f, inField) * (1f + boost);
                 if (remnant) b *= (float)p.remnantDustBrightness;
                 Color col = Color.Lerp(colA, colB, d.tint);
                 // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
+                // The alpha channel carries the dust kind's shape id (20 §4), which the shader reads back as 0..255.
                 float k = Mathf.Min(b, 2f) * 0.5f;
-                Color32 c32 = new Color(col.r * k, col.g * k, col.b * k, 1f);
+                Color32 c32 = new Color(col.r * k, col.g * k, col.b * k, kindShape / 255f);
                 cols[v] = c32; cols[v + 1] = c32; cols[v + 2] = c32; cols[v + 3] = c32;
             }
 

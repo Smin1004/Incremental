@@ -85,6 +85,151 @@ namespace Incremental.Tests
             Object.DestroyImmediate(p);
         }
 
+        // ---------------- §4 B. dust kinds ----------------
+
+        [Test]
+        public void DustKinds_MatchTheSpecTable()
+        {
+            var p = ProjectParams();
+            Assert.AreEqual(5, p.DustKindCount, "base + medium, large, crystal, interstellar (20 §4)");
+            var expected = new (string id, double mass, int ring, double baseChance, double perLevel, double max, double size, double accel)[]
+            {
+                ("medium", 5, 3, 0.03, 0.015, 0.09, 1.7, 0.75),
+                ("large", 25, 5, 0.03, 0.015, 0.09, 2.9, 0.55),
+                ("crystal", 125, 7, 0.02, 0.01, 0.06, 4.9, 0.40),
+                ("interstellar", 625, 9, 0.015, 0.0075, 0.045, 8.5, 0.30),
+            };
+            Assert.AreEqual("base", p.DustKind(0).id);
+            Assert.AreEqual(1, p.DustKind(0).mass, Eps);
+            for (int i = 0; i < expected.Length; i++)
+            {
+                var e = expected[i];
+                var k = p.DustKind(i + 1);
+                Assert.AreEqual(e.id, k.id);
+                Assert.AreEqual(e.mass, k.mass, Eps, e.id + " mass");
+                Assert.AreEqual(e.ring, k.unlockRing, e.id + " unlock ring");
+                Assert.AreEqual(e.baseChance, k.baseChance, Eps, e.id + " unlock chance");
+                Assert.AreEqual(e.perLevel, k.chancePerLevel, Eps, e.id + " chance per level");
+                Assert.AreEqual(4, k.chanceMaxLevel, e.id + " chance levels");
+                Assert.AreEqual(e.max, k.MaxChance, 1e-9, e.id + " chance at full level");
+                Assert.AreEqual(e.size, k.sizeMult, Eps, e.id + " size");
+                Assert.AreEqual(e.accel, k.accelMult, Eps, e.id + " pull acceleration");
+                Assert.Greater(k.brightMult, 1.0, e.id + " reads a little brighter than base dust");
+            }
+        }
+
+        [Test]
+        public void DustKindAxis_UnlocksInRings3579_AndRaisesInBetween()
+        {
+            var n = ProjectNodes();
+            var p = ProjectParams();
+            foreach (var kindId in new[] { "medium", "large", "crystal", "interstellar" })
+            {
+                var unlock = n.DustUnlock(kindId);
+                Assert.IsNotNull(unlock, "unlock node for " + kindId);
+                Assert.AreEqual(NodeKind.DustKindUnlock, unlock.kind);
+                Assert.AreEqual(1, unlock.maxLevel);
+                Assert.AreEqual(p.DustKind(p.DustKindIndex(kindId)).unlockRing, unlock.minTier, kindId + " unlock ring");
+                var chance = n.nodes.Find(x => x.statId == StatIds.DustChance && x.dustKindId == kindId);
+                Assert.IsNotNull(chance, "chance node for " + kindId);
+                Assert.AreEqual(4, chance.maxLevel);
+                Assert.AreEqual(unlock.minTier + 1, chance.minTier, kindId + " chance node sits one ring above its unlock");
+                Assert.AreEqual(60f, unlock.angleDeg, 1e-3, "the 60 degree axis is the dust kind axis (12 §5)");
+                Assert.AreEqual(60f, chance.angleDeg, 1e-3);
+            }
+        }
+
+        [Test]
+        public void CompoundDustMassNodes_AreGone()
+        {
+            var n = ProjectNodes();
+            foreach (var node in n.nodes)
+                Assert.AreNotEqual(StatIds.DustMass, node.statId,
+                    "'" + node.id + "' still raises dust_mass; the compound nodes were replaced by the dust kind axis (20 §4)");
+            var r = DataValidator.Validate(ProjectTiers(), n, ProjectParams());
+            Assert.IsEmpty(r.Errors, Joined(r.Errors));
+            Assert.IsEmpty(r.Warnings, Joined(r.Warnings));
+        }
+
+        [Test]
+        public void LockedKind_NeverSpawns_AndUnlockingMixesItIn()
+        {
+            var p = ProjectParams();
+            var n = ProjectNodes();
+            var locked = Stats.Compute(p, n, new MetaState());
+            for (int k = 1; k < p.DustKindCount; k++) Assert.AreEqual(0, locked.KindChance(k), Eps, p.DustKind(k).id + " is locked");
+            Assert.AreEqual(1, locked.KindChance(0), Eps, "every dust is base dust");
+            Assert.AreEqual(p.dustMass, locked.dustMassAvg, Eps);
+
+            var m = new MetaState();
+            m.SetLevel("dust_medium", 1);
+            var open = Stats.Compute(p, n, m);
+            Assert.AreEqual(0.03, open.KindChance(1), Eps, "the unlock alone gives the base chance");
+            Assert.AreEqual(0.97, open.KindChance(0), Eps);
+            Assert.AreEqual(0.97 * 1 + 0.03 * 5, open.dustMassAvg, 1e-9);
+
+            m.SetLevel("r4_chance_medium", 4);
+            Assert.AreEqual(0.09, Stats.Compute(p, n, m).KindChance(1), 1e-9, "four levels of +1.5%p");
+        }
+
+        [Test]
+        public void ChanceNode_DoesNothingWithoutItsUnlock()
+        {
+            var m = new MetaState();
+            m.SetLevel("r4_chance_medium", 4);
+            Assert.AreEqual(0, Stats.Compute(ProjectParams(), ProjectNodes(), m).KindChance(1), Eps);
+        }
+
+        [Test]
+        public void EveryKindUnlocked_KeepsRoomForBaseDust_AndRaisesTheAverageMass()
+        {
+            var p = ProjectParams();
+            var n = ProjectNodes();
+            var m = new MetaState();
+            foreach (var id in new[] { "medium", "large", "crystal", "interstellar" }) m.SetLevel(n.DustUnlock(id).id, 1);
+            foreach (var node in n.nodes)
+                if (node.statId == StatIds.DustChance) m.SetLevel(node.id, node.maxLevel);
+            var s = Stats.Compute(p, n, m);
+            double total = 0;
+            for (int k = 1; k < p.DustKindCount; k++) total += s.KindChance(k);
+            Assert.Less(total, 1.0, "the base dust always keeps a share");
+            Assert.AreEqual(1.0 - total, s.KindChance(0), 1e-12);
+            // 20 §4: the whole axis has to be worth a lot more than the compound node it replaced.
+            Assert.Greater(s.dustMassAvg, 30, "every kind at full chance lifts the average dust mass well above 1");
+        }
+
+        [Test]
+        public void SaveVersion_IsBumped_AndOlderSavesStartOver()
+        {
+            Assert.AreEqual(3, SaveMigration.CurrentVersion, "the dust kind axis changed node ids (20 §4)");
+            Assert.IsTrue(SaveMigration.ResetsProgress(2));
+            Assert.IsFalse(SaveMigration.ResetsProgress(3));
+        }
+
+        [Test]
+        public void DustKindNodes_AreNamedAfterTheirKind()
+        {
+            var n = ProjectNodes();
+            var p = ProjectParams();
+            Assert.AreEqual("중형 먼지", UIStrings.NodeName(n, n.DustUnlock("medium")));
+            StringAssert.StartsWith("중형 먼지", UIStrings.NodeName(n, n.Get("r4_chance_medium")));
+            StringAssert.EndsWith("I", UIStrings.NodeName(n, n.Get("r4_chance_medium")), "each kind numbers its own chance node from I");
+            StringAssert.StartsWith("성간 먼지", UIStrings.NodeName(n, n.Get("r10_chance_interstellar")));
+            StringAssert.EndsWith("I", UIStrings.NodeName(n, n.Get("r10_chance_interstellar")));
+            StringAssert.Contains("3", UIStrings.NodeEffect(n.DustUnlock("medium"), p), "the unlock says the starting share");
+        }
+
+        [Test]
+        public void BrokenDustData_IsReported()
+        {
+            var p = TestData.Params();
+            p.dustKinds[1].baseChance = 0.9;
+            p.dustKinds[2].baseChance = 0.9;
+            var r = DataValidator.ValidateParams(p);
+            Assert.IsTrue(r.Errors.Exists(e => e.Contains("add up")), Joined(r.Errors));
+            Object.DestroyImmediate(p);
+        }
+
         static string Joined(List<string> list) => string.Join("\n", list);
     }
 }

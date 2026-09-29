@@ -7,14 +7,17 @@ namespace Incremental.EditorTools
     /// Seed data of the skill tree (12 §6). PrototypeSetup adds the entries the NodeTable asset lacks, and Validate Data
     /// warns where the asset and this code differ, so the two stay equal.
     /// Rings 1-3 are the §6 draft. Rings 4-11 follow the §6 template with formula costs: a stat node costs 0.4 × I_k
-    /// (growth 1.5), a dust mass node 1.1 × I_k (growth 1.8), with I_1 = 12 and I_(k+1) = 8 × I_k, rounded to two
+    /// (growth 1.5), a dust kind unlock 1.1 × I_k, with I_1 = 12 and I_(k+1) = 8 × I_k, rounded to two
     /// significant digits like the draft. Gate costs keep the week-2 unlock costs (tier 2: 30, tier 3: 300).
+    /// 20 §4: the 60° axis is the dust kind axis. The compound dust_mass nodes are gone; rings 3, 5, 7 and 9 unlock a
+    /// dust kind and rings 4, 6, 8 and 10 raise its share.
     /// </summary>
     public static class SkillTreeSeed
     {
         // Axis angles (12 §5). Two nodes of one axis in one ring sit at ±10°.
         public const float GateAxis = 90f;
         public const float DustAxis = 30f;
+        /// <summary>60°: the dust kind axis since 20 §4 (it used to carry the compound dust mass nodes).</summary>
         public const float MassAxis = 60f;
         public const float PlanetAxis = 150f;
         public const float StaminaAxis = 210f;
@@ -40,7 +43,43 @@ namespace Incremental.EditorTools
         }
 
         static double StatCost(int ring) => Nice(0.4 * EntryIncome(ring));
-        static double MassCost(int ring) => Nice(1.1 * EntryIncome(ring));
+        /// <summary>A dust kind unlock is the ring's headline purchase, like the old dust mass node (20 §4).</summary>
+        static double KindCost(int ring) => Nice(1.1 * EntryIncome(ring));
+
+        /// <summary>
+        /// The dust kind axis (20 §4), by ring: 3, 5, 7 and 9 unlock a kind, the ring after it raises that kind's share
+        /// by four levels. Ring 11 has nothing on this axis. Ids are stable keys, so the unlocks read like the gates.
+        /// </summary>
+        static NodeDef DustKindNode(int ring)
+        {
+            switch (ring)
+            {
+                case 3: return DustUnlock("medium", 3, "gate_t3");
+                case 4: return DustChance("medium", 4, 0.015, "dust_medium");
+                case 5: return DustUnlock("large", 5, "r4_chance_medium");
+                case 6: return DustChance("large", 6, 0.015, "dust_large");
+                case 7: return DustUnlock("crystal", 7, "r6_chance_large");
+                case 8: return DustChance("crystal", 8, 0.01, "dust_crystal");
+                case 9: return DustUnlock("interstellar", 9, "r8_chance_crystal");
+                case 10: return DustChance("interstellar", 10, 0.0075, "dust_interstellar");
+                default: return null;
+            }
+        }
+
+        static NodeDef DustUnlock(string kind, int ring, params string[] prereqs) =>
+            new NodeDef
+            {
+                id = "dust_" + kind, kind = NodeKind.DustKindUnlock, dustKindId = kind, maxLevel = 1,
+                baseCost = KindCost(ring), growth = 1, minTier = ring, prereqs = new List<string>(prereqs),
+                angleDeg = MassAxis, enabled = true,
+            };
+
+        static NodeDef DustChance(string kind, int ring, double perLevel, params string[] prereqs)
+        {
+            var n = Stat("r" + ring + "_chance_" + kind, ring, MassAxis, StatIds.DustChance, perLevel, 4, StatCost(ring), 1.5, prereqs);
+            n.dustKindId = kind;
+            return n;
+        }
 
         /// <summary>
         /// Per-ring cost multiplier (index = ring), the only knob turned to pace rings (12 §7). Rings without a
@@ -61,7 +100,7 @@ namespace Incremental.EditorTools
         public static List<NodeDef> Nodes()
         {
             const string spawn = StatIds.SpawnRate, pull = StatIds.PullAccel, sale = StatIds.SaleMult, stamina = StatIds.StaminaMax,
-                threshold = StatIds.ThresholdMult, cap = StatIds.DustCap, mass = StatIds.DustMass, radius = StatIds.GravityRadius,
+                threshold = StatIds.ThresholdMult, cap = StatIds.DustCap, radius = StatIds.GravityRadius,
                 drain = StatIds.StaminaDrain, start = StatIds.StartBonus;
             var n = new List<NodeDef>();
 
@@ -81,16 +120,16 @@ namespace Incremental.EditorTools
             n.Add(Stat("r2_threshold", 2, PlanetAxis, threshold, 0.05, 2, 40, 1.5, "gate_t2"));
             n.Add(Gate(3));
 
-            // Ring 3 (I = 768): start bonus, stamina drain and the first dust mass node.
+            // Ring 3 (I = 768): start bonus, stamina drain and the first dust kind unlock (20 §4).
             n.Add(Stat("r3_start", 3, DustAxis, start, 50, 2, 300, 1.5, "r2_cap"));
             n.Add(Stat("r3_pull", 3, GravityAxis, pull, 0.30, 2, 300, 1.5, "r2_radius"));
             n.Add(Stat("r3_sale", 3, SaleAxis, sale, 0.25, 2, 300, 1.5, "r2_sale"));
             n.Add(Stat("r3_drain", 3, StaminaAxis, drain, 0.05, 2, 300, 1.5, "r2_stamina"));
             n.Add(Stat("r3_threshold", 3, PlanetAxis, threshold, 0.05, 2, 300, 1.5, "r2_threshold"));
-            n.Add(Stat("r3_mass", 3, MassAxis, mass, 1.5, 1, 850, 1, "gate_t3"));
+            n.Add(DustKindNode(3));
             n.Add(Gate(4));
 
-            // Rings 4-10: one node per axis (two levels each) + a dust mass node; prereq = the same axis in the ring before.
+            // Rings 4-10: one node per axis (two levels each) + the dust kind axis node; prereq = the same axis in the ring before.
             Ring(n, 4, (spawn, 3, DustAxis, "r3_start"), (radius, 0.10, GravityAxis, "r3_pull"), (threshold, 0.05, PlanetAxis, "r3_threshold"),
                 (sale, 0.50, SaleAxis, "r3_sale"), (stamina, 20, StaminaAxis, "r3_drain"));
             Ring(n, 5, (cap, 300, DustAxis, "r4_spawn"), (pull, 0.40, GravityAxis, "r4_radius"), (threshold, 0.05, PlanetAxis, "r4_threshold"),
@@ -106,19 +145,21 @@ namespace Incremental.EditorTools
             Ring(n, 10, (spawn, 12, DustAxis, "r9_cap"), (radius, 0.20, GravityAxis, "r9_pull"),
                 (sale, 4.00, SaleAxis, "r9_sale"), (stamina, 60, StaminaAxis, "r9_drain"));
 
-            // Ring 11: endless nodes with unlimited levels.
+            // Ring 11: endless nodes with unlimited levels. The dust kind axis ends at ring 10, so the third endless node
+            // sits on the dust axis instead of the old compound mass node (20 §4).
             n.Add(Stat("r11_sale", 11, SaleAxis, sale, 1.00, 0, StatCost(11), 1.6, "r10_sale"));
-            n.Add(Stat("r11_mass", 11, MassAxis, mass, 1.5, 0, MassCost(11), 2.0, "r10_mass"));
+            n.Add(Stat("r11_spawn", 11, DustAxis, spawn, 12, 0, StatCost(11), 1.6, "r10_spawn"));
             n.Add(Stat("r11_stamina", 11, StaminaAxis, stamina, 30, 0, StatCost(11), 1.6, "r10_stamina"));
             return n;
         }
 
-        /// <summary>Ring k of the template: the given axis nodes (2 levels, 0.4 × I_k, growth 1.5), dust mass, next gate.</summary>
+        /// <summary>Ring k of the template: the given axis nodes (2 levels, 0.4 × I_k, growth 1.5), the dust kind axis, next gate.</summary>
         static void Ring(List<NodeDef> n, int ring, params (string stat, double effect, float angle, string prereqs)[] axes)
         {
             foreach (var a in axes)
                 n.Add(Stat("r" + ring + "_" + ShortName(a.stat), ring, a.angle, a.stat, a.effect, 2, StatCost(ring), 1.5, a.prereqs.Split('|')));
-            n.Add(Stat("r" + ring + "_mass", ring, MassAxis, StatIds.DustMass, 1.5, 2, MassCost(ring), 1.8, "r" + (ring - 1) + "_mass"));
+            var dust = DustKindNode(ring);
+            if (dust != null) n.Add(dust);
             if (ring + 1 <= RingCount) n.Add(Gate(ring + 1));
         }
 

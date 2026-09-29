@@ -20,7 +20,11 @@ namespace Incremental
         /// <summary>Two nodes of the same ring closer than this (degrees) overlap in the tree view.</summary>
         public const float MinAngleGapDeg = 5f;
 
-        public static ValidationReport Validate(CelestialTable c, NodeTable t)
+        /// <summary>
+        /// With <paramref name="p"/> the dust kind nodes are checked against GameParams.dustKinds too (20 §4); without it
+        /// (the small test tables) that part is skipped.
+        /// </summary>
+        public static ValidationReport Validate(CelestialTable c, NodeTable t, GameParams p = null)
         {
             var r = new ValidationReport();
             if (c == null) r.Errors.Add("CelestialTable is missing.");
@@ -35,7 +39,59 @@ namespace Incremental
             ValidateGraph(t, r);
             ValidateAngles(t, r);
             ValidateRingCostMult(c, t, r);
+            if (p != null) ValidateDustNodes(p, t, r);
             return r;
+        }
+
+        /// <summary>
+        /// The dust kind axis (20 §4): every kind but the base has exactly one unlock node, in the ring its data names,
+        /// every unlock and chance node points at a kind that exists, and no node raises the retired compound dust mass.
+        /// </summary>
+        static void ValidateDustNodes(GameParams p, NodeTable t, ValidationReport r)
+        {
+            foreach (var n in t.nodes)
+            {
+                if (n == null) continue;
+                if (n.statId == StatIds.DustMass && n.kind == NodeKind.Stat && n.enabled)
+                    r.Errors.Add($"NodeTable: '{n.id}' raises dust_mass; the compound dust mass nodes were replaced by the dust kind axis (20 §4).");
+                bool needsKind = n.IsDustUnlock || (n.kind == NodeKind.Stat && StatIds.NeedsDustKind(n.statId));
+                if (!needsKind)
+                {
+                    if (!string.IsNullOrEmpty(n.dustKindId))
+                        r.Warnings.Add($"NodeTable: '{n.id}' names dust kind '{n.dustKindId}' but does not use it.");
+                    continue;
+                }
+                int k = p.DustKindIndex(n.dustKindId);
+                if (k <= 0)
+                {
+                    r.Errors.Add($"NodeTable: '{n.id}' names dust kind '{n.dustKindId}', which is not one of GameParams.dustKinds (the base dust cannot be unlocked).");
+                    continue;
+                }
+                if (n.IsDustUnlock)
+                {
+                    if (n.maxLevel != 1) r.Errors.Add($"NodeTable: dust kind unlock '{n.id}' must have maxLevel 1.");
+                    if (n.minTier != p.DustKind(k).unlockRing)
+                        r.Errors.Add($"NodeTable: '{n.id}' is in ring {n.minTier}, but dust kind '{n.dustKindId}' says ring {p.DustKind(k).unlockRing} (20 §4).");
+                }
+                else if (n.maxLevel != p.DustKind(k).chanceMaxLevel)
+                    r.Errors.Add($"NodeTable: '{n.id}' has {n.maxLevel} levels, but dust kind '{n.dustKindId}' says {p.DustKind(k).chanceMaxLevel} (20 §4).");
+            }
+            for (int k = 1; k < p.DustKindCount; k++)
+            {
+                var def = p.DustKind(k);
+                if (def == null || string.IsNullOrEmpty(def.id)) continue;
+                int unlocks = 0, chances = 0;
+                foreach (var n in t.nodes)
+                {
+                    if (n == null || n.dustKindId != def.id) continue;
+                    if (n.IsDustUnlock) unlocks++;
+                    else if (n.statId == StatIds.DustChance) chances++;
+                }
+                if (unlocks != 1)
+                    r.Errors.Add($"NodeTable: dust kind '{def.id}' has {unlocks} unlock nodes, expected exactly one (20 §4).");
+                if (chances != 1 && def.chancePerLevel > 0)
+                    r.Warnings.Add($"NodeTable: dust kind '{def.id}' has {chances} chance nodes, expected one (20 §4).");
+            }
         }
 
         // Tiers: 1..N contiguous ascending, required mass strictly increasing, positive price, string key present.
@@ -117,6 +173,7 @@ namespace Incremental
             }
             ValidateStamina(p, r);
             ValidatePull(p, r);
+            ValidateDustKinds(p, r);
             // 18 §A2: the pop, the stay in place and the flight to the vanishing point.
             if (p.planetPopDurationSec < 0 || p.planetHoldSec < 0) r.Errors.Add("GameParams: planetPopDurationSec and planetHoldSec must be >= 0.");
             if (!(p.planetDepartSec > 0)) r.Errors.Add("GameParams: planetDepartSec must be > 0.");
@@ -227,6 +284,61 @@ namespace Incremental
             if (p.StaminaPresetIndex(p.staminaHoldDrain, p.staminaIdleDrain) < 0)
                 r.Warnings.Add($"GameParams: the stamina drains ({p.staminaHoldDrain} / {p.staminaIdleDrain}) are not one of staminaPresets; " +
                                "the debug key starts from the first preset (18 §A1).");
+        }
+
+        /// <summary>
+        /// Dust kinds (20 §4): entry 0 is the base dust, ids are unique and named, the chances cannot add up past 1, and
+        /// size / acceleration still follow the mass (cube root and the −0.18 power) within the rounding of the spec table.
+        /// </summary>
+        static void ValidateDustKinds(GameParams p, ValidationReport r)
+        {
+            if (p.dustKinds == null || p.dustKinds.Length == 0)
+            {
+                r.Errors.Add("GameParams: dustKinds is empty; entry 0 is the base dust (20 §4).");
+                return;
+            }
+            var ids = new HashSet<string>();
+            double maxTotal = 0;
+            for (int i = 0; i < p.dustKinds.Length; i++)
+            {
+                var k = p.dustKinds[i];
+                string where = $"GameParams: dustKinds[{i}]";
+                if (k == null)
+                {
+                    r.Errors.Add(where + " is missing.");
+                    continue;
+                }
+                if (string.IsNullOrEmpty(k.id)) r.Errors.Add(where + " has no id.");
+                else if (!ids.Add(k.id)) r.Errors.Add($"GameParams: dust kind id '{k.id}' appears twice.");
+                else if (!UIStrings.Has(UIStrings.DustKindKey(k.id))) r.Errors.Add($"UIStrings: missing key '{UIStrings.DustKindKey(k.id)}' (dust kind, 20 §4).");
+                if (!(k.mass > 0)) r.Errors.Add(where + " mass must be > 0.");
+                if (!(k.sizeMult > 0) || !(k.accelMult > 0) || !(k.brightMult > 0))
+                    r.Errors.Add(where + " sizeMult, accelMult and brightMult must be > 0.");
+                if (k.baseChance < 0 || k.chancePerLevel < 0 || k.chanceMaxLevel < 0)
+                    r.Errors.Add(where + " chances and level count must be >= 0.");
+                if (i == 0)
+                {
+                    // The base dust is the reference: it is always in the field and never rolled for.
+                    if (k.mass != 1 || k.sizeMult != 1 || k.accelMult != 1)
+                        r.Errors.Add(where + " is the base dust and must have mass, sizeMult and accelMult 1 (20 §4).");
+                    if (k.baseChance != 0 || k.chancePerLevel != 0)
+                        r.Errors.Add(where + " is the base dust and takes whatever the other kinds leave, so its chances must be 0.");
+                    if (k.shape != DustShape.Dot) r.Warnings.Add(where + " is the base dust and should be drawn as a dot.");
+                    continue;
+                }
+                if (!(k.baseChance > 0)) r.Errors.Add(where + " needs a baseChance > 0, or unlocking it does nothing.");
+                if (k.unlockRing < 1) r.Errors.Add(where + " needs the ring of its unlock node (20 §4).");
+                if (!(k.mass > p.dustKinds[i - 1].mass)) r.Errors.Add(where + " mass must be above the kind before it.");
+                maxTotal += k.MaxChance;
+                // 20 §4: size is mass^(1/3), pull acceleration mass^(−0.18). The asset rounds them, so allow 5%.
+                double size = Math.Pow(k.mass, 1.0 / 3.0), accel = Math.Pow(k.mass, -0.18);
+                if (Math.Abs(k.sizeMult - size) > size * 0.05)
+                    r.Warnings.Add(where + $" sizeMult {k.sizeMult} is not the cube root of the mass ({size:F2}).");
+                if (Math.Abs(k.accelMult - accel) > accel * 0.05)
+                    r.Warnings.Add(where + $" accelMult {k.accelMult} is not mass^-0.18 ({accel:F2}).");
+            }
+            if (maxTotal >= 1)
+                r.Errors.Add($"GameParams: the dust kind chances add up to {maxTotal:P0} at full level; they must leave room for the base dust (20 §4).");
         }
 
         /// <summary>
@@ -349,6 +461,8 @@ namespace Incremental
                 if (n.kind == NodeKind.Stat)
                 {
                     if (!StatIds.IsKnown(n.statId)) r.Errors.Add($"NodeTable: '{n.id}' has unknown statId '{n.statId}'.");
+                    else if (StatIds.NeedsDustKind(n.statId) && string.IsNullOrEmpty(n.dustKindId))
+                        r.Errors.Add($"NodeTable: '{n.id}' raises {n.statId} but names no dust kind (20 §4).");
                     else
                     {
                         if (!UIStrings.Has(UIStrings.StatNameKey(n.statId))) r.Errors.Add($"UIStrings: missing key '{UIStrings.StatNameKey(n.statId)}'.");

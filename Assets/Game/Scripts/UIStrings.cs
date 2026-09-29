@@ -104,6 +104,15 @@ namespace Incremental
             { "stat.stamina_drain.effect", "−{0}%" },
             { "stat.start_bonus.name", "시작 보너스" },
             { "stat.start_bonus.effect", "먼지 +{0}" },
+            { "stat.dust_chance.name", "출현 확률" },
+            { "stat.dust_chance.effect", "+{0}%p" },
+
+            // Dust kinds (20 §4): the name is the node name of the unlock and the prefix of its chance node.
+            { "dust.base", "기본 먼지" },
+            { "dust.medium", "중형 먼지" },
+            { "dust.large", "대형 먼지" },
+            { "dust.crystal", "결정 먼지" },
+            { "dust.interstellar", "성간 먼지" },
 
             // Stamina drain presets of the debug key (18 §A1); Validate Data checks that every preset id has a key.
             { "stamina.preset.loose", "느슨함" },
@@ -116,7 +125,14 @@ namespace Incremental
         /// <summary>The string for a key, or the key itself when missing (visible in the UI, reported by Validate Data).</summary>
         public static string Get(string key) => key != null && Keyed.TryGetValue(key, out var s) ? s : key;
 
+        /// <summary>Effect line of a dust kind unlock node (20 §4): {0} = the kind name, {1} = its starting share in percent.</summary>
+        public const string DustUnlockEffect = "{0} 출현 시작 (확률 {1}%)";
+        /// <summary>Name of a dust kind's chance node: the kind name plus the stat name, e.g. 중형 먼지 출현 확률 I.</summary>
+        public const string DustChanceName = "{0} {1}";
+
         public static string TierKey(int tier) => "tier." + tier;
+        public static string DustKindKey(string id) => "dust." + id;
+        public static string DustKindName(string id) => Get(DustKindKey(id));
         public static string StaminaPresetKey(string id) => "stamina.preset." + id;
         public static string StatNameKey(string statId) => "stat." + statId + ".name";
         public static string StatEffectKey(string statId) => "stat." + statId + ".effect";
@@ -125,9 +141,20 @@ namespace Incremental
         public static string StaminaPresetName(string id) => Get(StaminaPresetKey(id));
         public static string StatName(string statId) => Get(StatNameKey(statId));
 
-        /// <summary>Effect of one level of a stat node, e.g. "+20%", "×1.5". Empty for gates.</summary>
-        public static string NodeEffect(NodeDef n) =>
-            n.IsGate ? string.Empty : string.Format(Get(StatEffectKey(n.statId)), Fmt.Short(Stats.EffectDisplayNumber(n)));
+        /// <summary>
+        /// Effect of one level of a stat node, e.g. "+20%", "×1.5". Empty for gates; a dust kind unlock says which kind
+        /// starts appearing and at what share (20 §4), which needs the kind's data.
+        /// </summary>
+        public static string NodeEffect(NodeDef n, GameParams p = null)
+        {
+            if (n.IsGate) return string.Empty;
+            if (n.IsDustUnlock)
+            {
+                var kind = p != null ? p.DustKind(p.DustKindIndex(n.dustKindId)) : null;
+                return string.Format(DustUnlockEffect, DustKindName(n.dustKindId), Fmt.Short(kind != null ? kind.baseChance * 100.0 : 0.0));
+            }
+            return string.Format(Get(StatEffectKey(n.statId)), Fmt.Short(Stats.EffectDisplayNumber(n)));
+        }
 
         /// <summary>
         /// Stat nodes: stat name + roman numeral by position among the nodes of that stat (ring order, then table order),
@@ -136,15 +163,20 @@ namespace Incremental
         public static string NodeName(NodeTable t, NodeDef n)
         {
             if (n.IsGate) return TierName(n.tier);
+            if (n.IsDustUnlock) return DustKindName(n.dustKindId);
             int self = t.nodes.IndexOf(n);
             int index = 1;
+            bool perKind = StatIds.NeedsDustKind(n.statId);
             for (int i = 0; i < t.nodes.Count; i++)
             {
                 var o = t.nodes[i];
-                if (i == self || o.IsGate || o.statId != n.statId) continue;
+                if (i == self || o.IsGate || o.IsDustUnlock || o.statId != n.statId) continue;
+                // Nodes of a per-kind stat are numbered within their own kind, so every kind starts at I.
+                if (perKind && o.dustKindId != n.dustKindId) continue;
                 if (o.minTier < n.minTier || (o.minTier == n.minTier && i < self)) index++;
             }
-            return StatName(n.statId) + " " + Roman(index);
+            string name = StatName(n.statId) + " " + Roman(index);
+            return perKind ? string.Format(DustChanceName, DustKindName(n.dustKindId), name) : name;
         }
 
         static readonly int[] RomanValues = { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };

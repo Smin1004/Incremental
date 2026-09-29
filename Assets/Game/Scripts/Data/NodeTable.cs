@@ -20,12 +20,21 @@ namespace Incremental
         public const string GravityRadius = "gravity_radius";
         public const string StaminaDrain = "stamina_drain";
         public const string StartBonus = "start_bonus";
+        /// <summary>
+        /// 20 §4: raises the share of one dust kind, named by <see cref="NodeDef.dustKindId"/>. Percentage points per level,
+        /// so two nodes of this stat only add up when they name the same kind.
+        /// </summary>
+        public const string DustChance = "dust_chance";
 
         public static readonly string[] All =
         {
             SpawnRate, PullAccel, SaleMult, StaminaMax, ThresholdMult,
             DustCap, DustMass, GravityRadius, StaminaDrain, StartBonus,
+            DustChance,
         };
+
+        /// <summary>Stats that act on one dust kind and therefore need <see cref="NodeDef.dustKindId"/>.</summary>
+        public static bool NeedsDustKind(string id) => id == DustChance;
 
         public static bool IsKnown(string id) => Array.IndexOf(All, id) >= 0;
     }
@@ -36,6 +45,11 @@ namespace Incremental
         Stat = 0,
         /// <summary>Unlocks celestial tier <see cref="NodeDef.tier"/>. Bought in order; opens ring (tier).</summary>
         TierUnlock = 1,
+        /// <summary>
+        /// 20 §4: lets the dust kind named by <see cref="NodeDef.dustKindId"/> start appearing, at its baseChance.
+        /// One level; there is one of these per kind.
+        /// </summary>
+        DustKindUnlock = 2,
     }
 
     /// <summary>One node of the skill tree (12 §3). Ring = minTier.</summary>
@@ -55,6 +69,8 @@ namespace Incremental
         public double growth = 1;
         [Tooltip("TierUnlock nodes: the tier this node unlocks.")]
         public int tier;
+        [Tooltip("DustKindUnlock nodes and dust_chance stat nodes: the GameParams dust kind they act on (20 §4).")]
+        public string dustKindId;
         [Tooltip("The ring this node belongs to. Needs unlockedMaxTier >= minTier. Ring 1 is open from the start.")]
         public int minTier = 1;
         [Tooltip("Any-of. Empty = next to the center, always met.")]
@@ -65,6 +81,8 @@ namespace Incremental
         public bool enabled = true;
 
         public bool IsGate => kind == NodeKind.TierUnlock;
+        /// <summary>20 §4: this node makes a dust kind start appearing.</summary>
+        public bool IsDustUnlock => kind == NodeKind.DustKindUnlock;
     }
 
     /// <summary>Skill tree nodes (12 §3) and the per-ring cost multiplier, the pacing lever of the balance pass (12 §7).</summary>
@@ -94,6 +112,15 @@ namespace Incremental
         {
             for (int i = 0; i < nodes.Count; i++)
                 if (nodes[i].IsGate && nodes[i].tier == tier) return nodes[i];
+            return null;
+        }
+
+        /// <summary>The DustKindUnlock node of a dust kind, or null (20 §4).</summary>
+        public NodeDef DustUnlock(string dustKindId)
+        {
+            if (dustKindId == null) return null;
+            for (int i = 0; i < nodes.Count; i++)
+                if (nodes[i].IsDustUnlock && nodes[i].dustKindId == dustKindId) return nodes[i];
             return null;
         }
 

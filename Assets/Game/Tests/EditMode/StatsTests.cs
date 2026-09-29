@@ -90,11 +90,13 @@ namespace Incremental.Tests
         [Test]
         public void EachStatNode_ChangesOnlyItsOwnValue()
         {
-            var b = Stats.Compute(p, t, new MetaState());
             foreach (var n in t.nodes)
             {
                 if (n.IsGate) continue;
-                var s = With((n.id, 1));
+                // A dust kind chance node only bites once its unlock node is owned (20 §4), so that one is in both sides.
+                bool needsUnlock = n.statId == StatIds.DustChance;
+                var b = needsUnlock ? With(("dust_medium", 1)) : Stats.Compute(p, t, new MetaState());
+                var s = needsUnlock ? With(("dust_medium", 1), (n.id, 1)) : With((n.id, 1));
                 int changed = 0;
                 if (s.spawnRate != b.spawnRate) changed++;
                 if (s.pullAccel != b.pullAccel) changed++;
@@ -106,9 +108,15 @@ namespace Incremental.Tests
                 if (s.gravityRadius != b.gravityRadius) changed++;
                 if (s.staminaIdleDrain != b.staminaIdleDrain || s.staminaHoldDrain != b.staminaHoldDrain) changed++;
                 if (s.dustInitial != b.dustInitial) changed++;
+                // dustMassAvg also moves with dust_mass, so the dust kind axis is checked on the shares themselves.
+                if (UnityEngine.JsonUtility.ToJson(new ChanceBag { c = s.dustKindChance }) !=
+                    UnityEngine.JsonUtility.ToJson(new ChanceBag { c = b.dustKindChance })) changed++;
                 Assert.AreEqual(1, changed, n.id + " should change exactly one effective value");
             }
         }
+
+        [System.Serializable]
+        class ChanceBag { public double[] c; }
 
         [Test]
         public void EveryStatId_IsCovered()

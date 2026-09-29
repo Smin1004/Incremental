@@ -18,9 +18,11 @@ namespace Incremental.Tests
         {
             var c = AssetDatabase.LoadAssetAtPath<CelestialTable>("Assets/Game/Data/CelestialTable.asset");
             var n = AssetDatabase.LoadAssetAtPath<NodeTable>("Assets/Game/Data/NodeTable.asset");
+            var p = AssetDatabase.LoadAssetAtPath<GameParams>("Assets/Game/Data/GameParams.asset");
             Assert.IsNotNull(c);
             Assert.IsNotNull(n);
-            var r = DataValidator.Validate(c, n);
+            Assert.IsNotNull(p);
+            var r = DataValidator.Validate(c, n, p);
             Assert.IsEmpty(r.Errors, Joined(r.Errors));
             Assert.IsEmpty(r.Warnings, Joined(r.Warnings));
             Assert.AreEqual(11, c.TierCount);
@@ -45,7 +47,7 @@ namespace Incremental.Tests
             Assert.AreEqual(30, n.Get("gate_t2").baseCost);
             Assert.AreEqual(300, n.Get("gate_t3").baseCost);
             Assert.AreEqual(2, n.Get("r2_cap").minTier, "dust cap in ring 2 (12 §10-1)");
-            Assert.AreEqual(3, n.Get("r3_mass").minTier, "dust mass in ring 3 (12 §10-1)");
+            Assert.AreEqual(3, n.Get("dust_medium").minTier, "the first dust kind unlocks in ring 3 (20 §4)");
         }
 
         // ---------------- validator ----------------
@@ -150,7 +152,7 @@ namespace Incremental.Tests
                 string header = RunLogger.Header(c);
                 Assert.AreEqual("run,duration_s,income,t1,t2,t3,t4,ratio_vs_last,max_tier,node_levels," +
                                 "spawn_rate,pull_accel,sale_mult,stamina_max,threshold_mult,dust_cap,dust_mass,gravity_radius," +
-                                "stamina_idle_drain,stamina_hold_drain,dust_initial,end_reason", header);
+                                "stamina_idle_drain,stamina_hold_drain,dust_initial,dust_mass_avg,end_reason", header);
 
                 var stats = Stats.Compute(TestData.Params(), TestData.Nodes(), TestData.Meta(("a_spawn", 2)));
                 var rec = new RunRecord
@@ -163,7 +165,7 @@ namespace Incremental.Tests
                 var lines = File.ReadAllLines(RunLogger.FilePath(dir));
                 Assert.AreEqual(2, lines.Length);
                 Assert.AreEqual(header.Split(',').Length, lines[1].Split(',').Length);
-                Assert.AreEqual("2,50.0,13,12,1,0,0,1.250,2,3,6,600,1,60,1,300,1,180,0.2,1,100,stamina", lines[1]);
+                Assert.AreEqual("2,50.0,13,12,1,0,0,1.250,2,3,6,600,1,60,1,300,1,180,0.2,1,100,1,stamina", lines[1]);
 
                 string rotated = RunLogger.Append(dir, rec, TestData.Tiers(5));
                 Assert.IsNotNull(rotated);
