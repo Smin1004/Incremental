@@ -271,6 +271,9 @@ namespace Incremental
         public double exciteBrightness = 2;
         [Tooltip("The most the ability_cooldown nodes can take off a cooldown (0.8 = down to a fifth), so none ever reaches 0.")]
         public double maxCooldownReduction = 0.8;
+        [Tooltip("Writes what the abilities do to the Console as \"[Ability] ...\" lines: which are on when a run starts, every " +
+                 "trigger and what it did, every debug key. For checking the prototype by eye; switch it off for bot runs.")]
+        public bool logEvents = true;
 
         [NonSerialized] AbilityDef[] rows;
 

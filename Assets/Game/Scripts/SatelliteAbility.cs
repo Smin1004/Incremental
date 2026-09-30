@@ -33,6 +33,7 @@ namespace Incremental
         double phase;
         float angularSpeed;
         int count;
+        int loggedCount;
         Vector2 center;
         float orbitRadius;
 
@@ -60,6 +61,12 @@ namespace Incremental
             float accel = (float)(s.pullAccel * d.PullShare(Level)) / ppu;
             for (int i = 0; i < count; i++)
                 system.AddForce(DustForce.Pull(Position(i, 0f), reach, accel));
+
+            // They come and go with every hold, so the log only speaks up when their number changes.
+            if (count == loggedCount) return;
+            loggedCount = count;
+            Log(count + " orbiting while holding, from " + RunClock + ": orbit " + (orbitRadius * ppu).ToString("F0") + " px, reach " +
+                (reach * ppu).ToString("F0") + " px, pull " + (accel * ppu).ToString("F0") + " px/s²");
         }
 
         /// <summary>Where satellite <paramref name="i"/> is, <paramref name="lead"/> seconds after the last tick.</summary>
@@ -69,7 +76,11 @@ namespace Incremental
             return center + new Vector2((float)Math.Cos(a), (float)Math.Sin(a)) * orbitRadius;
         }
 
-        protected override void OnClear() => count = 0;
+        protected override void OnClear()
+        {
+            count = 0;
+            loggedCount = 0;
+        }
 
         public override void Render(bool show, float lead)
         {

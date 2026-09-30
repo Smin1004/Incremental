@@ -14,8 +14,12 @@ namespace Incremental
     /// F12: screenshot to persistentDataPath. End: replay the ending sequence between runs without touching the save (15 §4.6).
     /// Home: drain the stamina, ending the run at once.
     /// Insert: the gravity source follow (22 §3), off → the effective speed × each GameParams.followDebugMults → off.
-    /// PageUp: force abilities on whatever the tree says (24 §7), off → each one alone → all → off. PageDown: the upgrade
-    /// level of the forced abilities, 0 → 3. The state is shown in the corner of the screen; nothing is saved.
+    /// Number row: force abilities on whatever the tree says (24 §7), 1..n = that ability alone, n + 1 = all, 0 = off.
+    /// Minus / equals: the upgrade level of the forced abilities down / up. PageUp and PageDown cycle the same two
+    /// things; the number row was added because those two never reached the game on the developer's keyboard. The
+    /// state is shown in the corner of the screen; nothing is saved.
+    /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
+    /// what a keyboard really sends.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -353,8 +357,8 @@ namespace Incremental
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
                 if (kb.homeKey.wasPressedThisFrame) root.DebugDrainStamina();
                 if (kb.insertKey.wasPressedThisFrame) CycleFollow();
-                if (kb.pageUpKey.wasPressedThisFrame && root.Abilities != null) root.Abilities.CycleForced();
-                if (kb.pageDownKey.wasPressedThisFrame && root.Abilities != null) root.Abilities.CycleForcedLevel();
+                if (root.Abilities != null) AbilityKeys(kb);
+                if (overlay) LogKeys(kb);
             }
 #endif
 
@@ -363,6 +367,39 @@ namespace Incremental
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity)
                 : string.Empty);
             root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
+        }
+
+        /// <summary>The number row, in the order of the digits: index = the digit.</summary>
+        static readonly Key[] DigitKeys =
+        {
+            Key.Digit0, Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8, Key.Digit9,
+        };
+
+        /// <summary>
+        /// 24 §7: the ability debug keys. A digit says outright what is forced (0 nothing, 1..n that ability alone,
+        /// n + 1 all), minus and equals move the level of the forced ones, and PageUp / PageDown cycle the same two
+        /// things. The digits are on every keyboard; PageUp and PageDown sit on a function layer on some.
+        /// </summary>
+        void AbilityKeys(Keyboard kb)
+        {
+            var abilities = root.Abilities;
+            for (int digit = 0; digit < DigitKeys.Length; digit++)
+                if (kb[DigitKeys[digit]].wasPressedThisFrame) abilities.SetForced(digit);
+            if (kb.minusKey.wasPressedThisFrame) abilities.StepForcedLevel(-1);
+            if (kb.equalsKey.wasPressedThisFrame) abilities.StepForcedLevel(1);
+            if (kb.pageUpKey.wasPressedThisFrame) abilities.CycleForced();
+            if (kb.pageDownKey.wasPressedThisFrame) abilities.CycleForcedLevel();
+        }
+
+        /// <summary>
+        /// With the overlay on, every key press the game receives is written to the console. A debug key that does
+        /// nothing is either not reaching the game or arriving as another key, and this shows which.
+        /// </summary>
+        void LogKeys(Keyboard kb)
+        {
+            var keys = kb.allKeys;
+            for (int i = 0; i < keys.Count; i++)
+                if (keys[i] != null && keys[i].wasPressedThisFrame) Debug.Log("[Debug] key pressed: " + keys[i].keyCode);
         }
 
         /// <summary>

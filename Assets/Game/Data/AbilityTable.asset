@@ -58,3 +58,4 @@ MonoBehaviour:
   exciteSec: 0.4
   exciteBrightness: 2
   maxCooldownReduction: 0.8
+  logEvents: 1

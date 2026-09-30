@@ -21,6 +21,7 @@ namespace Incremental
         Vector2 origin;
         double age;
         float reach;
+        int pushed;
 
         ImplodeDef D => root.abilityTable.implode;
 
@@ -54,6 +55,8 @@ namespace Incremental
             origin = root.GravityWorld;
             Rect a = root.CameraArea();
             reach = Mathf.Sqrt(a.width * a.width + a.height * a.height);
+            pushed = 0;
+            Log("fired at " + RunClock + ": push " + D.PullSpeedPx(Level).ToString("F0") + " px/s, ring out in " + D.ringSec.ToString("0.##") + "s");
         }
 
         protected override void Step(double dt, bool holding, in EffectiveStats s)
@@ -62,9 +65,11 @@ namespace Incremental
             var d = D;
             // Each tick pushes the band the ring crossed in it, so every dust is hit once as the ring goes by.
             float speed = (float)(d.PullSpeedPx(Level) / p.pixelsPerUnit);
-            root.Dust.Impulse(origin, RadiusAt(age), RadiusAt(age + dt), root.GravityWorld, speed);
+            pushed += root.Dust.Impulse(origin, RadiusAt(age), RadiusAt(age + dt), root.GravityWorld, speed);
             age += dt;
-            if (age >= d.ringSec) active = false;
+            if (age < d.ringSec) return;
+            active = false;
+            Log("ring done: " + pushed + " dust pushed, " + root.Dust.Count + " on screen now");
         }
 
         float RadiusAt(double seconds) => reach * Mathf.Clamp01((float)(seconds / Math.Max(1e-3, D.ringSec)));

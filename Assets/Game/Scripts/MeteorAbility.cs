@@ -32,6 +32,7 @@ namespace Incremental
         /// <summary>The part of the path, as 0..1 of it, that lies inside the screen: where dust is shed.</summary>
         double inFrom, inTo;
         double shedTotal, shedAcc;
+        int shed, notShed;
 
         MeteorDef D => root.abilityTable.meteor;
 
@@ -71,10 +72,19 @@ namespace Incremental
                 inTo = Mathf.Clamp01(t1 / length);
             }
             else inFrom = inTo = 0;
-            shedTotal = d.DustShare(Level) * s.dustCap;
+            double share = d.DustShare(Level);
+            shedTotal = share * s.dustCap;
             shedAcc = 0;
+            shed = notShed = 0;
             age = 0;
             active = true;
+
+            // How near the path comes to the gravity source: the distance from it to the line.
+            Vector2 toGravity = root.GravityWorld - start;
+            float pass = Mathf.Abs(toGravity.x * dir.y - toGravity.y * dir.x) * ppu;
+            Log("fired at " + RunClock + ": crossing in " + duration.ToString("0.##") + "s at " + (speed * ppu).ToString("F0") +
+                " px/s, passing the gravity source at " + pass.ToString("F0") + " px (" + (pass / Math.Max(1e-6, s.gravityRadius)).ToString("0.##") +
+                " radii), to shed " + shedTotal.ToString("F0") + " dust (" + (share * 100.0).ToString("0.#") + "% of the cap " + s.dustCap.ToString("F0") + ")");
 
             body.SetLook(look, root.NextVisualSeed(), p.planetAxisPitchDeg);
             body.SetLightDirection(dir);
@@ -160,7 +170,8 @@ namespace Incremental
                     float k = (float)(from + (to - from) * rng.NextDouble());
                     Vector2 pos = Vector2.LerpUnclamped(start, end, k) + side * (spread * (float)(rng.NextDouble() * 2.0 - 1.0));
                     // At the cap this returns false and the dust is simply not shed (24 §5).
-                    root.Dust.Shed(pos, vel, s, d.heavyWeight);
+                    if (root.Dust.Shed(pos, vel, s, d.heavyWeight)) shed++;
+                    else notShed++;
                 }
             }
 
@@ -173,7 +184,10 @@ namespace Incremental
             }
 
             age += dt;
-            if (age >= duration) active = false;
+            if (age < duration) return;
+            active = false;
+            Log("gone: shed " + shed + " dust" + (notShed > 0 ? ", " + notShed + " not shed (at the dust cap, or the spot was off screen)" : string.Empty) +
+                ", " + root.Dust.Count + " on screen now");
         }
 
         protected override void OnClear()

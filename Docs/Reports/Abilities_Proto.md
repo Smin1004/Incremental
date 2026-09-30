@@ -4,7 +4,7 @@
 |---|---|
 | 스펙 | [24_Ability_Spec.md](../24_Ability_Spec.md) (9/30 추가분 포함: 들뜸, 균일 임펄스, 유성 항적) |
 | 브랜치 | `abilities` (main 병합 안 함) |
-| 커밋 | A `56061f0` · B `5075f91` · C `8dadbd6` · D `1fb2f15` · E `bcd68fb` · F 이 보고서 |
+| 커밋 | A `56061f0` · B `5075f91` · C `8dadbd6` · D `1fb2f15` · E `bcd68fb` · F `dc72698` · 숫자 키와 로그(개발자 회신 뒤 추가) |
 | Validate Data | 오류 0, 경고 0 (체크포인트마다) |
 | EditMode 테스트 | 기존 227개 전부 통과 (E까지 끝낸 뒤에만 돌렸다). 새 테스트는 쓰지 않았다 |
 | 캡처 | `Docs/Reports/Abilities_Screens/` 5장 (링 8 상태, 디버그 키로 켬) |
@@ -34,12 +34,28 @@
 
 | 키 | 동작 |
 |---|---|
-| `PageUp` | 끔(트리대로) → 수축만 → 위성만 → 유성만 → 전부. **켜는 즉시 충전되므로 홀드하면 바로 나온다** |
-| `PageDown` | 강제로 켠 능력의 강화 레벨 0 → 1 → 2 → 3 |
-| `F1` | 오버레이를 켜면 트리로 해금한 능력의 상태도 같은 줄에 보인다 |
+| 숫자 `1` `2` `3` | 수축만 / 위성만 / 유성만 켠다. **켜는 즉시 충전되므로 홀드하면 바로 나온다** |
+| 숫자 `4` | 전부 켠다 |
+| 숫자 `0` | 끈다 (트리대로) |
+| `=` / `-` | 강제로 켠 능력의 강화 레벨 올림 / 내림 (0~3) |
+| `PageUp` / `PageDown` | 같은 것을 순환으로 (스펙의 원래 키) |
+| `F1` | 오버레이. 트리로 해금한 능력 상태와 키 안내가 같은 줄에 보이고, **게임이 받은 키가 전부 콘솔에 찍힌다** |
+
+숫자 키는 키보드 위쪽 숫자 줄이다(숫자 패드 아님). 첫 확인 때 `PageUp` / `PageDown`이 게임에 닿지 않아서 추가했다. 그 세션의 에디터 로그에는 능력 키 로그가 한 줄도 없었고 `F11`(연출 강도)만 두 번 찍혀 있었다.
 
 - 화면 왼쪽 아래에 `능력(강제): 수축 Lv2 9.3초`처럼 나온다. 초는 **다음 발동까지 남은 홀드 시간**이라, 홀드를 놓으면 멈추는 것을 숫자로 볼 수 있다.
-- **확인하기 좋은 링은 8 이상.** 지금 세이브(링 11)에서 바로 하면 된다. 새 세이브라면 `F2`(성능 모드, 먼지 3,700개)를 켜고 `PageUp`.
+- **콘솔 로그** (`[Ability] …`): 런 시작 때 어떤 능력이 켜져 있는지, 발동할 때마다 무엇을 했는지 남는다. 눈으로 놓쳐도 로그로 확인할 수 있다. `AbilityTable.logEvents`로 끈다.
+
+  ```
+  [Ability] run 9 starts with implode (locked), satellite (locked), meteor (locked)
+  [Ability] debug key: forced, level 1: implode Lv1 (debug key), satellite Lv1 (debug key), meteor Lv1 (debug key)
+  [Ability] implode: fired at 24.6s: push 325 px/s, ring out in 0.5s
+  [Ability] implode: ring done: 2140 dust pushed, 2222 on screen now
+  [Ability] satellite: 2 orbiting while holding, from 24.6s: orbit 287 px, reach 157 px, pull 1050 px/s²
+  [Ability] meteor: fired at 24.6s: crossing in 2.5s at 776 px/s, passing the gravity source at 677 px (1.3 radii), to shed 630 dust (9% of the cap 6995)
+  [Ability] meteor: gone: shed 628 dust, 1 not shed (at the dust cap, or the spot was off screen), 2454 on screen now
+  ```
+- **확인하기 좋은 링은 8 이상.** 지금 세이브(링 11)에서 바로 하면 된다. 새 세이브라면 `F2`(성능 모드, 먼지 3,700개)를 켜고 숫자 `4`.
 - **트리 해금 확인**: 트리의 왼쪽 아래 240° 축. "능력: 수축 / 위성 / 유성"을 사면 다음 런부터 나오고, 사기 전에는 나오지 않는다. 비용은 348 / 3.08만 / 334만(해금), 3,040 / 25.2만 / 1,140만(강화 1레벨).
 - 처음부터 다시 하려면 `Shift+F9`.
 
@@ -90,6 +106,7 @@
 | `exciteSec` | 0.4 | 들뜬 먼지가 가라앉는 시간 |
 | `exciteBrightness` | 2 | 들뜬 먼지 밝기 = 평소 × (1 + 이 값). 눈부시면 낮춘다 |
 | `maxCooldownReduction` | 0.8 | 쿨다운 감소 노드의 한도 (지금 쓰는 노드 없음) |
+| `logEvents` | 켜짐 | 콘솔의 `[Ability]` 로그. 봇을 돌릴 때는 끈다 |
 
 쿨다운 감소로 바꿔 보려면 `SkillTreeSeed.AbilityNode`에서 `r5_implode_power`의 스탯을 `StatIds.AbilityCooldown`으로 바꾸고 "Rebuild Node Table From Seed"를 돌리면 된다.
 
@@ -104,7 +121,8 @@
 7. **"무거운 쪽 비중 2배"**: 기본 먼지를 뺀 해금된 종류 전부의 확률을 2배로 읽었다. 합이 1을 넘으면 같이 줄인다.
 8. **유성 통과 시간 2.5초**는 화면 밖 여유(꼬리 길이)까지 포함한 비행 시간이고, 먼지는 화면 안에서만 흘린다.
 9. **수축의 고리는 터진 자리에 남아 퍼지고**, 밀리는 방향은 그 순간의 중력원 쪽이다.
-10. **능력 이름이 천체와 겹친다.** 능력 "위성"과 티어 4 "위성". 트리 노드 제목을 "능력: 위성"으로 해서 구분했다. 이름을 바꿀지는 기획이 정할 일이다.
+10. **디버그 키에 숫자 줄을 더했다.** 스펙은 `PageUp` / `PageDown` 둘이다. 두 키는 그대로 두고, 숫자 `0`~`4`와 `-` / `=`로도 되게 했다 (§2). 숫자는 순환이 아니라 누른 번호의 상태로 바로 간다.
+11. **능력 이름이 천체와 겹친다.** 능력 "위성"과 티어 4 "위성". 트리 노드 제목을 "능력: 위성"으로 해서 구분했다. 이름을 바꿀지는 기획이 정할 일이다.
 
 ## 5. 알려진 문제
 

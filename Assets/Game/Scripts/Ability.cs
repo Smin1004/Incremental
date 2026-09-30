@@ -76,6 +76,12 @@ namespace Incremental
         /// <summary>Seconds since the trigger that is playing out now started, or −1 when none is (captures and checks).</summary>
         public virtual float EffectAge => -1f;
 
+        /// <summary>A console line about this ability, "[Ability] &lt;id&gt;: …", when AbilityTable.logEvents is on.</summary>
+        protected void Log(string message) => system.Log(Def.id + ": " + message);
+
+        /// <summary>Seconds into the run, for the log lines.</summary>
+        protected string RunClock => root.Run != null ? root.Run.elapsed.ToString("F1") + "s" : "-";
+
         /// <summary>Creates what the ability draws, hidden, under <paramref name="parent"/>.</summary>
         protected abstract void Build(Transform parent);
 

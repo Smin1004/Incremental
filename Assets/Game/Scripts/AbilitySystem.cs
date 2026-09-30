@@ -9,13 +9,19 @@ namespace Incremental
     /// far it is upgraded. GameRoot ticks this right before the dust, so what an ability does to the dust in a tick is
     /// part of that same dust tick.
     ///
-    /// The debug keys (24 §7) replace what the tree says without touching the save: PageUp forces abilities on, one at a
-    /// time and then all of them, and PageDown cycles the upgrade level of the forced ones.
+    /// The debug keys (24 §7) replace what the tree says without touching the save. The number row picks what is
+    /// forced on (0 = nothing, the tree decides; 1..n = that ability alone; n + 1 = all of them) and the minus and
+    /// equals keys move the upgrade level of the forced ones. PageUp and PageDown cycle through the same two things.
+    ///
+    /// With AbilityTable.logEvents on, what the abilities do is also written to the console as "[Ability] …" lines:
+    /// which are on when a run starts, every trigger and what it did, and every debug key.
     /// </summary>
     public sealed class AbilitySystem : MonoBehaviour
     {
         GameRoot root;
         Ability[] abilities = new Ability[0];
+        bool[] wasOn = new bool[0];
+        bool runAnnounced;
         DustForce[] forces = new DustForce[8];
         int forceCount;
         float lastTickAt;
@@ -42,7 +48,8 @@ namespace Incremental
             forces[forceCount++] = force;
         }
 
-        int RowCount => root.abilityTable != null ? root.abilityTable.Count : 0;
+        /// <summary>Rows of the table, which is also how many abilities there are. 0 without a table.</summary>
+        public int RowCount => root.abilityTable != null ? root.abilityTable.Count : 0;
 
         public void Init(GameRoot gameRoot)
         {
@@ -51,6 +58,7 @@ namespace Incremental
             if (table == null) return;
             var rows = table.Rows;
             abilities = new Ability[rows.Length];
+            wasOn = new bool[rows.Length];
             for (int i = 0; i < rows.Length; i++)
             {
                 var a = rows[i] != null ? rows[i].CreateRuntime() : null;
@@ -64,8 +72,12 @@ namespace Incremental
         public void ResetRun()
         {
             forceCount = 0;
+            runAnnounced = false;
             for (int i = 0; i < abilities.Length; i++)
+            {
+                wasOn[i] = false;
                 if (abilities[i] != null) abilities[i].Clear();
+            }
         }
 
         /// <summary>The ability of the table row with this id, or null (captures and checks).</summary>
@@ -84,7 +96,22 @@ namespace Incremental
             // 24 §8: how long an excited dust stays excited is table data, so the dust is told every tick.
             root.Dust.ExciteSec = root.abilityTable.exciteSec;
             for (int i = 0; i < abilities.Length; i++)
-                if (abilities[i] != null) abilities[i].Tick(dt, holding, s, LevelOf(i));
+            {
+                var level = LevelOf(i);
+                // After the first tick of a run, an ability switching on or off can only be the debug keys (or the
+                // free tier unlock), and is worth a line of its own. The first tick is covered by the run's summary.
+                if (level.unlocked != wasOn[i])
+                {
+                    wasOn[i] = level.unlocked;
+                    if (runAnnounced) Log(level.unlocked ? Describe(i, level) + " is now on" : root.abilityTable.Rows[i].id + " is now off");
+                }
+                if (abilities[i] != null) abilities[i].Tick(dt, holding, s, level);
+            }
+            if (!runAnnounced)
+            {
+                runAnnounced = true;
+                Log("run " + root.Meta.runCount + " starts with " + Summary());
+            }
         }
 
         /// <summary>What row <paramref name="i"/> is given now: by the tree, or by the debug key when it is forcing (24 §7).</summary>
@@ -110,39 +137,89 @@ namespace Incremental
             }
         }
 
+        // ---------------- console log ----------------
+
+        /// <summary>
+        /// One "[Ability] …" line in the console, when AbilityTable.logEvents is on. The prototype is checked by eye,
+        /// and the log says what the eye may have missed: that an ability fired at all, and what it did.
+        /// </summary>
+        public void Log(string message)
+        {
+            if (root.abilityTable != null && root.abilityTable.logEvents) Debug.Log("[Ability] " + message);
+        }
+
+        /// <summary>"implode Lv1 (tree)" / "implode (locked)": one ability, its level and who turned it on.</summary>
+        string Describe(int i, in AbilityLevel level)
+        {
+            string id = root.abilityTable.Rows[i].id;
+            if (!level.unlocked) return id + " (locked)";
+            return id + " Lv" + level.level + (ForcedMode == 0 ? " (tree)" : " (debug key)");
+        }
+
+        /// <summary>Every ability in table order, as <see cref="Describe"/> writes them.</summary>
+        string Summary()
+        {
+            label.Length = 0;
+            for (int i = 0; i < RowCount; i++)
+            {
+                if (i > 0) label.Append(", ");
+                label.Append(Describe(i, LevelOf(i)));
+            }
+            return label.ToString();
+        }
+
         // ---------------- debug keys (24 §7) ----------------
 
         /// <summary>
-        /// PageUp: off (the tree decides) → the first ability only → … → the last only → all of them → off. A forced
-        /// ability is charged at once, so holding shows it without waiting for its cooldown. Nothing is saved.
+        /// The number row: 0 = nothing is forced and the tree decides, 1..n = only the ability of that row, n + 1 = all
+        /// of them. A number past that does nothing. A forced ability is charged at once, so holding shows it without
+        /// waiting out its cooldown. Nothing is saved.
         /// </summary>
+        public void SetForced(int mode)
+        {
+            int n = RowCount;
+            if (n == 0 || mode < 0 || mode > n + 1) return;
+            ForcedMode = mode;
+            ForcedLevel = Mathf.Min(ForcedLevel, ForcedMaxLevel());
+            AnnounceForced();
+        }
+
+        /// <summary>PageUp: the same choices in a cycle, off → each ability alone → all → off.</summary>
         public void CycleForced()
         {
             int n = RowCount;
-            if (n == 0) return;
-            ForcedMode = (ForcedMode + 1) % (n + 2);
-            ForcedLevel = Mathf.Min(ForcedLevel, ForcedMaxLevel());
-            PrimeForced();
-            root.Hud.ShowToast(ForcedToast());
-            Debug.Log("[Debug] abilities forced: mode " + ForcedMode + ", level " + ForcedLevel);
+            if (n > 0) SetForced((ForcedMode + 1) % (n + 2));
         }
 
-        /// <summary>PageDown: the upgrade level of the forced abilities, 0 → 1 → … → the most their nodes have → 0.</summary>
+        /// <summary>
+        /// The minus and equals keys: the upgrade level of the forced abilities one down or one up, between 0 and the
+        /// most levels their nodes have.
+        /// </summary>
+        public void StepForcedLevel(int delta)
+        {
+            if (!CanSetLevel()) return;
+            ForcedLevel = Mathf.Clamp(ForcedLevel + delta, 0, ForcedMaxLevel());
+            AnnounceForced();
+        }
+
+        /// <summary>PageDown: the same level in a cycle, 0 → 1 → … → the most the nodes have → 0.</summary>
         public void CycleForcedLevel()
         {
-            if (RowCount == 0) return;
-            if (ForcedMode == 0)
-            {
-                root.Hud.ShowToast(UIStrings.AbilityForceFirst);
-                return;
-            }
+            if (!CanSetLevel()) return;
             ForcedLevel = ForcedLevel >= ForcedMaxLevel() ? 0 : ForcedLevel + 1;
-            PrimeForced();
-            root.Hud.ShowToast(ForcedToast());
-            Debug.Log("[Debug] abilities forced: mode " + ForcedMode + ", level " + ForcedLevel);
+            AnnounceForced();
         }
 
-        /// <summary>The most levels a stat node of any forced ability has: where PageDown wraps around.</summary>
+        /// <summary>The level keys only mean something while an ability is forced; otherwise they say how to force one.</summary>
+        bool CanSetLevel()
+        {
+            if (RowCount == 0) return false;
+            if (ForcedMode != 0) return true;
+            root.Hud.ShowToast(string.Format(UIStrings.AbilityForceFirst, RowCount + 1));
+            return false;
+        }
+
+        /// <summary>The most levels a stat node of any forced ability has: where the level keys stop.</summary>
         int ForcedMaxLevel()
         {
             int max = 0;
@@ -152,10 +229,13 @@ namespace Incremental
             return max;
         }
 
-        void PrimeForced()
+        /// <summary>After a debug key: charge what is forced, and say what is forced on screen and in the console.</summary>
+        void AnnounceForced()
         {
             for (int i = 0; i < abilities.Length; i++)
                 if (abilities[i] != null && ForcedMode != 0 && IsForced(i)) abilities[i].FillCharge();
+            root.Hud.ShowToast(ForcedToast());
+            Log("debug key: " + (ForcedMode == 0 ? "nothing forced, the tree decides: " : "forced, level " + ForcedLevel + ": ") + Summary());
         }
 
         string ForcedToast()
@@ -167,8 +247,8 @@ namespace Incremental
 
         /// <summary>
         /// The small status line in the corner of the screen (24 §7): the abilities that are on, each with its level and
-        /// the seconds of holding left to its next trigger. Shown while the debug key is forcing, and with the F1 overlay
-        /// also for what the tree gives; empty otherwise.
+        /// the seconds of holding left to its next trigger. Shown while the debug keys are forcing, and with the F1
+        /// overlay also for what the tree gives, followed by which keys do what; empty otherwise.
         /// </summary>
         public string DebugLabel(bool overlay)
         {
@@ -185,7 +265,8 @@ namespace Incremental
                     label.AppendFormat(UIStrings.AbilityDebugCharge, abilities[i].SecondsToTrigger(level));
             }
             string list = label.Length > 0 ? label.ToString() : UIStrings.AbilityDebugNone;
-            return string.Format(ForcedMode == 0 ? UIStrings.AbilityDebugTree : UIStrings.AbilityDebugForced, list);
+            string line = string.Format(ForcedMode == 0 ? UIStrings.AbilityDebugTree : UIStrings.AbilityDebugForced, list);
+            return overlay ? line + string.Format(UIStrings.AbilityDebugHint, rows.Length, rows.Length + 1) : line;
         }
     }
 }

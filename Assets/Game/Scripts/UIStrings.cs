@@ -74,11 +74,17 @@ namespace Incremental
         public const string AbilityDebugEntry = "{0} Lv{1}";
         public const string AbilityDebugCharge = " {0:0.0}초";
         public const string AbilityDebugSeparator = " · ";
-        /// <summary>24 §7: toasts of the two ability debug keys. {0} = the ability name or the level, {1} = the level.</summary>
+        /// <summary>
+        /// 24 §7: which keys do what, after the status line while the F1 overlay is on. {0} = the last number that forces
+        /// one ability alone, {1} = the number that forces all of them.
+        /// </summary>
+        public const string AbilityDebugHint = "     [숫자 1~{0}: 하나만   {1}: 전부   0: 끔   - / =: 레벨]";
+        /// <summary>24 §7: toasts of the ability debug keys. {0} = the ability name or the level, {1} = the level.</summary>
         public const string AbilityForceOff = "능력 강제: 꺼짐 (트리대로)";
         public const string AbilityForceOne = "능력 강제: {0}만 Lv{1}";
         public const string AbilityForceAll = "능력 강제: 전부 Lv{0}";
-        public const string AbilityForceFirst = "PageUp으로 능력을 먼저 켜세요";
+        /// <summary>A level key was pressed with nothing forced. {0} = the number that forces all abilities.</summary>
+        public const string AbilityForceFirst = "숫자 1~{0}로 능력을 먼저 켜세요";
 
         /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
         static readonly Dictionary<string, string> Keyed = new Dictionary<string, string>
