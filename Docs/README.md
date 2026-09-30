@@ -24,7 +24,7 @@
 | [19_LowTier_Options.md](19_LowTier_Options.md) | **하위 티어가 안 나오는 문제.** 원인 계산, 방안 7개 비교, 결정(가격 곡선 완화 + 파편)과 파편 트리 설계 | 결정됨 |
 | [18_Feedback_Round1.md](18_Feedback_Round1.md) | **1차 점검 피드백 정리.** 즉시 수정 3건, 먼지 흡인 보정, 먼지 종류, 다양성 보너스, 특수 능력, 이동 제한 실험, 일정 영향 | 처리안 |
 | [17_Playtest_Guide.md](17_Playtest_Guide.md) | **점검 안내 (개발자용).** 디버그 키와 에디터 메뉴, 자유 점검과 측정 플레이의 구분, 불편한 점 넘기는 형식, 바로 고칠 수 있는 값 목록 | 안내 |
-| [Prompts/](Prompts/) | 구현 세션에 붙여 넣는 작업 프롬프트. 최신은 [Abilities_Prompt.md](Prompts/Abilities_Prompt.md) | - |
+| [Prompts/](Prompts/) | 구현 세션에 붙여 넣는 작업 프롬프트. 최신은 [Abilities_Proto2.md](Prompts/Abilities_Proto2.md) | - |
 | [90_Backlog.md](90_Backlog.md) | 결정 기록, 보류, 제안, 리스크, 용어 | - |
 | [Reports/Prototype_Week1.md](Reports/Prototype_Week1.md) | 구현 세션의 1주차 보고. 개발자 기입 항목이 남아 있다 | 구현 세션 작성 |
 | [Reports/Week2.md](Reports/Week2.md) | 구현 세션의 2주차 보고. §3 질문 9개의 답은 12 §10 | 구현 세션 작성 |
