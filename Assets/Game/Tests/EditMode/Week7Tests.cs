@@ -410,6 +410,95 @@ namespace Incremental.Tests
             }
         }
 
+        // ---------------- §8 F. rebalance ----------------
+
+        [Test]
+        public void RunLength_GoesFromAboutFortyFiveSecondsToAboutThreeMinutes()
+        {
+            // 22 §8 target: 40-60s early, 120-180s late. This is the length the stamina axis allows, which the bot's
+            // measured runs (48s and 174s, Reports/Week7_Data/balance_round4.md) sit just under.
+            var p = ProjectParams();
+            var t = ProjectNodes();
+            double first = p.staminaMax / (p.staminaHoldDrain + p.staminaIdleDrain);
+            Assert.That(first, Is.InRange(40.0, 60.0), "the first run, with nothing bought");
+            var m = AllNodes(t);
+            var s = Stats.Compute(p, t, m);
+            double last = s.staminaMax / (s.staminaHoldDrain + s.staminaIdleDrain);
+            Assert.That(last, Is.InRange(120.0, 200.0), "everything bought; the bot never buys quite everything");
+        }
+
+        [Test]
+        public void RequiredMass_FallsToTheReductionCapByTheLateRings()
+        {
+            // 21 §4: the run got longer but the throughput did not, so a late run made 8 bodies in six minutes. The
+            // planet axis now takes the required mass down to a tenth, which is what turns throughput into bodies.
+            var p = ProjectParams();
+            var t = ProjectNodes();
+            var m = AllNodes(t);
+            Assert.AreEqual(1.0 - Stats.MaxReduction, Stats.Compute(p, t, m).thresholdMult, 1e-9,
+                "the last rings sit on the 90% reduction cap");
+        }
+
+        [Test]
+        public void GrowthAxes_AllPointTheRightWay()
+        {
+            var p = ProjectParams();
+            var t = ProjectNodes();
+            var bare = Stats.Compute(p, t, new MetaState());
+            var full = Stats.Compute(p, t, AllNodes(t));
+            Assert.Greater(full.gravityRadius, bare.gravityRadius * 2.5, "22 §8: the gravity radius grows more than before");
+            Assert.Greater(full.dustMassAvg, bare.dustMassAvg * 30, "the dust kinds carry most of the late throughput");
+            Assert.Less(full.staminaMax, bare.staminaMax * 2.5, "the stamina axis grows far less than the 6.5x of 20 §8");
+            Assert.AreEqual(22, p.driftSpeed, Eps, "22 §8: 15 -> 22");
+        }
+
+        [Test]
+        public void MediumDust_ReachesFifteenPercent()
+        {
+            // 21 §6-3: rings 3-4 fell short of the per-ring mass growth, and the answer was 3% + 3%p x 4.
+            var p = ProjectParams();
+            var medium = p.DustKind(p.DustKindIndex("medium"));
+            Assert.AreEqual(0.03, medium.baseChance, Eps);
+            Assert.AreEqual(0.03, medium.chancePerLevel, Eps);
+            Assert.AreEqual(0.15, medium.MaxChance, 1e-9, "15% at full level");
+        }
+
+        [Test]
+        public void DustChanceNodes_MatchTheirKindsData()
+        {
+            var p = ProjectParams();
+            var t = ProjectNodes();
+            foreach (var n in t.nodes)
+            {
+                if (n == null || n.kind != NodeKind.Stat || n.statId != StatIds.DustChance) continue;
+                var def = p.DustKind(p.DustKindIndex(n.dustKindId));
+                Assert.IsNotNull(def, n.id);
+                Assert.AreEqual(def.chancePerLevel, n.effectPerLevel, Eps, n.id + " and its kind are two copies of one number");
+                Assert.AreEqual(def.chanceMaxLevel, n.maxLevel, n.id);
+            }
+        }
+
+        [Test]
+        public void RingCostMult_IsSetForEveryRingAndStaysReadable()
+        {
+            var t = ProjectNodes();
+            for (int ring = 1; ring <= 11; ring++)
+            {
+                double mult = t.RingCostMult(ring);
+                Assert.Greater(mult, 0, "ring " + ring);
+                Assert.LessOrEqual(mult, 10, "ring " + ring + ": a multiplier past 10 means the measured I_k is wrong, not the pacing");
+            }
+        }
+
+        static MetaState AllNodes(NodeTable t)
+        {
+            var m = new MetaState();
+            foreach (var n in t.nodes)
+                if (n != null && n.enabled) m.SetLevel(n.id, n.maxLevel > 0 ? n.maxLevel : 1);
+            Shop.RecomputeUnlockedMaxTier(t, m);
+            return m;
+        }
+
         static string NextFollow(string id)
         {
             switch (id)

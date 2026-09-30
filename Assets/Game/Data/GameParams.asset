@@ -15,7 +15,7 @@ MonoBehaviour:
   dustInitial: 100
   spawnRate: 4
   dustCap: 300
-  driftSpeed: 15
+  driftSpeed: 22
   dustMass: 1
   gravityRadius: 180
   pullAccel: 600
@@ -42,7 +42,7 @@ MonoBehaviour:
   - 2
   followLineWidthPx: 1.5
   followLineColor: {r: 1, g: 1, b: 1, a: 0.35}
-  staminaMax: 60
+  staminaMax: 86
   staminaHoldDrain: 1.5
   staminaIdleDrain: 0.3
   staminaPresets:
@@ -70,7 +70,7 @@ MonoBehaviour:
     mass: 5
     unlockRing: 3
     baseChance: 0.03
-    chancePerLevel: 0.015
+    chancePerLevel: 0.03
     chanceMaxLevel: 4
     sizeMult: 1.7
     accelMult: 0.75
@@ -99,8 +99,8 @@ MonoBehaviour:
   - id: interstellar
     mass: 625
     unlockRing: 9
-    baseChance: 0.015
-    chancePerLevel: 0.0075
+    baseChance: 0.02
+    chancePerLevel: 0.01
     chanceMaxLevel: 4
     sizeMult: 8.5
     accelMult: 0.3

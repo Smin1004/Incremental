@@ -41,7 +41,7 @@ namespace Incremental.Tests
             }
             Assert.AreEqual(10, gates, "gates for tiers 2-11");
             Assert.AreEqual(3, endless, "ring 11 endless nodes");
-            Assert.That(stats, Is.InRange(45, 70), "about 50 stat nodes (12 §6), plus the 22 §3 follow axis");
+            Assert.That(stats, Is.InRange(45, 80), "about 50 stat nodes (12 §6), plus the 22 §3 follow axis and the 22 §8 planet axis");
             // 20 §8.2: every cost comes from the measured entry income of its ring, 0.4 × I_k for a node and 3 × I_k
             // for a gate, so ring 1 (I = 9) is a node at 3.6 and the tier 2 gate at 27.
             Assert.AreEqual(3.6, n.Get("r1_spawn").baseCost, 1e-9);

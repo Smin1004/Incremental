@@ -100,7 +100,7 @@ namespace Incremental
         public double dustInitial = 100;
         public double spawnRate = 4;          // per second, upgrade target
         public double dustCap = 300;
-        public double driftSpeed = 15;        // px/s
+        public double driftSpeed = 22;        // px/s (22 §8: 15 -> 22, influx is proportional to it)
         public double dustMass = 1;
 
         [Header("Gravity (spec §6)")]
@@ -157,7 +157,7 @@ namespace Incremental
         public Color followLineColor = new Color(1f, 1f, 1f, 0.35f);
 
         [Header("Stamina (spec §6)")]
-        public double staminaMax = 60;        // upgrade target
+        public double staminaMax = 86;        // upgrade target (22 §8: the first run is 48s at the base drain)
         public double staminaHoldDrain = 1.5; // per second while holding (additional)
         public double staminaIdleDrain = 0.3; // per second, always
         [Tooltip("The stamina debug key (F10) cycles the runtime drain through these, in order (18 §A1); the asset values above " +
@@ -177,7 +177,7 @@ namespace Incremental
             new DustKindDef { id = "base", mass = 1, unlockRing = 0, sizeMult = 1, accelMult = 1, brightMult = 1, shape = DustShape.Dot },
             new DustKindDef
             {
-                id = "medium", mass = 5, unlockRing = 3, baseChance = 0.03, chancePerLevel = 0.015, chanceMaxLevel = 4,
+                id = "medium", mass = 5, unlockRing = 3, baseChance = 0.03, chancePerLevel = 0.03, chanceMaxLevel = 4,
                 sizeMult = 1.7, accelMult = 0.75, brightMult = 1.15, shape = DustShape.Shard,
             },
             new DustKindDef
@@ -192,7 +192,7 @@ namespace Incremental
             },
             new DustKindDef
             {
-                id = "interstellar", mass = 625, unlockRing = 9, baseChance = 0.015, chancePerLevel = 0.0075, chanceMaxLevel = 4,
+                id = "interstellar", mass = 625, unlockRing = 9, baseChance = 0.02, chancePerLevel = 0.01, chanceMaxLevel = 4,
                 sizeMult = 8.5, accelMult = 0.30, brightMult = 1.6, shape = DustShape.Interstellar,
             },
         };

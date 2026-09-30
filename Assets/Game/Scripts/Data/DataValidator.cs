@@ -86,7 +86,14 @@ namespace Incremental
                 {
                     if (n == null || n.dustKindId != def.id) continue;
                     if (n.IsDustUnlock) unlocks++;
-                    else if (n.statId == StatIds.DustChance) chances++;
+                    else if (n.statId == StatIds.DustChance)
+                    {
+                        chances++;
+                        // The node and the kind are two copies of one number; a mismatch makes the tooltip lie about
+                        // the share the node actually gives (20 §4).
+                        if (n.effectPerLevel != def.chancePerLevel)
+                            r.Errors.Add($"NodeTable: '{n.id}' adds {n.effectPerLevel} per level, but dust kind '{def.id}' says {def.chancePerLevel} (20 §4).");
+                    }
                 }
                 if (unlocks != 1)
                     r.Errors.Add($"NodeTable: dust kind '{def.id}' has {unlocks} unlock nodes, expected exactly one (20 §4).");

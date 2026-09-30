@@ -55,7 +55,7 @@ MonoBehaviour:
   - id: r1_stamina
     kind: 0
     statId: stamina_max
-    effectPerLevel: 10
+    effectPerLevel: 6
     maxLevel: 1
     baseCost: 3.6
     growth: 1.5
@@ -109,7 +109,7 @@ MonoBehaviour:
   - id: r2_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.1
+    effectPerLevel: 0.15
     maxLevel: 2
     baseCost: 8.4
     growth: 1.5
@@ -151,7 +151,7 @@ MonoBehaviour:
   - id: r2_stamina
     kind: 0
     statId: stamina_max
-    effectPerLevel: 10
+    effectPerLevel: 6
     maxLevel: 2
     baseCost: 8.4
     growth: 1.5
@@ -165,7 +165,7 @@ MonoBehaviour:
   - id: r2_threshold
     kind: 0
     statId: threshold_mult
-    effectPerLevel: 0.05
+    effectPerLevel: 0.07
     maxLevel: 2
     baseCost: 8.4
     growth: 1.5
@@ -249,7 +249,7 @@ MonoBehaviour:
   - id: r3_threshold
     kind: 0
     statId: threshold_mult
-    effectPerLevel: 0.05
+    effectPerLevel: 0.07
     maxLevel: 2
     baseCost: 52
     growth: 1.5
@@ -319,7 +319,7 @@ MonoBehaviour:
   - id: r4_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.1
+    effectPerLevel: 0.15
     maxLevel: 2
     baseCost: 290
     growth: 1.5
@@ -333,7 +333,7 @@ MonoBehaviour:
   - id: r4_threshold
     kind: 0
     statId: threshold_mult
-    effectPerLevel: 0.05
+    effectPerLevel: 0.12
     maxLevel: 2
     baseCost: 290
     growth: 1.5
@@ -361,7 +361,7 @@ MonoBehaviour:
   - id: r4_stamina
     kind: 0
     statId: stamina_max
-    effectPerLevel: 20
+    effectPerLevel: 6
     maxLevel: 2
     baseCost: 290
     growth: 1.5
@@ -375,7 +375,7 @@ MonoBehaviour:
   - id: r4_chance_medium
     kind: 0
     statId: dust_chance
-    effectPerLevel: 0.015
+    effectPerLevel: 0.03
     maxLevel: 4
     baseCost: 290
     growth: 1.5
@@ -459,7 +459,7 @@ MonoBehaviour:
   - id: r5_threshold
     kind: 0
     statId: threshold_mult
-    effectPerLevel: 0.05
+    effectPerLevel: 0.1
     maxLevel: 2
     baseCost: 1600
     growth: 1.5
@@ -557,7 +557,7 @@ MonoBehaviour:
   - id: r6_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.15
+    effectPerLevel: 0.2
     maxLevel: 2
     baseCost: 7900
     growth: 1.5
@@ -567,6 +567,20 @@ MonoBehaviour:
     prereqs:
     - r5_pull
     angleDeg: 340
+    enabled: 1
+  - id: r6_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.06
+    maxLevel: 2
+    baseCost: 7900
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    minTier: 6
+    prereqs:
+    - r5_threshold
+    angleDeg: 150
     enabled: 1
   - id: r6_sale
     kind: 0
@@ -585,7 +599,7 @@ MonoBehaviour:
   - id: r6_stamina
     kind: 0
     statId: stamina_max
-    effectPerLevel: 30
+    effectPerLevel: 9
     maxLevel: 2
     baseCost: 7900
     growth: 1.5
@@ -679,6 +693,20 @@ MonoBehaviour:
     prereqs:
     - r6_radius
     angleDeg: 330
+    enabled: 1
+  - id: r7_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.04
+    maxLevel: 2
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    minTier: 7
+    prereqs:
+    - r6_threshold
+    angleDeg: 150
     enabled: 1
   - id: r7_sale
     kind: 0
@@ -781,7 +809,7 @@ MonoBehaviour:
   - id: r8_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.15
+    effectPerLevel: 0.2
     maxLevel: 2
     baseCost: 290000
     growth: 1.5
@@ -809,7 +837,7 @@ MonoBehaviour:
   - id: r8_stamina
     kind: 0
     statId: stamina_max
-    effectPerLevel: 40
+    effectPerLevel: 12
     maxLevel: 2
     baseCost: 290000
     growth: 1.5
@@ -978,7 +1006,7 @@ MonoBehaviour:
   - id: r10_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.2
+    effectPerLevel: 0.25
     maxLevel: 2
     baseCost: 16000000
     growth: 1.5
@@ -1006,7 +1034,7 @@ MonoBehaviour:
   - id: r10_stamina
     kind: 0
     statId: stamina_max
-    effectPerLevel: 60
+    effectPerLevel: 15
     maxLevel: 2
     baseCost: 16000000
     growth: 1.5
@@ -1020,7 +1048,7 @@ MonoBehaviour:
   - id: r10_chance_interstellar
     kind: 0
     statId: dust_chance
-    effectPerLevel: 0.0075
+    effectPerLevel: 0.01
     maxLevel: 4
     baseCost: 16000000
     growth: 1.5
@@ -1090,7 +1118,7 @@ MonoBehaviour:
   - id: r11_stamina
     kind: 0
     statId: stamina_max
-    effectPerLevel: 30
+    effectPerLevel: 9
     maxLevel: 0
     baseCost: 170000000
     growth: 1.6
@@ -1103,14 +1131,14 @@ MonoBehaviour:
     enabled: 1
   ringCostMult:
   - 1
-  - 1
+  - 2.3
+  - 3.1
+  - 1.9
   - 1.4
-  - 1
-  - 1
-  - 0.75
-  - 1
-  - 0.55
-  - 1
-  - 0.8
-  - 0.8
+  - 2.25
+  - 2.35
+  - 1.6
+  - 3.5
+  - 1.9
+  - 7
   - 1
