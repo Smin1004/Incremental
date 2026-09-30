@@ -51,10 +51,20 @@ namespace Incremental
                 if (abilities[i] != null) abilities[i].Clear();
         }
 
+        /// <summary>The ability of the table row with this id, or null (captures and checks).</summary>
+        public Ability Get(string id)
+        {
+            int i = root.abilityTable != null ? root.abilityTable.IndexOf(id) : -1;
+            return i >= 0 && i < abilities.Length ? abilities[i] : null;
+        }
+
         /// <summary>One fixed tick of a run, called right before the dust tick.</summary>
         public void Tick(double dt, bool holding, in EffectiveStats s)
         {
             lastTickAt = Time.time;
+            if (abilities.Length == 0) return;
+            // 24 §8: how long an excited dust stays excited is table data, so the dust is told every tick.
+            root.Dust.ExciteSec = root.abilityTable.exciteSec;
             for (int i = 0; i < abilities.Length; i++)
                 if (abilities[i] != null) abilities[i].Tick(dt, holding, s, LevelOf(i));
         }

@@ -73,6 +73,9 @@ namespace Incremental
         public double SecondsToTrigger(in AbilityLevel level) =>
             Math.Max(0.0, Def.Cooldown(level, root.abilityTable.maxCooldownReduction) - Charge);
 
+        /// <summary>Seconds since the trigger that is playing out now started, or −1 when none is (captures and checks).</summary>
+        public virtual float EffectAge => -1f;
+
         /// <summary>Creates what the ability draws, hidden, under <paramref name="parent"/>.</summary>
         protected abstract void Build(Transform parent);
 

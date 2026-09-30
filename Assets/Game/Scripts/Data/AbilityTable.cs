@@ -91,6 +91,8 @@ namespace Incremental
         /// <summary>The push after the ability_power nodes, px/s.</summary>
         public double PullSpeedPx(in AbilityLevel lv) => pullSpeedPx * (1.0 + lv.power);
 
+        public override Ability CreateRuntime() => new ImplodeAbility();
+
         public override bool Uses(string statId) => statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown;
 
         public override void Check(in AbilityLevel full, CelestialTable c, ValidationReport r)
@@ -261,7 +263,7 @@ namespace Incremental
         public double exciteSec = 0.4;
         [Tooltip("How much brighter a freshly excited dust is drawn: its brightness x (1 + this), fading with the excitement. " +
                  "Follows the effect intensity.")]
-        public double exciteBrightness = 3;
+        public double exciteBrightness = 2;
         [Tooltip("The most the ability_cooldown nodes can take off a cooldown (0.8 = down to a fifth), so none ever reaches 0.")]
         public double maxCooldownReduction = 0.8;
 

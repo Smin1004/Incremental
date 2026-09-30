@@ -56,5 +56,5 @@ MonoBehaviour:
     tailLength: 9
     pathTries: 16
   exciteSec: 0.4
-  exciteBrightness: 3
+  exciteBrightness: 2
   maxCooldownReduction: 0.8

@@ -21,6 +21,11 @@ namespace Incremental
         /// </summary>
         public int trailFill;
         public int trailHead;
+        /// <summary>
+        /// 24 §8: 0..1, how excited the dust is. An ability that hits it sets it to 1 and it calms down over
+        /// <see cref="DustField.ExciteSec"/>; the renderer draws an excited dust brighter. Render only.
+        /// </summary>
+        public float excite;
     }
 
     /// <summary>
@@ -71,6 +76,11 @@ namespace Incremental
         public double CapturedMass { get; private set; }
         /// <summary>Visible area the dust is confined to (camera rect, world units).</summary>
         public Rect Area { get; private set; }
+        /// <summary>
+        /// 24 §8: seconds an excited dust takes to calm down. The ability system hands it over from the AbilityTable every
+        /// tick; at 0, which is what it is when there are no abilities, a dust calms down at once.
+        /// </summary>
+        public double ExciteSec { get; set; }
 
         public void Init(GameParams gameParams)
         {
@@ -195,11 +205,13 @@ namespace Incremental
             float maxSpeed2 = maxSpeed * maxSpeed;
             float noise = (float)p.driftNoise;
             float relax = Mathf.Clamp01((float)p.driftRelaxRate * fdt);
+            float calm = ExciteStep(fdt);
             double captured = 0;
 
             for (int i = 0; i < count; i++)
             {
                 ref Dust d = ref items[i];
+                if (d.excite > 0f) d.excite = Mathf.Max(0f, d.excite - calm);
                 Vector2 toCursor = gravity - d.pos;
                 float dist2 = toCursor.sqrMagnitude;
 
@@ -276,6 +288,34 @@ namespace Incremental
             return captured;
         }
 
+        /// <summary>How much calmer an excited dust gets in <paramref name="fdt"/> seconds (24 §8): 1 → 0 over <see cref="ExciteSec"/>.</summary>
+        float ExciteStep(float fdt) => ExciteSec > 0 ? (float)(fdt / ExciteSec) : 1f;
+
+        /// <summary>
+        /// 24 §3: one push for every dust the ring of 수축 passes this tick, which is the dust between
+        /// <paramref name="innerR"/> and <paramref name="outerR"/> of <paramref name="origin"/>. The push is
+        /// <paramref name="speed"/> toward <paramref name="toward"/>, and it is the same for every dust whatever its
+        /// distance or kind, so the whole field turns as one. The dust it hits is excited (24 §8). World units.
+        /// Returns how many were hit.
+        /// </summary>
+        public int Impulse(Vector2 origin, float innerR, float outerR, Vector2 toward, float speed)
+        {
+            float inner2 = innerR * innerR, outer2 = outerR * outerR;
+            int hit = 0;
+            for (int i = 0; i < count; i++)
+            {
+                ref Dust d = ref items[i];
+                float dist2 = (d.pos - origin).sqrMagnitude;
+                if (dist2 < inner2 || dist2 >= outer2) continue;
+                Vector2 to = toward - d.pos;
+                float len = to.magnitude;
+                if (len > 1e-6f) d.vel += to * (speed / len);
+                d.excite = 1f;
+                hit++;
+            }
+            return hit;
+        }
+
         /// <summary>
         /// Removes dust <paramref name="i"/> by moving the last one into its place. The trail block moves with it, so
         /// the two arrays stay lined up (22 §5).
@@ -300,10 +340,12 @@ namespace Incremental
             float capR2 = captureR * captureR;
             float maxSpeed2 = maxSpeed * maxSpeed;
             float keep = Mathf.Exp(-damping * fdt);
+            float calm = ExciteStep(fdt);
             int absorbed = 0;
             for (int i = 0; i < count; i++)
             {
                 ref Dust d = ref items[i];
+                if (d.excite > 0f) d.excite = Mathf.Max(0f, d.excite - calm);
                 Vector2 to = center - d.pos;
                 float dist2 = to.sqrMagnitude;
                 if (dist2 < capR2)

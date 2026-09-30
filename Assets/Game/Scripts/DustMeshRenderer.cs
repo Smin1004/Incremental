@@ -150,6 +150,9 @@ namespace Incremental
             Color colA = root.Backdrop.DustColorA.linear;
             Color colB = root.Backdrop.DustColorB.linear;
             float remnantBright = remnant ? (float)p.remnantDustBrightness : 1f;
+            // 24 §8: a dust an ability has just hit is drawn brighter while it calms down. It is a flash like any other,
+            // so it follows the effect intensity.
+            float exciteBright = root.abilityTable != null ? (float)root.abilityTable.exciteBrightness * root.EffectIntensity : 0f;
             int kinds = kindSize.Length;
 
             var items = field.Items;
@@ -189,6 +192,7 @@ namespace Incremental
                     }
                 }
                 float b = d.bright * kindBright[kind] * Mathf.Lerp(dim, 1f, inField) * (1f + boost) * remnantBright;
+                if (d.excite > 0f) b *= 1f + d.excite * exciteBright;
                 // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
                 // The alpha channel carries the dust kind's shape id (20 §4), which the shader reads back as 0..255.
                 float k = Mathf.Min(b, 2f) * 0.5f;
