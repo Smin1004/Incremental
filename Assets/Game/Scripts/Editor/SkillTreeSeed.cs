@@ -18,6 +18,8 @@ namespace Incremental.EditorTools
     /// (390 -> 162, so the last run is 2.5 minutes instead of 6), the gravity radius grows more (x2.4 -> x2.9, and influx
     /// follows the circumference), and the planet axis reaches rings 6 and 7 so the required mass falls by 80% instead of
     /// 40%. That last one is what turns throughput into bodies, which is the 21 §4 problem.
+    /// 24 §6: the ability axis is a new one at 240°, the widest gap left (between the stamina and the sale axes).
+    /// Rings 4, 6 and 8 unlock an ability and the ring after each raises it; rings 10 and 11 are left empty.
     /// </summary>
     public static class SkillTreeSeed
     {
@@ -35,6 +37,8 @@ namespace Incremental.EditorTools
         public const float GravityAxis = 330f;
         /// <summary>22 §3: the follow speed nodes share the gravity axis, offset so they never sit on its pull / radius node.</summary>
         public const float FollowAxis = GravityAxis - Pair;
+        /// <summary>24 §6: the ability axis, between the stamina (210°) and the sale (270°) axes.</summary>
+        public const float AbilityAxis = 240f;
 
         /// <summary>Rings 1..11; index 0 is unused.</summary>
         public const int RingCount = 11;
@@ -154,6 +158,47 @@ namespace Incremental.EditorTools
         /// <summary>22 §3: +15 percentage points of GameParams.followSpeedPx, one level, on the follow axis.</summary>
         static NodeDef Follow(string id, int ring, params string[] prereqs) =>
             Stat(id, ring, FollowAxis, StatIds.FollowSpeed, 0.15, 1, StatCost(ring), 1, prereqs);
+
+        /// <summary>
+        /// The ability axis (24 §6), by ring: 4, 6 and 8 unlock an ability, the ring after each raises it by three
+        /// levels. A new ability is two more lines here and a row in the AbilityTable. To make the 수축 node shorten the
+        /// cooldown instead of raising the force, only its stat changes (StatIds.AbilityCooldown).
+        /// </summary>
+        static NodeDef AbilityNode(int ring)
+        {
+            switch (ring)
+            {
+                case 4: return AbilityUnlock("implode", 4);
+                case 5: return AbilityStat("r5_implode_power", "implode", 5, StatIds.AbilityPower, 0.25, 3, "ability_implode");
+                case 6: return AbilityUnlock("satellite", 6);
+                case 7: return AbilityStat("r7_satellite_count", "satellite", 7, StatIds.AbilityCount, 1, 3, "ability_satellite");
+                case 8: return AbilityUnlock("meteor", 8);
+                case 9: return AbilityStat("r9_meteor_amount", "meteor", 9, StatIds.AbilityAmount, 0.03, 3, "ability_meteor");
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// An ability's unlock: one level, at the price of a dust kind unlock of that ring (24 §6). It has no prereq
+        /// entry. 24 §6 lists the gate of its ring, and the ring being open already means exactly that; naming the
+        /// gate as well would only draw a line from the gate axis (90°) across the whole tree to 240°, straight
+        /// through the stamina nodes of rings 1-3. Without it the line comes from the center, along the axis.
+        /// </summary>
+        static NodeDef AbilityUnlock(string ability, int ring) =>
+            new NodeDef
+            {
+                id = "ability_" + ability, kind = NodeKind.AbilityUnlock, abilityId = ability, maxLevel = 1,
+                baseCost = KindCost(ring), growth = 1, minTier = ring, prereqs = new List<string>(),
+                angleDeg = AbilityAxis, enabled = true,
+            };
+
+        /// <summary>An ability's stat node: an ordinary axis node (0.4 × I_k, growth 1.5) that also names its ability.</summary>
+        static NodeDef AbilityStat(string id, string ability, int ring, string stat, double perLevel, int maxLevel, params string[] prereqs)
+        {
+            var n = Stat(id, ring, AbilityAxis, stat, perLevel, maxLevel, StatCost(ring), StatCostGrowth, prereqs);
+            n.abilityId = ability;
+            return n;
+        }
 
         /// <summary>An axis node of ring k: the 20 §8.2 cost formula, so only the effect and the level count are written down.</summary>
         static NodeDef Ax(string id, int ring, float angle, string stat, double effect, int maxLevel, params string[] prereqs) =>
@@ -302,6 +347,8 @@ namespace Incremental.EditorTools
             if (frag != null) n.Add(frag);
             var follow = FollowNode(ring);
             if (follow != null) n.Add(follow);
+            var ability = AbilityNode(ring);
+            if (ability != null) n.Add(ability);
             if (ring + 1 <= RingCount) n.Add(Gate(ring + 1));
         }
 

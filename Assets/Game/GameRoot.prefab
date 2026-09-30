@@ -47,6 +47,7 @@ MonoBehaviour:
   gameParams: {fileID: 11400000, guid: 2883728dc5a9a504fb1de0e75ae91674, type: 2}
   celestialTable: {fileID: 11400000, guid: 70d2eecc0289a9a4695ffd29dc84cf8c, type: 2}
   nodeTable: {fileID: 11400000, guid: 399cf4353515c6143b435c93c2727bdb, type: 2}
+  abilityTable: {fileID: 11400000, guid: 8ea10e3789f89354c8b1b8539eeaf22d, type: 2}
   unlitMaterial: {fileID: 2100000, guid: 319a5615ae4d94947aa6fdaa04d30eb2, type: 2}
   planetMaterial: {fileID: 2100000, guid: c44782bd835645a449856ae3cd7c07ce, type: 2}
   dustMaterial: {fileID: 2100000, guid: 340bd9276808c8a4fb84faca9d650b50, type: 2}

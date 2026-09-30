@@ -22,6 +22,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 1
     prereqs: []
     angleDeg: 30
@@ -35,6 +36,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 1
     prereqs: []
     angleDeg: 330
@@ -48,6 +50,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 1
     prereqs: []
     angleDeg: 270
@@ -61,6 +64,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 1
     prereqs: []
     angleDeg: 210
@@ -74,6 +78,7 @@ MonoBehaviour:
     growth: 1
     tier: 2
     dustKindId: 
+    abilityId: 
     minTier: 1
     prereqs: []
     angleDeg: 90
@@ -87,6 +92,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - r1_spawn
@@ -101,6 +107,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - r1_spawn
@@ -115,6 +122,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - r1_pull
@@ -129,6 +137,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - r1_pull
@@ -143,6 +152,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - r1_sale
@@ -157,6 +167,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - r1_stamina
@@ -171,6 +182,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - gate_t2
@@ -185,6 +197,7 @@ MonoBehaviour:
     growth: 1
     tier: 3
     dustKindId: 
+    abilityId: 
     minTier: 2
     prereqs:
     - gate_t2
@@ -199,6 +212,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 3
     prereqs:
     - r2_cap
@@ -213,6 +227,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 3
     prereqs:
     - r2_radius
@@ -227,6 +242,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 3
     prereqs:
     - r2_sale
@@ -241,6 +257,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 3
     prereqs:
     - r2_stamina
@@ -255,6 +272,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 3
     prereqs:
     - r2_threshold
@@ -269,6 +287,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: medium
+    abilityId: 
     minTier: 3
     prereqs:
     - gate_t3
@@ -283,6 +302,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 3
     prereqs:
     - gate_t3
@@ -297,6 +317,7 @@ MonoBehaviour:
     growth: 1
     tier: 4
     dustKindId: 
+    abilityId: 
     minTier: 3
     prereqs:
     - gate_t3
@@ -311,6 +332,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - r3_start
@@ -325,6 +347,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - r3_pull
@@ -339,6 +362,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - r3_threshold
@@ -353,6 +377,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - r3_sale
@@ -367,6 +392,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - r3_drain
@@ -381,6 +407,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: medium
+    abilityId: 
     minTier: 4
     prereqs:
     - dust_medium
@@ -395,6 +422,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - frag_unlock
@@ -409,10 +437,25 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - r2_follow
     angleDeg: 320
+    enabled: 1
+  - id: ability_implode
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 290
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 4
+    prereqs: []
+    angleDeg: 240
     enabled: 1
   - id: gate_t5
     kind: 1
@@ -423,6 +466,7 @@ MonoBehaviour:
     growth: 1
     tier: 5
     dustKindId: 
+    abilityId: 
     minTier: 4
     prereqs:
     - gate_t4
@@ -437,6 +481,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 5
     prereqs:
     - r4_spawn
@@ -451,6 +496,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 5
     prereqs:
     - r4_radius
@@ -465,6 +511,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 5
     prereqs:
     - r4_threshold
@@ -479,6 +526,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 5
     prereqs:
     - r4_sale
@@ -493,6 +541,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 5
     prereqs:
     - r4_stamina
@@ -507,6 +556,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: large
+    abilityId: 
     minTier: 5
     prereqs:
     - r4_chance_medium
@@ -521,10 +571,26 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 5
     prereqs:
     - r4_frag_chance
     angleDeg: 140
+    enabled: 1
+  - id: r5_implode_power
+    kind: 0
+    statId: ability_power
+    effectPerLevel: 0.25
+    maxLevel: 3
+    baseCost: 1600
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 5
+    prereqs:
+    - ability_implode
+    angleDeg: 240
     enabled: 1
   - id: gate_t6
     kind: 1
@@ -535,6 +601,7 @@ MonoBehaviour:
     growth: 1
     tier: 6
     dustKindId: 
+    abilityId: 
     minTier: 5
     prereqs:
     - gate_t5
@@ -549,6 +616,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - r5_cap
@@ -563,6 +631,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - r5_pull
@@ -577,6 +646,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - r5_threshold
@@ -591,6 +661,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - r5_sale
@@ -605,6 +676,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - r5_drain
@@ -619,6 +691,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: large
+    abilityId: 
     minTier: 6
     prereqs:
     - dust_large
@@ -633,6 +706,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - r5_frag_range
@@ -647,10 +721,25 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - r4_follow
     angleDeg: 320
+    enabled: 1
+  - id: ability_satellite
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 7900
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 6
+    prereqs: []
+    angleDeg: 240
     enabled: 1
   - id: gate_t7
     kind: 1
@@ -661,6 +750,7 @@ MonoBehaviour:
     growth: 1
     tier: 7
     dustKindId: 
+    abilityId: 
     minTier: 6
     prereqs:
     - gate_t6
@@ -675,6 +765,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 7
     prereqs:
     - r6_spawn
@@ -689,6 +780,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 7
     prereqs:
     - r6_radius
@@ -703,6 +795,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 7
     prereqs:
     - r6_threshold
@@ -717,6 +810,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 7
     prereqs:
     - r6_sale
@@ -731,6 +825,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 7
     prereqs:
     - r6_stamina
@@ -745,6 +840,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: crystal
+    abilityId: 
     minTier: 7
     prereqs:
     - r6_chance_large
@@ -759,10 +855,26 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 7
     prereqs:
     - r6_frag_chance
     angleDeg: 140
+    enabled: 1
+  - id: r7_satellite_count
+    kind: 0
+    statId: ability_count
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 7
+    prereqs:
+    - ability_satellite
+    angleDeg: 240
     enabled: 1
   - id: gate_t8
     kind: 1
@@ -773,6 +885,7 @@ MonoBehaviour:
     growth: 1
     tier: 8
     dustKindId: 
+    abilityId: 
     minTier: 7
     prereqs:
     - gate_t7
@@ -787,6 +900,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - r7_cap
@@ -801,6 +915,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - r7_cap
@@ -815,6 +930,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - r7_pull
@@ -829,6 +945,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - r7_sale
@@ -843,6 +960,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - r7_drain
@@ -857,6 +975,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: crystal
+    abilityId: 
     minTier: 8
     prereqs:
     - dust_crystal
@@ -871,6 +990,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - r7_frag_range
@@ -885,10 +1005,25 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - r6_follow
     angleDeg: 320
+    enabled: 1
+  - id: ability_meteor
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 290000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 8
+    prereqs: []
+    angleDeg: 240
     enabled: 1
   - id: gate_t9
     kind: 1
@@ -899,6 +1034,7 @@ MonoBehaviour:
     growth: 1
     tier: 9
     dustKindId: 
+    abilityId: 
     minTier: 8
     prereqs:
     - gate_t8
@@ -913,6 +1049,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 9
     prereqs:
     - r8_spawn
@@ -928,6 +1065,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 9
     prereqs:
     - r8_radius
@@ -942,6 +1080,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 9
     prereqs:
     - r8_sale
@@ -956,6 +1095,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 9
     prereqs:
     - r8_stamina
@@ -970,10 +1110,26 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: interstellar
+    abilityId: 
     minTier: 9
     prereqs:
     - r8_chance_crystal
     angleDeg: 60
+    enabled: 1
+  - id: r9_meteor_amount
+    kind: 0
+    statId: ability_amount
+    effectPerLevel: 0.03
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 9
+    prereqs:
+    - ability_meteor
+    angleDeg: 240
     enabled: 1
   - id: gate_t10
     kind: 1
@@ -984,6 +1140,7 @@ MonoBehaviour:
     growth: 1
     tier: 10
     dustKindId: 
+    abilityId: 
     minTier: 9
     prereqs:
     - gate_t9
@@ -998,6 +1155,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 10
     prereqs:
     - r9_cap
@@ -1012,6 +1170,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 10
     prereqs:
     - r9_pull
@@ -1026,6 +1185,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 10
     prereqs:
     - r9_sale
@@ -1040,6 +1200,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 10
     prereqs:
     - r9_drain
@@ -1054,6 +1215,7 @@ MonoBehaviour:
     growth: 1.5
     tier: 0
     dustKindId: interstellar
+    abilityId: 
     minTier: 10
     prereqs:
     - dust_interstellar
@@ -1068,6 +1230,7 @@ MonoBehaviour:
     growth: 1
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 10
     prereqs:
     - r8_follow
@@ -1082,6 +1245,7 @@ MonoBehaviour:
     growth: 1
     tier: 11
     dustKindId: 
+    abilityId: 
     minTier: 10
     prereqs:
     - gate_t10
@@ -1096,6 +1260,7 @@ MonoBehaviour:
     growth: 1.6
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 11
     prereqs:
     - r10_sale
@@ -1110,6 +1275,7 @@ MonoBehaviour:
     growth: 1.6
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 11
     prereqs:
     - r10_spawn
@@ -1124,6 +1290,7 @@ MonoBehaviour:
     growth: 1.6
     tier: 0
     dustKindId: 
+    abilityId: 
     minTier: 11
     prereqs:
     - r10_stamina

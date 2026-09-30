@@ -23,6 +23,7 @@ namespace Incremental.EditorTools
         const string ParamsPath = DataDir + "/GameParams.asset";
         const string CelestialPath = DataDir + "/CelestialTable.asset";
         const string NodePath = DataDir + "/NodeTable.asset";
+        const string AbilityPath = DataDir + "/AbilityTable.asset";
         const string MaterialPath = MaterialsDir + "/DustUnlit.mat";
         const string PlanetMaterialPath = MaterialsDir + "/Planet.mat";
         const string PlanetShaderName = "Incremental/Planet";
@@ -64,9 +65,12 @@ namespace Incremental.EditorTools
                 t.nodes = SkillTreeSeed.Nodes();
                 t.ringCostMult = SkillTreeSeed.RingCostMult();
             });
+            // AbilityTable field initializers hold the 24 values, the way GameParams holds the §6 ones.
+            var a = LoadOrCreate<AbilityTable>(AbilityPath, _ => { });
             int added = AddMissing(c, n);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Setup] Data assets ready ({added} missing entries added): {AssetDatabase.GetAssetPath(p)}, {AssetDatabase.GetAssetPath(c)}, {AssetDatabase.GetAssetPath(n)}");
+            Debug.Log($"[Setup] Data assets ready ({added} missing entries added): {AssetDatabase.GetAssetPath(p)}, {AssetDatabase.GetAssetPath(c)}, " +
+                      $"{AssetDatabase.GetAssetPath(n)}, {AssetDatabase.GetAssetPath(a)}");
         }
 
         // ---------------- seed data (keep equal to the assets) ----------------
@@ -221,6 +225,7 @@ namespace Incremental.EditorTools
             root.gameParams = gameParams;
             root.celestialTable = AssetDatabase.LoadAssetAtPath<CelestialTable>(CelestialPath);
             root.nodeTable = AssetDatabase.LoadAssetAtPath<NodeTable>(NodePath);
+            root.abilityTable = AssetDatabase.LoadAssetAtPath<AbilityTable>(AbilityPath);
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
             root.planetMaterial = AssetDatabase.LoadAssetAtPath<Material>(PlanetMaterialPath);
             root.dustMaterial = AssetDatabase.LoadAssetAtPath<Material>(DustMaterialPath);

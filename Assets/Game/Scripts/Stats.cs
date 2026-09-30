@@ -51,6 +51,8 @@ namespace Incremental
     /// The single place where node levels turn into effective numbers (12 §3 "스탯 합산").
     /// Nodes with the same statId add up (effect × level); dust_mass multiplies (effect ^ level);
     /// threshold_mult and stamina_drain reductions are capped at 90%. Disabled nodes contribute nothing.
+    /// The ability stats (24 §8) are summed here too, but per ability by <see cref="AbilityFromTree"/> and not into
+    /// <see cref="EffectiveStats"/>: what they raise is a row of the AbilityTable, which the run history does not keep.
     /// </summary>
     public static class Stats
     {
@@ -174,11 +176,81 @@ namespace Incremental
             s.dustMassAvg = avg * s.dustMass;
         }
 
+        /// <summary>
+        /// 24 §8: what the owned nodes give the ability <paramref name="abilityId"/>: whether its unlock node is owned,
+        /// and the sums of the ability stat nodes that name it. Disabled nodes and levels above a node's maximum count
+        /// for nothing, as in <see cref="Compute"/>.
+        /// </summary>
+        public static AbilityLevel AbilityFromTree(NodeTable t, MetaState m, string abilityId)
+        {
+            var a = new AbilityLevel();
+            if (t == null || m == null || string.IsNullOrEmpty(abilityId)) return a;
+            var levels = m.upgradeLevels;
+            for (int i = 0; i < levels.Count; i++)
+            {
+                int level = levels[i].level;
+                if (level <= 0) continue;
+                var n = t.Get(levels[i].id);
+                if (n == null || !n.enabled || n.abilityId != abilityId) continue;
+                if (n.IsAbilityUnlock) a.unlocked = true;
+                else if (n.kind == NodeKind.Stat) AddAbilityStat(ref a, n, level);
+            }
+            return a;
+        }
+
+        /// <summary>
+        /// 24 §7: the ability as the debug key wants it, unlocked and with every one of its stat nodes at
+        /// <paramref name="level"/> (a node stops at its own maximum). The save is not read. With a level above every
+        /// maximum this is the ability fully upgraded, which is what Validate Data checks the ceilings against.
+        /// </summary>
+        public static AbilityLevel AbilityAt(NodeTable t, string abilityId, int level)
+        {
+            var a = new AbilityLevel { unlocked = true };
+            if (t == null || level <= 0 || string.IsNullOrEmpty(abilityId)) return a;
+            for (int i = 0; i < t.nodes.Count; i++)
+            {
+                var n = t.nodes[i];
+                if (n == null || !n.enabled || n.kind != NodeKind.Stat || n.abilityId != abilityId) continue;
+                AddAbilityStat(ref a, n, level);
+            }
+            return a;
+        }
+
+        /// <summary>The most levels any stat node of that ability has: where the debug key's level cycle ends (24 §7).</summary>
+        public static int AbilityMaxLevel(NodeTable t, string abilityId)
+        {
+            int max = 0;
+            if (t == null || string.IsNullOrEmpty(abilityId)) return max;
+            for (int i = 0; i < t.nodes.Count; i++)
+            {
+                var n = t.nodes[i];
+                if (n == null || !n.enabled || n.kind != NodeKind.Stat || n.abilityId != abilityId) continue;
+                if (StatIds.NeedsAbility(n.statId) && n.maxLevel > max) max = n.maxLevel;
+            }
+            return max;
+        }
+
+        static void AddAbilityStat(ref AbilityLevel a, NodeDef n, int level)
+        {
+            if (n.maxLevel > 0 && level > n.maxLevel) level = n.maxLevel;
+            double add = n.effectPerLevel * level;
+            switch (n.statId)
+            {
+                case StatIds.AbilityPower: a.power += add; break;
+                case StatIds.AbilityCooldown: a.cooldown += add; break;
+                case StatIds.AbilityCount: a.count += add; break;
+                case StatIds.AbilityAmount: a.amount += add; break;
+                default: return;
+            }
+            a.level = (int)Math.Min((long)a.level + level, int.MaxValue);
+        }
+
         /// <summary>True for stats whose effectPerLevel is a fraction shown as a percent.</summary>
         public static bool IsPercentEffect(string statId) =>
             statId == StatIds.PullAccel || statId == StatIds.SaleMult || statId == StatIds.ThresholdMult ||
             statId == StatIds.GravityRadius || statId == StatIds.StaminaDrain || statId == StatIds.FollowSpeed ||
-            statId == StatIds.DustChance || statId == StatIds.FragUnlock || statId == StatIds.FragChance;
+            statId == StatIds.DustChance || statId == StatIds.FragUnlock || statId == StatIds.FragChance ||
+            statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown || statId == StatIds.AbilityAmount;
 
         /// <summary>Number substituted into the stat.&lt;id&gt;.effect string: percent for fraction effects, raw otherwise.</summary>
         public static double EffectDisplayNumber(NodeDef n) =>

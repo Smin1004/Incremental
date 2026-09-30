@@ -33,8 +33,17 @@ namespace Incremental.EditorTools
                 return 1;
             }
 
-            var report = DataValidator.Validate(c, n, gameParams[0]);
-            foreach (var e in report.Errors) Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : n);
+            var abilities = LoadAll<AbilityTable>();
+            if (abilities.Count != 1)
+            {
+                Debug.LogError($"[Validate] expected exactly one AbilityTable, found {abilities.Count} (menu Incremental/Setup/1. Create Data Assets).");
+                return 1;
+            }
+            var a = abilities[0];
+
+            var report = DataValidator.Validate(c, n, gameParams[0], a);
+            foreach (var e in report.Errors)
+                Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : e.StartsWith("AbilityTable") ? (Object)a : n);
             foreach (var w in report.Warnings) Debug.LogWarning("[Validate] " + w, n);
 
             var paramReport = DataValidator.ValidateParams(gameParams[0], c);
@@ -43,12 +52,12 @@ namespace Incremental.EditorTools
             report.Errors.AddRange(paramReport.Errors);
             report.Warnings.AddRange(paramReport.Warnings);
 
-            int drift = WarnSeedDrift(c, n) + WarnParamsDrift(gameParams[0]);
+            int drift = WarnSeedDrift(c, n) + WarnParamsDrift(gameParams[0]) + WarnAbilityDrift(a);
             if (report.Ok)
             {
                 int gates = 0;
                 foreach (var node in n.nodes) if (node.IsGate) gates++;
-                Debug.Log($"[Validate] OK: {c.tiers.Count} tiers, {n.nodes.Count - gates} stat nodes, {gates} gates" +
+                Debug.Log($"[Validate] OK: {c.tiers.Count} tiers, {n.nodes.Count - gates} stat nodes, {gates} gates, {a.Count} abilities" +
                           (report.Warnings.Count > 0 ? $", {report.Warnings.Count} warnings" : string.Empty) +
                           (drift > 0 ? $", {drift} seed differences (see warnings)" : string.Empty));
             }
@@ -121,6 +130,74 @@ namespace Incremental.EditorTools
             return diffs;
         }
 
+        /// <summary>
+        /// The AbilityTable's field initializers are its seed, as with GameParams (24 §8). The developer tunes the asset
+        /// in the inspector, so this names each value that moved, leaf by leaf: the warning is the list of what was tuned.
+        /// </summary>
+        static int WarnAbilityDrift(AbilityTable asset)
+        {
+            var fresh = ScriptableObject.CreateInstance<AbilityTable>();
+            try
+            {
+                var diffs = LeafDrift(asset, fresh);
+                foreach (var d in diffs)
+                    Debug.LogWarning("[Validate] seed drift: AbilityTable." + d + " differs from the code default (update the initializer or the asset)", asset);
+                return diffs.Count;
+            }
+            finally
+            {
+                Object.DestroyImmediate(fresh);
+            }
+        }
+
+        /// <summary>Property paths where two objects of one type differ, walking into nested rows down to single values.</summary>
+        static List<string> LeafDrift(Object asset, Object fresh)
+        {
+            var diffs = new List<string>();
+            var a = new SerializedObject(asset);
+            var b = new SerializedObject(fresh);
+            var it = b.GetIterator();
+            bool enter = true;
+            while (it.NextVisible(enter))
+            {
+                enter = it.propertyType == SerializedPropertyType.Generic && !it.isArray;
+                if (enter || it.propertyPath == "m_Script") continue;
+                var ap = a.FindProperty(it.propertyPath);
+                if (ap == null || !SerializedProperty.DataEquals(ap, it)) diffs.Add(it.propertyPath);
+            }
+            return diffs;
+        }
+
+        /// <summary>
+        /// Copies every value where the AbilityTable asset differs from the code defaults (after changing initializers).
+        /// Returns the copied property paths. Overwrites what was tuned in the inspector: use it only when the code is the truth.
+        /// </summary>
+        public static string[] SyncAbilitiesFromCode()
+        {
+            var asset = LoadAll<AbilityTable>()[0];
+            var fresh = ScriptableObject.CreateInstance<AbilityTable>();
+            try
+            {
+                var diffs = LeafDrift(asset, fresh);
+                if (diffs.Count == 0) return new string[0];
+                var a = new SerializedObject(asset);
+                var b = new SerializedObject(fresh);
+                foreach (var path in diffs)
+                {
+                    var src = b.FindProperty(path);
+                    if (src != null) a.CopyFromSerializedProperty(src);
+                }
+                a.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssets();
+                return diffs.ToArray();
+            }
+            finally
+            {
+                Object.DestroyImmediate(fresh);
+            }
+        }
+
         /// <summary>Copies the named top-level fields from the code defaults into the GameParams asset (after changing an initializer).</summary>
         public static void CopyParamsFromCode(params string[] fields)
         {
@@ -170,7 +247,7 @@ namespace Incremental.EditorTools
             // Unity serializes a null string as "".
             if (a.kind != s.kind || (a.statId ?? "") != (s.statId ?? "") || a.effectPerLevel != s.effectPerLevel || a.maxLevel != s.maxLevel ||
                 a.baseCost != s.baseCost || a.growth != s.growth || a.tier != s.tier || a.minTier != s.minTier ||
-                a.angleDeg != s.angleDeg || a.enabled != s.enabled)
+                a.angleDeg != s.angleDeg || a.enabled != s.enabled || (a.abilityId ?? "") != (s.abilityId ?? ""))
                 return false;
             var ap = a.prereqs ?? new List<string>();
             var sp = s.prereqs ?? new List<string>();

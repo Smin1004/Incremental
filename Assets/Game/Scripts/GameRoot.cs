@@ -55,6 +55,8 @@ namespace Incremental
         public GameParams gameParams;
         public CelestialTable celestialTable;
         public NodeTable nodeTable;
+        [Tooltip("Special abilities (24). Without it the game runs with none.")]
+        public AbilityTable abilityTable;
 
         [Header("Render")]
         public Material unlitMaterial;

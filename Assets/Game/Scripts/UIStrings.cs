@@ -127,6 +127,25 @@ namespace Incremental
             { "dust.crystal", "결정 먼지" },
             { "dust.interstellar", "성간 먼지" },
 
+            // Abilities (24): the name of each AbilityTable row and the one line its unlock node shows. Validate Data
+            // checks that every row has both.
+            { "ability.implode", "수축" },
+            { "ability.implode.effect", "주기적으로 화면 전체 먼지를 당긴다" },
+            { "ability.satellite", "위성" },
+            { "ability.satellite.effect", "중력원을 도는 작은 중력원" },
+            { "ability.meteor", "유성" },
+            { "ability.meteor.effect", "유성이 지나가며 먼지를 흘린다" },
+
+            // Ability stats (24 §8). The node name puts the ability's name in front: 수축 힘 I, 위성 수 I, 유성 양 I.
+            { "stat.ability_power.name", "힘" },
+            { "stat.ability_power.effect", "+{0}%" },
+            { "stat.ability_cooldown.name", "쿨다운 감소" },
+            { "stat.ability_cooldown.effect", "−{0}%" },
+            { "stat.ability_count.name", "수" },
+            { "stat.ability_count.effect", "+{0}" },
+            { "stat.ability_amount.name", "양" },
+            { "stat.ability_amount.effect", "+{0}%p" },
+
             // Stamina drain presets of the debug key (18 §A1); Validate Data checks that every preset id has a key.
             { "stamina.preset.loose", "느슨함" },
             { "stamina.preset.proposed", "제안" },
@@ -142,10 +161,20 @@ namespace Incremental
         public const string DustUnlockEffect = "{0} 출현 시작 (확률 {1}%)";
         /// <summary>Name of a dust kind's chance node: the kind name plus the stat name, e.g. 중형 먼지 출현 확률 I.</summary>
         public const string DustChanceName = "{0} {1}";
+        /// <summary>
+        /// Name of an ability's unlock node (24 §6): {0} = the ability name. The prefix keeps the 위성 ability apart from
+        /// the tier 4 body of the same name.
+        /// </summary>
+        public const string AbilityUnlockName = "능력: {0}";
+        /// <summary>Name of an ability's stat node: the ability name plus the stat name, e.g. 수축 힘 I.</summary>
+        public const string AbilityStatName = "{0} {1}";
 
         public static string TierKey(int tier) => "tier." + tier;
         public static string DustKindKey(string id) => "dust." + id;
         public static string DustKindName(string id) => Get(DustKindKey(id));
+        public static string AbilityKey(string id) => "ability." + id;
+        public static string AbilityEffectKey(string id) => "ability." + id + ".effect";
+        public static string AbilityName(string id) => Get(AbilityKey(id));
         public static string StaminaPresetKey(string id) => "stamina.preset." + id;
         public static string StatNameKey(string statId) => "stat." + statId + ".name";
         public static string StatEffectKey(string statId) => "stat." + statId + ".effect";
@@ -156,11 +185,13 @@ namespace Incremental
 
         /// <summary>
         /// Effect of one level of a stat node, e.g. "+20%", "×1.5". Empty for gates; a dust kind unlock says which kind
-        /// starts appearing and at what share (20 §4), which needs the kind's data.
+        /// starts appearing and at what share (20 §4), which needs the kind's data; an ability unlock says in one line
+        /// what the ability does (24 §6).
         /// </summary>
         public static string NodeEffect(NodeDef n, GameParams p = null)
         {
             if (n.IsGate) return string.Empty;
+            if (n.IsAbilityUnlock) return Get(AbilityEffectKey(n.abilityId));
             if (n.IsDustUnlock)
             {
                 var kind = p != null ? p.DustKind(p.DustKindIndex(n.dustKindId)) : null;
@@ -177,18 +208,23 @@ namespace Incremental
         {
             if (n.IsGate) return TierName(n.tier);
             if (n.IsDustUnlock) return DustKindName(n.dustKindId);
+            if (n.IsAbilityUnlock) return string.Format(AbilityUnlockName, AbilityName(n.abilityId));
             int self = t.nodes.IndexOf(n);
             int index = 1;
             bool perKind = StatIds.NeedsDustKind(n.statId);
+            bool perAbility = StatIds.NeedsAbility(n.statId);
             for (int i = 0; i < t.nodes.Count; i++)
             {
                 var o = t.nodes[i];
-                if (i == self || o.IsGate || o.IsDustUnlock || o.statId != n.statId) continue;
-                // Nodes of a per-kind stat are numbered within their own kind, so every kind starts at I.
+                if (i == self || o.IsGate || o.IsDustUnlock || o.IsAbilityUnlock || o.statId != n.statId) continue;
+                // Nodes of a per-kind stat are numbered within their own kind, so every kind starts at I; the same
+                // goes for the stats of one ability (24 §8).
                 if (perKind && o.dustKindId != n.dustKindId) continue;
+                if (perAbility && o.abilityId != n.abilityId) continue;
                 if (o.minTier < n.minTier || (o.minTier == n.minTier && i < self)) index++;
             }
             string name = StatName(n.statId) + " " + Roman(index);
+            if (perAbility) return string.Format(AbilityStatName, AbilityName(n.abilityId), name);
             return perKind ? string.Format(DustChanceName, DustKindName(n.dustKindId), name) : name;
         }
 

@@ -22,9 +22,10 @@ namespace Incremental
 
         /// <summary>
         /// With <paramref name="p"/> the dust kind nodes are checked against GameParams.dustKinds too (20 §4); without it
-        /// (the small test tables) that part is skipped.
+        /// (the small test tables) that part is skipped. The same goes for <paramref name="a"/> and the ability nodes
+        /// (24 §8).
         /// </summary>
-        public static ValidationReport Validate(CelestialTable c, NodeTable t, GameParams p = null)
+        public static ValidationReport Validate(CelestialTable c, NodeTable t, GameParams p = null, AbilityTable a = null)
         {
             var r = new ValidationReport();
             if (c == null) r.Errors.Add("CelestialTable is missing.");
@@ -41,7 +42,70 @@ namespace Incremental
             ValidateRingCostMult(c, t, r);
             if (p != null) ValidateDustNodes(p, t, r);
             if (p != null) ValidateDustCapCeiling(p, c, t, r);
+            if (a != null) ValidateAbilities(a, c, t, r);
             return r;
+        }
+
+        /// <summary>
+        /// The ability axis (24 §8): every row has an id, its two string keys and exactly one unlock node in the ring its
+        /// data names; every unlock and ability stat node points at a row that exists; and each row's own rules hold with
+        /// every one of its stat nodes at full level (cooldown > 0, satellites within their ceiling, the meteor's share
+        /// within its ceiling).
+        /// </summary>
+        static void ValidateAbilities(AbilityTable a, CelestialTable c, NodeTable t, ValidationReport r)
+        {
+            if (!(a.exciteSec > 0)) r.Errors.Add("AbilityTable: exciteSec must be > 0 (24 §8).");
+            if (a.exciteBrightness < 0) r.Errors.Add("AbilityTable: exciteBrightness must be >= 0.");
+            if (!(a.maxCooldownReduction >= 0) || !(a.maxCooldownReduction < 1))
+                r.Errors.Add("AbilityTable: maxCooldownReduction must be within 0..1 (1 excluded); at 1 a cooldown could reach 0.");
+            var ids = new HashSet<string>();
+            foreach (var def in a.Rows)
+            {
+                if (def == null || string.IsNullOrEmpty(def.id))
+                {
+                    r.Errors.Add("AbilityTable: a row is missing or has no id.");
+                    continue;
+                }
+                if (!ids.Add(def.id)) r.Errors.Add($"AbilityTable: ability id '{def.id}' appears twice.");
+                if (!UIStrings.Has(UIStrings.AbilityKey(def.id)))
+                    r.Errors.Add($"UIStrings: missing key '{UIStrings.AbilityKey(def.id)}' (ability name, 24 §8).");
+                if (!UIStrings.Has(UIStrings.AbilityEffectKey(def.id)))
+                    r.Errors.Add($"UIStrings: missing key '{UIStrings.AbilityEffectKey(def.id)}' (ability unlock line, 24 §6).");
+                if (def.unlockRing < 1 || def.unlockRing > c.MaxTier)
+                    r.Errors.Add($"AbilityTable: '{def.id}' unlockRing {def.unlockRing} is outside 1..{c.MaxTier}.");
+                def.Check(Stats.AbilityAt(t, def.id, int.MaxValue), c, r);
+
+                int unlocks = 0;
+                foreach (var n in t.nodes)
+                    if (n != null && n.IsAbilityUnlock && n.abilityId == def.id) unlocks++;
+                if (unlocks != 1)
+                    r.Errors.Add($"NodeTable: ability '{def.id}' has {unlocks} unlock nodes, expected exactly one (24 §8).");
+            }
+            foreach (var n in t.nodes)
+            {
+                if (n == null) continue;
+                bool needsAbility = n.IsAbilityUnlock || (n.kind == NodeKind.Stat && StatIds.NeedsAbility(n.statId));
+                if (!needsAbility)
+                {
+                    if (!string.IsNullOrEmpty(n.abilityId))
+                        r.Warnings.Add($"NodeTable: '{n.id}' names ability '{n.abilityId}' but does not use it.");
+                    continue;
+                }
+                var def = a.Get(n.abilityId);
+                if (def == null)
+                {
+                    r.Errors.Add($"NodeTable: '{n.id}' names ability '{n.abilityId}', which is not a row of the AbilityTable (24 §8).");
+                    continue;
+                }
+                if (n.IsAbilityUnlock)
+                {
+                    if (n.maxLevel != 1) r.Errors.Add($"NodeTable: ability unlock '{n.id}' must have maxLevel 1.");
+                    if (n.minTier != def.unlockRing)
+                        r.Errors.Add($"NodeTable: '{n.id}' is in ring {n.minTier}, but ability '{def.id}' says ring {def.unlockRing} (24 §6).");
+                }
+                else if (!def.Uses(n.statId))
+                    r.Warnings.Add($"NodeTable: '{n.id}' raises {n.statId}, which ability '{def.id}' does not read; buying it would do nothing.");
+            }
         }
 
         /// <summary>
@@ -553,6 +617,8 @@ namespace Incremental
                     if (!StatIds.IsKnown(n.statId)) r.Errors.Add($"NodeTable: '{n.id}' has unknown statId '{n.statId}'.");
                     else if (StatIds.NeedsDustKind(n.statId) && string.IsNullOrEmpty(n.dustKindId))
                         r.Errors.Add($"NodeTable: '{n.id}' raises {n.statId} but names no dust kind (20 §4).");
+                    else if (StatIds.NeedsAbility(n.statId) && string.IsNullOrEmpty(n.abilityId))
+                        r.Errors.Add($"NodeTable: '{n.id}' raises {n.statId} but names no ability (24 §8).");
                     else
                     {
                         if (!UIStrings.Has(UIStrings.StatNameKey(n.statId))) r.Errors.Add($"UIStrings: missing key '{UIStrings.StatNameKey(n.statId)}'.");

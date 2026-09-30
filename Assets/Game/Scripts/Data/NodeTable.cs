@@ -43,6 +43,19 @@ namespace Incremental
         /// </summary>
         public const string FragOffset = "frag_offset";
 
+        /// <summary>
+        /// 24 §8: the stats of the ability axis. Each acts on the ability named by <see cref="NodeDef.abilityId"/>, the
+        /// way dust_chance acts on one dust kind, so a new ability needs no stat of its own. This one raises the
+        /// ability's strength by a share (0.25 = +25%).
+        /// </summary>
+        public const string AbilityPower = "ability_power";
+        /// <summary>24 §8: the share taken off the ability's cooldown (0.1 = −10%).</summary>
+        public const string AbilityCooldown = "ability_cooldown";
+        /// <summary>24 §8: one more of whatever the ability has a number of (satellites).</summary>
+        public const string AbilityCount = "ability_count";
+        /// <summary>24 §8: percentage points added to the ability's amount (0.03 = +3%p of the dust cap a meteor sheds).</summary>
+        public const string AbilityAmount = "ability_amount";
+
         public static readonly string[] All =
         {
             SpawnRate, PullAccel, SaleMult, StaminaMax, ThresholdMult,
@@ -50,10 +63,19 @@ namespace Incremental
             DustChance, FragUnlock, FragChance, FragOffset, FollowSpeed,
         };
 
+        /// <summary>
+        /// 24 §8: the ability stats. Apart from <see cref="All"/> because Stats.Compute does not read them: what they
+        /// raise lives in the AbilityTable, so they are summed per ability by <see cref="Stats.AbilityFromTree"/>.
+        /// </summary>
+        public static readonly string[] AbilityStats = { AbilityPower, AbilityCooldown, AbilityCount, AbilityAmount };
+
         /// <summary>Stats that act on one dust kind and therefore need <see cref="NodeDef.dustKindId"/>.</summary>
         public static bool NeedsDustKind(string id) => id == DustChance;
 
-        public static bool IsKnown(string id) => Array.IndexOf(All, id) >= 0;
+        /// <summary>Stats that act on one ability and therefore need <see cref="NodeDef.abilityId"/> (24 §8).</summary>
+        public static bool NeedsAbility(string id) => Array.IndexOf(AbilityStats, id) >= 0;
+
+        public static bool IsKnown(string id) => Array.IndexOf(All, id) >= 0 || NeedsAbility(id);
     }
 
     public enum NodeKind
@@ -67,6 +89,11 @@ namespace Incremental
         /// One level; there is one of these per kind.
         /// </summary>
         DustKindUnlock = 2,
+        /// <summary>
+        /// 24 §8: turns on the ability named by <see cref="NodeDef.abilityId"/>. One level; there is one of these per
+        /// AbilityTable row.
+        /// </summary>
+        AbilityUnlock = 3,
     }
 
     /// <summary>One node of the skill tree (12 §3). Ring = minTier.</summary>
@@ -88,6 +115,8 @@ namespace Incremental
         public int tier;
         [Tooltip("DustKindUnlock nodes and dust_chance stat nodes: the GameParams dust kind they act on (20 §4).")]
         public string dustKindId;
+        [Tooltip("AbilityUnlock nodes and ability_* stat nodes: the AbilityTable row they act on (24 §8).")]
+        public string abilityId;
         [Tooltip("The ring this node belongs to. Needs unlockedMaxTier >= minTier. Ring 1 is open from the start.")]
         public int minTier = 1;
         [Tooltip("Any-of. Empty = next to the center, always met.")]
@@ -100,6 +129,8 @@ namespace Incremental
         public bool IsGate => kind == NodeKind.TierUnlock;
         /// <summary>20 §4: this node makes a dust kind start appearing.</summary>
         public bool IsDustUnlock => kind == NodeKind.DustKindUnlock;
+        /// <summary>24 §8: this node turns an ability on.</summary>
+        public bool IsAbilityUnlock => kind == NodeKind.AbilityUnlock;
     }
 
     /// <summary>Skill tree nodes (12 §3) and the per-ring cost multiplier, the pacing lever of the balance pass (12 §7).</summary>
@@ -138,6 +169,15 @@ namespace Incremental
             if (dustKindId == null) return null;
             for (int i = 0; i < nodes.Count; i++)
                 if (nodes[i].IsDustUnlock && nodes[i].dustKindId == dustKindId) return nodes[i];
+            return null;
+        }
+
+        /// <summary>The AbilityUnlock node of an ability, or null (24 §8).</summary>
+        public NodeDef AbilityUnlock(string abilityId)
+        {
+            if (string.IsNullOrEmpty(abilityId)) return null;
+            for (int i = 0; i < nodes.Count; i++)
+                if (nodes[i].IsAbilityUnlock && nodes[i].abilityId == abilityId) return nodes[i];
             return null;
         }
 

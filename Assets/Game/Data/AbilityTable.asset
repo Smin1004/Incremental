@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29da1264ba271f6449a7e86be8b7d132, type: 3}
+  m_Name: AbilityTable
+  m_EditorClassIdentifier: 
+  implode:
+    id: implode
+    unlockRing: 4
+    cooldownSec: 14
+    pullSpeedPx: 260
+    ringSec: 0.5
+    ringWidthPx: 4
+    ringColor: {r: 0.72, g: 0.88, b: 1, a: 0.85}
+    ringSegments: 128
+  satellite:
+    id: satellite
+    unlockRing: 6
+    cooldownSec: 0
+    count: 1
+    maxCount: 4
+    orbitRadiusShare: 0.55
+    orbitPeriodSec: 2.4
+    pullRadiusShare: 0.3
+    pullShare: 0.35
+    dotPx: 10
+    glowPx: 44
+    color: {r: 0.82, g: 0.93, b: 1, a: 1}
+    glowAlpha: 0.45
+    trailSec: 0.3
+    trailWidthPx: 5
+  meteor:
+    id: meteor
+    unlockRing: 8
+    cooldownSec: 10
+    crossSec: 2.5
+    passMinRadii: 1
+    passMaxRadii: 2.5
+    dustShare: 0.06
+    maxDustShare: 0.3
+    dustSpeedShare: 0.2
+    heavyWeight: 2
+    shedSpreadPx: 16
+    wakeRadiusShare: 0.8
+    wakeAccelPx: 700
+    lookTier: 2
+    sizePx: 30
+    tailLength: 9
+    pathTries: 16
+  exciteSec: 0.4
+  exciteBrightness: 3
+  maxCooldownReduction: 0.8
