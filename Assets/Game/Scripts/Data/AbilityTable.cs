@@ -150,6 +150,8 @@ namespace Incremental
         /// <summary>The pull share after the ability_power nodes.</summary>
         public double PullShare(in AbilityLevel lv) => pullShare * (1.0 + lv.power);
 
+        public override Ability CreateRuntime() => new SatelliteAbility();
+
         public override bool Uses(string statId) => statId == StatIds.AbilityCount || statId == StatIds.AbilityPower;
 
         public override void Check(in AbilityLevel full, CelestialTable c, ValidationReport r)

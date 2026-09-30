@@ -29,6 +29,34 @@ namespace Incremental
     }
 
     /// <summary>
+    /// 24 §4, §5: a force an ability puts on the dust for one tick, around a point that moves (a satellite, a meteor).
+    /// A dust farther away than <see cref="radius"/> costs one distance test and nothing else, which is what keeps
+    /// four satellites from multiplying the dust tick (24 §4). Inside the reach the force falls off the way the gravity
+    /// pull does (20 §3), and heavier dust answers it more slowly, as it does gravity. World units.
+    /// </summary>
+    public struct DustForce
+    {
+        public Vector2 at;
+        public float radius;
+        /// <summary>The square of <see cref="radius"/>: what the distance test compares against.</summary>
+        public float radius2;
+        /// <summary>Acceleration at the point itself, world units per second squared.</summary>
+        public float accel;
+        /// <summary>Zero: the dust is pulled toward <see cref="at"/>. Else the unit direction it is pushed along.</summary>
+        public Vector2 dir;
+        /// <summary>The dust in reach is excited (24 §8).</summary>
+        public bool excite;
+
+        /// <summary>A pull toward a point: a satellite (24 §4).</summary>
+        public static DustForce Pull(Vector2 at, float radius, float accel) =>
+            new DustForce { at = at, radius = radius, radius2 = radius * radius, accel = accel };
+
+        /// <summary>A push along a direction, which also excites the dust: a meteor's wake (24 §5).</summary>
+        public static DustForce Drag(Vector2 at, float radius, float accel, Vector2 dir) =>
+            new DustForce { at = at, radius = radius, radius2 = radius * radius, accel = accel, dir = dir, excite = true };
+    }
+
+    /// <summary>
     /// Dust simulation. One struct array, no GameObjects. Advanced only from GameRoot's fixed tick.
     /// Positions and speeds are in world units (px / pixelsPerUnit).
     /// </summary>
@@ -185,8 +213,11 @@ namespace Incremental
         /// <summary>
         /// Advances one fixed tick. Returns the mass captured this tick;
         /// <paramref name="gravity"/> is the gravity source, which is the cursor unless the follow experiment is on (20 §7).
+        /// The first <paramref name="forceCount"/> of <paramref name="forces"/> are what the abilities add this tick
+        /// (24): they act whether or not the player is holding, and they never capture.
         /// </summary>
-        public double Tick(double dt, Rect area, Vector2 gravity, bool holding, in EffectiveStats s)
+        public double Tick(double dt, Rect area, Vector2 gravity, bool holding, in EffectiveStats s,
+            DustForce[] forces = null, int forceCount = 0)
         {
             Area = area;
             float fdt = (float)dt;
@@ -215,7 +246,8 @@ namespace Incremental
                 Vector2 toCursor = gravity - d.pos;
                 float dist2 = toCursor.sqrMagnitude;
 
-                if (holding && dist2 < outerR2)
+                bool pulled = holding && dist2 < outerR2;
+                if (pulled)
                 {
                     float dist = Mathf.Sqrt(dist2);
                     float f = (float)PullFactor(dist, gravR, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
@@ -239,6 +271,24 @@ namespace Incremental
                         Vector2 radial = dir * Vector2.Dot(d.vel, dir);
                         d.vel = radial + (d.vel - radial) * tangentKeep;
                     }
+                }
+                // 24: what the abilities put on the dust. The distance test is all a dust out of reach pays.
+                for (int k = 0; k < forceCount; k++)
+                {
+                    ref DustForce force = ref forces[k];
+                    Vector2 toForce = force.at - d.pos;
+                    float reach2 = toForce.sqrMagnitude;
+                    if (reach2 >= force.radius2) continue;
+                    float reach = Mathf.Sqrt(reach2);
+                    float share = (float)PullFactor(reach, force.radius, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
+                    float push = force.accel * KindAccel(d.kind) * share * fdt;
+                    if (force.dir.x != 0f || force.dir.y != 0f) d.vel += force.dir * push;
+                    else if (reach > 1e-6f) d.vel += toForce * (push / reach);
+                    if (force.excite) d.excite = 1f;
+                    pulled = true;
+                }
+                if (pulled)
+                {
                     float sp2 = d.vel.sqrMagnitude;
                     if (sp2 > maxSpeed2) d.vel *= maxSpeed / Mathf.Sqrt(sp2);
                 }

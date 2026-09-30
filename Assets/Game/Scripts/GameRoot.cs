@@ -531,7 +531,7 @@ namespace Incremental
             // 24: the abilities go first, so what they do to the dust this tick is part of this same dust tick, and
             // their cost is counted with it.
             Abilities.Tick(dt, holding, s);
-            double captured = Dust.Tick(dt, CameraArea(), GravityWorld, holding, s);
+            double captured = Dust.Tick(dt, CameraArea(), GravityWorld, holding, s, Abilities.Forces, Abilities.ForceCount);
             dustWatch.Stop();
             dustTickMsAcc += dustWatch.Elapsed.TotalMilliseconds;
             if (captured > 0) Run.mass += captured * s.dustMass;

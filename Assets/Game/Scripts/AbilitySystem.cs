@@ -16,6 +16,8 @@ namespace Incremental
     {
         GameRoot root;
         Ability[] abilities = new Ability[0];
+        DustForce[] forces = new DustForce[8];
+        int forceCount;
         float lastTickAt;
         readonly StringBuilder label = new StringBuilder();
 
@@ -25,6 +27,20 @@ namespace Incremental
         public int ForcedMode { get; private set; }
         /// <summary>24 §7: the level every stat node of a forced ability is taken to be at.</summary>
         public int ForcedLevel { get; private set; }
+
+        /// <summary>
+        /// What the abilities put on the dust in the tick that was just run (24 §4, §5): the first
+        /// <see cref="ForceCount"/> entries. GameRoot hands them to the dust tick that follows.
+        /// </summary>
+        public DustForce[] Forces => forces;
+        public int ForceCount => forceCount;
+
+        /// <summary>An ability adds a force to this tick's dust tick. Only valid from inside an ability's tick.</summary>
+        public void AddForce(in DustForce force)
+        {
+            if (forceCount >= forces.Length) System.Array.Resize(ref forces, forces.Length * 2);
+            forces[forceCount++] = force;
+        }
 
         int RowCount => root.abilityTable != null ? root.abilityTable.Count : 0;
 
@@ -47,6 +63,7 @@ namespace Incremental
         /// <summary>A new run: nothing is charged and nothing is in flight.</summary>
         public void ResetRun()
         {
+            forceCount = 0;
             for (int i = 0; i < abilities.Length; i++)
                 if (abilities[i] != null) abilities[i].Clear();
         }
@@ -62,6 +79,7 @@ namespace Incremental
         public void Tick(double dt, bool holding, in EffectiveStats s)
         {
             lastTickAt = Time.time;
+            forceCount = 0;
             if (abilities.Length == 0) return;
             // 24 §8: how long an excited dust stays excited is table data, so the dust is told every tick.
             root.Dust.ExciteSec = root.abilityTable.exciteSec;
