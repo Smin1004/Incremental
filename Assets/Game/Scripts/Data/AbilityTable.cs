@@ -183,7 +183,11 @@ namespace Incremental
         [Tooltip("The path passes the gravity source at a random distance between these, in gravity radii: near enough for " +
                  "the shed dust to be pulled in, never through the middle.")]
         public double passMinRadii = 1;
-        public double passMaxRadii = 2.5;
+        public double passMaxRadii = 1.5;
+        [Tooltip("The path is drawn from where the gravity source is when the meteor fires. If the gravity source moves after " +
+                 "that, the meteor turns to keep its planned distance from it, by this many degrees per second at most and " +
+                 "only while it is on screen. 0 = a straight line whatever the player does.")]
+        public double homingDegPerSec = 12;
         [Tooltip("Dust shed over one crossing, as a share of the dust cap at that moment. ability_amount adds to it: " +
                  "+3%p per level in the seed, 6% → 15%. The cap is never passed: at the cap it sheds that much less.")]
         public double dustShare = 0.06;
@@ -231,6 +235,7 @@ namespace Incremental
             if (!(crossSec > 0)) r.Errors.Add(Where + " crossSec must be > 0.");
             if (!(passMinRadii > 0) || passMaxRadii < passMinRadii)
                 r.Errors.Add(Where + " needs 0 < passMinRadii <= passMaxRadii; at 0 the meteor goes through the gravity source (24 §5).");
+            if (homingDegPerSec < 0) r.Errors.Add(Where + " homingDegPerSec must be >= 0; 0 is a straight line.");
             if (!(dustShare > 0)) r.Errors.Add(Where + " dustShare must be > 0, or the meteor sheds nothing.");
             if (!(maxDustShare > 0) || maxDustShare > 1) r.Errors.Add(Where + " maxDustShare must be within 0..1 (0 excluded); it is a share of the dust cap.");
             if (dustShare + full.amount > maxDustShare + 1e-9)

@@ -156,7 +156,11 @@ namespace Incremental
             return id + " Lv" + level.level + (ForcedMode == 0 ? " (tree)" : " (debug key)");
         }
 
-        /// <summary>Every ability in table order, as <see cref="Describe"/> writes them.</summary>
+        /// <summary>
+        /// Every ability in table order, as <see cref="Describe"/> writes them. Ends with a note when the effect
+        /// intensity is turned down, because then the rings, the glows and the excited dust are dim or not drawn at all
+        /// and an ability that works looks as if it did nothing.
+        /// </summary>
         string Summary()
         {
             label.Length = 0;
@@ -165,7 +169,18 @@ namespace Incremental
                 if (i > 0) label.Append(", ");
                 label.Append(Describe(i, LevelOf(i)));
             }
+            if (root.EffectIntensity < 1f)
+                label.Append(". NOTE: effect intensity is ").Append(root.EffectIntensity.ToString("0.0"))
+                     .Append(" (F11 cycles it), so ability rings, glows and excited dust are dimmed or hidden");
             return label.ToString();
+        }
+
+        /// <summary>True when at least one ability is on right now, by the tree or by the debug keys.</summary>
+        bool AnyOn()
+        {
+            for (int i = 0; i < RowCount; i++)
+                if (LevelOf(i).unlocked) return true;
+            return false;
         }
 
         // ---------------- debug keys (24 §7) ----------------
@@ -252,7 +267,12 @@ namespace Incremental
         /// </summary>
         public string DebugLabel(bool overlay)
         {
-            if (RowCount == 0 || (ForcedMode == 0 && !overlay)) return string.Empty;
+            if (RowCount == 0) return string.Empty;
+            // In the editor and in development builds the line also comes up by itself when an ability is on while the
+            // effect intensity is turned down (F11): its ring, glow and excited dust are then dim or not drawn, which
+            // looks exactly like an ability that does not work.
+            bool dimmed = root.EffectIntensity < 1f && (Application.isEditor || Debug.isDebugBuild) && AnyOn();
+            if (ForcedMode == 0 && !overlay && !dimmed) return string.Empty;
             label.Length = 0;
             var rows = root.abilityTable.Rows;
             for (int i = 0; i < rows.Length; i++)
@@ -266,6 +286,7 @@ namespace Incremental
             }
             string list = label.Length > 0 ? label.ToString() : UIStrings.AbilityDebugNone;
             string line = string.Format(ForcedMode == 0 ? UIStrings.AbilityDebugTree : UIStrings.AbilityDebugForced, list);
+            if (dimmed) line += string.Format(UIStrings.AbilityDebugDimmed, root.EffectIntensity);
             return overlay ? line + string.Format(UIStrings.AbilityDebugHint, rows.Length, rows.Length + 1) : line;
         }
     }

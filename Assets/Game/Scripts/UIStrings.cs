@@ -79,6 +79,11 @@ namespace Incremental
         /// one ability alone, {1} = the number that forces all of them.
         /// </summary>
         public const string AbilityDebugHint = "     [숫자 1~{0}: 하나만   {1}: 전부   0: 끔   - / =: 레벨]";
+        /// <summary>
+        /// 24 §7: added to the status line while an ability is on and the effect intensity is below 1 (F11). {0} = the
+        /// intensity. At 0 the ability rings, glows and the brightening of excited dust are not drawn at all.
+        /// </summary>
+        public const string AbilityDebugDimmed = "   ※ 연출 강도 {0:0.0}: 능력의 고리·빛·들뜸이 흐리거나 안 보임 (F11로 1.0까지)";
         /// <summary>24 §7: toasts of the ability debug keys. {0} = the ability name or the level, {1} = the level.</summary>
         public const string AbilityForceOff = "능력 강제: 꺼짐 (트리대로)";
         public const string AbilityForceOne = "능력 강제: {0}만 Lv{1}";

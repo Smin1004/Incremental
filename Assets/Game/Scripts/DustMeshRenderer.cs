@@ -193,6 +193,8 @@ namespace Incremental
                 }
                 float b = d.bright * kindBright[kind] * Mathf.Lerp(dim, 1f, inField) * (1f + boost) * remnantBright;
                 if (d.excite > 0f) b *= 1f + d.excite * exciteBright;
+                // A dust that was just created fades in (GameParams.dustSpawnFadeSec).
+                if (d.born < 1f) b *= d.born;
                 // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
                 // The alpha channel carries the dust kind's shape id (20 §4), which the shader reads back as 0..255.
                 float k = Mathf.Min(b, 2f) * 0.5f;

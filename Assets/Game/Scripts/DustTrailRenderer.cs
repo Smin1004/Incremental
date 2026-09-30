@@ -14,7 +14,10 @@ namespace Incremental
     /// dust's own.
     ///
     /// At most trailBudget ribbons are drawn at once: the heavier kinds first, then the ones nearest the gravity source,
-    /// which is where the eye is. Everything goes into one dynamic mesh, so the whole thing is one draw call.
+    /// which is where the eye is. The last places of the budget are drawn fainter (trailBudgetFadeShare), so a ribbon
+    /// fades in as its dust moves up that order instead of appearing at full length; and a dust that was just created
+    /// has no ribbon to show yet and fades in with it. Everything goes into one dynamic mesh, so the whole thing is one
+    /// draw call.
     ///
     /// 22 §7: the budget is filled by counting the candidates per kind and only ordering the one kind the budget runs out
     /// in, instead of sorting every candidate; the vertices go to the GPU in one copy (<see cref="DynamicMesh"/>); and
@@ -34,9 +37,16 @@ namespace Incremental
 
         /// <summary>The dust indices whose ribbons are drawn this frame, filled by <see cref="PickCandidates"/>.</summary>
         readonly List<int> picked = new List<int>();
-        /// <summary>Scratch for the one kind the budget runs out in.</summary>
-        readonly List<int> boundary = new List<int>();
+        /// <summary>How bright each of <see cref="picked"/> is drawn, 0..1: below 1 near the end of the budget.</summary>
+        readonly List<float> pickedFade = new List<float>();
         int[] perKind = new int[0];
+        /// <summary>Per kind, this frame: how many ribbons of heavier kinds come before it, and what is done with it.</summary>
+        int[] kindStart = new int[0];
+        byte[] kindPlan = new byte[0];
+        /// <summary>Scratch per kind, for the kinds that have to be put in order of distance this frame.</summary>
+        List<int>[] ordered = new List<int>[0];
+
+        const byte PlanSkip = 0, PlanFull = 1, PlanOrdered = 2;
         Vector2[] points = new Vector2[0];
         /// <summary>Age of each kept point, in sample intervals, so a skipped duplicate does not shift the taper.</summary>
         int[] ages = new int[0];
@@ -73,7 +83,7 @@ namespace Incremental
             mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
             // Under the dust quads, so a bright dust head still reads as the head of its own trail.
             mr.sortingOrder = -1;
-            perKind = new int[Mathf.Max(1, p.DustKindCount)];
+            EnsureKinds();
             nearestFirst = CompareByDistance;
             // 22 §7: as with the dust mesh, size for the worst case once instead of growing during a run.
             points = new Vector2[Mathf.Max(2, p.trailPoints + 1)];
@@ -108,14 +118,33 @@ namespace Incremental
             rebuildMsAcc += rebuildWatch.Elapsed.TotalMilliseconds;
         }
 
+        /// <summary>One entry per dust kind in the per-kind scratch arrays.</summary>
+        void EnsureKinds()
+        {
+            int kinds = Mathf.Max(1, p.DustKindCount);
+            if (perKind.Length == kinds) return;
+            perKind = new int[kinds];
+            kindStart = new int[kinds];
+            kindPlan = new byte[kinds];
+            ordered = new List<int>[kinds];
+            for (int k = 0; k < kinds; k++) ordered[k] = new List<int>();
+        }
+
         /// <summary>
-        /// 22 §5 budget rule without a sort over everything: count the candidates of each kind, walk the kinds from the
-        /// heaviest down taking whole kinds while they fit, and order only the kind the budget runs out in, by distance to
-        /// the gravity source. That kind is the only one whose members compete with each other.
+        /// 22 §5 budget rule without a sort over everything. The order the budget is handed out in is the heavier kinds
+        /// first and, within a kind, the dust nearer to the gravity source first. The candidates of each kind are
+        /// counted, which gives every kind the place in that order where it starts; a kind that ends before the budget
+        /// does is taken whole without being ordered, a kind that starts after it is left out, and only a kind the
+        /// budget (or its faded end) runs out in is put in order of distance.
+        ///
+        /// The last <paramref name="fadeCount"/> places of the budget are drawn fainter, down to nothing at the very
+        /// last. A ribbon that had its full length the moment its dust got a place used to appear all at once; now it
+        /// comes in as the dust moves up the order. With a fadeCount of 0 this is the hard cut of 22 §5.
         /// </summary>
-        void PickCandidates(int budget)
+        void PickCandidates(int budget, int fadeCount)
         {
             picked.Clear();
+            pickedFade.Clear();
             var items = field.Items;
             int n = field.Count;
             int kinds = perKind.Length;
@@ -125,30 +154,43 @@ namespace Incremental
                 int kind = items[i].kind;
                 if (kind > 0 && kind < kinds && items[i].trailFill > 0) perKind[kind]++;
             }
-            // Which kind does the budget run out in, and how much room is left for it?
-            int cutKind = 0, room = budget;
+            int start = 0;
             for (int k = kinds - 1; k >= 1; k--)
             {
-                if (perKind[k] <= room)
+                kindStart[k] = start;
+                if (perKind[k] == 0 || start >= budget) kindPlan[k] = PlanSkip;
+                else if (start + perKind[k] <= budget - fadeCount) kindPlan[k] = PlanFull;
+                else
                 {
-                    room -= perKind[k];
-                    continue;
+                    kindPlan[k] = PlanOrdered;
+                    ordered[k].Clear();
                 }
-                cutKind = k;
-                break;
+                start += perKind[k];
             }
-            boundary.Clear();
             for (int i = 0; i < n; i++)
             {
                 int kind = items[i].kind;
                 if (kind <= 0 || kind >= kinds || items[i].trailFill <= 0) continue;
-                if (kind > cutKind) picked.Add(i);
-                else if (kind == cutKind) boundary.Add(i);
+                if (kindPlan[kind] == PlanFull)
+                {
+                    picked.Add(i);
+                    pickedFade.Add(1f);
+                }
+                else if (kindPlan[kind] == PlanOrdered) ordered[kind].Add(i);
             }
-            if (cutKind == 0 || room <= 0) return;
-            if (boundary.Count > room) boundary.Sort(nearestFirst);
-            int take = Mathf.Min(room, boundary.Count);
-            for (int i = 0; i < take; i++) picked.Add(boundary[i]);
+            for (int k = kinds - 1; k >= 1; k--)
+            {
+                if (kindPlan[k] != PlanOrdered) continue;
+                var list = ordered[k];
+                list.Sort(nearestFirst);
+                int take = Mathf.Min(list.Count, budget - kindStart[k]);
+                for (int j = 0; j < take; j++)
+                {
+                    int place = kindStart[k] + j;
+                    picked.Add(list[j]);
+                    pickedFade.Add(fadeCount > 0 ? Mathf.Clamp01((budget - place) / (float)fadeCount) : 1f);
+                }
+            }
         }
 
         void Rebuild()
@@ -163,7 +205,7 @@ namespace Incremental
                 mesh.Clear();
                 return;
             }
-            if (perKind.Length != Mathf.Max(1, p.DustKindCount)) perKind = new int[Mathf.Max(1, p.DustKindCount)];
+            EnsureKinds();
             if (points.Length < trailLen + 1)
             {
                 points = new Vector2[trailLen + 1];
@@ -171,7 +213,7 @@ namespace Incremental
             }
 
             gravity = root.EndingActive && root.Phase == GamePhase.Run ? root.EndingCenter : root.GravityWorld;
-            PickCandidates(budget);
+            PickCandidates(budget, Mathf.RoundToInt(budget * Mathf.Clamp01((float)p.trailBudgetFadeShare)));
             if (picked.Count == 0)
             {
                 mesh.Clear();
@@ -204,7 +246,8 @@ namespace Incremental
                 // dot and the ribbon slides out from under it with no shoulder to see.
                 float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f);
                 float headWidth = h * share;
-                float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f);
+                // Fainter near the end of the budget, and while the dust itself is still fading in.
+                float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f) * pickedFade[c] * d.born;
                 float t = d.tint;
                 float r = Mathf.LerpUnclamped(colA.r, colB.r, t);
                 float g = Mathf.LerpUnclamped(colA.g, colB.g, t);

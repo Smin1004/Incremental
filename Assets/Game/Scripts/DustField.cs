@@ -26,6 +26,11 @@ namespace Incremental
         /// <see cref="DustField.ExciteSec"/>; the renderer draws an excited dust brighter. Render only.
         /// </summary>
         public float excite;
+        /// <summary>
+        /// 0..1: how far a newly created dust has faded in. It starts at 0 and reaches 1 over GameParams.dustSpawnFadeSec,
+        /// so a dust that is created in plain view grows in instead of popping in. Render only.
+        /// </summary>
+        public float born;
     }
 
     /// <summary>
@@ -135,11 +140,30 @@ namespace Incremental
             }
         }
 
+        /// <summary>
+        /// Keeps the trail buffer as long as the dust array. It is resized, never replaced: the dust that are already
+        /// there keep the positions their ribbons are drawn from. Replacing it left every one of those positions at
+        /// (0, 0) while the dust still counted them, so at the moment the array grew past 512, 1024, 2048 or 4096 dust
+        /// every ribbon on screen drew a line to the middle of the screen until its buffer had filled up again.
+        /// </summary>
         void EnsureTrail()
         {
             int need = items.Length * trailLen;
-            if (trail.Length != need) trail = new Vector2[need];
+            if (trail.Length != need) Array.Resize(ref trail, need);
         }
+
+        /// <summary>
+        /// A new dust has no path yet: every slot of its trail block is where it is now, so whatever reads the block
+        /// finds a ribbon of length 0 that can only grow from there.
+        /// </summary>
+        void ClearTrail(int index, Vector2 pos)
+        {
+            int at = index * trailLen;
+            for (int j = 0; j < trailLen; j++) trail[at + j] = pos;
+        }
+
+        /// <summary>How much of its fade-in a new dust gets through in <paramref name="fdt"/> seconds (GameParams.dustSpawnFadeSec).</summary>
+        float BornStep(float fdt) => p.dustSpawnFadeSec > 0 ? (float)(fdt / p.dustSpawnFadeSec) : 1f;
 
         /// <summary>22 §5: pushes the current position of every trailed dust, once every trailSampleSec of game time.</summary>
         void TickTrails(double dt)
@@ -237,12 +261,14 @@ namespace Incremental
             float noise = (float)p.driftNoise;
             float relax = Mathf.Clamp01((float)p.driftRelaxRate * fdt);
             float calm = ExciteStep(fdt);
+            float grow = BornStep(fdt);
             double captured = 0;
 
             for (int i = 0; i < count; i++)
             {
                 ref Dust d = ref items[i];
                 if (d.excite > 0f) d.excite = Mathf.Max(0f, d.excite - calm);
+                if (d.born < 1f) d.born = Mathf.Min(1f, d.born + grow);
                 Vector2 toCursor = gravity - d.pos;
                 float dist2 = toCursor.sqrMagnitude;
 
@@ -391,11 +417,13 @@ namespace Incremental
             float maxSpeed2 = maxSpeed * maxSpeed;
             float keep = Mathf.Exp(-damping * fdt);
             float calm = ExciteStep(fdt);
+            float grow = BornStep(fdt);
             int absorbed = 0;
             for (int i = 0; i < count; i++)
             {
                 ref Dust d = ref items[i];
                 if (d.excite > 0f) d.excite = Mathf.Max(0f, d.excite - calm);
+                if (d.born < 1f) d.born = Mathf.Min(1f, d.born + grow);
                 Vector2 to = center - d.pos;
                 float dist2 = to.sqrMagnitude;
                 if (dist2 < capR2)
@@ -434,14 +462,18 @@ namespace Incremental
         public void AddFree(Vector2 pos, Vector2 vel)
         {
             if (count >= items.Length) Grow();
-            items[count++] = new Dust
+            int index = count++;
+            items[index] = new Dust
             {
                 pos = pos,
                 vel = vel,
                 tint = (float)visualRng.NextDouble(),
                 size = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustSizeJitter),
                 bright = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustBrightJitter),
+                // The remnant is thrown out by the blast and is there at once: no fade-in.
+                born = 1f,
             };
+            ClearTrail(index, pos);
         }
 
         /// <summary>
@@ -557,10 +589,16 @@ namespace Incremental
             Add(pos, RandomDir() * Px(p.driftSpeed), RollKind(s));
         }
 
+        /// <summary>
+        /// A new dust of the game. It starts with no path behind it and unseen: its ribbon grows from nothing and its
+        /// brightness fades in over GameParams.dustSpawnFadeSec, so a dust created in plain view, inside the gravity
+        /// field included, does not pop in. Where a dust is created is not this method's business and has not changed.
+        /// </summary>
         void Add(Vector2 pos, Vector2 vel, int kind = 0)
         {
             if (count >= items.Length) Grow();
-            items[count++] = new Dust
+            int index = count++;
+            items[index] = new Dust
             {
                 pos = pos,
                 vel = vel,
@@ -569,9 +607,13 @@ namespace Incremental
                 size = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustSizeJitter),
                 bright = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustBrightJitter),
             };
+            ClearTrail(index, pos);
         }
 
-        /// <summary>Doubles both arrays together so a dust and its trail block keep the same index (22 §5).</summary>
+        /// <summary>
+        /// Doubles both arrays together so a dust and its trail block keep the same index (22 §5). Both keep what they
+        /// hold: see <see cref="EnsureTrail"/>.
+        /// </summary>
         void Grow()
         {
             Array.Resize(ref items, items.Length * 2);

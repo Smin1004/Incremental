@@ -35,6 +35,7 @@ MonoBehaviour:
   trailSampleSec: 0.08
   trailWidthShare: 0.6
   trailBudget: 300
+  trailBudgetFadeShare: 0.35
   followEnabled: 1
   followSpeedPx: 220
   followDebugMults:
@@ -178,6 +179,7 @@ MonoBehaviour:
   dustHaloAlpha: 0.35
   dustSizeJitter: 0.3
   dustBrightJitter: 0.3
+  dustSpawnFadeSec: 0.2
   dustStretchMax: 4
   dustStretchFullSpeedPx: 400
   dustStreakExposureSec: 0.05
@@ -460,6 +462,6 @@ MonoBehaviour:
   - 8000
   - 9472
   perfBenchWarmupSec: 2
-  perfBenchSampleSec: 6
+  perfBenchSampleSec: 6
   perfBenchSettleSec: 4
   pendingSaveIntervalSec: 5

@@ -471,6 +471,9 @@ namespace Incremental
             if (!(p.trailWidthShare > 0) || !(p.trailWidthShare <= 1))
                 r.Errors.Add("GameParams: trailWidthShare must be within 0..1 (0 excluded); it is a share of the dust's drawn size (22 §5).");
             if (p.trailBudget < 0) r.Errors.Add("GameParams: trailBudget must be >= 0 (22 §5).");
+            if (p.trailBudgetFadeShare < 0 || p.trailBudgetFadeShare > 1)
+                r.Errors.Add("GameParams: trailBudgetFadeShare must be within 0..1; it is a share of trailBudget.");
+            if (p.dustSpawnFadeSec < 0) r.Errors.Add("GameParams: dustSpawnFadeSec must be >= 0; 0 shows a new dust at once.");
             if (!(p.dustStreakExposureSec > 0))
                 r.Errors.Add("GameParams: dustStreakExposureSec must be > 0 (22 §5); it is the shutter the motion smear stands for.");
             if (!(p.dustStretchMax >= 1))

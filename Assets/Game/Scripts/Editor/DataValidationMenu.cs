@@ -176,21 +176,46 @@ namespace Incremental.EditorTools
         {
             var asset = LoadAll<AbilityTable>()[0];
             var fresh = ScriptableObject.CreateInstance<AbilityTable>();
+            string[] diffs;
             try
             {
-                var diffs = LeafDrift(asset, fresh);
-                if (diffs.Count == 0) return new string[0];
+                diffs = LeafDrift(asset, fresh).ToArray();
+            }
+            finally
+            {
+                Object.DestroyImmediate(fresh);
+            }
+            if (diffs.Length > 0) CopyAbilitiesFromCode(diffs);
+            return diffs;
+        }
+
+        /// <summary>
+        /// Copies the named values (property paths such as "meteor.passMaxRadii") from the code defaults into the
+        /// AbilityTable asset and saves it, leaving every other value as it is. This is the one to use after changing an
+        /// initializer: the developer tunes this asset by hand, and <see cref="SyncAbilitiesFromCode"/> would undo that.
+        /// A path the asset does not differ in is written all the same, which is what puts a newly added field into the file.
+        /// </summary>
+        public static void CopyAbilitiesFromCode(params string[] paths)
+        {
+            var asset = LoadAll<AbilityTable>()[0];
+            var fresh = ScriptableObject.CreateInstance<AbilityTable>();
+            try
+            {
                 var a = new SerializedObject(asset);
                 var b = new SerializedObject(fresh);
-                foreach (var path in diffs)
+                foreach (var path in paths)
                 {
                     var src = b.FindProperty(path);
-                    if (src != null) a.CopyFromSerializedProperty(src);
+                    if (src == null)
+                    {
+                        Debug.LogError("[Setup] AbilityTable has no value at " + path);
+                        continue;
+                    }
+                    a.CopyFromSerializedProperty(src);
                 }
                 a.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(asset);
                 AssetDatabase.SaveAssets();
-                return diffs.ToArray();
             }
             finally
             {

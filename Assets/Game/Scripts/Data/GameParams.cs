@@ -148,6 +148,10 @@ namespace Incremental
         public double trailWidthShare = 0.6;
         [Tooltip("Trails drawn at once. Over it, the heavier kinds win, then the ones closer to the gravity source.")]
         public int trailBudget = 300;
+        [Tooltip("The trails that only just make it into trailBudget are drawn fainter: the last this-share of the budget " +
+                 "fades from full to nothing in that same order. A trail then grows in as its dust moves up the order " +
+                 "instead of appearing at full length the moment it gets a place. 0 = the hard cut of 22 §5.")]
+        public double trailBudgetFadeShare = 0.35;
 
         [Header("Gravity source follow (22 §3)")]
         [Tooltip("On since 22 §3: the gravity source follows the cursor at its effective top speed at most and a thin line " +
@@ -291,6 +295,10 @@ namespace Incremental
         [Tooltip("Per-dust size and brightness variation (0.3 = ±30%).")]
         public double dustSizeJitter = 0.3;
         public double dustBrightJitter = 0.3;
+        [Tooltip("A new dust fades in from nothing over this many seconds, so one created in plain view does not pop in. " +
+                 "Dust is kept out of the gravity radius when it is created but not out of the weak band outside it, " +
+                 "and by ring 11 about a fifth of new dust lands there. 0 = there at once.")]
+        public double dustSpawnFadeSec = 0.2;
         [Tooltip("Longest a dust may be drawn, as a multiple of its own size. Since 22 §5 this is a ceiling, not the " +
                  "shape: the smear itself is dustStreakExposureSec x the speed.")]
         public double dustStretchMax = 4;

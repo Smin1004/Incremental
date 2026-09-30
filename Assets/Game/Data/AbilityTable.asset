@@ -43,7 +43,8 @@ MonoBehaviour:
     cooldownSec: 10
     crossSec: 2.5
     passMinRadii: 1
-    passMaxRadii: 2.5
+    passMaxRadii: 1.5
+    homingDegPerSec: 12
     dustShare: 0.06
     maxDustShare: 0.3
     dustSpeedShare: 0.2
