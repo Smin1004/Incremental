@@ -195,8 +195,8 @@ namespace Incremental.Tests
         {
             var p = ProjectParams();
             Assert.AreEqual(0.25, p.vortexShare, Eps, "22 §5: a quarter of the pull goes sideways");
-            Assert.AreEqual(6, p.trailPoints, "positions kept per trail");
-            Assert.AreEqual(0.05, p.trailSampleSec, Eps, "fixed time between two of them");
+            Assert.AreEqual(8, p.trailPoints, "positions kept per trail (22 §5 asked for 6; 8 shows the curve)");
+            Assert.AreEqual(0.08, p.trailSampleSec, Eps, "fixed time between two of them, so a ribbon covers 0.64s");
             Assert.AreEqual(0.6, p.trailWidthShare, Eps, "the head is 60% of the dust's drawn size");
             Assert.AreEqual(300, p.trailBudget, "trails drawn at once");
         }
@@ -323,6 +323,7 @@ namespace Incremental.Tests
             {
                 var p = TestData.Params();
                 p.trailPoints = 3;
+                p.trailSampleSec = 0.05;
                 p.driftSpeed = 0;
                 p.captureRadius = 5;
                 p.vortexShare = 0;

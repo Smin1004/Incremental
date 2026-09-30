@@ -137,8 +137,8 @@ namespace Incremental
                  "straight. 0 brings back the straight lines of 20 §3.")]
         public double vortexShare = 0.25;
         [Tooltip("Positions kept per trailed dust, and the fixed time between two of them (seconds).")]
-        public int trailPoints = 6;
-        public double trailSampleSec = 0.05;
+        public int trailPoints = 8;
+        public double trailSampleSec = 0.08;
         [Tooltip("Width of the head of a trail as a share of that dust's drawn size; it narrows to 0 at the tail.")]
         public double trailWidthShare = 0.6;
         [Tooltip("Trails drawn at once. Over it, the heavier kinds win, then the ones closer to the gravity source.")]

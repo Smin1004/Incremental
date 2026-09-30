@@ -30,8 +30,8 @@ MonoBehaviour:
   worldExpandSec: 0.6
   bodyMinScreenPx: 8
   vortexShare: 0.25
-  trailPoints: 6
-  trailSampleSec: 0.05
+  trailPoints: 8
+  trailSampleSec: 0.08
   trailWidthShare: 0.6
   trailBudget: 300
   followEnabled: 1

@@ -177,6 +177,11 @@ namespace Incremental
             float ppu = (float)p.pixelsPerUnit;
             float halo = (float)(p.dustHaloPx / ppu) * 0.5f;
             float share = (float)p.trailWidthShare;
+            // 22 §5 "그 먼지 표시 크기의 60%": a moving dust is drawn as a streak that narrows across its travel, so the
+            // ribbon follows that thickness and not the round halo, or the trail comes out fatter than the dust leaving it.
+            float drift = (float)(p.driftSpeed / ppu);
+            float full = Mathf.Max(drift + 1e-3f, (float)(p.dustStretchFullSpeedPx / ppu));
+            float widthAtFull = (float)p.dustStreakWidth;
             Color colA = root.Backdrop.DustColorA.linear;
             Color colB = root.Backdrop.DustColorB.linear;
             var items = field.Items;
@@ -186,7 +191,9 @@ namespace Incremental
                 int i = picked[c];
                 ref Dust d = ref items[i];
                 var kindDef = p.DustKind(d.kind);
-                float headWidth = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f) * share;
+                float stretch = Mathf.Clamp01((d.vel.magnitude - drift) / (full - drift));
+                float headWidth = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f) *
+                                  Mathf.Lerp(1f, widthAtFull, stretch) * share;
                 float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f);
                 float t = d.tint;
                 float r = Mathf.LerpUnclamped(colA.r, colB.r, t);
