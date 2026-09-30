@@ -504,19 +504,43 @@ namespace Incremental
         /// <summary>
         /// One roll over the effective chances picks the kind of a new dust (20 §4). The shares do not overlap and
         /// whatever they leave is base dust, so a locked kind can never come out.
+        /// 24 §5: a meteor's dust multiplies the share of every kind above the base dust by
+        /// <paramref name="heavyWeight"/>. If that takes the shares past 1 they are scaled down together, so the order
+        /// between the kinds stays what it is.
         /// </summary>
-        int RollKind(in EffectiveStats s)
+        int RollKind(in EffectiveStats s, double heavyWeight = 1.0)
         {
             var chance = s.dustKindChance;
             if (chance == null || chance.Length < 2) return 0;
+            double scale = heavyWeight;
+            if (heavyWeight != 1.0)
+            {
+                double total = 0;
+                for (int k = 1; k < chance.Length; k++) total += chance[k] * heavyWeight;
+                if (total > 1) scale = heavyWeight / total;
+            }
             double u = rng.NextDouble();
             double acc = 0;
             for (int k = 1; k < chance.Length; k++)
             {
-                acc += chance[k];
+                acc += chance[k] * scale;
                 if (u < acc) return k;
             }
             return 0;
+        }
+
+        /// <summary>
+        /// 24 §5: one dust shed by a meteor, at <paramref name="pos"/> with <paramref name="vel"/>. Its kind is rolled
+        /// with the heavier kinds weighted by <paramref name="heavyWeight"/>, and it is born excited (24 §8). Nothing is
+        /// added at the dust cap or outside the visible area: the meteor then sheds that much less. Returns whether the
+        /// dust was added.
+        /// </summary>
+        public bool Shed(Vector2 pos, Vector2 vel, in EffectiveStats s, double heavyWeight)
+        {
+            if (count >= (int)s.dustCap || !Area.Contains(pos)) return false;
+            Add(pos, vel, RollKind(s, heavyWeight));
+            items[count - 1].excite = 1f;
+            return true;
         }
 
         /// <summary>Random position inside the area, outside gravityRadius of the cursor (best effort).</summary>

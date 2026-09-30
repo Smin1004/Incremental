@@ -48,11 +48,11 @@ MonoBehaviour:
     maxDustShare: 0.3
     dustSpeedShare: 0.2
     heavyWeight: 2
-    shedSpreadPx: 16
+    shedSpreadPx: 30
     wakeRadiusShare: 0.8
     wakeAccelPx: 700
     lookTier: 2
-    sizePx: 30
+    sizePx: 40
     tailLength: 9
     pathTries: 16
   exciteSec: 0.4

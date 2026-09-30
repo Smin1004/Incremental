@@ -194,7 +194,7 @@ namespace Incremental
         [Tooltip("Shed dust rolls its kind as any dust does, with the share of every unlocked kind above the base dust multiplied by this.")]
         public double heavyWeight = 2;
         [Tooltip("Shed dust lands up to this far to either side of the path (px), so it reads as a band and not as a drawn line.")]
-        public double shedSpreadPx = 16;
+        public double shedSpreadPx = 30;
         [Tooltip("The wake: dust within this share of the gravity radius of the meteor is dragged along its direction and excited.")]
         public double wakeRadiusShare = 0.8;
         [Tooltip("How hard the wake drags, px/s² at the meteor itself; it falls off toward the edge of the wake. 0 = no wake.")]
@@ -204,7 +204,7 @@ namespace Incremental
         [Tooltip("The celestial tier whose look the meteor wears (2 = the comet).")]
         public int lookTier = 2;
         [Tooltip("Diameter of the head, px, and the length of the tail in head radii (the comet's own tail is 3.5).")]
-        public double sizePx = 30;
+        public double sizePx = 40;
         public double tailLength = 9;
 
         [Header("Internals")]
@@ -220,6 +220,8 @@ namespace Incremental
 
         /// <summary>The share of the dust cap one crossing sheds after the ability_amount nodes, never above <see cref="maxDustShare"/>.</summary>
         public double DustShare(in AbilityLevel lv) => Math.Max(0.0, Math.Min(maxDustShare, dustShare + lv.amount));
+
+        public override Ability CreateRuntime() => new MeteorAbility();
 
         public override bool Uses(string statId) => statId == StatIds.AbilityAmount || statId == StatIds.AbilityCooldown;
 
