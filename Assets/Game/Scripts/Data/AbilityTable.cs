@@ -51,6 +51,12 @@ namespace Incremental
         /// </summary>
         public abstract void Check(in AbilityLevel full, CelestialTable c, ValidationReport r);
 
+        /// <summary>
+        /// The object that runs this ability during a run, or null for a row that does nothing yet. The row names its
+        /// own runtime so that nothing else has to know the list of abilities.
+        /// </summary>
+        public virtual Ability CreateRuntime() => null;
+
         protected string Where => "AbilityTable: '" + id + "'";
     }
 

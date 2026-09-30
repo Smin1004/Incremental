@@ -94,6 +94,8 @@ namespace Incremental
         /// <summary>22 §5: the trail ribbons of dust above the base kind.</summary>
         public DustTrailRenderer TrailRenderer { get; private set; }
         public PlanetPool Planets { get; private set; }
+        /// <summary>24: the special abilities of the run, ticked right before the dust.</summary>
+        public AbilitySystem Abilities { get; private set; }
         public PerfBench Perf { get; private set; }
         public HudView Hud { get; private set; }
         public CursorView Cursor { get; private set; }
@@ -268,6 +270,11 @@ namespace Incremental
             ignitionGo.transform.SetParent(transform, false);
             Ignition = ignitionGo.AddComponent<IgnitionFx>();
             Ignition.Init(this, fxMaterial);
+
+            var abilitiesGo = new GameObject("Abilities");
+            abilitiesGo.transform.SetParent(transform, false);
+            Abilities = abilitiesGo.AddComponent<AbilitySystem>();
+            Abilities.Init(this);
 
             var supernovaGo = new GameObject("SupernovaRun");
             supernovaGo.transform.SetParent(transform, false);
@@ -521,6 +528,9 @@ namespace Incremental
             if (holding) Run.stamina -= s.staminaHoldDrain * dt;
 
             dustWatch.Restart();
+            // 24: the abilities go first, so what they do to the dust this tick is part of this same dust tick, and
+            // their cost is counted with it.
+            Abilities.Tick(dt, holding, s);
             double captured = Dust.Tick(dt, CameraArea(), GravityWorld, holding, s);
             dustWatch.Stop();
             dustTickMsAcc += dustWatch.Elapsed.TotalMilliseconds;

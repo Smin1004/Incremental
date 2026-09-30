@@ -63,6 +63,22 @@ namespace Incremental
         /// <summary>22 §3: the follow debug key's toast; {0} = the top speed in px/s.</summary>
         public const string FollowOn = "중력원 추종: 켜짐 (최대 {0:0} px/초)";
         public const string FollowOff = "중력원 추종: 꺼짐 (커서에 고정)";
+        /// <summary>
+        /// 24 §7: the ability status line in the corner. {0} = the abilities that are on, each written as
+        /// <see cref="AbilityDebugEntry"/> (name, level) plus <see cref="AbilityDebugCharge"/> (seconds of holding to its
+        /// next trigger) when it has a cooldown.
+        /// </summary>
+        public const string AbilityDebugForced = "능력(강제): {0}";
+        public const string AbilityDebugTree = "능력(트리): {0}";
+        public const string AbilityDebugNone = "없음";
+        public const string AbilityDebugEntry = "{0} Lv{1}";
+        public const string AbilityDebugCharge = " {0:0.0}초";
+        public const string AbilityDebugSeparator = " · ";
+        /// <summary>24 §7: toasts of the two ability debug keys. {0} = the ability name or the level, {1} = the level.</summary>
+        public const string AbilityForceOff = "능력 강제: 꺼짐 (트리대로)";
+        public const string AbilityForceOne = "능력 강제: {0}만 Lv{1}";
+        public const string AbilityForceAll = "능력 강제: 전부 Lv{0}";
+        public const string AbilityForceFirst = "PageUp으로 능력을 먼저 켜세요";
 
         /// <summary>Strings keyed by data id. Every tier and stat id needs its keys here (Validate Data checks).</summary>
         static readonly Dictionary<string, string> Keyed = new Dictionary<string, string>

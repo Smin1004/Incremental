@@ -14,6 +14,8 @@ namespace Incremental
     /// F12: screenshot to persistentDataPath. End: replay the ending sequence between runs without touching the save (15 §4.6).
     /// Home: drain the stamina, ending the run at once.
     /// Insert: the gravity source follow (22 §3), off → the effective speed × each GameParams.followDebugMults → off.
+    /// PageUp: force abilities on whatever the tree says (24 §7), off → each one alone → all → off. PageDown: the upgrade
+    /// level of the forced abilities, 0 → 3. The state is shown in the corner of the screen; nothing is saved.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -351,6 +353,8 @@ namespace Incremental
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
                 if (kb.homeKey.wasPressedThisFrame) root.DebugDrainStamina();
                 if (kb.insertKey.wasPressedThisFrame) CycleFollow();
+                if (kb.pageUpKey.wasPressedThisFrame && root.Abilities != null) root.Abilities.CycleForced();
+                if (kb.pageDownKey.wasPressedThisFrame && root.Abilities != null) root.Abilities.CycleForcedLevel();
             }
 #endif
 
@@ -358,6 +362,7 @@ namespace Incremental
                 ? string.Format(UIStrings.DebugOverlay, fps, root.Dust.Count, root.LastTickMs, root.MaxTickMs,
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity)
                 : string.Empty);
+            root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
         }
 
         /// <summary>

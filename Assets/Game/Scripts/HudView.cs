@@ -15,7 +15,7 @@ namespace Incremental
 
         const int CountLabelPool = 8;
 
-        Text currencyText, incomeText, staminaText, centerText, debugText, toastText;
+        Text currencyText, incomeText, staminaText, centerText, debugText, abilityText, toastText;
         float toastAge = float.MaxValue;
         const float ToastSec = 1.5f;
         Image staminaFill;
@@ -52,6 +52,12 @@ namespace Incremental
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 12f), new Vector2(1400f, 30f));
             debugText.color = new Color(1f, 1f, 0.6f, 1f);
             SetDebug(string.Empty);
+            // 24 §7: the ability status of the debug keys, above the overlay line and clear of the tree screen's hint,
+            // so all three can be read at once.
+            abilityText = UIBuilder.CreateText("AbilityDebug", root, Font, 18, TextAnchor.LowerLeft,
+                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 66f), new Vector2(1400f, 26f));
+            abilityText.color = debugText.color;
+            SetAbilityDebug(string.Empty);
             toastText = UIBuilder.CreateText("Toast", root, Font, 26, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 80f), new Vector2(900f, 40f));
             toastText.gameObject.SetActive(false);
@@ -142,5 +148,7 @@ namespace Incremental
 
         public void SetCenter(string text) => centerText.text = text ?? string.Empty;
         public void SetDebug(string text) => debugText.text = text ?? string.Empty;
+        /// <summary>24 §7: which abilities the debug keys have on, and at what level.</summary>
+        public void SetAbilityDebug(string text) => abilityText.text = text ?? string.Empty;
     }
 }
