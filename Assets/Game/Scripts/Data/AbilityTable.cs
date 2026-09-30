@@ -252,8 +252,9 @@ namespace Incremental
     /// inspector while playing: the game reads them every tick.
     ///
     /// An ability is unlocked and raised in the skill tree by nodes that name its <see cref="AbilityDef.id"/>
-    /// (NodeKind.AbilityUnlock and the ability_* stats), the way the dust kinds are. So a new ability is a row here and
-    /// two nodes in the tree seed; the stats, the debug keys and the checks already cover it.
+    /// (NodeKind.AbilityUnlock and the ability_* stats), the way the dust kinds are. So a new ability is a row here
+    /// (its Def class, which also names the <see cref="Ability"/> that runs it) and two nodes in the tree seed; the
+    /// stats, the debug keys, the tree screen and the checks already cover it.
     /// </summary>
     [CreateAssetMenu(fileName = "AbilityTable", menuName = "Incremental/Ability Table")]
     public sealed class AbilityTable : ScriptableObject
