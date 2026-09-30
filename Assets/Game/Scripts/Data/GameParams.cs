@@ -137,6 +137,10 @@ namespace Incremental
         [Tooltip("Share of the pull that is turned sideways (counter-clockwise), so dust spirals in instead of falling " +
                  "straight. 0 brings back the straight lines of 20 §3.")]
         public double vortexShare = 0.25;
+        [Tooltip("Fastest sideways speed the vortex will push a dust to (px/s). The swirl fades out as the dust reaches " +
+                 "it and pushes back above it, so a dust can never gather enough sideways speed to orbit for ever: " +
+                 "wherever the pull reaches, the inward part wins and the dust spirals in.")]
+        public double vortexTerminalPx = 300;
         [Tooltip("Positions kept per trailed dust, and the fixed time between two of them (seconds).")]
         public int trailPoints = 8;
         public double trailSampleSec = 0.08;

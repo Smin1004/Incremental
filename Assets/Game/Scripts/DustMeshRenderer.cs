@@ -129,6 +129,11 @@ namespace Incremental
             float full = Mathf.Max(drift + 1e-3f, (float)(p.dustStretchFullSpeedPx / ppu));
             float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
             float exposure = (float)p.dustStreakExposureSec;
+            // 22 §5: a kind that draws a trail ribbon does not also smear its own quad. Two pictures of the same motion
+            // left a round head sticking out of the front of the ribbon and a hard shoulder where the ribbon met the
+            // middle of the dust; the bigger the kind, the more it showed. The ribbon carries the motion, the quad is
+            // just the dust, silhouette and all.
+            bool trailsOn = p.trailBudget > 0 && p.trailPoints >= 2;
             float brighten = (float)p.dustGravityBrighten;
             float dim = (float)p.dustOutsideDim;
             float widthAtFull = (float)p.dustStreakWidth;
@@ -156,10 +161,11 @@ namespace Incremental
                 float speed = d.vel.magnitude;
                 Vector2 axis = speed > 1e-5f ? d.vel / speed : new Vector2(1f, 0f);
                 float h = halo * d.size * kindSize[kind];
-                // 22 §5 fix: the smear is how far the dust travels in one "shutter", which is the same distance for every
-                // kind. Multiplying the dust's own size by the speed (14 §5) drew the heavy kinds, which are up to 8.5x
-                // wider than base dust, as long bars. Here they stay almost round while small dust still streaks.
-                float s = Mathf.Min(1f + speed * exposure / Mathf.Max(h, 1e-6f), stretchMax);
+                // The smear is how far the dust travels in one "shutter", which is the same distance for every kind.
+                // Multiplying the dust's own size by the speed (14 §5) drew the heavy kinds, up to 8.5x wider than base
+                // dust, as long bars. A kind that has a ribbon does not smear at all: its quad stays the round dust.
+                bool ribboned = trailsOn && kind > 0;
+                float s = ribboned ? 1f : Mathf.Min(1f + speed * exposure / Mathf.Max(h, 1e-6f), stretchMax);
                 // The streak also narrows, but by how much it actually stretched, not by the raw speed.
                 float narrow = stretchMax > 1f ? (s - 1f) / (stretchMax - 1f) : 0f;
                 float stretch = Mathf.Clamp01((speed - drift) / (full - drift));

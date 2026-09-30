@@ -30,6 +30,7 @@ MonoBehaviour:
   worldExpandSec: 0.6
   bodyMinScreenPx: 8
   vortexShare: 0.25
+  vortexTerminalPx: 300
   trailPoints: 8
   trailSampleSec: 0.08
   trailWidthShare: 0.6

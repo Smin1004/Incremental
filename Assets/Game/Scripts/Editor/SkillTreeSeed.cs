@@ -212,20 +212,24 @@ namespace Incremental.EditorTools
             //   pass 4 (these)    7/8/5/6/8/8/5/8/9/8/2   74 runs, 112 min   <- the run that passes
             //   pass 5            7/6/10/5/8/5/12/7/6/5/2 73 runs, 102 min
             //   pass 6            7/6/6/6/7/8/4/6/4/10/2  66 runs, 96 min
+            //   pass 8            6/7/8/7/8/5/3/4/4/7/2   61 runs, 83 min   <- the 22 §5 vortex ceiling raised throughput
+            //   pass 9            7/7/6/8/8/5/5/4/5/6/2   63 runs, 85 min
+            //   pass 10 (these)                                             <- rings 7-10 lifted hard: they clear in
+            //                                                                  4-6 runs and that is where the time is
             // Passes 5 and 6 nudged each ring toward 7 runs and both came out worse: the run count answers the
-            // multiplier faster than linearly (raising rings 3 and 7 by x1.4 doubled their runs), so the aim overshoots
-            // and the whole playthrough falls below the 100-120 minute target. Pass 4 is kept. Nothing but this table
-            // was tuned after the growth axes were fixed (20 §8.3 step 4).
-            m[1] = 2.3;
+            // multiplier faster than linearly (raising rings 3 and 7 by x1.4 doubled their runs), so aiming straight at
+            // the target overshoots. Pass 9 therefore moves each ring by the square root of the ratio it needs.
+            // Nothing but this table was tuned after the growth axes were fixed (20 §8.3 step 4).
+            m[1] = 2.5;
             m[2] = 3.1;
-            m[3] = 1.9;
-            m[4] = 1.4;
-            m[5] = 2.25;
-            m[6] = 2.35;
-            m[7] = 1.6;
-            m[8] = 3.5;    // the measured I_8 of 20 §8 is far below what this economy pays at ring 8
-            m[9] = 1.9;
-            m[10] = 7;
+            m[3] = 2.1;
+            m[4] = 1.2;
+            m[5] = 1.9;
+            m[6] = 3.9;
+            m[7] = 3.7;
+            m[8] = 11.5;   // rings 8-10 need multipliers this far from 1 because the 20 §8 I_k is measured on an economy
+            m[9] = 3.8;    // that no longer exists; re-measuring I_k is the real fix (Week7.md §9-4)
+            m[10] = 8.4;
             return m;
         }
 

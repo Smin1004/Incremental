@@ -400,6 +400,8 @@ namespace Incremental
             if (p.vortexShare < 0) r.Errors.Add("GameParams: vortexShare must be >= 0 (22 §5); 0 is the straight pull of 20 §3.");
             else if (p.vortexShare >= 1)
                 r.Errors.Add("GameParams: vortexShare must be < 1 (22 §5); at or above 1 the sideways push wins and dust orbits instead of falling in.");
+            if (!(p.vortexTerminalPx > 0))
+                r.Errors.Add("GameParams: vortexTerminalPx must be > 0 (22 §5); without a ceiling the swirl lets dust orbit for ever.");
             if (p.trailPoints < 2) r.Errors.Add("GameParams: trailPoints must be >= 2 (22 §5); one point is not a ribbon.");
             if (!(p.trailSampleSec > 0)) r.Errors.Add("GameParams: trailSampleSec must be > 0 (22 §5).");
             if (!(p.trailWidthShare > 0) || !(p.trailWidthShare <= 1))

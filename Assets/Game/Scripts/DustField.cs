@@ -191,6 +191,7 @@ namespace Incremental
             float assistR2 = assistR * assistR;
             float tangentKeep = Mathf.Pow(Mathf.Clamp01((float)p.tangentialKeepPerSec), fdt);
             float vortex = (float)p.vortexShare;
+            float vortexTerm = Px(p.vortexTerminalPx);
             float maxSpeed2 = maxSpeed * maxSpeed;
             float noise = (float)p.driftNoise;
             float relax = Mathf.Clamp01((float)p.driftRelaxRate * fdt);
@@ -211,7 +212,13 @@ namespace Incremental
                         // 22 §5: part of the pull is turned sideways (counter-clockwise), so the dust spirals in.
                         Vector2 inward = toCursor / dist;
                         Vector2 swirl = new Vector2(inward.y, -inward.x);
-                        d.vel += (inward + swirl * vortex) * (accel * KindAccel(d.kind) * f * fdt);
+                        float pull = accel * KindAccel(d.kind) * f;
+                        // The sideways push fades out as the dust reaches vortexTerminalPx and reverses above it. Without
+                        // that ceiling the swirl kept feeding sideways speed until the pull and the centrifugal need
+                        // balanced, and the dust circled the gravity source for ever instead of falling in.
+                        float sideways = Vector2.Dot(d.vel, swirl);
+                        float swirlAccel = pull * vortex * (1f - sideways / vortexTerm);
+                        d.vel += (inward * pull + swirl * swirlAccel) * fdt;
                     }
                     // Near the capture circle the sideways speed is damped, so dust falls in instead of orbiting.
                     if (dist2 < assistR2 && dist > 1e-6f)

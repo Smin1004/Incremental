@@ -200,11 +200,10 @@ namespace Incremental
                 int i = picked[c];
                 ref Dust d = ref items[i];
                 var kindDef = p.DustKind(d.kind);
+                // A ribboned dust is drawn as a round dot of half-size h, so a head of share x h starts inside that
+                // dot and the ribbon slides out from under it with no shoulder to see.
                 float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f);
-                // The same narrowing the dust quad uses, so the ribbon is as thick as the dust leaving it.
-                float st = Mathf.Min(1f + d.vel.magnitude * exposure / Mathf.Max(h, 1e-6f), stretchMax);
-                float narrow = stretchMax > 1f ? (st - 1f) / (stretchMax - 1f) : 0f;
-                float headWidth = h * Mathf.Lerp(1f, widthAtFull, narrow) * share;
+                float headWidth = h * share;
                 float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f);
                 float t = d.tint;
                 float r = Mathf.LerpUnclamped(colA.r, colB.r, t);

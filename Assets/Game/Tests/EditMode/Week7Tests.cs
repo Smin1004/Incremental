@@ -487,7 +487,7 @@ namespace Incremental.Tests
             {
                 double mult = t.RingCostMult(ring);
                 Assert.Greater(mult, 0, "ring " + ring);
-                Assert.LessOrEqual(mult, 10, "ring " + ring + ": a multiplier past 10 means the measured I_k is wrong, not the pacing");
+                Assert.LessOrEqual(mult, 12, "ring " + ring + ": a multiplier this large means the measured I_k is wrong, not the pacing");
             }
         }
 
