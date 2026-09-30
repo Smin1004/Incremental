@@ -50,6 +50,12 @@ namespace Incremental
         public int TrailLen => trailLen;
 
         /// <summary>
+        /// 22 §5: how far the field is into the current trail sample, 0..1. The renderer needs it to age the ribbon
+        /// continuously: without it the tail would step by a whole sample every trailSampleSec and blink.
+        /// </summary>
+        public float TrailPhase => trailLen <= 0 ? 0f : Mathf.Clamp01((float)(trailClock / Math.Max(1e-4, p.trailSampleSec)));
+
+        /// <summary>
         /// 22 §5: the <paramref name="age"/>-th most recent kept position of dust <paramref name="i"/> (0 = the newest),
         /// or its current position when that slot is empty.
         /// </summary>

@@ -38,7 +38,10 @@ namespace Incremental
         readonly List<int> boundary = new List<int>();
         int[] perKind = new int[0];
         Vector2[] points = new Vector2[0];
+        /// <summary>Age of each kept point, in sample intervals, so a skipped duplicate does not shift the taper.</summary>
+        int[] ages = new int[0];
         Vector2 gravity;
+        float phase;
         System.Comparison<int> nearestFirst;
 
         readonly System.Diagnostics.Stopwatch rebuildWatch = new System.Diagnostics.Stopwatch();
@@ -74,6 +77,7 @@ namespace Incremental
             nearestFirst = CompareByDistance;
             // 22 §7: as with the dust mesh, size for the worst case once instead of growing during a run.
             points = new Vector2[Mathf.Max(2, p.trailPoints + 1)];
+            ages = new int[points.Length];
             EnsureCapacity(Mathf.Max(1, p.trailBudget) * (Mathf.Max(0, p.trailPoints) + 1));
         }
 
@@ -160,7 +164,11 @@ namespace Incremental
                 return;
             }
             if (perKind.Length != Mathf.Max(1, p.DustKindCount)) perKind = new int[Mathf.Max(1, p.DustKindCount)];
-            if (points.Length < trailLen + 1) points = new Vector2[trailLen + 1];
+            if (points.Length < trailLen + 1)
+            {
+                points = new Vector2[trailLen + 1];
+                ages = new int[points.Length];
+            }
 
             gravity = root.EndingActive && root.Phase == GamePhase.Run ? root.EndingCenter : root.GravityWorld;
             PickCandidates(budget);
@@ -179,9 +187,10 @@ namespace Incremental
             float share = (float)p.trailWidthShare;
             // 22 §5 "그 먼지 표시 크기의 60%": a moving dust is drawn as a streak that narrows across its travel, so the
             // ribbon follows that thickness and not the round halo, or the trail comes out fatter than the dust leaving it.
-            float drift = (float)(p.driftSpeed / ppu);
-            float full = Mathf.Max(drift + 1e-3f, (float)(p.dustStretchFullSpeedPx / ppu));
+            float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
+            float exposure = (float)p.dustStreakExposureSec;
             float widthAtFull = (float)p.dustStreakWidth;
+            phase = field.TrailPhase;
             Color colA = root.Backdrop.DustColorA.linear;
             Color colB = root.Backdrop.DustColorB.linear;
             var items = field.Items;
@@ -191,9 +200,11 @@ namespace Incremental
                 int i = picked[c];
                 ref Dust d = ref items[i];
                 var kindDef = p.DustKind(d.kind);
-                float stretch = Mathf.Clamp01((d.vel.magnitude - drift) / (full - drift));
-                float headWidth = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f) *
-                                  Mathf.Lerp(1f, widthAtFull, stretch) * share;
+                float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f);
+                // The same narrowing the dust quad uses, so the ribbon is as thick as the dust leaving it.
+                float st = Mathf.Min(1f + d.vel.magnitude * exposure / Mathf.Max(h, 1e-6f), stretchMax);
+                float narrow = stretchMax > 1f ? (st - 1f) / (stretchMax - 1f) : 0f;
+                float headWidth = h * Mathf.Lerp(1f, widthAtFull, narrow) * share;
                 float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f);
                 float t = d.tint;
                 float r = Mathf.LerpUnclamped(colA.r, colB.r, t);
@@ -214,6 +225,19 @@ namespace Incremental
         }
 
         /// <summary>
+        /// 22 §5: how much of the ribbon is left at a point of the given age, where age is measured in sample intervals.
+        /// The newest kept position is <paramref name="phase"/> intervals old and the oldest is fill − 1 + phase, so the
+        /// oldest always sits at exactly 0 and fades out as the phase runs, instead of being dropped while still visible.
+        /// That step is what made the tail blink. A pure function so the test can read the rule.
+        /// </summary>
+        public static float Taper(int index, int fill, float phase)
+        {
+            if (index <= 0) return 1f;
+            if (fill <= 0) return 0f;
+            return Mathf.Clamp01(1f - (phase + index - 1) / fill);
+        }
+
+        /// <summary>
         /// One ribbon: the dust's position now, then the positions kept for it, newest first. Width and brightness go
         /// from full at the head to 0 at the tail. Returns false when the path is too short to draw.
         /// </summary>
@@ -221,19 +245,23 @@ namespace Incremental
         {
             if (fill < 1 || headWidth <= 0f) return false;
             // Read the path once: the ribbon needs each point's neighbours, and TrailPoint walks the ring buffer.
+            // A point on top of the one before it would give a zero-length segment and a NaN normal, so it is skipped —
+            // never bailed out of. The frame right after a sample has the dust exactly on its newest kept position, and
+            // bailing out there made the whole ribbon vanish for that frame, once every trailSampleSec.
             points[0] = field.Items[index].pos;
+            ages[0] = 0;
             int count = 1;
             for (int j = 0; j < fill; j++)
             {
                 Vector2 here = field.TrailPoint(index, j);
-                // A dust that has not moved since the last sample would give a zero-length segment and a NaN normal.
-                if ((here - points[count - 1]).sqrMagnitude < 1e-10f) break;
-                points[count++] = here;
+                if ((here - points[count - 1]).sqrMagnitude < 1e-10f) continue;
+                points[count] = here;
+                ages[count] = j + 1;
+                count++;
             }
             if (count < 2) return false;
 
             int firstVert = vertCount;
-            float last = count - 1;
             for (int j = 0; j < count; j++)
             {
                 Vector2 here = points[j];
@@ -244,7 +272,7 @@ namespace Incremental
                 dir.Normalize();
                 float px = -dir.y, py = dir.x;
 
-                float taper = 1f - j / last;
+                float taper = Taper(ages[j], fill, phase);
                 float w = headWidth * taper;
                 float k = Mathf.Min(bright * taper, 2f) * 0.5f;
                 var c32 = new Color32(Byte01(cr * k), Byte01(cg * k), Byte01(cb * k), 255);

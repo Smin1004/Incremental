@@ -128,6 +128,7 @@ namespace Incremental
             float drift = (float)(p.driftSpeed / ppu);
             float full = Mathf.Max(drift + 1e-3f, (float)(p.dustStretchFullSpeedPx / ppu));
             float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
+            float exposure = (float)p.dustStreakExposureSec;
             float brighten = (float)p.dustGravityBrighten;
             float dim = (float)p.dustOutsideDim;
             float widthAtFull = (float)p.dustStreakWidth;
@@ -154,11 +155,16 @@ namespace Incremental
                 Vector2 c = d.pos;
                 float speed = d.vel.magnitude;
                 Vector2 axis = speed > 1e-5f ? d.vel / speed : new Vector2(1f, 0f);
-                float stretch = Mathf.Clamp01((speed - drift) / (full - drift));
-                float s = 1f + (stretchMax - 1f) * stretch;
                 float h = halo * d.size * kindSize[kind];
+                // 22 §5 fix: the smear is how far the dust travels in one "shutter", which is the same distance for every
+                // kind. Multiplying the dust's own size by the speed (14 §5) drew the heavy kinds, which are up to 8.5x
+                // wider than base dust, as long bars. Here they stay almost round while small dust still streaks.
+                float s = Mathf.Min(1f + speed * exposure / Mathf.Max(h, 1e-6f), stretchMax);
+                // The streak also narrows, but by how much it actually stretched, not by the raw speed.
+                float narrow = stretchMax > 1f ? (s - 1f) / (stretchMax - 1f) : 0f;
+                float stretch = Mathf.Clamp01((speed - drift) / (full - drift));
                 Vector2 along = axis * (h * s);
-                Vector2 across = new Vector2(-axis.y, axis.x) * (h * Mathf.Lerp(1f, widthAtFull, stretch));
+                Vector2 across = new Vector2(-axis.y, axis.x) * (h * Mathf.Lerp(1f, widthAtFull, narrow));
 
                 // Dust in the gravity field (held) keeps full brightness and gets brighter toward the center; the rest dims.
                 float inField = endingPull ? 1f : 0f;

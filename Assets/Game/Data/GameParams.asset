@@ -179,6 +179,7 @@ MonoBehaviour:
   dustBrightJitter: 0.3
   dustStretchMax: 4
   dustStretchFullSpeedPx: 400
+  dustStreakExposureSec: 0.05
   dustStreakDim: 1
   dustGravityBrighten: 1.5
   dustOutsideDim: 0.5
@@ -455,8 +456,8 @@ MonoBehaviour:
   perfBenchDustCounts:
   - 1000
   - 3700
-  - 6995
   - 8000
+  - 9472
   perfBenchWarmupSec: 2
   perfBenchSampleSec: 6
   perfBenchSettleSec: 4

@@ -405,6 +405,10 @@ namespace Incremental
             if (!(p.trailWidthShare > 0) || !(p.trailWidthShare <= 1))
                 r.Errors.Add("GameParams: trailWidthShare must be within 0..1 (0 excluded); it is a share of the dust's drawn size (22 §5).");
             if (p.trailBudget < 0) r.Errors.Add("GameParams: trailBudget must be >= 0 (22 §5).");
+            if (!(p.dustStreakExposureSec > 0))
+                r.Errors.Add("GameParams: dustStreakExposureSec must be > 0 (22 §5); it is the shutter the motion smear stands for.");
+            if (!(p.dustStretchMax >= 1))
+                r.Errors.Add("GameParams: dustStretchMax must be >= 1; it is the ceiling on the smear, in multiples of the dust's own size.");
             if (!(p.dustCapCeiling > 0)) r.Errors.Add("GameParams: dustCapCeiling must be > 0 (22 §7).");
             if (p.dustQualityShares == null || p.dustQualityShares.Length == 0)
                 r.Errors.Add("GameParams: dustQualityShares is empty; the options screen needs at least the full-quality share (22 §7).");

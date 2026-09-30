@@ -122,9 +122,10 @@ namespace Incremental
         public double tangentialKeepPerSec = 0.6;
 
         [Header("Widening world (22 §6)")]
-        [Tooltip("How much wider the play world gets per ring: the linear scale of ring k is 1 + this x (k - 1). 22 §6 asked " +
-                 "for 0.06 (ring 11: 1.60 wide, 2.56 in area); 22 §7 measured the dust cap that follows and brought it down " +
-                 "to 0.0375 (1.375 wide, 1.89 in area), which keeps the density and holds the frame budget. 0 keeps one size.")]
+        [Tooltip("How much wider the play world gets per ring: the linear scale of ring k is 1 + this x (k - 1). 22 §6 " +
+                 "asked for 0.06 (ring 11: 1.60 wide, 2.56 in area). The frame budget allows it, but the balance does not: " +
+                 "a wider world spreads the same spawn rate over more area, so less of it lands inside the gravity radius " +
+                 "and a full playthrough runs 105 runs / 164 min instead of 74 / 112. 0.0375 is the value F verified.")]
         public double worldScalePerRing = 0.0375;
         [Tooltip("How long the world takes to grow after a gate is bought (seconds).")]
         public double worldExpandSec = 0.6;
@@ -286,9 +287,15 @@ namespace Incremental
         [Tooltip("Per-dust size and brightness variation (0.3 = ±30%).")]
         public double dustSizeJitter = 0.3;
         public double dustBrightJitter = 0.3;
-        [Tooltip("Fast dust stretches along its velocity: length × up to dustStretchMax, reached at dustStretchFullSpeedPx (px/s).")]
+        [Tooltip("Longest a dust may be drawn, as a multiple of its own size. Since 22 §5 this is a ceiling, not the " +
+                 "shape: the smear itself is dustStreakExposureSec x the speed.")]
         public double dustStretchMax = 4;
+        [Tooltip("Speed (px/s) that counts as full stretch for the brightness and dimming curves of 14 §5.")]
         public double dustStretchFullSpeedPx = 400;
+        [Tooltip("How long a 'shutter' the motion smear stands for (seconds). The smear is that time times the dust's " +
+                 "speed, so it is the same length for every kind: small dust turns into a streak and heavy dust, which is " +
+                 "many times wider, barely changes shape. Multiplying the size instead drew the heavy kinds as bars (22 §5).")]
+        public double dustStreakExposureSec = 0.05;
         [Tooltip("Brightness of a fully stretched streak relative to a still dot.")]
         public double dustStreakDim = 1;
         [Tooltip("Extra brightness inside the gravity radius while holding (at the center; fades to 0 at the edge).")]
@@ -570,7 +577,7 @@ namespace Incremental
 
         [Header("Performance measurement (22 §4)")]
         [Tooltip("Dust counts the benchmark measures the run screen at, in order.")]
-        public double[] perfBenchDustCounts = { 1000, 3700, 6995, 8000 };
+        public double[] perfBenchDustCounts = { 1000, 3700, 8000, 9472 };
         [Tooltip("Seconds of each scene that are thrown away before the sample starts, and how long the sample lasts.")]
         public double perfBenchWarmupSec = 2;
         public double perfBenchSampleSec = 6;

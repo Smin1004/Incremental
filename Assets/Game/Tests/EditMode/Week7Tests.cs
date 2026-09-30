@@ -100,9 +100,10 @@ namespace Incremental.Tests
         public void WorldScale_IsOneAtRingOneAndWiderAtEveryRingAbove()
         {
             var p = ProjectParams();
-            // 22 §6 asked for 0.06 per ring; 22 §7 measured the dust cap that followed and brought it to 0.0375, which
-            // keeps the density at a frame budget the build can hold (Reports/Week7.md).
-            Assert.AreEqual(0.0375, p.worldScalePerRing, Eps, "22 §7's value after the measurement");
+            // 22 §6 asked for 0.06. The frame budget allows it, but a full bot playthrough at 0.06 takes 105 runs and
+            // 164 minutes against the 60-75 / 100-120 of 21 §5, because a wider world starves the gravity radius of
+            // spawn. 0.0375 is the value F verified (Reports/Week7_Data/balance_round4.md, balance_round7.md).
+            Assert.AreEqual(0.0375, p.worldScalePerRing, Eps, "the value the balance verified");
             Assert.AreEqual(0.6, p.worldExpandSec, Eps, "the world takes 0.6s to grow");
             Assert.AreEqual(8, p.bodyMinScreenPx, Eps, "a body never falls below 8px on screen");
             Assert.AreEqual(1.00, Stats.WorldScale(p, 1), 1e-9, "ring 1");
@@ -372,7 +373,7 @@ namespace Incremental.Tests
                 if (n != null && n.enabled) m.SetLevel(n.id, n.maxLevel > 0 ? n.maxLevel : 1);
             Shop.RecomputeUnlockedMaxTier(t, m);
             double cap = Stats.Compute(p, t, m).dustCap;
-            Assert.AreEqual(6995, cap, 1.0, "22 §7: the measured cap, 3,700 x the area of ring 11");
+            Assert.AreEqual(6995, cap, 1.0, "3,700 x the 1.89 area of ring 11");
             Assert.LessOrEqual(cap, p.dustCapCeiling, "the renderers size their buffers for dustCapCeiling");
         }
 
@@ -498,6 +499,58 @@ namespace Incremental.Tests
             Shop.RecomputeUnlockedMaxTier(t, m);
             return m;
         }
+
+        [Test]
+        public void TrailTaper_ReachesZeroAtTheOldestPointSoNothingPopsWhenItIsDropped()
+        {
+            const int fill = 8;
+            Assert.AreEqual(1f, DustTrailRenderer.Taper(0, fill, 0.4f), 1e-5f, "the head is always full");
+            // As the phase runs out the oldest point fades to nothing, and it is dropped only once it is invisible.
+            Assert.Greater(DustTrailRenderer.Taper(fill, fill, 0f), 0f, "just after a sample it is still faintly there");
+            Assert.AreEqual(0f, DustTrailRenderer.Taper(fill, fill, 1f), 1e-5f, "just before the next one it is gone");
+            // And the point behind it takes over at exactly the value it already had: no step at the tail.
+            Assert.AreEqual(DustTrailRenderer.Taper(fill - 1, fill, 1f), DustTrailRenderer.Taper(fill, fill, 0f), 1e-5f,
+                "22 §5: the ribbon does not jump when the ring buffer drops a point");
+        }
+
+        [Test]
+        public void TrailTaper_FallsOffSmoothlyFromHeadToTail()
+        {
+            const int fill = 8;
+            float prev = 2f;
+            for (int i = 0; i <= fill; i++)
+            {
+                float t = DustTrailRenderer.Taper(i, fill, 0.3f);
+                Assert.That(t, Is.InRange(0f, 1f), "point " + i);
+                Assert.LessOrEqual(t, prev + 1e-6f, "the ribbon never brightens toward the tail");
+                prev = t;
+            }
+        }
+
+        [Test]
+        public void MotionSmear_IsADistance_SoHeavyDustDoesNotBecomeABar()
+        {
+            // 22 §5 fix: the smear is dustStreakExposureSec x the speed, the same distance for every kind. Multiplying
+            // the dust's own size (14 §5) drew the interstellar kind, 8.5x wider than base dust, as a long bar.
+            var p = ProjectParams();
+            Assert.Greater(p.dustStreakExposureSec, 0, "the shutter the smear stands for");
+            float ppu = (float)p.pixelsPerUnit;
+            float halo = (float)(p.dustHaloPx / ppu) * 0.5f;
+            float speed = (float)(p.dustMaxSpeed / ppu);
+            float stretchMax = (float)p.dustStretchMax;
+
+            float baseS = Smear(halo * 1f, speed, (float)p.dustStreakExposureSec, stretchMax);
+            var big = p.DustKind(p.DustKindIndex("interstellar"));
+            float bigS = Smear(halo * (float)big.sizeMult, speed, (float)p.dustStreakExposureSec, stretchMax);
+
+            Assert.Greater(baseS, 3f, "base dust at full speed is still a streak");
+            Assert.Less(bigS, 1.5f, "the heaviest dust stays close to round instead of stretching into a bar");
+            Assert.Less(bigS, baseS, "the bigger the dust, the less the same travel distance stretches it");
+        }
+
+        /// <summary>The elongation DustMeshRenderer applies, as a multiple of the dust's own half-size.</summary>
+        static float Smear(float halfSize, float speed, float exposure, float stretchMax) =>
+            Mathf.Min(1f + speed * exposure / Mathf.Max(halfSize, 1e-6f), stretchMax);
 
         static string NextFollow(string id)
         {
