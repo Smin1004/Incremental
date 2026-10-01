@@ -134,8 +134,9 @@ namespace Incremental
     }
 
     /// <summary>
-    /// 24 §4 위성. Small gravity sources that orbit the gravity source while holding. They pull and never capture:
-    /// the dust they drag along ends up in the gravity source's own field.
+    /// 24 §4, §16.2 위성. Small gravity sources that orbit the gravity source while holding, on an ellipse that takes
+    /// them out past the gravity ring and back in close. They pull and never capture: the dust they drag along ends up
+    /// in the gravity source's own field.
     /// </summary>
     [Serializable]
     public sealed class SatelliteDef : AbilityDef
@@ -145,14 +146,23 @@ namespace Incremental
         [Tooltip("The most satellites there can be. Each one costs every dust one more distance test per tick and nothing " +
                  "above this was measured (24 §4), so Validate Data fails when the tree can go past it.")]
         public int maxCount = 4;
-        [Tooltip("Orbit radius as a share of the gravity radius.")]
-        public double orbitRadiusShare = 0.55;
-        [Tooltip("Seconds per orbit. Counter-clockwise, like the vortex.")]
-        public double orbitPeriodSec = 2.4;
-        [Tooltip("Reach of a satellite's own pull as a share of the gravity radius. Dust outside it costs one distance test and is skipped.")]
-        public double pullRadiusShare = 0.30;
+        [Tooltip("The orbit is an ellipse with the gravity source at one focus (24 §16.2). Its nearest point, as a share of " +
+                 "the gravity radius: inside the gravity ring, where the satellite whips round fast.")]
+        public double periapsisShare = 0.5;
+        [Tooltip("Its farthest point, as a share of the gravity radius: outside the ring, where the gravity source does not " +
+                 "reach and the satellite lingers. Equal to periapsisShare = a circle.")]
+        public double apoapsisShare = 2.2;
+        [Tooltip("Seconds per orbit. Counter-clockwise, like the vortex. The satellite sweeps equal areas in equal times, " +
+                 "so most of these seconds are spent far out.")]
+        public double orbitPeriodSec = 5;
+        [Tooltip("The whole orbit turns this many degrees per second, counter-clockwise, so the far point does not keep " +
+                 "raking the same direction. With n satellites the long axes are 360/n degrees apart. 0 = it stays put.")]
+        public double precessionDegPerSec = 15;
+        [Tooltip("Reach of a satellite's own pull as a share of the gravity radius. Dust inside it is pulled and excited; " +
+                 "dust outside it costs one distance test and is skipped.")]
+        public double pullRadiusShare = 0.45;
         [Tooltip("A satellite's pull as a share of the gravity source's pull_accel. ability_power multiplies it.")]
-        public double pullShare = 0.35;
+        public double pullShare = 1.0;
 
         [Header("Look")]
         [Tooltip("Diameter of the bright dot and of the soft glow around it, px.")]
@@ -161,8 +171,9 @@ namespace Incremental
         [Tooltip("Dot color, and the alpha of its glow (the glow follows the effect intensity).")]
         public Color color = new Color(0.82f, 0.93f, 1f, 1f);
         public double glowAlpha = 0.45;
-        [Tooltip("The ribbon a satellite leaves behind: how long it lasts (seconds; 0 = none) and its width at the head, px.")]
-        public double trailSec = 0.3;
+        [Tooltip("The ribbon a satellite leaves behind, which is what draws the orbit: how long it lasts (seconds; 0 = none) " +
+                 "and its width at the head, px.")]
+        public double trailSec = 0.8;
         public double trailWidthPx = 5;
 
         public SatelliteDef()
@@ -189,7 +200,8 @@ namespace Incremental
             if (count + full.count > maxCount)
                 r.Errors.Add(Where + $" reaches {count + full.count} satellites with every node bought, past maxCount {maxCount} (24 §8). " +
                              "Either raise the ceiling after measuring, or lower the count nodes.");
-            if (!(orbitRadiusShare > 0)) r.Errors.Add(Where + " orbitRadiusShare must be > 0.");
+            if (!(periapsisShare > 0) || apoapsisShare < periapsisShare)
+                r.Errors.Add(Where + " needs 0 < periapsisShare <= apoapsisShare (24 §16.2); at 0 the orbit goes through the gravity source.");
             if (!(orbitPeriodSec > 0)) r.Errors.Add(Where + " orbitPeriodSec must be > 0.");
             if (!(pullRadiusShare > 0)) r.Errors.Add(Where + " pullRadiusShare must be > 0.");
             if (pullShare < 0) r.Errors.Add(Where + " pullShare must be >= 0.");

@@ -30,15 +30,17 @@ MonoBehaviour:
     cooldownSec: 0
     count: 1
     maxCount: 4
-    orbitRadiusShare: 0.55
-    orbitPeriodSec: 2.4
-    pullRadiusShare: 0.3
-    pullShare: 0.35
+    periapsisShare: 0.5
+    apoapsisShare: 2.2
+    orbitPeriodSec: 5
+    precessionDegPerSec: 15
+    pullRadiusShare: 0.45
+    pullShare: 1
     dotPx: 10
     glowPx: 44
     color: {r: 0.82, g: 0.93, b: 1, a: 1}
     glowAlpha: 0.45
-    trailSec: 0.3
+    trailSec: 0.8
     trailWidthPx: 5
   meteor:
     id: meteor

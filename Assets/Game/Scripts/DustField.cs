@@ -52,9 +52,9 @@ namespace Incremental
         /// <summary>The dust in reach is excited (24 §8).</summary>
         public bool excite;
 
-        /// <summary>A pull toward a point: a satellite (24 §4).</summary>
+        /// <summary>A pull toward a point, which also excites the dust: a satellite (24 §4, §16.2).</summary>
         public static DustForce Pull(Vector2 at, float radius, float accel) =>
-            new DustForce { at = at, radius = radius, radius2 = radius * radius, accel = accel };
+            new DustForce { at = at, radius = radius, radius2 = radius * radius, accel = accel, excite = true };
 
         /// <summary>A push along a direction, which also excites the dust: a meteor's wake (24 §5).</summary>
         public static DustForce Drag(Vector2 at, float radius, float accel, Vector2 dir) =>
