@@ -365,9 +365,11 @@ MonoBehaviour:
   staminaPulseHz: 2.2
   staminaPulseDepth: 0.55
   staminaBarSize: {x: 600, y: 22}
+  staminaBarTopPx: 18
+  staminaTextGapPx: 5
   staminaBarSmallSize: {x: 260, y: 6}
-  staminaRingWidthPx: 3
-  staminaRingAlpha: 0.9
+  staminaRingWidthPx: 4
+  staminaRingAlpha: 0.95
   staminaRingTrackAlpha: 0.1
   staminaRingSegments: 96
   resultPanelSize: {x: 600, y: 820}

@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Incremental
 {
@@ -8,6 +7,9 @@ namespace Incremental
     /// Run HUD: currency + run number (top-left), run income (top-right), stamina bar (top-center),
     /// a center message, the debug overlay line and the "×N" label over a multi-planet creation. Built from code; render only.
     /// Fonts, sizes and colors come from the UI theme (26 §4).
+    /// The stamina bar (26 §5.1) is a panel-shader bar whose color goes from the full color through the mid color to
+    /// the low color as the stamina runs out, and pulses near the end. With the stamina display on (b), where the
+    /// gravity ring is the gauge (CursorView), the bar shrinks to a thin strip without numbers.
     /// </summary>
     public sealed class HudView : MonoBehaviour
     {
@@ -18,11 +20,14 @@ namespace Incremental
 
         const int CountLabelPool = 8;
 
+        GameRoot game;
+        UIStyle ui;
         UITheme theme;
+        UIShape staminaBar;
+        bool runHudVisible = true;
         TMP_Text currencyText, incomeText, staminaText, centerText, debugText, abilityText, toastText;
         float toastAge = float.MaxValue;
         const float ToastSec = 1.5f;
-        Image staminaFill;
         readonly TMP_Text[] countLabels = new TMP_Text[CountLabelPool];
         readonly float[] countAges = new float[CountLabelPool];
         int nextCountLabel;
@@ -30,7 +35,8 @@ namespace Incremental
 
         public void Build(GameRoot gameRoot)
         {
-            var ui = gameRoot.Ui;
+            game = gameRoot;
+            ui = gameRoot.Ui;
             theme = ui.Theme;
             Font = ui.Font;
             Canvas = UIBuilder.CreateCanvas("HUD", transform);
@@ -42,15 +48,11 @@ namespace Incremental
             incomeText = UIBuilder.CreateText("Income", root, Font, theme.sizeLarge, TextAnchor.UpperRight,
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -16f), new Vector2(600f, 40f));
 
-            var barBg = UIBuilder.CreateImage("StaminaBg", root, ui.Direction.bar.fill,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(600f, 28f));
-            staminaFill = UIBuilder.CreateImage("StaminaFill", barBg.transform, theme.staminaFull,
-                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(2f, 0f), new Vector2(596f, 24f), UIBuilder.SolidSprite());
-            staminaFill.type = Image.Type.Filled;
-            staminaFill.fillMethod = Image.FillMethod.Horizontal;
-            staminaFill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            staminaText = UIBuilder.CreateText("StaminaText", barBg.transform, Font, theme.sizeSmall, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600f, 28f));
+            staminaBar = UIBuilder.CreateShape("Stamina", root, ui, UIRole.Bar, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -theme.staminaBarTopPx), theme.staminaBarSize);
+            staminaText = UIBuilder.CreateText("StaminaText", staminaBar.transform, Font, theme.sizeTiny, TextAnchor.UpperCenter,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0f, -theme.staminaTextGapPx),
+                new Vector2(theme.staminaBarSize.x, theme.sizeTiny * theme.lineHeight));
 
             centerText = UIBuilder.CreateText("Center", root, Font, theme.sizeTitle, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200f, 200f));
@@ -74,7 +76,27 @@ namespace Incremental
                     new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(300f, 40f));
                 countLabels[i].gameObject.SetActive(false);
             }
+
+            ui.Changed += ApplyStyle;
+            ApplyStyle();
         }
+
+        /// <summary>
+        /// Colors of the visual direction, and the bar for the stamina display in use (26 §5.1): the full bar with its
+        /// numbers for (a), a thin strip for (b), nothing when that strip's height is set to 0.
+        /// </summary>
+        void ApplyStyle()
+        {
+            var d = ui.Direction;
+            bool ring = ui.StaminaMode == 1;
+            staminaBar.rectTransform.sizeDelta = ring ? theme.staminaBarSmallSize : theme.staminaBarSize;
+            staminaText.gameObject.SetActive(!ring);
+            staminaText.color = d.text;
+            currencyText.color = incomeText.color = centerText.color = d.text;
+            staminaBar.gameObject.SetActive(runHudVisible && BarShown);
+        }
+
+        bool BarShown => staminaBar.rectTransform.sizeDelta.y > 0f;
 
         /// <summary>How long a "×N" label stays (the planet's display time).</summary>
         public void SetCountLifetime(double seconds) => countLifetime = Mathf.Max(0.1f, (float)seconds);
@@ -133,10 +155,11 @@ namespace Incremental
         /// <summary>Currency, run income and stamina bar: shown during a run only.</summary>
         public void SetRunHudVisible(bool visible)
         {
-            if (currencyText.gameObject.activeSelf == visible) return;
+            if (runHudVisible == visible) return;
+            runHudVisible = visible;
             currencyText.gameObject.SetActive(visible);
             incomeText.gameObject.SetActive(visible);
-            staminaFill.transform.parent.gameObject.SetActive(visible);
+            staminaBar.gameObject.SetActive(visible && BarShown);
         }
 
         public void SetCurrency(double currency, int run) =>
@@ -148,7 +171,11 @@ namespace Incremental
 
         public void SetStamina(double current, double max)
         {
-            staminaFill.fillAmount = max > 0 ? Mathf.Clamp01((float)(current / max)) : 0f;
+            float share = max > 0 ? Mathf.Clamp01((float)(current / max)) : 0f;
+            float pulse = share <= theme.staminaLowAt ? theme.StaminaPulse(Time.time, game.EffectIntensity) : 0f;
+            staminaBar.Fill = share;
+            staminaBar.color = theme.StaminaColor(share, pulse);
+            staminaBar.State = pulse;
             staminaText.text = string.Format(UIStrings.Stamina, Fmt.Int(System.Math.Ceiling(current)), Fmt.Int(max));
         }
 

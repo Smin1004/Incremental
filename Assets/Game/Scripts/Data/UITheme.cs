@@ -122,11 +122,14 @@ namespace Incremental
         public float staminaPulseHz = 2.2f;
         public float staminaPulseDepth = 0.55f;
         public Vector2 staminaBarSize = new Vector2(600f, 22f);
+        [Tooltip("Distance of the bar from the top of the screen, and of the numbers from the bar.")]
+        public float staminaBarTopPx = 18f;
+        public float staminaTextGapPx = 5f;
         [Tooltip("(b): the bar that stays at the top while the ring is the gauge. Height 0 = no bar at all.")]
         public Vector2 staminaBarSmallSize = new Vector2(260f, 6f);
         [Tooltip("(b): the arc on the gravity ring, the faint full ring behind it (alpha 0 = none) and its smoothness.")]
-        public float staminaRingWidthPx = 3f;
-        public float staminaRingAlpha = 0.9f;
+        public float staminaRingWidthPx = 4f;
+        public float staminaRingAlpha = 0.95f;
         public float staminaRingTrackAlpha = 0.1f;
         public int staminaRingSegments = 96;
 

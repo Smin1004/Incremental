@@ -113,7 +113,9 @@ Shader "Incremental/UIPanel"
                         float cell = frac(x / _Segment.x) * _Segment.x;
                         cut *= saturate((cell - _Segment.y) / aa + 0.5);
                     }
-                    float inset = saturate((e.y - _Shape.y - 1.5) / aa) * saturate((e.x - _Shape.y - 1.5) / aa);
+                    // The fill keeps a small gap to the frame, less of one on a bar that is only a few px tall.
+                    float gapPx = min(_Shape.y + 1.5, hs.y * 0.34);
+                    float inset = saturate((e.y - gapPx) / aa) * saturate((e.x - gapPx) / aa);
                     float a = cut * inside * inset;
                     float3 lit = i.color.rgb * (1.0 + _Glow.z * smoothstep(0.35, 1.0, up));
                     col = Over(float4(lit * a, a), col);

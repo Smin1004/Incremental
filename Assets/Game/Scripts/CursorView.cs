@@ -8,15 +8,22 @@ namespace Incremental
     /// now (a dark clump below tier 1) and grows from that tier's display size toward the next one with the mass; crossing a
     /// threshold pops it into the next look. On creation the body is handed to the planet pool (same surface, same size)
     /// and a new clump starts. All of it sits on the gravity source, which is the cursor unless the follow experiment is
-    /// on (20 §7); then a thin line joins the two. Render only.
+    /// on (20 §7); then a thin line joins the two. With the stamina display on (b) the gravity ring is also the
+    /// stamina gauge (26 §5.1): it is drawn only as far round as there is stamina left. Render only.
     /// </summary>
     public sealed class CursorView : MonoBehaviour
     {
         const int RingSegments = 64;
+        const float RingWidthPx = 2f;
+        static readonly Color RingColor = new Color(1f, 1f, 1f, 0.35f);
 
         GameRoot root;
         GameParams p;
         LineRenderer ring;
+        /// <summary>26 §5.1 (b): the faint full circle behind the stamina arc, so the gravity radius still reads.</summary>
+        LineRenderer track;
+        Vector3[] arc;
+        bool gauge;
         /// <summary>20 §7: the thin line from the cursor to the gravity source while the follow experiment is on.</summary>
         LineRenderer leash;
         double ringRadiusPx = -1;
@@ -47,11 +54,26 @@ namespace Incremental
             ring.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             ring.receiveShadows = false;
             if (lineMaterial != null) ring.sharedMaterial = lineMaterial;
-            ring.widthMultiplier = (float)(2.0 / p.pixelsPerUnit);
-            ring.startColor = ring.endColor = new Color(1f, 1f, 1f, 0.35f);
+            ring.widthMultiplier = (float)(RingWidthPx / p.pixelsPerUnit);
+            ring.startColor = ring.endColor = RingColor;
             ring.sortingOrder = 5;
             UIBuilder.UseWhiteTexture(ring);
             ring.positionCount = RingSegments;
+
+            track = new GameObject("StaminaTrack").AddComponent<LineRenderer>();
+            track.transform.SetParent(transform, false);
+            track.useWorldSpace = false;
+            track.loop = true;
+            track.alignment = LineAlignment.TransformZ;
+            track.textureMode = LineTextureMode.Stretch;
+            track.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            track.receiveShadows = false;
+            if (lineMaterial != null) track.sharedMaterial = lineMaterial;
+            track.widthMultiplier = ring.widthMultiplier;
+            track.sortingOrder = 4;
+            UIBuilder.UseWhiteTexture(track);
+            track.positionCount = RingSegments;
+            track.enabled = false;
             SetRingRadius(p.gravityRadius);
 
             leash = new GameObject("FollowLine").AddComponent<LineRenderer>();
@@ -127,9 +149,10 @@ namespace Incremental
             }
 
             if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
-            // 22 §6: the two lines are drawn in world units, so a zoomed-out camera would thin them to nothing. Their
+            UpdateRing();
+            // 22 §6: the lines are drawn in world units, so a zoomed-out camera would thin them to nothing. Their
             // width follows the scale, which keeps them the same thickness on screen.
-            SetLineWidths((float)root.WorldScale);
+            SetLineWidths((float)root.WorldScale, gauge ? root.Ui.Theme.staminaRingWidthPx : RingWidthPx);
             var ps = root.ReadPointer();
             // 20 §7: everything about the hold sits on the gravity source, which is the cursor unless it is trailing it.
             Vector2 w = root.GravityWorld;
@@ -206,32 +229,84 @@ namespace Incremental
             gaugeFill.Fill = (float)root.GaugeFill();
         }
 
-        /// <summary>22 §6: keeps the ring and the leash the same thickness on screen however far the camera has pulled back.</summary>
-        void SetLineWidths(float worldScale)
+        /// <summary>
+        /// 26 §5.1: the gravity ring as it is drawn now. (a): the plain full circle. (b): the ring is the stamina gauge,
+        /// an arc from the top, clockwise, as long as the share of stamina left, in the stamina color (pulsing near the
+        /// end), over a faint full circle.
+        /// </summary>
+        void UpdateRing()
         {
-            if (Mathf.Approximately(lineScale, worldScale)) return;
+            var th = root.Ui.Theme;
+            bool want = root.Ui.StaminaMode == 1;
+            if (!want)
+            {
+                if (!gauge) return;
+                gauge = false;
+                ring.loop = true;
+                ring.startColor = ring.endColor = RingColor;
+                track.enabled = false;
+                SetRingRadius(ringRadiusPx);
+                return;
+            }
+            gauge = true;
+            float max = (float)root.Effective.staminaMax;
+            float share = max > 0f ? Mathf.Clamp01((float)root.Run.stamina / max) : 0f;
+            int segs = Mathf.Max(8, th.staminaRingSegments);
+            int n = Mathf.Max(1, Mathf.CeilToInt(segs * share));
+            if (arc == null || arc.Length < segs + 1) arc = new Vector3[segs + 1];
+            float r = (float)(ringRadiusPx / p.pixelsPerUnit);
+            float sweep = Mathf.PI * 2f * share;
+            for (int i = 0; i <= n; i++)
+            {
+                float a = Mathf.PI * 0.5f - sweep * i / n;
+                arc[i] = new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f);
+            }
+            ring.loop = false;
+            ring.positionCount = n + 1;
+            ring.SetPositions(arc);
+            float pulse = share <= th.staminaLowAt ? th.StaminaPulse(Time.time, root.EffectIntensity) : 0f;
+            Color c = th.StaminaColor(share, pulse);
+            c.a *= th.staminaRingAlpha;
+            ring.startColor = ring.endColor = c;
+            bool trackOn = th.staminaRingTrackAlpha > 0f;
+            if (track.enabled != trackOn) track.enabled = trackOn;
+            if (trackOn) track.startColor = track.endColor = new Color(th.staminaFull.r, th.staminaFull.g, th.staminaFull.b, th.staminaRingTrackAlpha);
+        }
+
+        /// <summary>22 §6: keeps the ring and the leash the same thickness on screen however far the camera has pulled back.</summary>
+        void SetLineWidths(float worldScale, float ringWidthPx)
+        {
+            if (Mathf.Approximately(lineScale, worldScale) && Mathf.Approximately(lineRingPx, ringWidthPx)) return;
             lineScale = worldScale;
-            ring.widthMultiplier = (float)(2.0 * worldScale / p.pixelsPerUnit);
+            lineRingPx = ringWidthPx;
+            ring.widthMultiplier = (float)(ringWidthPx * worldScale / p.pixelsPerUnit);
+            track.widthMultiplier = (float)(RingWidthPx * worldScale / p.pixelsPerUnit);
             leash.widthMultiplier = (float)(p.followLineWidthPx * worldScale / p.pixelsPerUnit);
         }
 
         float lineScale = -1f;
+        float lineRingPx = -1f;
 
         /// <summary>Rebuilds the ring for the effective gravity radius (the gravity_radius upgrade changes it between runs).</summary>
         void SetRingRadius(double radiusPx)
         {
             ringRadiusPx = radiusPx;
             float r = (float)(radiusPx / p.pixelsPerUnit);
+            // As the stamina gauge the ring's points are an arc, rewritten every frame (UpdateRing).
+            if (!gauge) ring.positionCount = RingSegments;
             for (int i = 0; i < RingSegments; i++)
             {
                 float a = i / (float)RingSegments * Mathf.PI * 2f;
-                ring.SetPosition(i, new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f));
+                var point = new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f);
+                if (!gauge) ring.SetPosition(i, point);
+                track.SetPosition(i, point);
             }
         }
 
         void SetVisible(bool v)
         {
             if (ring.enabled != v) ring.enabled = v;
+            if (!v && track.enabled) track.enabled = false;
             if (!v && leash.enabled) leash.enabled = false;
             if (body.gameObject.activeSelf != v) body.gameObject.SetActive(v);
             if (gaugeRoot.gameObject.activeSelf != v) gaugeRoot.gameObject.SetActive(v);
