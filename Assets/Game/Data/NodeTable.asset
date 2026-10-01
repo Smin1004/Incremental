@@ -579,8 +579,8 @@ MonoBehaviour:
     enabled: 1
   - id: r5_implode_power
     kind: 0
-    statId: ability_power
-    effectPerLevel: 0.25
+    statId: ability_range
+    effectPerLevel: 1
     maxLevel: 3
     baseCost: 1600
     growth: 1.5

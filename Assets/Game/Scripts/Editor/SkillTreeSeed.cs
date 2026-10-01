@@ -162,14 +162,18 @@ namespace Incremental.EditorTools
         /// <summary>
         /// The ability axis (24 §6), by ring: 4, 6 and 8 unlock an ability, the ring after each raises it by three
         /// levels. A new ability is two more lines here and a row in the AbilityTable. To make the 수축 node shorten the
-        /// cooldown instead of raising the force, only its stat changes (StatIds.AbilityCooldown).
+        /// cooldown instead of widening the range, only its stat changes (StatIds.AbilityCooldown).
+        ///
+        /// 24 §16.1: the 수축 node raises the range, one step per level, and its last level is the whole screen. That
+        /// rule reads the node's maxLevel, so giving it more levels here is all it takes. The id still says "power"
+        /// (the stat it had in the first prototype): it is the key the saves hold its level under.
         /// </summary>
         static NodeDef AbilityNode(int ring)
         {
             switch (ring)
             {
                 case 4: return AbilityUnlock("implode", 4);
-                case 5: return AbilityStat("r5_implode_power", "implode", 5, StatIds.AbilityPower, 0.25, 3, "ability_implode");
+                case 5: return AbilityStat("r5_implode_power", "implode", 5, StatIds.AbilityRange, 1, 3, "ability_implode");
                 case 6: return AbilityUnlock("satellite", 6);
                 case 7: return AbilityStat("r7_satellite_count", "satellite", 7, StatIds.AbilityCount, 1, 3, "ability_satellite");
                 case 8: return AbilityUnlock("meteor", 8);

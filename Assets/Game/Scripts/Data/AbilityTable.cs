@@ -21,6 +21,13 @@ namespace Incremental
         public double count;
         /// <summary>ability_amount: percentage points as a fraction, 0.03 = +3%p.</summary>
         public double amount;
+        /// <summary>ability_range: steps of reach (24 §16.1).</summary>
+        public double range;
+        /// <summary>
+        /// 24 §16.1: every ability_range node of the ability is at its last level. The rule "the last level is the whole
+        /// screen" hangs on this and not on a level number, so it still holds when the nodes are given more levels.
+        /// </summary>
+        public bool rangeMaxed;
     }
 
     /// <summary>
@@ -61,23 +68,32 @@ namespace Incremental
     }
 
     /// <summary>
-    /// 24 §3 수축. Every cooldown a ring spreads from the gravity source to the far end of the screen, and each dust it
-    /// passes gets one push toward the gravity source, whether the gravity reaches that dust or not.
+    /// 24 §3, §16.1 수축. Every cooldown a ring spreads from the gravity source, and each dust it passes gets one push
+    /// toward the gravity source, whether the gravity reaches that dust or not. How far the ring goes is what the
+    /// upgrade raises: a few gravity radii at first, and the whole screen at the last level.
     /// </summary>
     [Serializable]
     public sealed class ImplodeDef : AbilityDef
     {
-        [Tooltip("Speed added to a dust, toward the gravity source, the moment the ring passes it (px/s). " +
-                 "ability_power multiplies it: +25% per level in the seed, 260 → 455.")]
+        [Tooltip("Speed added to a dust, toward the gravity source, the moment the ring passes it (px/s). The same at every " +
+                 "level since 24 §16.1; an ability_power node would multiply it, but the seed has none.")]
         public double pullSpeedPx = 260;
-        [Tooltip("Seconds the ring takes to grow from the gravity source to the length of the screen diagonal.")]
+        [Tooltip("How far the ring goes, in gravity radii, with only the unlock owned (24 §16.1).")]
+        public double rangeRadiiBase = 2;
+        [Tooltip("Gravity radii added per ability_range level: 2 → 3 → 4 in the seed. The last level of the range nodes is " +
+                 "not on this scale: there the ring goes to the far end of the screen, however many levels the nodes have.")]
+        public double rangeRadiiPerLevel = 1;
+        [Tooltip("Seconds the ring takes to reach the end of its range, whatever the range is.")]
         public double ringSec = 0.5;
 
         [Header("Look")]
         [Tooltip("Width of the ring line, px on screen.")]
         public double ringWidthPx = 4;
-        [Tooltip("Ring color. The alpha is where it starts; it fades to nothing as the ring reaches the end.")]
+        [Tooltip("Ring color, at the alpha it has while it spreads.")]
         public Color ringColor = new Color(0.72f, 0.88f, 1f, 0.85f);
+        [Tooltip("Seconds the ring stays at the end of its range, fading out, so that how far it reached can be seen. " +
+                 "0 = it is gone the moment it arrives.")]
+        public double ringFadeSec = 0.25;
         [Tooltip("Corners of the circle the ring is drawn as.")]
         public int ringSegments = 128;
 
@@ -91,16 +107,28 @@ namespace Incremental
         /// <summary>The push after the ability_power nodes, px/s.</summary>
         public double PullSpeedPx(in AbilityLevel lv) => pullSpeedPx * (1.0 + lv.power);
 
+        /// <summary>24 §16.1: at the last level of the range nodes the ring covers the screen and <see cref="RangeRadii"/> is not asked.</summary>
+        public bool WholeScreen(in AbilityLevel lv) => lv.rangeMaxed;
+
+        /// <summary>How far the ring goes below the last level, in gravity radii.</summary>
+        public double RangeRadii(in AbilityLevel lv) => rangeRadiiBase + rangeRadiiPerLevel * lv.range;
+
         public override Ability CreateRuntime() => new ImplodeAbility();
 
-        public override bool Uses(string statId) => statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown;
+        public override bool Uses(string statId) =>
+            statId == StatIds.AbilityRange || statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown;
 
         public override void Check(in AbilityLevel full, CelestialTable c, ValidationReport r)
         {
             if (!(cooldownSec > 0)) r.Errors.Add(Where + " cooldownSec must be > 0 (24 §8).");
             if (!(pullSpeedPx > 0)) r.Errors.Add(Where + " pullSpeedPx must be > 0, or the ring does nothing.");
+            if (!(rangeRadiiBase > 0)) r.Errors.Add(Where + " rangeRadiiBase must be > 0, or the unlocked ring reaches nothing (24 §16.1).");
+            if (rangeRadiiPerLevel < 0) r.Errors.Add(Where + " rangeRadiiPerLevel must be >= 0; an upgrade cannot shorten the range.");
+            if (!full.rangeMaxed)
+                r.Warnings.Add(Where + " has no ability_range node with a last level, so it never reaches the whole screen (24 §16.1).");
             if (!(ringSec > 0)) r.Errors.Add(Where + " ringSec must be > 0.");
             if (!(ringWidthPx > 0)) r.Errors.Add(Where + " ringWidthPx must be > 0.");
+            if (ringFadeSec < 0) r.Errors.Add(Where + " ringFadeSec must be >= 0.");
             if (ringSegments < 8) r.Errors.Add(Where + " ringSegments must be >= 8.");
         }
     }
@@ -274,6 +302,10 @@ namespace Incremental
         [Tooltip("How much brighter a freshly excited dust is drawn: its brightness x (1 + this), fading with the excitement. " +
                  "Follows the effect intensity.")]
         public double exciteBrightness = 2;
+        [Tooltip("While a dust is excited, how fast it settles back to its drifting speed is multiplied by this (24 §16.1), " +
+                 "so a dust an ability pushed keeps going instead of stopping in half a second. 1 = as the first prototype; " +
+                 "0 = it keeps all of its speed until it calms down. It lasts as long as exciteSec.")]
+        public double exciteDriftRelaxMult = 0.3;
         [Tooltip("The most the ability_cooldown nodes can take off a cooldown (0.8 = down to a fifth), so none ever reaches 0.")]
         public double maxCooldownReduction = 0.8;
         [Tooltip("Writes what the abilities do to the Console as \"[Ability] ...\" lines: which are on when a run starts, every " +

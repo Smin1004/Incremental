@@ -93,8 +93,10 @@ namespace Incremental
             lastTickAt = Time.time;
             forceCount = 0;
             if (abilities.Length == 0) return;
-            // 24 §8: how long an excited dust stays excited is table data, so the dust is told every tick.
+            // 24 §8, §16.1: how long an excited dust stays excited, and how much of its drift braking it is spared
+            // meanwhile, are table data, so the dust is told every tick.
             root.Dust.ExciteSec = root.abilityTable.exciteSec;
+            root.Dust.ExciteDriftRelaxMult = root.abilityTable.exciteDriftRelaxMult;
             for (int i = 0; i < abilities.Length; i++)
             {
                 var level = LevelOf(i);

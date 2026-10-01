@@ -17,9 +17,12 @@ MonoBehaviour:
     unlockRing: 4
     cooldownSec: 14
     pullSpeedPx: 260
+    rangeRadiiBase: 2
+    rangeRadiiPerLevel: 1
     ringSec: 0.5
     ringWidthPx: 4
     ringColor: {r: 0.72, g: 0.88, b: 1, a: 0.85}
+    ringFadeSec: 0.25
     ringSegments: 128
   satellite:
     id: satellite
@@ -58,5 +61,6 @@ MonoBehaviour:
     pathTries: 16
   exciteSec: 0.4
   exciteBrightness: 2
+  exciteDriftRelaxMult: 0.3
   maxCooldownReduction: 0.8
   logEvents: 1

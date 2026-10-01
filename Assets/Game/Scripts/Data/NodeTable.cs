@@ -55,6 +55,11 @@ namespace Incremental
         public const string AbilityCount = "ability_count";
         /// <summary>24 §8: percentage points added to the ability's amount (0.03 = +3%p of the dust cap a meteor sheds).</summary>
         public const string AbilityAmount = "ability_amount";
+        /// <summary>
+        /// 24 §16.1: one step further out for the ability's reach per level. What a step is worth is the ability's own
+        /// data, and so is what the last level means (수축: the whole screen); see <see cref="AbilityLevel.rangeMaxed"/>.
+        /// </summary>
+        public const string AbilityRange = "ability_range";
 
         public static readonly string[] All =
         {
@@ -67,7 +72,7 @@ namespace Incremental
         /// 24 §8: the ability stats. Apart from <see cref="All"/> because Stats.Compute does not read them: what they
         /// raise lives in the AbilityTable, so they are summed per ability by <see cref="Stats.AbilityFromTree"/>.
         /// </summary>
-        public static readonly string[] AbilityStats = { AbilityPower, AbilityCooldown, AbilityCount, AbilityAmount };
+        public static readonly string[] AbilityStats = { AbilityPower, AbilityCooldown, AbilityCount, AbilityAmount, AbilityRange };
 
         /// <summary>Stats that act on one dust kind and therefore need <see cref="NodeDef.dustKindId"/>.</summary>
         public static bool NeedsDustKind(string id) => id == DustChance;

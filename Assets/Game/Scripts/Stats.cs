@@ -195,6 +195,7 @@ namespace Incremental
                 if (n.IsAbilityUnlock) a.unlocked = true;
                 else if (n.kind == NodeKind.Stat) AddAbilityStat(ref a, n, level);
             }
+            CloseAbilityRange(ref a, t, abilityId);
             return a;
         }
 
@@ -213,6 +214,7 @@ namespace Incremental
                 if (n == null || !n.enabled || n.kind != NodeKind.Stat || n.abilityId != abilityId) continue;
                 AddAbilityStat(ref a, n, level);
             }
+            CloseAbilityRange(ref a, t, abilityId);
             return a;
         }
 
@@ -240,9 +242,30 @@ namespace Incremental
                 case StatIds.AbilityCooldown: a.cooldown += add; break;
                 case StatIds.AbilityCount: a.count += add; break;
                 case StatIds.AbilityAmount: a.amount += add; break;
+                case StatIds.AbilityRange: a.range += add; break;
                 default: return;
             }
             a.level = (int)Math.Min((long)a.level + level, int.MaxValue);
+        }
+
+        /// <summary>
+        /// 24 §16.1: sets <see cref="AbilityLevel.rangeMaxed"/> once the range nodes are summed. The range is at its last
+        /// level when the sum is all the tree can give, which is every ability_range node naming the ability at its own
+        /// maximum; so the answer follows the table when nodes or levels are added, and nothing here counts to three.
+        /// </summary>
+        static void CloseAbilityRange(ref AbilityLevel a, NodeTable t, string abilityId)
+        {
+            if (!(a.range > 0)) return;
+            double full = 0;
+            for (int i = 0; i < t.nodes.Count; i++)
+            {
+                var n = t.nodes[i];
+                if (n == null || !n.enabled || n.kind != NodeKind.Stat || n.statId != StatIds.AbilityRange || n.abilityId != abilityId) continue;
+                // A node without a maximum has no last level to be at.
+                if (n.maxLevel <= 0) return;
+                full += n.effectPerLevel * n.maxLevel;
+            }
+            a.rangeMaxed = a.range >= full - 1e-9;
         }
 
         /// <summary>True for stats whose effectPerLevel is a fraction shown as a percent.</summary>

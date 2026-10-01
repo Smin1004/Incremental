@@ -157,13 +157,16 @@ namespace Incremental
             // Abilities (24): the name of each AbilityTable row and the one line its unlock node shows. Validate Data
             // checks that every row has both.
             { "ability.implode", "수축" },
-            { "ability.implode.effect", "주기적으로 화면 전체 먼지를 당긴다" },
+            { "ability.implode.effect", "주기적으로 주변 먼지를 한 번에 당긴다" },
             { "ability.satellite", "위성" },
             { "ability.satellite.effect", "중력원을 도는 작은 중력원" },
             { "ability.meteor", "유성" },
             { "ability.meteor.effect", "유성이 지나가며 먼지를 흘린다" },
 
-            // Ability stats (24 §8). The node name puts the ability's name in front: 수축 힘 I, 위성 수 I, 유성 양 I.
+            // Ability stats (24 §8). The node name puts the ability's name in front: 수축 범위 I, 위성 수 I, 유성 양 I.
+            // The last level of a range node is the whole screen whatever the step is worth (24 §16.1).
+            { "stat.ability_range.name", "범위" },
+            { "stat.ability_range.effect", "+{0}단계 (마지막 레벨은 화면 전체)" },
             { "stat.ability_power.name", "힘" },
             { "stat.ability_power.effect", "+{0}%" },
             { "stat.ability_cooldown.name", "쿨다운 감소" },
@@ -193,7 +196,7 @@ namespace Incremental
         /// the tier 4 body of the same name.
         /// </summary>
         public const string AbilityUnlockName = "능력: {0}";
-        /// <summary>Name of an ability's stat node: the ability name plus the stat name, e.g. 수축 힘 I.</summary>
+        /// <summary>Name of an ability's stat node: the ability name plus the stat name, e.g. 수축 범위 I.</summary>
         public const string AbilityStatName = "{0} {1}";
 
         public static string TierKey(int tier) => "tier." + tier;

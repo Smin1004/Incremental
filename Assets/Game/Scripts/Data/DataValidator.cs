@@ -56,6 +56,8 @@ namespace Incremental
         {
             if (!(a.exciteSec > 0)) r.Errors.Add("AbilityTable: exciteSec must be > 0 (24 §8).");
             if (a.exciteBrightness < 0) r.Errors.Add("AbilityTable: exciteBrightness must be >= 0.");
+            if (!(a.exciteDriftRelaxMult >= 0))
+                r.Errors.Add("AbilityTable: exciteDriftRelaxMult must be >= 0 (24 §16.1); 1 leaves excited dust as it was, 0 never slows it.");
             if (!(a.maxCooldownReduction >= 0) || !(a.maxCooldownReduction < 1))
                 r.Errors.Add("AbilityTable: maxCooldownReduction must be within 0..1 (1 excluded); at 1 a cooldown could reach 0.");
             var ids = new HashSet<string>();
@@ -631,6 +633,8 @@ namespace Incremental
                         r.Errors.Add($"NodeTable: '{n.id}' effectPerLevel {n.effectPerLevel} has no effect.");
                     if (n.maxLevel == 0 && n.minTier != c.MaxTier)
                         r.Warnings.Add($"NodeTable: '{n.id}' has unlimited levels outside the last ring ({c.MaxTier}).");
+                    if (n.maxLevel == 0 && n.statId == StatIds.AbilityRange)
+                        r.Errors.Add($"NodeTable: '{n.id}' raises {n.statId} without a maximum level; the last level is what reaches the whole screen (24 §16.1).");
                 }
             }
         }

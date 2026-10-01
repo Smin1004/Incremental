@@ -114,6 +114,11 @@ namespace Incremental
         /// tick; at 0, which is what it is when there are no abilities, a dust calms down at once.
         /// </summary>
         public double ExciteSec { get; set; }
+        /// <summary>
+        /// 24 §16.1: while a dust is excited, how fast it settles back to its drifting speed is multiplied by this, so
+        /// a dust an ability pushed keeps going. Handed over with <see cref="ExciteSec"/>; 1 changes nothing.
+        /// </summary>
+        public double ExciteDriftRelaxMult { get; set; } = 1.0;
 
         public void Init(GameParams gameParams)
         {
@@ -260,6 +265,7 @@ namespace Incremental
             float maxSpeed2 = maxSpeed * maxSpeed;
             float noise = (float)p.driftNoise;
             float relax = Mathf.Clamp01((float)p.driftRelaxRate * fdt);
+            float relaxExcited = Mathf.Clamp01(relax * (float)Math.Max(0.0, ExciteDriftRelaxMult));
             float calm = ExciteStep(fdt);
             float grow = BornStep(fdt);
             double captured = 0;
@@ -320,13 +326,14 @@ namespace Incremental
                 }
                 else
                 {
-                    // Drift: small random heading change; speed relaxes toward driftSpeed.
+                    // Drift: small random heading change; speed relaxes toward driftSpeed, more slowly while the
+                    // dust is still excited by an ability (24 §16.1).
                     float speed = d.vel.magnitude;
                     float turn = (float)(rng.NextDouble() * 2.0 - 1.0) * noise * fdt;
                     float cos = Mathf.Cos(turn), sin = Mathf.Sin(turn);
                     Vector2 dir = speed > 1e-6f ? d.vel / speed : RandomDir();
                     dir = new Vector2(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos);
-                    speed = Mathf.Lerp(speed, drift, relax);
+                    speed = Mathf.Lerp(speed, drift, d.excite > 0f ? relaxExcited : relax);
                     d.vel = dir * speed;
                 }
 
