@@ -10,7 +10,7 @@
 | 캡처 | `Docs/Reports/Abilities_Screens/` 5장 (링 8 상태, 디버그 키로 켬) |
 | 하지 않은 것 | 봇 완주 런, 밸런스 조정, 빌드 성능 측정, 새 테스트 (24 §1) |
 
-> **2차(§6)에서 수축의 강화, 위성의 궤도, 유성 값 일부가 바뀌었다.** §1~§5는 1차 그대로 두었다. 바뀐 값은 §6.4 표가 맞다.
+> **2차(§6)에서 수축의 강화, 위성의 궤도, 유성 값 일부가 바뀌었다.** §1~§5는 1차 그대로 두었다. 바뀐 값은 §6.4 표가 맞다. **수축의 범위 규칙은 3차(§8)에서 다시 바뀌었다.** §6.4의 `rangeRadiiBase` / `rangeRadiiPerLevel`은 이제 없다.
 
 시작 전: `scale`을 main에 fast-forward 병합했다. 개발자 플레이 기록(`run_log.csv`, `save.json`, `save.bak`)은 `human_playtest_20260930_172209\`에 보존했고, 작업이 끝난 뒤 **그 사본을 제자리에 되돌려 놓았다** (링 11, 재화 98억 상태라 능력 노드를 바로 사 볼 수 있다). 기획 문서는 "기획 문서 갱신"으로 두 번 커밋했다(시작 시점, 9/30 추가분).
 
@@ -320,3 +320,91 @@
 6. **성능은 재지 않았다.** 전체 수는 그대로지만 화면 밖 먼지도 틱과 정점을 쓴다. 성능 벤치 장면은 총수가 같고 그중 15%가 화면 밖에 놓인다.
 7. 화면 밖의 무거운 먼지가 궤적 리본 예산의 자리를 차지할 수 있다(가장 무거운 종류가 통째로 뽑힐 때).
 8. 확인하다 본 기존 동작: 디버그 키로 켠 능력은 홀드하지 않아도 켠 직후 한 번 발동한다.
+
+## 8. 3차 (2026-10-01): 수축 범위를 화면 기준으로, MaxReduction 데이터화, 패키지 정리
+
+| 항목 | 값 |
+|---|---|
+| 스펙 | [24_Ability_Spec.md](../24_Ability_Spec.md) §17 |
+| 커밋 | A `6741b58` (수축 범위) · B `51e63f8` (`maxReduction`) · C `c9c2c42` (패키지) · D (캡처와 이 절) |
+| Validate Data | 오류 0, 경고 0 (체크포인트마다) |
+| EditMode 테스트 | 기존 227개 전부 통과 (C까지 끝낸 뒤 한 번). 새 테스트 없음 |
+| 캡처 | `Docs/Reports/Abilities_Screens/p4_*.png` 4장 |
+| 하지 않은 것 | 봇 완주 런, 밸런스 조정, 빌드 성능 측정, main 병합. 위성과 `exciteDriftRelaxMult`는 건드리지 않았다 |
+
+개발자 세이브(런 9, 링 11)는 확인 작업 뒤 다시 되돌려 놓았다.
+
+### 8.1 수축 범위
+
+- 범위 = 화면 반대각선(화면 가운데에서 구석까지, 그 순간의 월드 배율로) × 비율.
+- 비율 = `rangeScreenStart` + (1 − `rangeScreenStart`) × 가진 범위 단계 / 트리가 줄 수 있는 전체 단계. 마지막 레벨은 이 식이 아니라 전역(여백 끝까지)이다.
+- 어떤 경우에도 중력 반경 × `rangeMinRadii` 이상이다.
+
+| 상태 | 화면 반대각선 | 중력 반경 | 해금(Lv0) | Lv2 |
+|---|---|---|---|---|
+| 링 5 | 1,267px | 288px | 507px (40%) | 1,013px (80%) |
+| 링 11 | 1,514px | 522px | **783px (52%, 최소 범위)** | 1,212px (80%) |
+
+**레벨 수 확장 확인.** `SkillTreeSeed`에서 `r5_implode_power`의 `maxLevel`만 3 → 5로 바꾸고 노드 표를 다시 만들었더니 40 → 52 → 64 → 76 → 88% → 전역이 됐다. 코드는 손대지 않았다. 확인 뒤 3으로 되돌렸다(지금은 40 → 60 → 80% → 전역).
+
+발동 로그에 범위가 어느 규칙으로 정해졌는지 남는다.
+
+```
+[Ability] implode: fired at 1.0s: push 260 px/s, reach 507 px (40% of the screen's half diagonal 1267 px), ring out in 0.5s
+[Ability] implode: fired at 1.0s: push 260 px/s, reach 783 px (the least, 1.5 gravity radii; 40% of the half diagonal would be 606 px), ring out in 0.5s
+```
+
+### 8.2 MaxReduction
+
+요구 질량 감소와 스태미나 소모 감소의 한도 0.9가 `Stats.MaxReduction` 상수였다. `GameParams.maxReduction`으로 옮겼다. 값과 동작은 그대로다. Validate Data는 0 이상 1 미만이 아니면 오류를 낸다. 이 상수를 읽던 기존 테스트 한 곳(`Week7Tests.RequiredMass_FallsToTheReductionCapByTheLateRings`)은 에셋 값을 읽게만 바꿨다.
+
+### 8.3 패키지
+
+| 패키지 | 처리 | 근거 |
+|---|---|---|
+| `com.unity.ai.inference` | 지움 | 아래 네 가지 확인에서 전부 참조 없음 |
+| `com.unity.multiplayer.center` | 지움 | 같음 |
+| `com.unity.visualscripting` | 지움 | 같음 |
+| `com.unity.timeline` | 지움 | 같음 |
+| `com.unity.collab-proxy` | 지움 | 같음 |
+| `com.unity.dt.app-ui` | 같이 빠짐 | manifest에는 없던 것. `ai.inference`만 쓰던 의존 패키지라 Unity가 lock에서 뺐다 |
+
+남긴 것은 없다. 목록의 다섯이 전부 참조가 없었다.
+
+지우기 전에 확인한 것:
+
+1. `Assets`의 코드와 asmdef에 해당 네임스페이스나 어셈블리 참조가 없다.
+2. `Assets`와 `ProjectSettings`의 파일 235개 중 이 패키지들이 정의한 GUID(4,996개)를 가리키는 것이 없다. 씬, 프리팹, 에셋에 붙은 컴포넌트가 없다는 뜻이다.
+3. `packages-lock.json`에서 다른 패키지가 이 다섯에 의존하지 않는다.
+4. MCP for Unity 패키지의 코드와 asmdef가 이들을 언급하지 않는다.
+
+지운 뒤: 컴파일 오류 없음, 나머지 패키지 버전 변화 없음, Validate Data 통과, 플레이 모드에서 런 시작 확인, EditMode 테스트 227개 통과. 목록에 없는 패키지는 건드리지 않았고 `com.unity.ai.assistant`는 여전히 없다. `ProjectSettings`의 `VersionControlSettings.asset`과 `MultiplayerManager.asset`은 이 패키지들의 것이 아니라 에디터 기본 설정이라 그대로 두었다.
+
+### 8.4 바꾼 값과 새 값
+
+| 에셋 | 필드 | 전 | 지금 값 | 바뀌는 것 |
+|---|---|---|---|---|
+| `AbilityTable` | `implode.rangeScreenStart` | (없음) | 0.4 | 해금 직후 범위 = 화면 반대각선 × 이 값. 레벨마다 여기서 1까지 같은 간격으로 오른다 |
+| `AbilityTable` | `implode.rangeMinRadii` | (없음) | 1.5 | 범위의 하한 = 중력 반경 × 이 값. 0이면 하한 없음 |
+| `AbilityTable` | `implode.rangeRadiiBase` | 2 | (삭제) | |
+| `AbilityTable` | `implode.rangeRadiiPerLevel` | 1 | (삭제) | |
+| `GameParams` | `maxReduction` | 코드 상수 0.9 | 0.9 | 요구 질량 감소와 스태미나 소모 감소 노드의 한도 |
+
+### 8.5 캡처
+
+전부 수축 발동 0.55초 뒤다. 고리가 범위 끝에 멈춰 사라지기 시작한 순간이다.
+
+| 캡처 | 내용 |
+|---|---|
+| `p4_implode_ring5_lv0_550ms.png` | 링 5 상태, 해금. 화면 반대각선의 40% |
+| `p4_implode_ring5_lv2_550ms.png` | 링 5 상태, Lv2. 80% |
+| `p4_implode_ring11_lv0_550ms.png` | 링 11 상태, 해금. 최소 범위가 걸려 52% |
+| `p4_implode_ring11_lv2_550ms.png` | 링 11 상태, Lv2. 80%. 링 5의 Lv2와 화면에서 같은 크기다 |
+
+### 8.6 정한 것과 알려진 문제
+
+1. **링 11의 해금 레벨은 40%가 아니라 52%로 보인다.** 스펙의 두 규칙이 여기서 부딪힌다. 링 11은 중력 반경이 522px라 최소 범위(1.5배)가 783px이고, 화면의 40%는 606px다. 그래서 네 장 중 이 한 장만 화면 대비 크기가 다르다. 네 장을 같게 하려면 `rangeMinRadii`를 1.16 이하로 낮추거나 0으로 둔다. 다만 606px는 중력 반경의 1.16배라 고리 바로 밖까지만 닿는다.
+2. **"레벨 / 최대레벨"을 단계 합의 비로 계산했다.** 범위 노드가 여러 개이거나 레벨당 효과가 1이 아니어도 같은 식이 되게 하려는 것이다. 지금 데이터에서는 레벨 / 최대레벨과 같다.
+3. **화면 반대각선은 화면 가운데 기준이고, 고리는 중력원에서 퍼진다.** 중력원이 가운데가 아니면 같은 범위라도 화면에서 덮는 부분이 달라진다. 화면 밖 여백은 전역에서만 센다.
+4. **패키지를 지운 뒤 빌드는 해 보지 않았다.** 에디터 컴파일, 플레이 모드, 테스트까지만 확인했다. 다음 빌드와 `-perfbench`에서 같이 확인해야 한다.
+5. 2차 §6.6-1(후반 링에서 Lv2와 Lv3이 같아짐)은 이번 변경으로 없어졌다. 링 11에서 Lv2가 1,212px, 전역은 여백 끝까지다.
