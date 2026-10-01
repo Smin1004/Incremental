@@ -436,7 +436,7 @@ namespace Incremental.Tests
             var p = ProjectParams();
             var t = ProjectNodes();
             var m = AllNodes(t);
-            Assert.AreEqual(1.0 - Stats.MaxReduction, Stats.Compute(p, t, m).thresholdMult, 1e-9,
+            Assert.AreEqual(1.0 - p.maxReduction, Stats.Compute(p, t, m).thresholdMult, 1e-9,
                 "the last rings sit on the 90% reduction cap");
         }
 

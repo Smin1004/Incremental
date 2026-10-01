@@ -114,6 +114,7 @@ MonoBehaviour:
   fragmentSpawnRadii: 1
   saleMult: 1
   thresholdMult: 1
+  maxReduction: 0.9
   pixelsPerUnit: 100
   effectIntensity: 1
   driftNoise: 2

@@ -221,6 +221,10 @@ namespace Incremental
         [Header("Economy (spec §6)")]
         public double saleMult = 1.0;         // upgrade target
         public double thresholdMult = 1.0;    // upgrade target (required mass multiplier)
+        [Tooltip("The most the threshold_mult nodes can take off the required mass, and the stamina_drain nodes off the " +
+                 "stamina drain: 0.9 = down to a tenth. What the nodes add up to beyond this does nothing. " +
+                 "It has to stay below 1, or the required mass and the drain could reach 0.")]
+        public double maxReduction = 0.9;
 
         [Header("Presentation (not in the spec table)")]
         public double pixelsPerUnit = 100;

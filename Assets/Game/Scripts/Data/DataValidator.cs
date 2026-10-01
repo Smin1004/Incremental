@@ -480,6 +480,9 @@ namespace Incremental
                 r.Errors.Add("GameParams: dustStreakExposureSec must be > 0 (22 §5); it is the shutter the motion smear stands for.");
             if (!(p.dustStretchMax >= 1))
                 r.Errors.Add("GameParams: dustStretchMax must be >= 1; it is the ceiling on the smear, in multiples of the dust's own size.");
+            if (!(p.maxReduction >= 0) || !(p.maxReduction < 1))
+                r.Errors.Add("GameParams: maxReduction must be within 0..1 (1 excluded); at 1 the threshold_mult nodes could take " +
+                             "the required mass down to 0, and the stamina_drain nodes the drain (24 §17.2).");
             if (!(p.dustCapCeiling > 0)) r.Errors.Add("GameParams: dustCapCeiling must be > 0 (22 §7).");
             if (p.dustMarginPx < 0) r.Errors.Add("GameParams: dustMarginPx must be >= 0; 0 keeps every dust on screen.");
             if (p.dustMarginCapShare < 0 || p.dustMarginCapShare > 0.5)

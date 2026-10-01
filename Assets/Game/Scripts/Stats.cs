@@ -50,15 +50,12 @@ namespace Incremental
     /// <summary>
     /// The single place where node levels turn into effective numbers (12 §3 "스탯 합산").
     /// Nodes with the same statId add up (effect × level); dust_mass multiplies (effect ^ level);
-    /// threshold_mult and stamina_drain reductions are capped at 90%. Disabled nodes contribute nothing.
+    /// threshold_mult and stamina_drain reductions are capped at GameParams.maxReduction. Disabled nodes contribute nothing.
     /// The ability stats (24 §8) are summed here too, but per ability by <see cref="AbilityFromTree"/> and not into
     /// <see cref="EffectiveStats"/>: what they raise is a row of the AbilityTable, which the run history does not keep.
     /// </summary>
     public static class Stats
     {
-        /// <summary>Largest total reduction for threshold_mult and stamina_drain.</summary>
-        public const double MaxReduction = 0.9;
-
         public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m) =>
             Compute(p, t, m, p.staminaHoldDrain, p.staminaIdleDrain);
 
@@ -116,14 +113,14 @@ namespace Incremental
                 pullAccel = p.pullAccel * (1.0 + pull),
                 saleMult = p.saleMult * (1.0 + sale),
                 staminaMax = p.staminaMax + stamina,
-                thresholdMult = p.thresholdMult * (1.0 - Math.Min(threshold, MaxReduction)),
+                thresholdMult = p.thresholdMult * (1.0 - Math.Min(threshold, p.maxReduction)),
                 // 22 §6: the cap follows the area, so a wider world holds the same density of dust.
                 dustCap = (p.dustCap + cap) * area,
                 dustMass = p.dustMass * mass,
                 gravityRadius = p.gravityRadius * (1.0 + radius),
                 followSpeedPx = p.followSpeedPx * (1.0 + follow),
             };
-            double drainMult = 1.0 - Math.Min(drain, MaxReduction);
+            double drainMult = 1.0 - Math.Min(drain, p.maxReduction);
             s.staminaIdleDrain = idleDrainBase * drainMult;
             s.staminaHoldDrain = holdDrainBase * drainMult;
             // The starting dust follows the area for the same reason: without it a late run would open on an empty
