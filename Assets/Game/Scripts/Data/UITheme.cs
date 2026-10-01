@@ -169,6 +169,16 @@ namespace Incremental
         public float buttonChipGapPx = 14f;
         public Vector2 chipPaddingPx = new Vector2(11f, 4f);
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// Raised when a value is changed in the inspector, so a running game redraws in the new values (UIStyle).
+        /// Sizes that a screen reads once while it is built still need a new play session.
+        /// </summary>
+        public static event Action<UITheme> Edited;
+
+        void OnValidate() => Edited?.Invoke(this);
+#endif
+
         /// <summary>The direction at this index, clamped; never null as long as the asset has one.</summary>
         public UIDirection Direction(int index) =>
             directions != null && directions.Length > 0 ? directions[Mathf.Clamp(index, 0, directions.Length - 1)] : null;

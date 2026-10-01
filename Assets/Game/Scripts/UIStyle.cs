@@ -30,6 +30,7 @@ namespace Incremental
         const string Digits = "0123456789";
 
         readonly Material[] materials;
+        bool edited;
 
         public UITheme Theme { get; }
         /// <summary>Regular weight: labels and body text.</summary>
@@ -64,6 +65,37 @@ namespace Incremental
             StaminaMode = Mathf.Clamp(theme.staminaMode, 0, 1);
             DirectionIndex = Mathf.Clamp(theme.direction, 0, Mathf.Max(0, (theme.directions != null ? theme.directions.Length : 1) - 1));
             Apply();
+#if UNITY_EDITOR
+            UITheme.Edited += OnThemeEdited;
+#endif
+        }
+
+#if UNITY_EDITOR
+        void OnThemeEdited(UITheme t)
+        {
+            if (t == Theme) edited = true;
+        }
+#endif
+
+        /// <summary>
+        /// Once a frame (GameRoot). In the editor a theme value changed in the inspector during play is picked up here:
+        /// the shapes and the glyph shadow are rewritten and the views re-read their colors.
+        /// </summary>
+        public void Tick()
+        {
+            if (!edited) return;
+            edited = false;
+            DirectionIndex = Mathf.Clamp(DirectionIndex, 0, Mathf.Max(0, (Theme.directions != null ? Theme.directions.Length : 1) - 1));
+            Apply();
+            Changed?.Invoke();
+        }
+
+        /// <summary>Lets go of the theme's edit notification (GameRoot.OnDestroy).</summary>
+        public void Dispose()
+        {
+#if UNITY_EDITOR
+            UITheme.Edited -= OnThemeEdited;
+#endif
         }
 
         /// <summary>The material of a shape role in the current direction (shared by every shape of that role).</summary>

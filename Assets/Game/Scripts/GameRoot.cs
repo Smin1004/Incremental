@@ -402,6 +402,11 @@ namespace Incremental
             hasFocus = focus;
         }
 
+        void OnDestroy()
+        {
+            if (Ui != null) Ui.Dispose();
+        }
+
         void FixedUpdate()
         {
             TickWorldScale(Time.fixedDeltaTime);
@@ -463,6 +468,7 @@ namespace Incremental
             ApplyWorldScale();
             // 26 §4: the light of the UI follows the effect intensity like every other effect.
             UIStyle.SetEffect(EffectIntensity);
+            Ui.Tick();
             // Between runs the result screen and the tree show their own numbers (Space is handled there too). The dust is
             // drawn during runs, and on the result screen only as the supernova remnant (15 §4.3).
             Hud.SetRunHudVisible(Phase == GamePhase.Run);
