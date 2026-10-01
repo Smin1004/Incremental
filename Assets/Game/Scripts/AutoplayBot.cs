@@ -146,6 +146,8 @@ namespace Incremental
             for (int i = 0; i < n; i++)
             {
                 Vector2 p = items[i].pos;
+                // Dust in the band outside the screen is not somewhere the pointer can go.
+                if (!area.Contains(p)) continue;
                 int cx = Mathf.Clamp((int)((p.x - area.xMin) / area.width * gx), 0, gx - 1);
                 int cy = Mathf.Clamp((int)((p.y - area.yMin) / area.height * gy), 0, gy - 1);
                 counts[cy * gx + cx]++;

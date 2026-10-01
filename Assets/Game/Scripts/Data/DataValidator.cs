@@ -481,6 +481,14 @@ namespace Incremental
             if (!(p.dustStretchMax >= 1))
                 r.Errors.Add("GameParams: dustStretchMax must be >= 1; it is the ceiling on the smear, in multiples of the dust's own size.");
             if (!(p.dustCapCeiling > 0)) r.Errors.Add("GameParams: dustCapCeiling must be > 0 (22 §7).");
+            if (p.dustMarginPx < 0) r.Errors.Add("GameParams: dustMarginPx must be >= 0; 0 keeps every dust on screen.");
+            if (p.dustMarginCapShare < 0 || p.dustMarginCapShare > 0.5)
+                r.Errors.Add("GameParams: dustMarginCapShare must be within 0..0.5; it is the share of the dust cap kept outside the screen.");
+            if (p.dustMarginSpawnShare < 0 || p.dustMarginSpawnShare > 1)
+                r.Errors.Add("GameParams: dustMarginSpawnShare must be within 0..1; it is a share of the spawn rate.");
+            if (p.dustMarginPx > 0 && !(p.dustEdgePassSpeedPx > p.driftSpeed))
+                r.Errors.Add($"GameParams: dustEdgePassSpeedPx {p.dustEdgePassSpeedPx} must be above driftSpeed {p.driftSpeed}, " +
+                             "or the band outside the screen leaks in by drifting.");
             if (p.dustQualityShares == null || p.dustQualityShares.Length == 0)
                 r.Errors.Add("GameParams: dustQualityShares is empty; the options screen needs at least the full-quality share (22 §7).");
             else

@@ -456,6 +456,10 @@ MonoBehaviour:
   - 1
   - 0.7
   - 0.45
+  dustMarginPx: 200
+  dustMarginCapShare: 0.15
+  dustMarginSpawnShare: 0.25
+  dustEdgePassSpeedPx: 45
   perfBenchDustCounts:
   - 1000
   - 3700

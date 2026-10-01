@@ -587,6 +587,23 @@ namespace Incremental
                  "offer, highest first. Only the data is prepared this week; nothing reads it yet.")]
         public double[] dustQualityShares = { 1, 0.7, 0.45 };
 
+        [Header("Dust outside the screen")]
+        [Tooltip("Dust also lives in a band this wide (px) around the visible area, out of sight, so that whatever reaches " +
+                 "past the screen has something to pull in: the gravity source at an edge, 수축 at its last level, a " +
+                 "satellite far out, a meteor's wake. 0 = no dust outside the screen, as before.")]
+        public double dustMarginPx = 200;
+        [Tooltip("The most dust the band is filled with, as a share of the dust cap. It is part of the cap and not on top " +
+                 "of it: the total never passes the cap, so what is kept outside is room the screen does not have.")]
+        public double dustMarginCapShare = 0.15;
+        [Tooltip("How fast the band is filled again after something pulled dust out of it: this share of the spawn rate, " +
+                 "on top of the spawn on screen, which is unchanged. It is also the most the band can add to the supply of " +
+                 "dust. The band has about half the area of the screen, so 0.25 fills it about half as densely.")]
+        public double dustMarginSpawnShare = 0.25;
+        [Tooltip("Dust of the band comes onto the screen only when it is faster than this (px/s), which means something set " +
+                 "it moving: a pull, a push, a wake. While it merely drifts it is turned back at the edge, so the band does " +
+                 "not leak in. Dust on screen never leaves the screen. Must be above driftSpeed.")]
+        public double dustEdgePassSpeedPx = 45;
+
         [Header("Performance measurement (22 §4)")]
         [Tooltip("Dust counts the benchmark measures the run screen at, in order.")]
         public double[] perfBenchDustCounts = { 1000, 3700, 8000, 9472 };

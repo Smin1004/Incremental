@@ -56,8 +56,9 @@ namespace Incremental
             age = 0;
             // The ring stays where it started; the gravity source may move on while it spreads.
             origin = root.GravityWorld;
-            // The far end of the screen is the diagonal: from wherever the gravity source is, no dust is further than that.
-            Rect a = root.CameraArea();
+            // The far end is the diagonal of everything dust can be in, the band outside the screen included: from
+            // wherever the gravity source is, no dust is further than that.
+            Rect a = root.Dust.BoundsOf(root.CameraArea());
             float screen = Mathf.Sqrt(a.width * a.width + a.height * a.height);
             bool whole = d.WholeScreen(Level);
             double radii = d.RangeRadii(Level);
@@ -82,7 +83,8 @@ namespace Incremental
             }
             age += dt;
             if (spreading && age >= d.ringSec)
-                Log("ring done: " + pushed + " dust pushed, " + root.Dust.Count + " on screen now");
+                Log("ring done: " + pushed + " dust pushed, " + (root.Dust.Count - root.Dust.OutsideCount) + " on screen and " +
+                    root.Dust.OutsideCount + " outside it now");
             // The ring is at the end of its range now and only fades (24 §16.1); the next one waits for that.
             if (age >= d.ringSec + Math.Max(0.0, d.ringFadeSec)) active = false;
         }

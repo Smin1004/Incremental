@@ -493,13 +493,18 @@ namespace Incremental
             runStartStats = Effective;
             Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
 
+            // 22 §6: the run is drawn at the world scale, and coming from the result screen the camera is not there
+            // yet. It goes on before anything is placed, so the pointer is read and the dust laid out for the area the
+            // run really shows. Laid out for the smaller one, the band of dust outside the screen started inside it.
+            Phase = GamePhase.Run;
+            ApplyWorldScale();
+
             var ps = ReadPointer();
             LastPointer = ps;
             CursorWorld = ToWorld(ps.screenPos);
             GravityWorld = CursorWorld;
             Dust.Reset((int)Effective.dustInitial, CameraArea(), CursorWorld, Effective);
             Planets.Clear();
-            Phase = GamePhase.Run;
             pendingSaveTimer = 0;
             Save();
             RunStarted?.Invoke();

@@ -49,7 +49,7 @@ namespace Incremental
         public const string EndingContinue = "계속하기  (Space)";
 
         // Debug overlay
-        public const string DebugOverlay = "FPS {0:F1}   먼지 {1}   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}";
+        public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}";
         public const string EffectIntensity = "연출 강도 {0:0.0}";
         public const string On = "켜짐";
         public const string Off = "꺼짐";

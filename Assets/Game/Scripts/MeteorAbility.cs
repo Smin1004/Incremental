@@ -228,7 +228,7 @@ namespace Incremental
             Log("gone after " + age.ToString("0.##") + "s: came within " + closestPx.ToString("F0") + " px (" + Radii(closestPx, s) +
                 " radii) of the gravity source, shed " + shed + " dust" +
                 (notShed > 0 ? ", " + notShed + " not shed (at the dust cap, or the spot was off screen)" : string.Empty) +
-                ", " + root.Dust.Count + " on screen now");
+                ", " + (root.Dust.Count - root.Dust.OutsideCount) + " on screen and " + root.Dust.OutsideCount + " outside it now");
         }
 
         protected override void OnClear()

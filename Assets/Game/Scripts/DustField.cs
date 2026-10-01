@@ -76,6 +76,7 @@ namespace Incremental
         double[] kindMass = { 1.0 };
         float[] kindAccel = { 1f };
         double spawnAcc;
+        double marginAcc;
         System.Random rng = new System.Random();
         // Render-only variation draws from its own RNG so the simulation sequence is the same as before (bot measurements).
         System.Random visualRng = new System.Random();
@@ -107,8 +108,20 @@ namespace Incremental
         /// <summary>Dust captured since the last <see cref="Reset"/>: the number and the mass. Measurement only (20 §3).</summary>
         public int CapturedCount { get; private set; }
         public double CapturedMass { get; private set; }
-        /// <summary>Visible area the dust is confined to (camera rect, world units).</summary>
+        /// <summary>
+        /// The visible area (camera rect, world units). A dust that is in it stays in it; see <see cref="Bounds"/> for
+        /// what lies beyond.
+        /// </summary>
         public Rect Area { get; private set; }
+        /// <summary>
+        /// Everything a dust may be in: the visible area and, around it, a band GameParams.dustMarginPx wide that is
+        /// out of sight. The band holds a thin, even layer of dust for whatever reaches past the screen to pull in:
+        /// the gravity source at an edge, 수축 at its last level, a satellite far out, a meteor's wake. Dust goes
+        /// from the band to the screen and never the other way.
+        /// </summary>
+        public Rect Bounds { get; private set; }
+        /// <summary>Dust outside the visible area as of the last tick. It counts toward the dust cap like any other.</summary>
+        public int OutsideCount { get; private set; }
         /// <summary>
         /// 24 §8: seconds an excited dust takes to calm down. The ability system hands it over from the AbilityTable every
         /// tick; at 0, which is what it is when there are no abilities, a dust calms down at once.
@@ -191,17 +204,49 @@ namespace Incremental
 
         public void Reseed(int seed) { rng = new System.Random(seed); }
 
-        /// <summary>Clears the field and places the initial dust outside the (effective) gravity radius of the cursor.</summary>
+        /// <summary>
+        /// Clears the field and places the initial dust outside the (effective) gravity radius of the cursor. The band
+        /// outside the screen starts as full as the screen does: its share of the cap, scaled by how much of the cap
+        /// <paramref name="initial"/> is.
+        /// </summary>
         public void Reset(int initial, Rect area, Vector2 cursor, in EffectiveStats s)
         {
             count = 0;
             spawnAcc = 0;
+            marginAcc = 0;
             trailClock = 0;
             CapturedCount = 0;
             CapturedMass = 0;
             Area = area;
+            Bounds = BoundsOf(area);
             float gravR = Px(s.gravityRadius);
+            float margin = Margin;
+            int cap = (int)s.dustCap;
+            int outside = 0;
+            // A field asked to start above its cap is a test or a tool filling it by hand: it gets what it asked for.
+            if (margin > 0f && cap > 0 && initial <= cap)
+            {
+                outside = (int)Math.Round(MarginBudget(cap) * (initial / (double)cap));
+                // No room for both under the cap (a scene staged at the cap): the band's part comes out of the screen's.
+                if (initial + outside > cap) initial = cap - outside;
+            }
+            // The screen first, so the dust on it is where the same seed put it before there was a band.
             for (int i = 0; i < initial; i++) SpawnRandom(cursor, gravR, s);
+            for (int i = 0; i < outside; i++) SpawnOutside(cursor, gravR, margin, s);
+            OutsideCount = outside;
+        }
+
+        /// <summary>Width of the band outside the screen, world units (GameParams.dustMarginPx). 0 = there is none.</summary>
+        float Margin => p.dustMarginPx > 0 ? Px(p.dustMarginPx) : 0f;
+
+        /// <summary>The most dust the band is filled with: its share of the dust cap (GameParams.dustMarginCapShare).</summary>
+        int MarginBudget(int cap) => (int)(cap * Math.Min(1.0, Math.Max(0.0, p.dustMarginCapShare)));
+
+        /// <summary><see cref="Bounds"/> for a visible area: that area and the band around it.</summary>
+        public Rect BoundsOf(Rect area)
+        {
+            float m = Margin;
+            return new Rect(area.xMin - m, area.yMin - m, area.width + m * 2f, area.height + m * 2f);
         }
 
         /// <summary>
@@ -249,6 +294,14 @@ namespace Incremental
             DustForce[] forces = null, int forceCount = 0)
         {
             Area = area;
+            // The band outside the screen, and the speed above which a dust of the band comes in over the edge.
+            float margin = Margin;
+            bool banded = margin > 0f;
+            Rect outer = BoundsOf(area);
+            Bounds = outer;
+            float passSpeed = Px(p.dustEdgePassSpeedPx);
+            float passSpeed2 = passSpeed * passSpeed;
+            int outside = 0;
             float fdt = (float)dt;
             float drift = Px(p.driftSpeed);
             float gravR = Px(s.gravityRadius);
@@ -350,11 +403,32 @@ namespace Incremental
                 }
                 d.pos = to;
 
-                // Reflect at the visible bounds.
-                if (d.pos.x < area.xMin) { d.pos.x = area.xMin; d.vel.x = Mathf.Abs(d.vel.x); }
-                else if (d.pos.x > area.xMax) { d.pos.x = area.xMax; d.vel.x = -Mathf.Abs(d.vel.x); }
-                if (d.pos.y < area.yMin) { d.pos.y = area.yMin; d.vel.y = Mathf.Abs(d.vel.y); }
-                else if (d.pos.y > area.yMax) { d.pos.y = area.yMax; d.vel.y = -Mathf.Abs(d.vel.y); }
+                // The edge of the screen. A dust on screen never leaves it: it is turned back there, as it always was,
+                // so nothing the player can see is lost to the band and the band never holds more than it was given.
+                // A dust of the band comes in only when something has set it moving (a pull, a push, a wake); while
+                // it is merely drifting it is turned back from the outside, so the band does not leak into the screen.
+                bool wasIn = from.x >= area.xMin && from.x <= area.xMax && from.y >= area.yMin && from.y <= area.yMax;
+                if (wasIn || !banded)
+                {
+                    // Reflect at the visible bounds.
+                    if (d.pos.x < area.xMin) { d.pos.x = area.xMin; d.vel.x = Mathf.Abs(d.vel.x); }
+                    else if (d.pos.x > area.xMax) { d.pos.x = area.xMax; d.vel.x = -Mathf.Abs(d.vel.x); }
+                    if (d.pos.y < area.yMin) { d.pos.y = area.yMin; d.vel.y = Mathf.Abs(d.vel.y); }
+                    else if (d.pos.y > area.yMax) { d.pos.y = area.yMax; d.vel.y = -Mathf.Abs(d.vel.y); }
+                    continue;
+                }
+                if (d.vel.sqrMagnitude <= passSpeed2 &&
+                    d.pos.x >= area.xMin && d.pos.x <= area.xMax && d.pos.y >= area.yMin && d.pos.y <= area.yMax)
+                {
+                    // It drifted in from the band: back out, on the axis (at a corner, both) it was outside on.
+                    if (from.x < area.xMin || from.x > area.xMax) { d.pos.x = from.x; d.vel.x = -d.vel.x; }
+                    if (from.y < area.yMin || from.y > area.yMax) { d.pos.y = from.y; d.vel.y = -d.vel.y; }
+                }
+                if (d.pos.x < outer.xMin) { d.pos.x = outer.xMin; d.vel.x = Mathf.Abs(d.vel.x); }
+                else if (d.pos.x > outer.xMax) { d.pos.x = outer.xMax; d.vel.x = -Mathf.Abs(d.vel.x); }
+                if (d.pos.y < outer.yMin) { d.pos.y = outer.yMin; d.vel.y = Mathf.Abs(d.vel.y); }
+                else if (d.pos.y > outer.yMax) { d.pos.y = outer.yMax; d.vel.y = -Mathf.Abs(d.vel.y); }
+                if (d.pos.x < area.xMin || d.pos.x > area.xMax || d.pos.y < area.yMin || d.pos.y > area.yMax) outside++;
             }
 
             // Spawn. At the cap the spawn is skipped, not banked.
@@ -365,6 +439,23 @@ namespace Incremental
                 spawnAcc -= 1.0;
                 if (count < cap) SpawnRandom(gravity, gravR, s);
             }
+
+            // The band outside the screen has a trickle of its own, which stops at the band's share of the cap: it is
+            // topped up after something pulled dust out of it and never piles up. The spawn on screen above is as it
+            // was; the cap is the cap of both together.
+            if (banded)
+            {
+                int budget = MarginBudget(cap);
+                marginAcc += s.spawnRate * Math.Max(0.0, p.dustMarginSpawnShare) * dt;
+                while (marginAcc >= 1.0)
+                {
+                    marginAcc -= 1.0;
+                    if (count >= cap || outside >= budget) continue;
+                    SpawnOutside(gravity, gravR, margin, s);
+                    outside++;
+                }
+            }
+            OutsideCount = outside;
 
             TickTrails(dt);
             CapturedMass += captured;
@@ -459,7 +550,9 @@ namespace Incremental
         {
             count = 0;
             spawnAcc = 0;
+            marginAcc = 0;
             trailClock = 0;
+            OutsideCount = 0;
         }
 
         /// <summary>
@@ -591,6 +684,35 @@ namespace Incremental
             for (int tries = 0; tries < 16; tries++)
             {
                 pos = new Vector2(a.xMin + (float)rng.NextDouble() * a.width, a.yMin + (float)rng.NextDouble() * a.height);
+                if ((pos - cursor).sqrMagnitude >= gravR2) break;
+            }
+            Add(pos, RandomDir() * Px(p.driftSpeed), RollKind(s));
+        }
+
+        /// <summary>
+        /// Random position in the band outside the visible area, even over the whole band so that no part of it
+        /// gathers more than another, and outside gravityRadius of the cursor (best effort) as on screen: a gravity
+        /// source held at the edge is not fed dust that was created inside its own reach.
+        /// </summary>
+        void SpawnOutside(Vector2 cursor, float gravR, float margin, in EffectiveStats s)
+        {
+            Rect a = Area;
+            float gravR2 = gravR * gravR;
+            // The band as four strips that do not overlap: one above and one below as wide as the band is, and the
+            // two beside the screen. A strip is picked by its area, then a point in it.
+            float wide = a.width + margin * 2f;
+            float across = wide * margin;
+            float beside = a.height * margin;
+            float total = (across + beside) * 2f;
+            Vector2 pos = default;
+            for (int tries = 0; tries < 16; tries++)
+            {
+                float pick = (float)rng.NextDouble() * total;
+                float u = (float)rng.NextDouble(), v = (float)rng.NextDouble();
+                if (pick < across) pos = new Vector2(a.xMin - margin + u * wide, a.yMax + v * margin);
+                else if (pick < across * 2f) pos = new Vector2(a.xMin - margin + u * wide, a.yMin - margin + v * margin);
+                else if (pick < across * 2f + beside) pos = new Vector2(a.xMin - margin + u * margin, a.yMin + v * a.height);
+                else pos = new Vector2(a.xMax + u * margin, a.yMin + v * a.height);
                 if ((pos - cursor).sqrMagnitude >= gravR2) break;
             }
             Add(pos, RandomDir() * Px(p.driftSpeed), RollKind(s));
