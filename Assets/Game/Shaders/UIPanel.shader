@@ -1,6 +1,6 @@
 // Every UI shape (26 §4): panel, button, key chip, bar, badge. One uGUI quad per shape, no textures. The mesh
-// (UIShape) carries the position in reference px from the rect center (uv0), the half size, the fill share of a bar
-// and a 0..1 state for hover and flashes (uv1). The material carries the look of one role in one visual direction
+// (UIShape) carries the position in reference px from the rect center and the room around the rect (uv0), the half
+// size, the fill share of a bar and a 0..1 state for hover and flashes (uv1). The material carries the look of one role in one visual direction
 // (UIStyle fills it from UITheme): fill, border, round or square corners, corner brackets, scale marks, light from
 // the edge, glass highlight, outer shadow. Output is premultiplied alpha. Light follows the effect intensity (_UIEffect).
 Shader "Incremental/UIPanel"
@@ -59,7 +59,7 @@ Shader "Incremental/UIPanel"
             {
                 float4 positionHCS : SV_POSITION;
                 float4 color : COLOR;
-                float2 p : TEXCOORD0;       // px from the rect center
+                float3 p : TEXCOORD0;       // px from the rect center; z = room around the rect, px
                 float4 box : TEXCOORD1;     // half size px, fill share, state
             };
 
@@ -68,7 +68,7 @@ Shader "Incremental/UIPanel"
                 Varyings o;
                 o.positionHCS = TransformObjectToHClip(v.positionOS.xyz);
                 o.color = v.color;
-                o.p = v.uv0.xy;
+                o.p = v.uv0.xyz;
                 o.box = v.uv1;
                 return o;
             }
@@ -83,7 +83,7 @@ Shader "Incremental/UIPanel"
 
             float4 frag(Varyings i) : SV_Target
             {
-                float2 p = i.p;
+                float2 p = i.p.xy;
                 float2 hs = max(i.box.xy, 1e-3);
                 float share = i.box.z;
                 float state = i.box.w;
@@ -160,11 +160,13 @@ Shader "Incremental/UIPanel"
                     col = Over(float4(_Bracket.rgb * tint * ka, ka), col);
                 }
 
-                // Outside: soft shadow under the shape, and the hover light spilling out.
+                // Outside: soft shadow under the shape, and the hover light spilling out. Both end exactly where the
+                // quad does: in linear color even a trace of light left at the quad's edge shows as a box.
                 float outside = 1.0 - inside;
-                float sh = _Outer.y * exp(-max(d, 0.0) / max(_Outer.x, 1e-3)) * outside;
+                float room = saturate(1.0 - max(d, 0.0) / max(i.p.z, 1e-3));
+                float sh = _Outer.y * exp(-max(d, 0.0) / max(_Outer.x, 1e-3)) * smoothstep(0.0, 0.5, room) * outside;
                 col = Over(col, float4(0, 0, 0, sh));
-                col.rgb += _Border.rgb * tint * lightUp * 0.35 * exp(-max(d, 0.0) / 10.0) * outside;
+                col.rgb += _Border.rgb * tint * lightUp * 0.5 * room * room * room * outside;
 
                 return col * i.color.a;
             }

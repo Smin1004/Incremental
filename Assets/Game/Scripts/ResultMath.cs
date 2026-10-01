@@ -30,6 +30,18 @@ namespace Incremental
         public static int ShownIncrease(RunRecord rec, RunRecord comparison, int tier) => System.Math.Max(0, Delta(rec, comparison, tier));
 
         /// <summary>
+        /// 26 §5.2: true when this run holds the best income and beat an earlier one to get there. A full run only
+        /// (the best is kept for those), and never the first full run, which has nothing to beat. Valid for a run that
+        /// is already applied to <paramref name="meta"/>.
+        /// </summary>
+        public static bool IsNewBest(MetaState meta, RunRecord rec)
+        {
+            if (meta == null || rec == null || !Session.CountsForBest(rec.endReason)) return false;
+            if (rec.income <= 0 || rec.income < meta.bestRunIncome) return false;
+            return ComparisonRun(meta.runHistory, rec) != null;
+        }
+
+        /// <summary>
         /// True when this run made the tier for the first time ever: made now, and the lifetime total before the run
         /// (totalPlanets after it minus this run's count) was 0. Valid for the run just applied to <paramref name="meta"/>.
         /// </summary>

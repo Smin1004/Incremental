@@ -92,6 +92,8 @@ namespace Incremental
         public float sizeBody = 24f;
         public float sizeSmall = 20f;
         public float sizeTiny = 17f;
+        [Tooltip("Height of a line of text as a multiple of its font size (stacked layouts).")]
+        public float lineHeight = 1.3f;
 
         [Header("Visual direction (26 §3)")]
         [Tooltip("Index into directions the game starts with. The debug key cycles it at runtime.")]
@@ -131,7 +133,13 @@ namespace Incremental
         [Header("Result screen (26 §5.2)")]
         public Vector2 resultPanelSize = new Vector2(600f, 820f);
         public float resultPanelMarginPx = 48f;
+        [Tooltip("Space between the panel edge and its contents, and between the blocks inside.")]
+        public float resultPaddingPx = 40f;
+        public float resultGapPx = 10f;
+        public float resultDividerPx = 1f;
         public float resultRowHeightPx = 26.5f;
+        [Tooltip("Width of the icon column in front of the tier names.")]
+        public float resultIconColumnPx = 48f;
         [Tooltip("Disc diameter of the planet icon in a row.")]
         public float resultIconPx = 19f;
         [Tooltip("Where the light of the icons comes from: the central star is to the right of the panel.")]
@@ -202,11 +210,11 @@ namespace Incremental
                 textShadowSoftness = 0.25f,
                 panel = new UIShapeStyle
                 {
-                    fill = new Color(0.015f, 0.03f, 0.065f, 0.74f), fillShade = 0.2f,
+                    fill = new Color(0.015f, 0.03f, 0.065f, 0.84f), fillShade = 0.2f,
                     border = new Color(line.r, line.g, line.b, 0.3f), borderPx = 1f, cornerPx = 0f,
                     bracket = new Color(0.8f, 0.92f, 1f, 0.95f), bracketLenPx = 22f, bracketPx = 2f,
                     tickSpacingPx = 12f, tickLenPx = 5f, tickAlpha = 0.4f,
-                    glowPx = 30f, glowStrength = 0.05f, shadowPx = 30f, shadowAlpha = 0.25f, stateGlow = 0.3f,
+                    glowPx = 30f, glowStrength = 0.025f, shadowPx = 30f, shadowAlpha = 0.25f, stateGlow = 0.3f,
                 },
                 button = new UIShapeStyle
                 {
@@ -253,9 +261,9 @@ namespace Incremental
                 textShadowSoftness = 0.45f,
                 panel = new UIShapeStyle
                 {
-                    fill = new Color(0.1f, 0.13f, 0.28f, 0.58f), fillShade = 0.45f,
+                    fill = new Color(0.06f, 0.09f, 0.26f, 0.72f), fillShade = 0.45f,
                     border = new Color(edge.r, edge.g, edge.b, 0.3f), borderPx = 1.5f, cornerPx = 26f,
-                    glowPx = 34f, glowStrength = 0.22f, sheen = 0.1f,
+                    glowPx = 34f, glowStrength = 0.1f, sheen = 0.05f,
                     shadowPx = 36f, shadowAlpha = 0.5f, stateGlow = 0.3f,
                 },
                 button = new UIShapeStyle

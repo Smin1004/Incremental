@@ -6,7 +6,7 @@ namespace Incremental
     /// <summary>
     /// One shape drawn by the Incremental/UIPanel shader (26 §4): a quad the size of the RectTransform plus
     /// <see cref="Pad"/> on every side for the shadow and outer light. The mesh tells the shader where each pixel is
-    /// (px from the rect center), how large the rect is, how much of a bar is filled and a 0..1 state for hover and
+    /// (px from the rect center), how much room there is around the rect, how large the rect is, how much of a bar is filled and a 0..1 state for hover and
     /// flashes; the look itself is in the material (<see cref="UIStyle.MaterialFor"/>). The canvas has to pass
     /// TexCoord1 (UIBuilder.CreateCanvas does).
     /// </summary>
@@ -62,7 +62,7 @@ namespace Incremental
             for (int i = 0; i < 4; i++)
             {
                 var corner = new Vector2((i == 0 || i == 1) ? -ext.x : ext.x, (i == 0 || i == 3) ? -ext.y : ext.y);
-                vh.AddVert(new Vector3(c.x + corner.x, c.y + corner.y, 0f), col, new Vector4(corner.x, corner.y, 0f, 0f), box,
+                vh.AddVert(new Vector3(c.x + corner.x, c.y + corner.y, 0f), col, new Vector4(corner.x, corner.y, pad, 0f), box,
                     Vector3.back, new Vector4(1f, 0f, 0f, -1f));
             }
             vh.AddTriangle(0, 1, 2);

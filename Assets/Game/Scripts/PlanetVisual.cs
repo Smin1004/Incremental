@@ -67,6 +67,39 @@ namespace Incremental
             Shader.SetGlobalVector("_PlanetDetail", new Vector4((float)p.planetDetailPx, (float)p.planetCraterRelief, 0f, 0f));
         }
 
+        /// <summary>
+        /// The same look written into a plain material instead of a property block, for a body drawn by uGUI, which
+        /// has no per-renderer properties (26 §5.2: the mini icons of the result list, <see cref="PlanetIcon"/>).
+        /// The light is a screen-plane direction. Keep it in step with <see cref="SetLook"/>.
+        /// </summary>
+        public static void ApplyLook(Material m, PlanetLook l, float seed, double axisPitchDeg, Vector2 lightDir, float fade)
+        {
+            if (m == null || l == null) return;
+            m.SetFloat(IdSurface, (float)l.surface);
+            m.SetFloat(IdExtent, l.Extent());
+            m.SetColor(IdBase, l.baseColor);
+            m.SetColor(IdDark, l.darkColor);
+            m.SetColor(IdAccent, l.accentColor);
+            m.SetColor(IdGlow, l.glowColor);
+            m.SetColor(IdRing, l.ringColor);
+            m.SetVector(IdSurf1, new Vector4(l.noiseScale, l.patchLevel, l.patchSoftness, seed));
+            m.SetVector(IdSurf2, new Vector4(l.craterDensity, l.craterSize, l.craterScale, l.polarCap));
+            m.SetVector(IdSurf3, new Vector4(l.irregularity, l.cloudCover, l.cloudSpinMult, l.emission));
+            m.SetVector(IdSurf4, new Vector4(l.bandCount, l.turbulence, l.glowSize, l.glowStrength));
+            m.SetVector(IdSurf5, new Vector4(l.spotSize, l.spotLatitude, 0f, 0f));
+            m.SetVector(IdMotion, new Vector4(l.spinDegPerSec * Mathf.Deg2Rad, l.axisTiltDeg * Mathf.Deg2Rad,
+                (float)axisPitchDeg * Mathf.Deg2Rad, seed * 2.399f));
+            m.SetVector(IdExtra, new Vector4(l.tailLength, l.ringInner, l.ringOuter, fade));
+            m.SetVector(IdTail, new Vector4(l.tailWidth, l.tailSpread, l.tailFadePower, 0f));
+            m.SetVector(IdLight, new Vector4(lightDir.x, lightDir.y, 0f, 1f));
+        }
+
+        /// <summary>Overall opacity of a body drawn with <see cref="ApplyLook"/>.</summary>
+        public static void ApplyFade(Material m, PlanetLook l, float fade)
+        {
+            if (m != null && l != null) m.SetVector(IdExtra, new Vector4(l.tailLength, l.ringInner, l.ringOuter, fade));
+        }
+
         /// <summary>Shared unit quad (−0.5..0.5) with 0..1 UVs.</summary>
         public static Mesh Quad()
         {

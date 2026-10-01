@@ -23,7 +23,11 @@ namespace Incremental
         public const string ResultRatio = "지난 런 대비";
         public const string ResultBest = "최고 런 수입";
         public const string NoPlanets = "-";
-        public const string OpenTree = "스킬트리  (Space)";
+        /// <summary>26 §5.2: the button's label; the key is shown beside it as a chip (<see cref="KeySpace"/>).</summary>
+        public const string OpenTreeLabel = "스킬트리";
+        public const string KeySpace = "Space";
+        /// <summary>26 §5.2: the badge on a run that beat the best income.</summary>
+        public const string ResultNewBest = "최고 기록";
         public const string PlanetMulti = "×{0}";
         public const string DeltaUp = "▲{0}";
         public const string NewBody = "새 천체";
