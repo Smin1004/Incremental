@@ -18,6 +18,8 @@ namespace Incremental
     /// Minus / equals: the upgrade level of the forced abilities down / up. PageUp and PageDown cycle the same two
     /// things; the number row was added because those two never reached the game on the developer's keyboard. The
     /// state is shown in the corner of the screen; nothing is saved.
+    /// U: the visual direction of the UI, A → B → C (26 §3). G: the stamina display, (a) the bar at the top ↔ (b) the
+    /// gravity ring as the gauge (26 §5.1). Both work on every screen, are shown in the F1 overlay and are not saved.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
     /// what a keyboard really sends.
     /// </summary>
@@ -357,6 +359,8 @@ namespace Incremental
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
                 if (kb.homeKey.wasPressedThisFrame) root.DebugDrainStamina();
                 if (kb.insertKey.wasPressedThisFrame) CycleFollow();
+                if (kb.uKey.wasPressedThisFrame) CycleUiDirection();
+                if (kb.gKey.wasPressedThisFrame) ToggleStaminaDisplay();
                 if (root.Abilities != null) AbilityKeys(kb);
                 if (overlay) LogKeys(kb);
             }
@@ -365,7 +369,8 @@ namespace Incremental
             root.Hud.SetDebug(overlay
                 ? string.Format(UIStrings.DebugOverlay, fps, root.Dust.Count, root.LastTickMs, root.MaxTickMs,
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
-                    root.Dust.OutsideCount)
+                    root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
+                    root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRingShort : UIStrings.StaminaDisplayBarShort)
                 : string.Empty);
             root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
         }
@@ -417,6 +422,30 @@ namespace Incremental
             root.StaminaDrain = new StaminaOverride { enabled = true, holdDrain = next.holdDrain, idleDrain = next.idleDrain };
             root.Hud.ShowToast(string.Format(UIStrings.StaminaPreset, UIStrings.StaminaPresetName(next.id), next.holdDrain, next.idleDrain));
             Debug.Log($"[Debug] stamina preset: {next.id} hold={next.holdDrain} idle={next.idleDrain}");
+        }
+
+        /// <summary>
+        /// U (26 §3): the next visual direction of the UI, A → B → C → A. Every screen redraws in it at once. Runtime
+        /// only: the direction a fresh launch starts in is UITheme.direction.
+        /// </summary>
+        public void CycleUiDirection()
+        {
+            root.Ui.SetDirection(root.Ui.DirectionIndex + 1);
+            string name = UIStrings.UiDirectionName(root.Ui.Direction.id);
+            root.Hud.ShowToast(string.Format(UIStrings.UiDirectionToast, name));
+            Debug.Log("[UI] direction: " + name);
+        }
+
+        /// <summary>
+        /// G (26 §5.1): the stamina display, (a) the bar at the top ↔ (b) the gravity ring as the gauge. Runtime only:
+        /// a fresh launch starts with UITheme.staminaMode.
+        /// </summary>
+        public void ToggleStaminaDisplay()
+        {
+            root.Ui.SetStaminaMode(root.Ui.StaminaMode == 1 ? 0 : 1);
+            string name = root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRing : UIStrings.StaminaDisplayBar;
+            root.Hud.ShowToast(string.Format(UIStrings.StaminaDisplayToast, name));
+            Debug.Log("[UI] stamina display: " + name);
         }
 
         /// <summary>

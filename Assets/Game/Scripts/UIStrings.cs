@@ -53,7 +53,15 @@ namespace Incremental
         public const string EndingContinue = "계속하기  (Space)";
 
         // Debug overlay
-        public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}";
+        /// <summary>{8} = the UI direction id (key U), {9} = the stamina display, a or b (key G), 26 §6.</summary>
+        public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI 방향 {8} [U]   스태미나 {9} [G]";
+        /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>
+        public const string UiDirectionToast = "UI 방향: {0}  (U)";
+        public const string StaminaDisplayToast = "스태미나 표시: {0}  (G)";
+        public const string StaminaDisplayBar = "(a) 위쪽 막대";
+        public const string StaminaDisplayRing = "(b) 중력 고리";
+        public const string StaminaDisplayBarShort = "a";
+        public const string StaminaDisplayRingShort = "b";
         public const string EffectIntensity = "연출 강도 {0:0.0}";
         public const string On = "켜짐";
         public const string Off = "꺼짐";
