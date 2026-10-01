@@ -57,6 +57,8 @@ namespace Incremental
         public NodeTable nodeTable;
         [Tooltip("Special abilities (24). Without it the game runs with none.")]
         public AbilityTable abilityTable;
+        [Tooltip("The look of the UI: fonts, palette, shapes, animation times (26 §4).")]
+        public UITheme uiTheme;
 
         [Header("Render")]
         public Material unlitMaterial;
@@ -97,6 +99,8 @@ namespace Incremental
         /// <summary>24: the special abilities of the run, ticked right before the dust.</summary>
         public AbilitySystem Abilities { get; private set; }
         public PerfBench Perf { get; private set; }
+        /// <summary>26 §4: fonts, shape materials and the visual direction the UI is drawn in.</summary>
+        public UIStyle Ui { get; private set; }
         public HudView Hud { get; private set; }
         public CursorView Cursor { get; private set; }
         public ResultView Result { get; private set; }
@@ -236,8 +240,10 @@ namespace Incremental
 
             var hudGo = new GameObject("HudView");
             hudGo.transform.SetParent(transform, false);
+            Ui = new UIStyle(uiTheme);
+            UIStyle.SetEffect(EffectIntensity);
             Hud = hudGo.AddComponent<HudView>();
-            Hud.Build();
+            Hud.Build(this);
             Hud.SetCountLifetime(gameParams.planetPopDurationSec + gameParams.planetHoldSec + gameParams.planetDepartSec * 0.5);
             UIBuilder.EnsureEventSystem(transform);
 
@@ -455,6 +461,8 @@ namespace Incremental
         void Update()
         {
             ApplyWorldScale();
+            // 26 §4: the light of the UI follows the effect intensity like every other effect.
+            UIStyle.SetEffect(EffectIntensity);
             // Between runs the result screen and the tree show their own numbers (Space is handled there too). The dust is
             // drawn during runs, and on the result screen only as the supernova remnant (15 §4.3).
             Hud.SetRunHudVisible(Phase == GamePhase.Run);

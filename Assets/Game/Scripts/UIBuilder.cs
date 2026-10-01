@@ -1,4 +1,4 @@
-using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace Incremental
 {
-    /// <summary>Small helpers to build uGUI (Legacy Text) from code so nothing has to be hand-assembled in the scene.</summary>
+    /// <summary>Small helpers to build uGUI (TextMeshPro text, 26 §4) from code so nothing has to be hand-assembled in the scene.</summary>
     public static class UIBuilder
     {
         static Sprite solidSprite;
@@ -77,26 +77,14 @@ namespace Incremental
             rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
         }
 
-        /// <summary>Korean-capable dynamic font: OS "Malgun Gothic" on Windows, otherwise the built-in legacy font.</summary>
-        public static Font LoadFont()
-        {
-            Font font = null;
-            try
-            {
-                string[] os = Font.GetOSInstalledFontNames();
-                if (Array.IndexOf(os, "Malgun Gothic") >= 0) font = Font.CreateDynamicFontFromOSFont("Malgun Gothic", 32);
-            }
-            catch (Exception) { font = null; }
-            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            return font;
-        }
-
         public static Canvas CreateCanvas(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var canvas = go.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            // UIShape passes the rect size and state of a shape in the second UV set.
+            canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1;
             var scaler = go.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
@@ -139,18 +127,53 @@ namespace Incremental
             return rt;
         }
 
-        public static Text CreateText(string name, Transform parent, Font font, int fontSize, TextAnchor align, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size)
+        /// <summary>
+        /// A TextMeshPro label that behaves like the Legacy Text it replaced: no wrapping, overflow allowed, rich text
+        /// on. Kerning is off so that digits keep the one width UIStyle gave them.
+        /// </summary>
+        public static TMP_Text CreateText(string name, Transform parent, TMP_FontAsset font, float fontSize, TextAnchor align, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size)
         {
             var rt = CreateRect(name, parent, anchor, pivot, pos, size);
-            var t = rt.gameObject.AddComponent<Text>();
-            t.font = font;
+            var t = rt.gameObject.AddComponent<TextMeshProUGUI>();
+            if (font != null) t.font = font;
             t.fontSize = fontSize;
-            t.alignment = align;
+            t.alignment = Alignment(align);
             t.color = Color.white;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.overflowMode = TextOverflowModes.Overflow;
+            t.richText = true;
+            var features = t.fontFeatures;
+            features.Clear();
+            t.fontFeatures = features;
             t.raycastTarget = false;
             return t;
+        }
+
+        static TextAlignmentOptions Alignment(TextAnchor a)
+        {
+            switch (a)
+            {
+                case TextAnchor.UpperLeft: return TextAlignmentOptions.TopLeft;
+                case TextAnchor.UpperCenter: return TextAlignmentOptions.Top;
+                case TextAnchor.UpperRight: return TextAlignmentOptions.TopRight;
+                case TextAnchor.MiddleLeft: return TextAlignmentOptions.Left;
+                case TextAnchor.MiddleRight: return TextAlignmentOptions.Right;
+                case TextAnchor.LowerLeft: return TextAlignmentOptions.BottomLeft;
+                case TextAnchor.LowerCenter: return TextAlignmentOptions.Bottom;
+                case TextAnchor.LowerRight: return TextAlignmentOptions.BottomRight;
+                default: return TextAlignmentOptions.Center;
+            }
+        }
+
+        /// <summary>A shape of the panel shader (26 §4) in the look of its role. Not a raycast target unless asked.</summary>
+        public static UIShape CreateShape(string name, Transform parent, UIStyle style, UIRole role, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size)
+        {
+            var rt = CreateRect(name, parent, anchor, pivot, pos, size);
+            var shape = rt.gameObject.AddComponent<UIShape>();
+            shape.material = style.MaterialFor(role);
+            shape.Pad = style.Theme.shapePadPx;
+            shape.raycastTarget = false;
+            return shape;
         }
 
         public static Image CreateImage(string name, Transform parent, Color color, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, Sprite sprite = null)
@@ -163,9 +186,12 @@ namespace Incremental
             return img;
         }
 
-        /// <summary>Plain uGUI Button (solid background + Legacy Text label). Disabled state is clearly greyed out.</summary>
-        public static Button CreateButton(string name, Transform parent, Font font, int fontSize, string label,
-            Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction onClick, out Text labelText)
+        /// <summary>
+        /// Plain uGUI Button (solid background + label). Disabled state is clearly greyed out. The skill tree still
+        /// uses it; the new style is <see cref="UIButton"/> (26 §6: the tree follows once a direction is chosen).
+        /// </summary>
+        public static Button CreateButton(string name, Transform parent, TMP_FontAsset font, int fontSize, string label,
+            Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction onClick, out TMP_Text labelText)
         {
             var img = CreateImage(name, parent, new Color(0.25f, 0.45f, 0.8f, 1f), anchor, pivot, pos, size, SolidSprite());
             img.raycastTarget = true;

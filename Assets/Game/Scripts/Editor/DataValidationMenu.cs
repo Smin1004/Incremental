@@ -52,6 +52,19 @@ namespace Incremental.EditorTools
             report.Errors.AddRange(paramReport.Errors);
             report.Warnings.AddRange(paramReport.Warnings);
 
+            // 26 §4: the UI theme. Its values are tuned by eye in the inspector, so only what would break the UI is an error.
+            var themes = LoadAll<UITheme>();
+            if (themes.Count != 1)
+            {
+                Debug.LogError($"[Validate] expected exactly one UITheme, found {themes.Count} (menu Incremental/Setup/1. Create Data Assets).");
+                return 1;
+            }
+            var themeReport = DataValidator.ValidateTheme(themes[0]);
+            foreach (var e in themeReport.Errors) Debug.LogError("[Validate] " + e, themes[0]);
+            foreach (var w in themeReport.Warnings) Debug.LogWarning("[Validate] " + w, themes[0]);
+            report.Errors.AddRange(themeReport.Errors);
+            report.Warnings.AddRange(themeReport.Warnings);
+
             int drift = WarnSeedDrift(c, n) + WarnParamsDrift(gameParams[0]) + WarnAbilityDrift(a);
             if (report.Ok)
             {

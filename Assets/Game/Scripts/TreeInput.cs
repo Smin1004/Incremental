@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -17,7 +18,7 @@ namespace Incremental
         public RectTransform rt;
         public Image core;
         public Image glow;
-        public Text label;
+        public TMP_Text label;
         public float size;
 
         public void OnPointerDown(PointerEventData e) { if (e.button == PointerEventData.InputButton.Left) view.OnNodeDown(this); }

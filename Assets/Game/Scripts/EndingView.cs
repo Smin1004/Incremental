@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -31,8 +32,8 @@ namespace Incremental
         MaterialPropertyBlock ringMpb, coreMpb;
         SpriteRenderer fadeIn;
         Canvas canvas;
-        Text[] credits;
-        Text continueText;
+        TMP_Text[] credits;
+        TMP_Text continueText;
 
         bool replay;
         bool playing;
@@ -88,7 +89,7 @@ namespace Incremental
             canvas.sortingOrder = 30;
             var rect = (RectTransform)canvas.transform;
             var c = new Vector2(0.5f, 0.5f);
-            credits = new Text[CreditKeys.Length];
+            credits = new TMP_Text[CreditKeys.Length];
             for (int i = 0; i < credits.Length; i++)
             {
                 int size = i == 0 ? p.creditTitleFontSize : p.creditFontSize;

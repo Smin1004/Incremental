@@ -1,0 +1,389 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 479d3a5dff86ec1468714dd41f4d8fbc, type: 3}
+  m_Name: UITheme
+  m_EditorClassIdentifier: 
+  fontRegular: {fileID: 12800000, guid: 009f13a46967d9a4db674a7e785de09f, type: 3}
+  fontBold: {fileID: 12800000, guid: 2917cdeecfc785443a1fd3716bfeadb6, type: 3}
+  textShader: {fileID: 4800000, guid: fe393ace9b354375a9cb14cdbbc28be4, type: 3}
+  fontSamplingSize: 56
+  fontPaddingPx: 6
+  fontAtlasSize: 2048
+  tabularDigits: 1
+  sizeDisplay: 64
+  sizeTitle: 40
+  sizeLarge: 30
+  sizeBody: 24
+  sizeSmall: 20
+  sizeTiny: 17
+  direction: 0
+  directions:
+  - id: A
+    text: {r: 0.86, g: 0.92, b: 1, a: 1}
+    textDim: {r: 0.52, g: 0.64, b: 0.8, a: 1}
+    accent: {r: 1, g: 0.82, b: 0.42, a: 1}
+    line: {r: 0.62, g: 0.82, b: 1, a: 0.28}
+    textShadow: {r: 0, g: 0, b: 0, a: 0.55}
+    textShadowOffset: {x: 0, y: -0.5}
+    textShadowSoftness: 0.25
+    panel:
+      fill: {r: 0.015, g: 0.03, b: 0.065, a: 0.74}
+      fillShade: 0.2
+      border: {r: 0.62, g: 0.82, b: 1, a: 0.3}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0.8, g: 0.92, b: 1, a: 0.95}
+      bracketLenPx: 22
+      bracketPx: 2
+      tickSpacingPx: 12
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 30
+      glowStrength: 0.05
+      sheen: 0
+      shadowPx: 30
+      shadowAlpha: 0.25
+      stateGlow: 0.3
+      segmentPx: 0
+      segmentGapPx: 2
+    button:
+      fill: {r: 0.25, g: 0.5, b: 0.9, a: 0.1}
+      fillShade: 0
+      border: {r: 0.62, g: 0.82, b: 1, a: 0.7}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 1, g: 0.82, b: 0.42, a: 1}
+      bracketLenPx: 12
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 22
+      glowStrength: 0.12
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.6
+      segmentPx: 0
+      segmentGapPx: 2
+    chip:
+      fill: {r: 0.62, g: 0.82, b: 1, a: 0.08}
+      fillShade: 0
+      border: {r: 0.62, g: 0.82, b: 1, a: 0.55}
+      borderPx: 1
+      cornerPx: 3
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+    bar:
+      fill: {r: 0.02, g: 0.04, b: 0.08, a: 0.55}
+      fillShade: 0
+      border: {r: 0.62, g: 0.82, b: 1, a: 0.45}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0.8, g: 0.92, b: 1, a: 0.9}
+      bracketLenPx: 6
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 8
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 12
+      segmentGapPx: 2
+    badge:
+      fill: {r: 1, g: 0.82, b: 0.42, a: 0.12}
+      fillShade: 0
+      border: {r: 1, g: 0.82, b: 0.42, a: 0.9}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 10
+      glowStrength: 0.1
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 1.2
+      segmentPx: 0
+      segmentGapPx: 2
+  - id: B
+    text: {r: 0.96, g: 0.97, b: 1, a: 1}
+    textDim: {r: 0.7, g: 0.76, b: 0.9, a: 1}
+    accent: {r: 1, g: 0.9, b: 0.62, a: 1}
+    line: {r: 0.78, g: 0.86, b: 1, a: 0.16}
+    textShadow: {r: 0, g: 0, b: 0.05, a: 0.45}
+    textShadowOffset: {x: 0, y: -0.7}
+    textShadowSoftness: 0.45
+    panel:
+      fill: {r: 0.1, g: 0.13, b: 0.28, a: 0.58}
+      fillShade: 0.45
+      border: {r: 0.78, g: 0.86, b: 1, a: 0.3}
+      borderPx: 1.5
+      cornerPx: 26
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 34
+      glowStrength: 0.22
+      sheen: 0.1
+      shadowPx: 36
+      shadowAlpha: 0.5
+      stateGlow: 0.3
+      segmentPx: 0
+      segmentGapPx: 2
+    button:
+      fill: {r: 0.36, g: 0.5, b: 0.98, a: 0.42}
+      fillShade: 0.35
+      border: {r: 0.78, g: 0.86, b: 1, a: 0.55}
+      borderPx: 1.5
+      cornerPx: 20
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 18
+      glowStrength: 0.3
+      sheen: 0.16
+      shadowPx: 18
+      shadowAlpha: 0.35
+      stateGlow: 0.7
+      segmentPx: 0
+      segmentGapPx: 2
+    chip:
+      fill: {r: 1, g: 1, b: 1, a: 0.14}
+      fillShade: 0
+      border: {r: 1, g: 1, b: 1, a: 0.3}
+      borderPx: 1
+      cornerPx: 8
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+    bar:
+      fill: {r: 0.1, g: 0.13, b: 0.28, a: 0.6}
+      fillShade: 0.3
+      border: {r: 0.78, g: 0.86, b: 1, a: 0.35}
+      borderPx: 1.5
+      cornerPx: 11
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 8
+      glowStrength: 0.25
+      sheen: 0.25
+      shadowPx: 12
+      shadowAlpha: 0.35
+      stateGlow: 0.6
+      segmentPx: 0
+      segmentGapPx: 2
+    badge:
+      fill: {r: 1, g: 0.9, b: 0.62, a: 0.22}
+      fillShade: 0
+      border: {r: 1, g: 0.9, b: 0.62, a: 0.75}
+      borderPx: 1
+      cornerPx: 12
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 10
+      glowStrength: 0.25
+      sheen: 0.15
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 1.2
+      segmentPx: 0
+      segmentGapPx: 2
+  - id: C
+    text: {r: 1, g: 1, b: 1, a: 1}
+    textDim: {r: 0.74, g: 0.8, b: 0.92, a: 1}
+    accent: {r: 1, g: 0.84, b: 0.45, a: 1}
+    line: {r: 1, g: 1, b: 1, a: 0}
+    textShadow: {r: 0, g: 0, b: 0, a: 0.95}
+    textShadowOffset: {x: 0, y: -0.9}
+    textShadowSoftness: 0.6
+    panel:
+      fill: {r: 0, g: 0, b: 0, a: 0}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+    button:
+      fill: {r: 0, g: 0, b: 0, a: 0}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+    chip:
+      fill: {r: 0, g: 0, b: 0, a: 0}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+    bar:
+      fill: {r: 1, g: 1, b: 1, a: 0.14}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 2
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 6
+      shadowAlpha: 0.5
+      stateGlow: 0.4
+      segmentPx: 0
+      segmentGapPx: 2
+    badge:
+      fill: {r: 0, g: 0, b: 0, a: 0}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+  panelMaterial: {fileID: 2100000, guid: 766c95134a144414083efe7415801a13, type: 2}
+  shapePadPx: 40
+  hudDebugText: {r: 1, g: 1, b: 0.6, a: 1}
+  hudToastText: {r: 1, g: 1, b: 0.75, a: 1}
+  staminaMode: 0
+  staminaFull: {r: 0.72, g: 0.88, b: 1, a: 1}
+  staminaMid: {r: 1, g: 0.62, b: 0.2, a: 1}
+  staminaLow: {r: 1, g: 0.27, b: 0.22, a: 1}
+  staminaWarnAt: 0.5
+  staminaLowAt: 0.2
+  staminaPulseHz: 2.2
+  staminaPulseDepth: 0.55
+  staminaBarSize: {x: 600, y: 22}
+  staminaBarSmallSize: {x: 260, y: 6}
+  staminaRingWidthPx: 3
+  staminaRingAlpha: 0.9
+  staminaRingTrackAlpha: 0.1
+  staminaRingSegments: 96
+  resultPanelSize: {x: 600, y: 820}
+  resultPanelMarginPx: 48
+  resultRowHeightPx: 26.5
+  resultIconPx: 19
+  resultIconLight: {x: 1, y: 0.25}
+  resultButtonSize: {x: 420, y: 76}
+  incomeRollSec: 0.8
+  valuePopScale: 0.08
+  valuePopSec: 0.22
+  rowStartSec: 0.12
+  rowStaggerSec: 0.05
+  rowFadeSec: 0.2
+  rowSlidePx: 16
+  badgeFlashSec: 0.7
+  buttonHoverSec: 0.12
+  buttonPressScale: 0.96
+  buttonChipGapPx: 14
+  chipPaddingPx: {x: 11, y: 4}

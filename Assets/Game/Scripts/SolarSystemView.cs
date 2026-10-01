@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -76,7 +77,7 @@ namespace Incremental
         {
             public RectTransform root;
             public Image backing;
-            public Text text;
+            public TMP_Text text;
         }
 
         const int OrbitSegments = 128;
@@ -598,12 +599,11 @@ namespace Incremental
                 backing.sprite = UIBuilder.SolidSprite();
                 backing.raycastTarget = false;
                 var t = UIBuilder.CreateText("Text", rt, root.Hud.Font, 21, TextAnchor.MiddleCenter, c, c, Vector2.zero, new Vector2(10f, 28f));
-                t.supportRichText = true;
                 labels.Add(new Label { root = rt, backing = backing, text = t });
             }
             var label = labels[index];
             label.text.text = text;
-            label.text.color = new Color(0.88f, 0.92f, 1f, 1f);
+            label.text.color = root.Ui.Direction.text;
             label.backing.color = p.orbitLabelBacking;
             width = label.text.preferredWidth + 16f;
             label.root.sizeDelta = new Vector2(width, 28f);

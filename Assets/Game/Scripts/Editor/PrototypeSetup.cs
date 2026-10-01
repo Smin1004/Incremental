@@ -24,6 +24,12 @@ namespace Incremental.EditorTools
         const string CelestialPath = DataDir + "/CelestialTable.asset";
         const string NodePath = DataDir + "/NodeTable.asset";
         const string AbilityPath = DataDir + "/AbilityTable.asset";
+        const string ThemePath = DataDir + "/UITheme.asset";
+        const string UiMaterialPath = MaterialsDir + "/UIPanel.mat";
+        const string UiShaderName = "Incremental/UIPanel";
+        const string FontRegularPath = GameDir + "/UI/Fonts/Pretendard-Regular.otf";
+        const string FontBoldPath = GameDir + "/UI/Fonts/Pretendard-SemiBold.otf";
+        const string TextShaderName = "TextMeshPro/Mobile/Distance Field";
         const string MaterialPath = MaterialsDir + "/DustUnlit.mat";
         const string PlanetMaterialPath = MaterialsDir + "/Planet.mat";
         const string PlanetShaderName = "Incremental/Planet";
@@ -67,10 +73,30 @@ namespace Incremental.EditorTools
             });
             // AbilityTable field initializers hold the 24 values, the way GameParams holds the §6 ones.
             var a = LoadOrCreate<AbilityTable>(AbilityPath, _ => { });
+            // UITheme field initializers hold the 26 values (palette, shapes, times); the file references are wired below.
+            var u = LoadOrCreate<UITheme>(ThemePath, _ => { });
+            WireTheme(u);
             int added = AddMissing(c, n);
             AssetDatabase.SaveAssets();
             Debug.Log($"[Setup] Data assets ready ({added} missing entries added): {AssetDatabase.GetAssetPath(p)}, {AssetDatabase.GetAssetPath(c)}, " +
-                      $"{AssetDatabase.GetAssetPath(n)}, {AssetDatabase.GetAssetPath(a)}");
+                      $"{AssetDatabase.GetAssetPath(n)}, {AssetDatabase.GetAssetPath(a)}, {AssetDatabase.GetAssetPath(u)}");
+        }
+
+        /// <summary>
+        /// Fills the file references the UITheme lacks (26 §4): the two Pretendard files, the TextMeshPro shader and the
+        /// panel material. A reference that is already set is kept, so another font assigned by hand stays.
+        /// </summary>
+        static void WireTheme(UITheme u)
+        {
+            if (u == null) return;
+            bool changed = false;
+            if (u.fontRegular == null) { u.fontRegular = AssetDatabase.LoadAssetAtPath<Font>(FontRegularPath); changed |= u.fontRegular != null; }
+            if (u.fontBold == null) { u.fontBold = AssetDatabase.LoadAssetAtPath<Font>(FontBoldPath); changed |= u.fontBold != null; }
+            if (u.textShader == null) { u.textShader = Shader.Find(TextShaderName); changed |= u.textShader != null; }
+            if (u.panelMaterial == null) { u.panelMaterial = AssetDatabase.LoadAssetAtPath<Material>(UiMaterialPath); changed |= u.panelMaterial != null; }
+            if (changed) EditorUtility.SetDirty(u);
+            if (u.fontRegular == null || u.fontBold == null) Debug.LogWarning("[Setup] UITheme: font files not found under " + GameDir + "/UI/Fonts");
+            if (u.textShader == null) Debug.LogWarning("[Setup] UITheme: shader '" + TextShaderName + "' not found (Window > TextMeshPro > Import TMP Essential Resources)");
         }
 
         // ---------------- seed data (keep equal to the assets) ----------------
@@ -136,6 +162,8 @@ namespace Incremental.EditorTools
             EnsureMaterial(BackgroundMaterialPath, BackgroundShaderName);
             EnsureMaterial(FxMaterialPath, FxShaderName);
             EnsureMaterial(FlashMaterialPath, FlashShaderName);
+            EnsureMaterial(UiMaterialPath, UiShaderName);
+            WireTheme(AssetDatabase.LoadAssetAtPath<UITheme>(ThemePath));
 
             if (AssetDatabase.LoadAssetAtPath<Texture2D>(CirclePath) == null)
             {
@@ -226,6 +254,7 @@ namespace Incremental.EditorTools
             root.celestialTable = AssetDatabase.LoadAssetAtPath<CelestialTable>(CelestialPath);
             root.nodeTable = AssetDatabase.LoadAssetAtPath<NodeTable>(NodePath);
             root.abilityTable = AssetDatabase.LoadAssetAtPath<AbilityTable>(AbilityPath);
+            root.uiTheme = AssetDatabase.LoadAssetAtPath<UITheme>(ThemePath);
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
             root.planetMaterial = AssetDatabase.LoadAssetAtPath<Material>(PlanetMaterialPath);
             root.dustMaterial = AssetDatabase.LoadAssetAtPath<Material>(DustMaterialPath);
@@ -275,6 +304,37 @@ namespace Incremental.EditorTools
             EditorUtility.SetDirty(n);
             AssetDatabase.SaveAssets();
             Debug.Log($"[Setup] node table rebuilt from the seed: {before} → {n.nodes.Count} nodes");
+        }
+
+        /// <summary>
+        /// Menu: puts the code defaults back into the UITheme asset (palette, shapes, sizes, times) and keeps its file
+        /// references. Overwrites what was tuned in the inspector: use it after changing the initializers in UITheme.
+        /// </summary>
+        [MenuItem("Incremental/Setup/6. Reset UI Theme To Code Defaults")]
+        public static void ResetTheme()
+        {
+            var u = AssetDatabase.LoadAssetAtPath<UITheme>(ThemePath);
+            if (u == null)
+            {
+                Debug.LogError("[Setup] UITheme asset not found (menu Incremental/Setup/1. Create Data Assets).");
+                return;
+            }
+            var regular = u.fontRegular;
+            var bold = u.fontBold;
+            var shader = u.textShader;
+            var material = u.panelMaterial;
+            var fresh = ScriptableObject.CreateInstance<UITheme>();
+            EditorUtility.CopySerialized(fresh, u);
+            Object.DestroyImmediate(fresh);
+            u.name = Path.GetFileNameWithoutExtension(ThemePath);
+            u.fontRegular = regular;
+            u.fontBold = bold;
+            u.textShader = shader;
+            u.panelMaterial = material;
+            WireTheme(u);
+            EditorUtility.SetDirty(u);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[Setup] UITheme reset to the code defaults: " + ThemePath);
         }
 
         static T LoadOrCreate<T>(string path, System.Action<T> seed) where T : ScriptableObject

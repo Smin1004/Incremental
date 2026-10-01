@@ -176,6 +176,11 @@ namespace Incremental
             { "stat.ability_amount.name", "양" },
             { "stat.ability_amount.effect", "+{0}%p" },
 
+            // Visual directions of the UI (26 §3), by UITheme direction id; Validate Data checks that every id has a key.
+            { "ui.direction.A", "A 관측 기기" },
+            { "ui.direction.B", "B 유리 패널" },
+            { "ui.direction.C", "C 패널 없음" },
+
             // Stamina drain presets of the debug key (18 §A1); Validate Data checks that every preset id has a key.
             { "stamina.preset.loose", "느슨함" },
             { "stamina.preset.proposed", "제안" },
@@ -206,6 +211,8 @@ namespace Incremental
         public static string AbilityEffectKey(string id) => "ability." + id + ".effect";
         public static string AbilityName(string id) => Get(AbilityKey(id));
         public static string StaminaPresetKey(string id) => "stamina.preset." + id;
+        public static string UiDirectionKey(string id) => "ui.direction." + id;
+        public static string UiDirectionName(string id) => Get(UiDirectionKey(id));
         public static string StatNameKey(string statId) => "stat." + statId + ".name";
         public static string StatEffectKey(string statId) => "stat." + statId + ".effect";
 

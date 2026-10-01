@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -42,10 +43,10 @@ namespace Incremental
         GameRoot root;
         GameParams p;
         NodeTable t;
-        Font font;
+        TMP_FontAsset font;
         Canvas canvas;
         RectTransform area, content, ringsLayer, edgesLayer, nodesLayer, flashLayer, tooltip;
-        Text currencyText, tooltipTitle, tooltipBody;
+        TMP_Text currencyText, tooltipTitle, tooltipBody;
         readonly List<TreeNodeWidget> widgets = new List<TreeNodeWidget>();
         readonly Dictionary<string, TreeNodeWidget> byId = new Dictionary<string, TreeNodeWidget>();
         readonly List<Edge> edges = new List<Edge>();
@@ -548,8 +549,8 @@ namespace Incremental
                 new Vector2(16f, -12f), new Vector2(350f, 32f));
             tooltipBody = UIBuilder.CreateText("Body", tooltip, font, 19, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(16f, -48f), new Vector2(350f, 100f));
-            tooltipBody.supportRichText = true;
-            tooltipBody.lineSpacing = 1.1f;
+            // TextMeshPro: extra line space in hundredths of an em.
+            tooltipBody.lineSpacing = 12f;
             tooltip.gameObject.SetActive(false);
         }
 

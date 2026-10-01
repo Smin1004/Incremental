@@ -234,6 +234,56 @@ namespace Incremental
         }
 
         /// <summary>
+        /// 26 §4: the UI theme. Missing files (fonts, shader, panel material) and values that would leave the UI blank or
+        /// divide by zero are errors; how it looks is the developer's to tune and is not checked.
+        /// </summary>
+        public static ValidationReport ValidateTheme(UITheme t)
+        {
+            var r = new ValidationReport();
+            if (t == null)
+            {
+                r.Errors.Add("UITheme: missing");
+                return r;
+            }
+            if (t.fontRegular == null) r.Errors.Add("UITheme.fontRegular: no font file (Korean text would not show)");
+            if (t.fontBold == null) r.Warnings.Add("UITheme.fontBold: no font file; the regular one is used for titles and values");
+            if (t.textShader == null) r.Errors.Add("UITheme.textShader: not set (a build would not include the TextMeshPro shader)");
+            if (t.panelMaterial == null) r.Errors.Add("UITheme.panelMaterial: not set (panels, buttons and bars would not be drawn)");
+            if (t.fontSamplingSize < 16 || t.fontPaddingPx < 1 || t.fontAtlasSize < 256)
+                r.Errors.Add($"UITheme: font atlas settings too small (sampling {t.fontSamplingSize}, padding {t.fontPaddingPx}, atlas {t.fontAtlasSize})");
+            foreach (var size in new[] { t.sizeDisplay, t.sizeTitle, t.sizeLarge, t.sizeBody, t.sizeSmall, t.sizeTiny })
+                if (!(size > 0)) r.Errors.Add("UITheme: every type scale size must be above 0");
+            if (t.directions == null || t.directions.Length == 0) r.Errors.Add("UITheme.directions: empty");
+            else
+            {
+                if (t.direction < 0 || t.direction >= t.directions.Length)
+                    r.Errors.Add($"UITheme.direction: {t.direction} is outside the {t.directions.Length} directions");
+                var ids = new HashSet<string>();
+                for (int i = 0; i < t.directions.Length; i++)
+                {
+                    var d = t.directions[i];
+                    if (d == null || string.IsNullOrEmpty(d.id))
+                    {
+                        r.Errors.Add($"UITheme.directions[{i}]: no id");
+                        continue;
+                    }
+                    if (!ids.Add(d.id)) r.Errors.Add($"UITheme.directions[{i}]: id '{d.id}' is used twice");
+                    if (!UIStrings.Has(UIStrings.UiDirectionKey(d.id))) r.Errors.Add($"UITheme.directions[{i}]: UIStrings has no '{UIStrings.UiDirectionKey(d.id)}'");
+                    if (d.panel == null || d.button == null || d.chip == null || d.bar == null || d.badge == null)
+                        r.Errors.Add($"UITheme.directions[{i}] ('{d.id}'): a shape style is missing");
+                }
+            }
+            if (t.staminaMode < 0 || t.staminaMode > 1) r.Errors.Add($"UITheme.staminaMode: {t.staminaMode} (0 = bar, 1 = gravity ring)");
+            if (!(t.staminaLowAt >= 0 && t.staminaLowAt < t.staminaWarnAt && t.staminaWarnAt <= 1))
+                r.Errors.Add($"UITheme: need 0 <= staminaLowAt ({t.staminaLowAt}) < staminaWarnAt ({t.staminaWarnAt}) <= 1");
+            if (t.staminaRingSegments < 8) r.Errors.Add($"UITheme.staminaRingSegments: {t.staminaRingSegments} (at least 8)");
+            if (t.incomeRollSec < 0 || t.rowStaggerSec < 0 || t.rowFadeSec < 0 || t.badgeFlashSec < 0 || t.buttonHoverSec < 0 || t.valuePopSec < 0)
+                r.Errors.Add("UITheme: animation times must not be negative");
+            if (!(t.resultRowHeightPx > 0) || !(t.resultIconPx > 0)) r.Errors.Add("UITheme: resultRowHeightPx and resultIconPx must be above 0");
+            return r;
+        }
+
+        /// <summary>
         /// Presentation parameters (14): ranges that would break the shaders or the views. With the celestial table, also
         /// checks that there is a background palette for every central star stage.
         /// </summary>

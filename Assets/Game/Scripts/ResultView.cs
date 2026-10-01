@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -19,16 +20,14 @@ namespace Incremental
         const float PanelWidth = 600f;
         const float PanelHeight = 820f;
         const int PlanetFontSize = 21;
-        const float PlanetLineSpacing = 0.88f;
-
-        static readonly Color PanelColor = new Color(0.05f, 0.06f, 0.1f, 0.88f);
-        static readonly Color LabelColor = new Color(0.7f, 0.75f, 0.85f, 1f);
+        /// <summary>TextMeshPro line spacing: extra space in hundredths of an em (negative = tighter).</summary>
+        const float PlanetLineSpacing = -2f;
 
         GameRoot root;
-        Font font;
+        TMP_FontAsset font;
         Canvas canvas;
         RectTransform panel;
-        Text title, incomeValue, planetNames, planetCounts, planetDeltas, ratioLabel, ratioValue, bestValue;
+        TMP_Text title, incomeValue, planetNames, planetCounts, planetDeltas, ratioLabel, ratioValue, bestValue;
         readonly StringBuilder sbNames = new StringBuilder();
         readonly StringBuilder sbCounts = new StringBuilder();
         readonly StringBuilder sbDeltas = new StringBuilder();
@@ -60,27 +59,26 @@ namespace Incremental
             panel = UIBuilder.CreateRect("Panel", canvasRect, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(48f, 0f),
                 new Vector2(PanelWidth, PanelHeight));
             var bg = panel.gameObject.AddComponent<Image>();
-            bg.color = PanelColor;
+            bg.color = root.Ui.Direction.panel.fill;
             bg.raycastTarget = true;
             panel.gameObject.AddComponent<ClickCatcher>().onClick = SkipEntry;
 
             title = Label("Title", 44, TextAnchor.MiddleCenter, 0f, -28f, PanelWidth, 56f);
-            Label("IncomeLabel", 26, TextAnchor.MiddleLeft, 40f, -110f, 520f, 34f, LabelColor).text = UIStrings.ResultIncome;
+            Label("IncomeLabel", 26, TextAnchor.MiddleLeft, 40f, -110f, 520f, 34f, root.Ui.Direction.textDim).text = UIStrings.ResultIncome;
             incomeValue = Label("IncomeValue", 64, TextAnchor.MiddleLeft, 40f, -146f, 520f, 76f);
 
-            ratioLabel = Label("RatioLabel", 28, TextAnchor.MiddleLeft, 40f, -236f, 300f, 48f, LabelColor);
+            ratioLabel = Label("RatioLabel", 28, TextAnchor.MiddleLeft, 40f, -236f, 300f, 48f, root.Ui.Direction.textDim);
             ratioLabel.text = UIStrings.ResultRatio;
             ratioValue = Label("RatioValue", 40, TextAnchor.MiddleRight, PanelWidth - 40f - 280f, -236f, 280f, 48f);
 
-            Label("PlanetsLabel", 26, TextAnchor.MiddleLeft, 40f, -306f, 520f, 34f, LabelColor).text = UIStrings.ResultPlanets;
+            Label("PlanetsLabel", 26, TextAnchor.MiddleLeft, 40f, -306f, 520f, 34f, root.Ui.Direction.textDim).text = UIStrings.ResultPlanets;
             // One row per tier in three aligned columns: name, count, change / new tag (up to 11 rows).
             planetNames = Label("PlanetNames", PlanetFontSize, TextAnchor.UpperLeft, 56f, -346f, 190f, 290f);
             planetCounts = Label("PlanetCounts", PlanetFontSize, TextAnchor.UpperRight, 246f, -346f, 110f, 290f);
             planetDeltas = Label("PlanetDeltas", PlanetFontSize, TextAnchor.UpperLeft, 376f, -346f, 200f, 290f);
-            planetDeltas.supportRichText = true;
             planetNames.lineSpacing = planetCounts.lineSpacing = planetDeltas.lineSpacing = PlanetLineSpacing;
 
-            Label("BestLabel", 28, TextAnchor.MiddleLeft, 40f, -640f, 300f, 48f, LabelColor).text = UIStrings.ResultBest;
+            Label("BestLabel", 28, TextAnchor.MiddleLeft, 40f, -640f, 300f, 48f, root.Ui.Direction.textDim).text = UIStrings.ResultBest;
             bestValue = Label("BestValue", 32, TextAnchor.MiddleRight, PanelWidth - 40f - 280f, -640f, 280f, 48f);
 
             UIBuilder.CreateButton("OpenTree", panel, font, 30, UIStrings.OpenTree,
@@ -218,10 +216,10 @@ namespace Incremental
             planetDeltas.text = sbDeltas.ToString();
         }
 
-        Text Label(string name, int size, TextAnchor align, float x, float y, float w, float h) =>
+        TMP_Text Label(string name, int size, TextAnchor align, float x, float y, float w, float h) =>
             UIBuilder.CreateText(name, panel, font, size, align, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(x, y), new Vector2(w, h));
 
-        Text Label(string name, int size, TextAnchor align, float x, float y, float w, float h, Color color)
+        TMP_Text Label(string name, int size, TextAnchor align, float x, float y, float w, float h, Color color)
         {
             var t = Label(name, size, align, x, y, w, h);
             t.color = color;
