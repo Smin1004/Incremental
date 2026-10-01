@@ -17,8 +17,8 @@ MonoBehaviour:
     unlockRing: 4
     cooldownSec: 14
     pullSpeedPx: 260
-    rangeRadiiBase: 2
-    rangeRadiiPerLevel: 1
+    rangeScreenStart: 0.4
+    rangeMinRadii: 1.5
     ringSec: 0.5
     ringWidthPx: 4
     ringColor: {r: 0.72, g: 0.88, b: 1, a: 0.85}

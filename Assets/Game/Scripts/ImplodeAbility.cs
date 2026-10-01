@@ -5,7 +5,7 @@ namespace Incremental
 {
     /// <summary>
     /// 24 §3, §16.1 수축. When its cooldown fills, a ring leaves the gravity source and reaches the end of its range in
-    /// ringSec, whatever the range is: a few gravity radii at first, more with every level of the range nodes, and the
+    /// ringSec, whatever the range is: a share of the screen at first, more with every level of the range nodes, and the
     /// far end of the screen at their last level. The dust the ring passes in a tick gets one push toward the gravity
     /// source, the same for every dust whether the gravity reaches it or not, and lights up (24 §8); so the field inside
     /// the range turns inward as one, and the reaction spreads outward with the ring. Dust already captured is mass,
@@ -56,18 +56,25 @@ namespace Incremental
             age = 0;
             // The ring stays where it started; the gravity source may move on while it spreads.
             origin = root.GravityWorld;
-            // The far end is the diagonal of everything dust can be in, the band outside the screen included: from
+            // The whole screen is the diagonal of everything dust can be in, the band outside the screen included: from
             // wherever the gravity source is, no dust is further than that.
-            Rect a = root.Dust.BoundsOf(root.CameraArea());
-            float screen = Mathf.Sqrt(a.width * a.width + a.height * a.height);
+            Rect view = root.CameraArea();
+            Rect all = root.Dust.BoundsOf(view);
+            float farthest = Mathf.Sqrt(all.width * all.width + all.height * all.height);
+            // 24 §17.1: below the last level the reach is a share of the screen's half diagonal, the middle of the
+            // screen to a corner, at the world scale of the moment; and never less than a few gravity radii.
+            float halfDiagonal = Mathf.Sqrt(view.width * view.width + view.height * view.height) * 0.5f;
             bool whole = d.WholeScreen(Level);
-            double radii = d.RangeRadii(Level);
-            reach = whole ? screen : Mathf.Min(screen, (float)(s.gravityRadius * radii / p.pixelsPerUnit));
+            double share = d.RangeScreenShare(Level);
+            float byScreen = halfDiagonal * (float)share;
+            float least = (float)(s.gravityRadius * d.rangeMinRadii / p.pixelsPerUnit);
+            reach = whole ? farthest : Mathf.Min(farthest, Mathf.Max(byScreen, least));
             pushed = 0;
+            string why = whole ? "last range level: the whole screen"
+                : least > byScreen ? "the least, " + d.rangeMinRadii.ToString("0.##") + " gravity radii; " + (share * 100).ToString("F0") + "% of the half diagonal would be " + (byScreen * p.pixelsPerUnit).ToString("F0") + " px"
+                : (share * 100).ToString("F0") + "% of the screen's half diagonal " + (halfDiagonal * p.pixelsPerUnit).ToString("F0") + " px";
             Log("fired at " + RunClock + ": push " + d.PullSpeedPx(Level).ToString("F0") + " px/s, reach " +
-                (reach * p.pixelsPerUnit).ToString("F0") + " px (" +
-                (whole ? "last range level: the whole screen" : radii.ToString("0.##") + " gravity radii") +
-                "), ring out in " + d.ringSec.ToString("0.##") + "s");
+                (reach * p.pixelsPerUnit).ToString("F0") + " px (" + why + "), ring out in " + d.ringSec.ToString("0.##") + "s");
         }
 
         protected override void Step(double dt, bool holding, in EffectiveStats s)

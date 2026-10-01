@@ -164,9 +164,11 @@ namespace Incremental.EditorTools
         /// levels. A new ability is two more lines here and a row in the AbilityTable. To make the 수축 node shorten the
         /// cooldown instead of widening the range, only its stat changes (StatIds.AbilityCooldown).
         ///
-        /// 24 §16.1: the 수축 node raises the range, one step per level, and its last level is the whole screen. That
-        /// rule reads the node's maxLevel, so giving it more levels here is all it takes. The id still says "power"
-        /// (the stat it had in the first prototype): it is the key the saves hold its level under.
+        /// 24 §16.1, §17.1: the 수축 node raises the range, and its last level is the whole screen. The levels before
+        /// it share the span from the unlock's reach to the whole screen in equal steps, and both rules read the
+        /// node's maxLevel: giving it more levels here is all it takes (checked with 5: 40, 52, 64, 76, 88%, whole).
+        /// The id still says "power" (the stat it had in the first prototype): it is the key the saves hold its
+        /// level under.
         /// </summary>
         static NodeDef AbilityNode(int ring)
         {

@@ -28,6 +28,12 @@ namespace Incremental
         /// screen" hangs on this and not on a level number, so it still holds when the nodes are given more levels.
         /// </summary>
         public bool rangeMaxed;
+        /// <summary>
+        /// 24 §17.1: how far along its range nodes the ability is, 0..1: the steps it has over the steps the tree can
+        /// give in all. 0 with only the unlock, 1 at the last level. The reach is spread over this, so giving the nodes
+        /// more levels divides the same span into more, smaller steps.
+        /// </summary>
+        public double rangeShare;
     }
 
     /// <summary>
@@ -68,9 +74,11 @@ namespace Incremental
     }
 
     /// <summary>
-    /// 24 §3, §16.1 수축. Every cooldown a ring spreads from the gravity source, and each dust it passes gets one push
-    /// toward the gravity source, whether the gravity reaches that dust or not. How far the ring goes is what the
-    /// upgrade raises: a few gravity radii at first, and the whole screen at the last level.
+    /// 24 §3, §16.1, §17.1 수축. Every cooldown a ring spreads from the gravity source, and each dust it passes gets
+    /// one push toward the gravity source, whether the gravity reaches that dust or not. How far the ring goes is what
+    /// the upgrade raises: a share of the screen at first, more with every level, and the whole screen at the last.
+    /// The reach is measured against the screen and not the gravity radius, which grows much faster than the screen
+    /// does over the game and used to swallow the steps.
     /// </summary>
     [Serializable]
     public sealed class ImplodeDef : AbilityDef
@@ -78,11 +86,14 @@ namespace Incremental
         [Tooltip("Speed added to a dust, toward the gravity source, the moment the ring passes it (px/s). The same at every " +
                  "level since 24 §16.1; an ability_power node would multiply it, but the seed has none.")]
         public double pullSpeedPx = 260;
-        [Tooltip("How far the ring goes, in gravity radii, with only the unlock owned (24 §16.1).")]
-        public double rangeRadiiBase = 2;
-        [Tooltip("Gravity radii added per ability_range level: 2 → 3 → 4 in the seed. The last level of the range nodes is " +
-                 "not on this scale: there the ring goes to the far end of the screen, however many levels the nodes have.")]
-        public double rangeRadiiPerLevel = 1;
+        [Tooltip("How far the ring goes with only the unlock owned, as a share of the screen's half diagonal (the middle of " +
+                 "the screen to a corner) at the world scale of the moment (24 §17.1). Every ability_range level adds an " +
+                 "equal step from here toward 1, and the last level is the whole screen instead: 0.4 → 0.6 → 0.8 → whole " +
+                 "screen with three levels, 0.4 → 0.52 → 0.64 → 0.76 → 0.88 → whole screen with five.")]
+        public double rangeScreenStart = 0.4;
+        [Tooltip("The ring always goes at least this many gravity radii. Late in the game the gravity radius has outgrown the " +
+                 "screen share above, and even the unlock level should reach past the gravity ring.")]
+        public double rangeMinRadii = 1.5;
         [Tooltip("Seconds the ring takes to reach the end of its range, whatever the range is.")]
         public double ringSec = 0.5;
 
@@ -107,11 +118,15 @@ namespace Incremental
         /// <summary>The push after the ability_power nodes, px/s.</summary>
         public double PullSpeedPx(in AbilityLevel lv) => pullSpeedPx * (1.0 + lv.power);
 
-        /// <summary>24 §16.1: at the last level of the range nodes the ring covers the screen and <see cref="RangeRadii"/> is not asked.</summary>
+        /// <summary>24 §16.1: at the last level of the range nodes the ring covers the screen and <see cref="RangeScreenShare"/> is not asked.</summary>
         public bool WholeScreen(in AbilityLevel lv) => lv.rangeMaxed;
 
-        /// <summary>How far the ring goes below the last level, in gravity radii.</summary>
-        public double RangeRadii(in AbilityLevel lv) => rangeRadiiBase + rangeRadiiPerLevel * lv.range;
+        /// <summary>
+        /// 24 §17.1: how far the ring goes below the last level, as a share of the screen's half diagonal:
+        /// start + (1 − start) × levels / all levels.
+        /// </summary>
+        public double RangeScreenShare(in AbilityLevel lv) =>
+            rangeScreenStart + (1.0 - rangeScreenStart) * Math.Min(1.0, Math.Max(0.0, lv.rangeShare));
 
         public override Ability CreateRuntime() => new ImplodeAbility();
 
@@ -122,8 +137,9 @@ namespace Incremental
         {
             if (!(cooldownSec > 0)) r.Errors.Add(Where + " cooldownSec must be > 0 (24 §8).");
             if (!(pullSpeedPx > 0)) r.Errors.Add(Where + " pullSpeedPx must be > 0, or the ring does nothing.");
-            if (!(rangeRadiiBase > 0)) r.Errors.Add(Where + " rangeRadiiBase must be > 0, or the unlocked ring reaches nothing (24 §16.1).");
-            if (rangeRadiiPerLevel < 0) r.Errors.Add(Where + " rangeRadiiPerLevel must be >= 0; an upgrade cannot shorten the range.");
+            if (!(rangeScreenStart > 0) || rangeScreenStart > 1)
+                r.Errors.Add(Where + " rangeScreenStart must be within 0..1 (0 excluded); it is a share of the screen's half diagonal (24 §17.1).");
+            if (rangeMinRadii < 0) r.Errors.Add(Where + " rangeMinRadii must be >= 0; 0 leaves the reach to the screen share alone.");
             if (!full.rangeMaxed)
                 r.Warnings.Add(Where + " has no ability_range node with a last level, so it never reaches the whole screen (24 §16.1).");
             if (!(ringSec > 0)) r.Errors.Add(Where + " ringSec must be > 0.");

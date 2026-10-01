@@ -249,9 +249,10 @@ namespace Incremental
         }
 
         /// <summary>
-        /// 24 §16.1: sets <see cref="AbilityLevel.rangeMaxed"/> once the range nodes are summed. The range is at its last
-        /// level when the sum is all the tree can give, which is every ability_range node naming the ability at its own
-        /// maximum; so the answer follows the table when nodes or levels are added, and nothing here counts to three.
+        /// 24 §16.1, §17.1: sets <see cref="AbilityLevel.rangeMaxed"/> and <see cref="AbilityLevel.rangeShare"/> once the
+        /// range nodes are summed. The range is at its last level when the sum is all the tree can give, which is every
+        /// ability_range node naming the ability at its own maximum, and the share is the sum over that. So both follow
+        /// the table when nodes or levels are added, and nothing here counts to three.
         /// </summary>
         static void CloseAbilityRange(ref AbilityLevel a, NodeTable t, string abilityId)
         {
@@ -261,11 +262,13 @@ namespace Incremental
             {
                 var n = t.nodes[i];
                 if (n == null || !n.enabled || n.kind != NodeKind.Stat || n.statId != StatIds.AbilityRange || n.abilityId != abilityId) continue;
-                // A node without a maximum has no last level to be at.
+                // A node without a maximum has no last level to be at, and nothing to be a share of.
                 if (n.maxLevel <= 0) return;
                 full += n.effectPerLevel * n.maxLevel;
             }
+            if (!(full > 0)) return;
             a.rangeMaxed = a.range >= full - 1e-9;
+            a.rangeShare = Math.Min(1.0, a.range / full);
         }
 
         /// <summary>True for stats whose effectPerLevel is a fraction shown as a percent.</summary>
