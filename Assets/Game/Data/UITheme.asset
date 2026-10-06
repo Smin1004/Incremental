@@ -532,6 +532,9 @@ MonoBehaviour:
     nextRunButtonSize: {x: 360, y: 76}
     tooltipSize: {x: 380, y: 160}
     tooltipPaddingPx: 16
+  transitionSec: 0.3
+  transitionColor: {r: 0, g: 0.005, b: 0.02, a: 0.9}
+  transitionZoom: 0.04
   buttonHoverSec: 0.12
   buttonPressScale: 0.96
   buttonChipGapPx: 14

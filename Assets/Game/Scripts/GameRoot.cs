@@ -102,6 +102,8 @@ namespace Incremental
         /// <summary>26 §4: fonts, shape materials and the visual direction the UI is drawn in.</summary>
         public UIStyle Ui { get; private set; }
         public HudView Hud { get; private set; }
+        /// <summary>26 §5.4: the fade between the run, the result and the tree.</summary>
+        public ScreenTransition Transition { get; private set; }
         public CursorView Cursor { get; private set; }
         public ResultView Result { get; private set; }
         public SolarSystemView Solar { get; private set; }
@@ -246,6 +248,11 @@ namespace Incremental
             Hud.Build(this);
             Hud.SetCountLifetime(gameParams.planetPopDurationSec + gameParams.planetHoldSec + gameParams.planetDepartSec * 0.5);
             UIBuilder.EnsureEventSystem(transform);
+
+            var transitionGo = new GameObject("Transition");
+            transitionGo.transform.SetParent(transform, false);
+            Transition = transitionGo.AddComponent<ScreenTransition>();
+            Transition.Init(this);
 
             var cursorGo = new GameObject("CursorView");
             cursorGo.transform.SetParent(transform, false);
@@ -459,7 +466,7 @@ namespace Incremental
         void ApplyWorldScale()
         {
             if (Cam == null) return;
-            float want = baseOrthoSize * (float)(WorldScaleActive ? WorldScale : 1.0);
+            float want = baseOrthoSize * (float)(WorldScaleActive ? WorldScale : 1.0) * (Transition != null ? Transition.Zoom : 1f);
             if (!Mathf.Approximately(Cam.orthographicSize, want)) Cam.orthographicSize = want;
         }
 
@@ -471,8 +478,10 @@ namespace Incremental
             Ui.Tick();
             // Between runs the result screen and the tree show their own numbers (Space is handled there too). The dust is
             // drawn during runs, and on the result screen only as the supernova remnant (15 §4.3).
-            Hud.SetRunHudVisible(Phase == GamePhase.Run);
-            bool dustVisible = Phase == GamePhase.Run || Ending.ShowsDust;
+            // 26 §5.4: when a run has just ended its screen stays up until the fade reaches its midpoint.
+            bool runView = Phase == GamePhase.Run || Transition.HoldingRunView;
+            Hud.SetRunHudVisible(runView);
+            bool dustVisible = runView || Ending.ShowsDust;
             DustRenderer.SetVisible(dustVisible);
             TrailRenderer.SetVisible(dustVisible);
             Hud.SetCurrency(Meta.currency, Meta.runCount);

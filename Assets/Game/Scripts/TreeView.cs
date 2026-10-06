@@ -236,7 +236,8 @@ namespace Incremental
             if (hovered != null) UpdateTooltip(hovered);
         }
 
-        void StartNextRun() => root.RequestStartRun();
+        /// <summary>26 §5.4: fades into the next run. Asked again during the fade, the run starts at once (R7).</summary>
+        void StartNextRun() => root.Transition.Play(() => root.RequestStartRun());
 
         // ---------------- node visuals ----------------
 

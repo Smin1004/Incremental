@@ -121,10 +121,11 @@ namespace Incremental
             ApplyStyle();
 
             // The ending run opens the supernova sequence instead of this panel (15 §4.3).
+            // 26 §5.4: the run screen fades into the result.
             root.RunEnded += rec =>
             {
                 if (EndingView.PlaysFor(root.Meta, rec)) root.Ending.Play(rec, false);
-                else Show(rec, true);
+                else root.Transition.Play(() => Show(rec, true), true);
             };
             root.RunStarted += Hide;
             canvas.gameObject.SetActive(false);
@@ -264,10 +265,14 @@ namespace Incremental
             }
         }
 
+        /// <summary>26 §5.4: fades to the tree. Asked again during the fade, the switch happens at once (R7).</summary>
         void OpenTree()
         {
-            Hide();
-            root.Tree.Show();
+            root.Transition.Play(() =>
+            {
+                Hide();
+                root.Tree.Show();
+            });
         }
 
         void SkipEntry()

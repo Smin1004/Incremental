@@ -277,6 +277,13 @@ namespace Incremental
         [Header("Skill tree (26 §9.2)")]
         public UITreeStyle tree = new UITreeStyle();
 
+        [Header("Screen transition (26 §5.4)")]
+        [Tooltip("Run → result → tree → run: the veil fades in and out over this long in all (× effect intensity), to this color and alpha, " +
+                 "while the camera zooms in by this share.")]
+        public float transitionSec = 0.3f;
+        public Color transitionColor = new Color(0f, 0.005f, 0.02f, 0.9f);
+        public float transitionZoom = 0.04f;
+
         [Header("Buttons (26 §4)")]
         public float buttonHoverSec = 0.12f;
         [Tooltip("Scale while pressed (1 = none).")]
