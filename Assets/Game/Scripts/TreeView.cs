@@ -7,50 +7,57 @@ using UnityEngine.UI;
 namespace Incremental
 {
     /// <summary>
-    /// Skill tree screen (12 §9), between runs after the result screen. Constellation style: nodes are glowing points on
-    /// rings (radius = treeRingR0Px + minTier × treeRingStepPx, angle = angleDeg, 12 §5), edges are thin lines, owned
-    /// paths are bright. Node states follow 12 §4. Click buys one level, holding repeats, drag pans, the wheel zooms,
-    /// hovering shows a tooltip. Opening moves the view to the frontier (the purchasable nodes). Currency is pinned to the
-    /// top; "next run" and Space always work. Built from code in its own canvas.
+    /// Skill tree screen (12 §9, 26 §9.2), between runs after the result screen. Constellation style: nodes are glowing
+    /// points on rings (radius = treeRingR0Px + minTier × treeRingStepPx, angle = angleDeg, 12 §5), edges are thin lines,
+    /// owned paths are bright, unlock nodes (gates, dust kinds, abilities) are drawn larger. Node states follow 12 §4;
+    /// a purchasable node breathes slowly. Click buys one level, holding repeats, drag pans, the wheel zooms, hovering
+    /// shows a tooltip. A purchase lights the node, runs a light along the connections from its owned prerequisites,
+    /// throws a few sparks and, for a gate, brightens that ring's circle. Opening moves the view to the frontier (the
+    /// purchasable nodes). The top and bottom bars are dark veils so the header and the help line read over the nodes;
+    /// "next run" and Space always work. Colors, sizes and times are UITheme.tree. Built from code in its own canvas.
     /// </summary>
     public sealed class TreeView : MonoBehaviour
     {
-        struct Edge
+        sealed class Edge
         {
             public Image image;
             public TreeNodeWidget from;
             public TreeNodeWidget to;
+            /// <summary>Seconds since a purchase lit this connection, or −1.</summary>
+            public float light = -1f;
         }
 
-        // Presentation (canvas units at the 1080p reference).
-        const float StatSize = 18f, GateSize = 30f, CenterSize = 44f, GlowScale = 2.6f;
-        const float EdgeWidth = 2f, RingWidth = 2f;
-        const int FlashPool = 8;
-        const float FlashSec = 0.4f;
-        const float TopBarHeight = 80f, BottomBarHeight = 110f, ViewMargin = 90f;
+        /// <summary>A purchase effect dot: a light travelling along a connection, or a spark flying off the node.</summary>
+        sealed class Spark
+        {
+            public Image img;
+            public Vector2 from, to;
+            public float age = -1f;
+            public float sec;
+            public float size;
+            public Color color;
+            public bool shrinks;
+        }
 
-        static readonly Color LockedColor = new Color(0.45f, 0.5f, 0.62f, 0.55f);
-        static readonly Color ShortColor = new Color(0.75f, 0.8f, 0.95f, 0.9f);
-        static readonly Color OwnedColor = new Color(1f, 0.93f, 0.72f, 1f);
-        static readonly Color MaxedColor = new Color(1f, 0.84f, 0.45f, 1f);
-        static readonly Color EdgeDim = new Color(0.5f, 0.55f, 0.72f, 0.18f);
-        static readonly Color EdgeOwned = new Color(0.95f, 0.88f, 0.62f, 0.6f);
-        static readonly Color EdgeMaxed = new Color(1f, 0.9f, 0.55f, 0.95f);
-        static readonly Color LabelDim = new Color(0.65f, 0.7f, 0.8f, 0.7f);
-        static readonly Color LabelOk = new Color(0.95f, 0.95f, 1f, 1f);
-        static readonly Color LabelShort = new Color(1f, 0.45f, 0.42f, 1f);
+        const int FlashPool = 8;
+        const int SparkPool = 48;
 
         GameRoot root;
         GameParams p;
         NodeTable t;
+        UITheme theme;
+        UITreeStyle st;
         TMP_FontAsset font;
         Canvas canvas;
-        RectTransform area, content, ringsLayer, edgesLayer, nodesLayer, flashLayer, tooltip;
-        TMP_Text currencyText, tooltipTitle, tooltipBody;
+        RectTransform area, content, ringsLayer, edgesLayer, flashLayer, nodesLayer, tooltip;
+        UIShape topVeil, bottomVeil, tooltipShape;
+        TMP_Text title, currencyLabel, currencyValue, hint, tooltipTitle, tooltipBody;
+        string currencyShown;
         readonly List<TreeNodeWidget> widgets = new List<TreeNodeWidget>();
         readonly Dictionary<string, TreeNodeWidget> byId = new Dictionary<string, TreeNodeWidget>();
         readonly List<Edge> edges = new List<Edge>();
         readonly List<UIRing> rings = new List<UIRing>();
+        float[] ringLight;
         readonly Dictionary<NodeDef, string> names = new Dictionary<NodeDef, string>();
         TreeNodeWidget center;
 
@@ -70,6 +77,9 @@ namespace Incremental
         readonly Image[] flashes = new Image[FlashPool];
         readonly float[] flashAge = new float[FlashPool];
         int nextFlash;
+        readonly Spark[] sparks = new Spark[SparkPool];
+        int nextSpark;
+        readonly System.Random fxRng = new System.Random(7);
 
         public bool IsVisible => canvas != null && canvas.gameObject.activeSelf;
 
@@ -78,7 +88,10 @@ namespace Incremental
             root = gameRoot;
             p = root.gameParams;
             t = root.nodeTable;
-            font = root.Hud.Font;
+            var ui = root.Ui;
+            theme = ui.Theme;
+            st = theme.tree;
+            font = ui.Font;
 
             canvas = UIBuilder.CreateCanvas("SkillTree", transform);
             canvas.sortingOrder = 20;
@@ -99,19 +112,21 @@ namespace Incremental
             nodesLayer = UIBuilder.CreateRect("Nodes", content, c, c, Vector2.zero, Vector2.zero);
 
             int ringCount = root.celestialTable.MaxTier;
+            ringLight = new float[ringCount];
             for (int k = 1; k <= ringCount; k++)
             {
                 var rt = UIBuilder.CreateRect("Ring" + k, ringsLayer, c, c, Vector2.zero, Vector2.zero);
                 var ring = rt.gameObject.AddComponent<UIRing>();
                 ring.raycastTarget = false;
-                ring.Set(RingRadius(k), RingWidth, 128);
+                ring.Set(RingRadius(k), st.ringWidth, 128);
                 rings.Add(ring);
+                ringLight[k - 1] = -1f;
             }
 
-            center = MakeWidget(null, Vector2.zero, CenterSize);
+            center = MakeWidget(null, Vector2.zero, st.centerSize);
             foreach (var n in t.nodes)
             {
-                var w = MakeWidget(n, NodePosition(n), n.IsGate ? GateSize : StatSize);
+                var w = MakeWidget(n, NodePosition(n), NodeSize(n));
                 widgets.Add(w);
                 byId[n.id] = w;
             }
@@ -129,12 +144,34 @@ namespace Incremental
                 flashes[i] = UIBuilder.CreateImage("Flash" + i, flashLayer, Color.clear, c, c, Vector2.zero, Vector2.one, UIBuilder.SoftDotSprite());
                 flashes[i].gameObject.SetActive(false);
             }
+            for (int i = 0; i < SparkPool; i++)
+            {
+                var img = UIBuilder.CreateImage("Spark" + i, flashLayer, Color.clear, c, c, Vector2.zero, Vector2.one, UIBuilder.SoftDotSprite());
+                img.gameObject.SetActive(false);
+                sparks[i] = new Spark { img = img };
+            }
 
-            BuildBars(canvasRect);
-            BuildTooltip(canvasRect);
+            BuildBars(canvasRect, ui);
+            BuildTooltip(canvasRect, ui);
 
+            ui.Changed += ApplyStyle;
+            ApplyStyle();
             root.RunStarted += Hide;
             canvas.gameObject.SetActive(false);
+        }
+
+        /// <summary>26 §5.3: gates and unlock nodes (dust kinds, abilities) are drawn larger than stat nodes.</summary>
+        float NodeSize(NodeDef n) => n.IsGate ? st.gateSize : (n.IsDustUnlock || n.IsAbilityUnlock ? st.unlockSize : st.statSize);
+
+        /// <summary>Colors of the visual direction for the header, the help line and the tooltip.</summary>
+        void ApplyStyle()
+        {
+            var d = root.Ui.Direction;
+            title.color = d.text;
+            currencyLabel.color = hint.color = d.textDim;
+            currencyValue.color = d.accent;
+            tooltipTitle.color = d.text;
+            tooltipBody.color = d.text;
         }
 
         // ---------------- open / close ----------------
@@ -167,7 +204,7 @@ namespace Incremental
             var kb = Keyboard.current;
             if (kb != null && kb.spaceKey.wasPressedThisFrame && Time.frameCount != openedFrame)
             {
-                root.RequestStartRun();
+                StartNextRun();
                 return;
             }
 
@@ -195,20 +232,24 @@ namespace Incremental
             content.localScale = new Vector3(zoom, zoom, 1f);
 
             Refresh();
-            UpdateFlashes(Time.unscaledDeltaTime);
+            UpdateEffects(Time.unscaledDeltaTime);
             if (hovered != null) UpdateTooltip(hovered);
         }
+
+        void StartNextRun() => root.RequestStartRun();
 
         // ---------------- node visuals ----------------
 
         void Refresh()
         {
             var m = root.Meta;
-            currencyText.text = string.Format(UIStrings.TreeCurrency, Fmt.Num(m.currency));
-            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4f);
+            SetCurrency(m.currency);
+            float fx = root.EffectIntensity;
+            // 26 §5.3: purchasable nodes breathe slowly; nothing moves at effect intensity 0.
+            float pulse = (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * st.pulseHz * Mathf.PI * 2f)) * fx;
 
-            center.core.color = OwnedColor;
-            center.glow.color = new Color(1f, 0.85f, 0.6f, 0.55f);
+            center.core.color = st.owned;
+            center.glow.color = st.centerGlow;
             center.label.text = string.Empty;
 
             foreach (var w in widgets)
@@ -230,19 +271,22 @@ namespace Incremental
                 float glowA;
                 switch (state)
                 {
-                    case NodeState.Maxed: core = n.IsGate ? tint : MaxedColor; glowA = 0.8f; break;
-                    case NodeState.Owned: core = n.IsGate ? tint : OwnedColor; glowA = affordable ? 0.35f + 0.35f * pulse : 0.35f; break;
-                    case NodeState.Available: core = affordable ? Color.Lerp(tint, Color.white, 0.4f) : ShortColor * tint; glowA = affordable ? 0.25f + 0.5f * pulse : 0.12f; break;
-                    default: core = LockedColor * new Color(tint.r, tint.g, tint.b, 1f); glowA = 0f; break;
+                    case NodeState.Maxed: core = n.IsGate ? tint : st.maxed; glowA = 0.8f; break;
+                    case NodeState.Owned: core = n.IsGate ? tint : st.owned; glowA = 0.35f; break;
+                    case NodeState.Available: core = affordable ? Color.Lerp(tint, Color.white, 0.4f) : st.shortOfCurrency * tint; glowA = affordable ? 0.3f : 0.12f; break;
+                    default: core = st.locked * new Color(tint.r, tint.g, tint.b, 1f); glowA = 0f; break;
                 }
+                float breath = affordable ? pulse : 0f;
                 w.core.color = core;
-                w.glow.color = new Color(core.r, core.g, core.b, glowA);
+                w.glow.color = new Color(core.r, core.g, core.b, Mathf.Clamp01(glowA + st.pulseGlow * breath));
+                float s = 1f + st.pulseScale * breath;
+                w.core.transform.localScale = new Vector3(s, s, 1f);
 
                 string levelText = n.maxLevel > 0 ? string.Format(UIStrings.LevelShort, level, n.maxLevel) : string.Format(UIStrings.Level, level);
                 if (maxed) w.label.text = levelText;
                 else if (level > 0) w.label.text = levelText + "\n" + Fmt.Num(cost, Rounding.Up);
                 else w.label.text = Fmt.Num(cost, Rounding.Up);
-                w.label.color = state == NodeState.Locked ? LabelDim : (maxed || affordable ? LabelOk : LabelShort);
+                w.label.color = state == NodeState.Locked ? st.labelDim : (maxed || affordable ? st.labelOk : st.labelShort);
             }
 
             foreach (var e in edges)
@@ -252,7 +296,11 @@ namespace Incremental
                 if (!visible) continue;
                 bool fromOwned = e.from.node == null || Shop.IsOwned(m, e.from.node);
                 bool toOwned = Shop.IsOwned(m, e.to.node);
-                e.image.color = fromOwned && toOwned ? (Shop.IsMaxed(m, e.to.node) ? EdgeMaxed : EdgeOwned) : EdgeDim;
+                var col = fromOwned && toOwned ? (Shop.IsMaxed(m, e.to.node) ? st.edgeMaxed : st.edgeOwned) : st.edgeDim;
+                // A connection a purchase just ran along stays lit for a moment.
+                if (e.light >= 0f && st.edgeLightSec > 0f)
+                    col = Color.Lerp(col, st.edgeMaxed, Mathf.Clamp01(1f - e.light / st.edgeLightSec) * fx);
+                e.image.color = col;
             }
 
             for (int i = 0; i < rings.Count; i++)
@@ -260,8 +308,25 @@ namespace Incremental
                 int k = i + 1;
                 bool visible = k <= m.unlockedMaxTier + 1;
                 SetActive(rings[i], visible);
-                if (visible) rings[i].color = new Color(0.6f, 0.68f, 0.9f, k <= m.unlockedMaxTier ? 0.22f : 0.07f);
+                if (!visible) continue;
+                var col = k <= m.unlockedMaxTier ? st.ringOpen : st.ringNext;
+                // 26 §5.3: a gate purchase brightens its ring's circle, which then settles back.
+                if (ringLight[i] >= 0f && st.gateRingSec > 0f)
+                    col.a = Mathf.Lerp(col.a, st.gateRingAlpha, Mathf.Clamp01(1f - ringLight[i] / st.gateRingSec) * fx);
+                rings[i].color = col;
             }
+        }
+
+        void SetCurrency(double currency)
+        {
+            string value = Fmt.Num(currency);
+            if (value == currencyShown) return;
+            currencyShown = value;
+            currencyValue.text = value;
+            // The label sits right before the value, so the pair stays centered as the number changes width.
+            float w = currencyValue.GetPreferredValues(value).x;
+            var rt = (RectTransform)currencyLabel.transform;
+            rt.anchoredPosition = new Vector2(-w * 0.5f - st.barPaddingPx * 0.4f, rt.anchoredPosition.y);
         }
 
         Color TierColor(int tier)
@@ -276,41 +341,114 @@ namespace Incremental
         {
             if (w == null || w.node == null) return false;
             if (!root.TryBuy(w.node.id)) return false;
-            Flash(w);
+            OnBought(w);
             return true;
+        }
+
+        /// <summary>Buys one level of a node by id, with the purchase effect, as a click would (captures and checks).</summary>
+        public bool DebugBuy(string nodeId) => byId.TryGetValue(nodeId, out var w) && TryBuy(w);
+
+        /// <summary>
+        /// 26 §5.3, the purchase: the node lights up, a light runs along every connection from an owned prerequisite,
+        /// sparks fly off, and a gate brightens its ring. All of it follows the effect intensity; at 0 nothing is added.
+        /// </summary>
+        void OnBought(TreeNodeWidget w)
+        {
+            float fx = root.EffectIntensity;
+            if (fx <= 0f) return;
+            Flash(w);
+            var m = root.Meta;
+            foreach (var e in edges)
+            {
+                if (e.to != w) continue;
+                bool fromOwned = e.from.node == null || Shop.IsOwned(m, e.from.node);
+                if (!fromOwned) continue;
+                e.light = 0f;
+                Spawn(e.from.rt.anchoredPosition, w.rt.anchoredPosition, st.travelSec, st.travelDotPx, st.edgeMaxed, false);
+            }
+            for (int i = 0; i < st.sparkCount; i++)
+            {
+                float ang = (float)(fxRng.NextDouble() * Mathf.PI * 2.0);
+                float dist = st.sparkDistPx * (0.55f + 0.45f * (float)fxRng.NextDouble());
+                var to = w.rt.anchoredPosition + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * dist;
+                Spawn(w.rt.anchoredPosition, to, st.sparkSec, st.sparkPx, st.flash, true);
+            }
+            if (w.node.IsGate && w.node.tier >= 1 && w.node.tier <= ringLight.Length) ringLight[w.node.tier - 1] = 0f;
+        }
+
+        void Spawn(Vector2 from, Vector2 to, float sec, float size, Color color, bool shrinks)
+        {
+            if (sec <= 0f) return;
+            var s = sparks[nextSpark];
+            nextSpark = (nextSpark + 1) % SparkPool;
+            s.from = from;
+            s.to = to;
+            s.sec = sec;
+            s.size = size;
+            s.color = color;
+            s.shrinks = shrinks;
+            s.age = 0f;
+            s.img.rectTransform.sizeDelta = Vector2.one * size;
+            s.img.rectTransform.anchoredPosition = from;
+            s.img.color = color;
+            s.img.gameObject.SetActive(true);
         }
 
         void Flash(TreeNodeWidget w)
         {
-            float intensity = root.EffectIntensity;
-            if (intensity <= 0f) return;
             int i = nextFlash;
             nextFlash = (nextFlash + 1) % FlashPool;
             var f = flashes[i];
             var rt = (RectTransform)f.transform;
             rt.anchoredPosition = w.rt.anchoredPosition;
-            rt.sizeDelta = Vector2.one * w.size * GlowScale;
+            rt.sizeDelta = Vector2.one * w.size * st.glowScale;
             flashAge[i] = 0f;
             f.gameObject.SetActive(true);
         }
 
-        void UpdateFlashes(float dt)
+        void UpdateEffects(float dt)
         {
             float intensity = root.EffectIntensity;
+            float flashSec = Mathf.Max(0.01f, st.flashSec);
             for (int i = 0; i < FlashPool; i++)
             {
                 var f = flashes[i];
                 if (!f.gameObject.activeSelf) continue;
                 flashAge[i] += dt;
-                float k = flashAge[i] / FlashSec;
+                float k = flashAge[i] / flashSec;
                 if (k >= 1f)
                 {
                     f.gameObject.SetActive(false);
                     continue;
                 }
-                f.transform.localScale = Vector3.one * (1f + 2.5f * k);
-                f.color = new Color(1f, 0.95f, 0.8f, 0.9f * intensity * (1f - k));
+                f.transform.localScale = Vector3.one * (1f + st.flashScale * k);
+                var c = st.flash;
+                c.a *= intensity * (1f - k);
+                f.color = c;
             }
+            foreach (var s in sparks)
+            {
+                if (s.age < 0f) continue;
+                s.age += dt;
+                float k = s.age / s.sec;
+                if (k >= 1f)
+                {
+                    s.age = -1f;
+                    s.img.gameObject.SetActive(false);
+                    continue;
+                }
+                float e = 1f - (1f - k) * (1f - k);
+                s.img.rectTransform.anchoredPosition = Vector2.Lerp(s.from, s.to, e);
+                float size = s.shrinks ? s.size * (1f - k) : s.size;
+                s.img.rectTransform.sizeDelta = Vector2.one * size;
+                var c = s.color;
+                c.a *= intensity * (s.shrinks ? 1f - k : 1f);
+                s.img.color = c;
+            }
+            foreach (var e in edges)
+                if (e.light >= 0f && (e.light += dt) >= st.edgeLightSec) e.light = -1f;
+            for (int i = 0; i < ringLight.Length; i++)
+                if (ringLight[i] >= 0f && (ringLight[i] += dt) >= st.gateRingSec) ringLight[i] = -1f;
         }
 
         // ---------------- input callbacks ----------------
@@ -395,14 +533,14 @@ namespace Incremental
 
             Rect r = area.rect;
             if (r.width < 100f || r.height < 100f) r = new Rect(-960f, -540f, 1920f, 1080f); // layout not built yet
-            float halfW = r.width * 0.5f - ViewMargin;
-            float halfH = (r.height - TopBarHeight - BottomBarHeight) * 0.5f - ViewMargin * 0.5f;
+            float halfW = r.width * 0.5f - st.viewMargin;
+            float halfH = (r.height - st.topBarHeight - st.bottomBarHeight) * 0.5f - st.viewMargin * 0.5f;
             float fit = extent > 1f ? Mathf.Min(halfW, halfH) / extent : 1f;
             float z = Mathf.Clamp(Mathf.Min(1f, fit), (float)p.treeZoomMin, (float)p.treeZoomMax);
 
             panFrom = pan;
             zoomFrom = zoom;
-            panTo = -focus * z + new Vector2(0f, (BottomBarHeight - TopBarHeight) * 0.5f);
+            panTo = -focus * z + new Vector2(0f, (st.bottomBarHeight - st.topBarHeight) * 0.5f);
             zoomTo = z;
             focusT = instant ? 1f : 0f;
             if (instant)
@@ -452,7 +590,8 @@ namespace Incremental
                 {
                     double cost = Shop.Cost(t, m, n);
                     bool enough = m.currency >= cost;
-                    sb.Append('\n').Append("<color=").Append(enough ? "#FFFFFF" : "#FF7266").Append('>')
+                    var costColor = enough ? st.labelOk : st.labelShort;
+                    sb.Append('\n').Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(costColor)).Append('>')
                       .Append(string.Format(UIStrings.Cost, Fmt.Num(cost, Rounding.Up))).Append("</color>");
                     if (state == NodeState.Locked)
                     {
@@ -472,8 +611,9 @@ namespace Incremental
             {
                 Rect cr = canvasRect.rect;
                 Vector2 size = tooltip.sizeDelta;
-                float x = Mathf.Clamp(local.x + 24f, cr.xMin + 8f, cr.xMax - size.x - 8f);
-                float y = Mathf.Clamp(local.y - 24f, cr.yMin + size.y + 8f, cr.yMax - 8f);
+                float pad = st.tooltipPaddingPx;
+                float x = Mathf.Clamp(local.x + pad * 1.5f, cr.xMin + pad * 0.5f, cr.xMax - size.x - pad * 0.5f);
+                float y = Mathf.Clamp(local.y - pad * 1.5f, cr.yMin + size.y + pad * 0.5f, cr.yMax - pad * 0.5f);
                 tooltip.anchoredPosition = new Vector2(x, y);
             }
         }
@@ -507,48 +647,73 @@ namespace Incremental
             w.node = n;
             w.rt = rt;
             w.size = size;
-            w.glow = UIBuilder.CreateImage("Glow", rt, Color.clear, c, c, Vector2.zero, Vector2.one * size * GlowScale, UIBuilder.SoftDotSprite());
+            w.glow = UIBuilder.CreateImage("Glow", rt, Color.clear, c, c, Vector2.zero, Vector2.one * size * st.glowScale, UIBuilder.SoftDotSprite());
             w.core = UIBuilder.CreateImage("Core", rt, Color.white, c, c, Vector2.zero, Vector2.one * size, root.circleSprite);
             w.core.raycastTarget = true;
-            w.label = UIBuilder.CreateText("Label", rt, font, 15, TextAnchor.UpperCenter, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -4f), new Vector2(140f, 40f));
+            w.label = UIBuilder.CreateText("Label", rt, font, st.labelSize, TextAnchor.UpperCenter, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -st.labelGapPx), new Vector2(160f, st.labelSize * theme.lineHeight * 2f));
             return w;
         }
 
         void AddEdge(TreeNodeWidget from, TreeNodeWidget to)
         {
             var img = UIBuilder.CreateImage("Edge_" + (from.node != null ? from.node.id : "center") + "_" + to.node.id, edgesLayer,
-                EdgeDim, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.one, UIBuilder.SolidSprite());
-            UIBuilder.PlaceLine((RectTransform)img.transform, from.rt.anchoredPosition, to.rt.anchoredPosition, EdgeWidth);
+                st.edgeDim, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.one, UIBuilder.SolidSprite());
+            UIBuilder.PlaceLine((RectTransform)img.transform, from.rt.anchoredPosition, to.rt.anchoredPosition, st.edgeWidth);
             edges.Add(new Edge { image = img, from = from, to = to });
         }
 
-        void BuildBars(RectTransform canvasRect)
+        /// <summary>
+        /// Top bar: title left, currency (label + value) center. Bottom bar: the help line left, the "next run" button
+        /// right. Both bars are veils that fade toward the middle of the screen, so what is under them stays visible
+        /// but the text reads (26 §5.3: the help line used to collide with node costs).
+        /// </summary>
+        void BuildBars(RectTransform canvasRect, UIStyle ui)
         {
-            var top = UIBuilder.CreateImage("TopBar", canvasRect, new Color(0f, 0f, 0f, 0.45f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                Vector2.zero, new Vector2(4000f, TopBarHeight));
-            top.raycastTarget = true;
-            UIBuilder.CreateText("Title", canvasRect, font, 34, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(32f, -12f), new Vector2(400f, 56f)).text = UIStrings.TreeTitle;
-            currencyText = UIBuilder.CreateText("Currency", canvasRect, font, 34, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -12f), new Vector2(800f, 56f));
-            var hint = UIBuilder.CreateText("Hint", canvasRect, font, 20, TextAnchor.LowerLeft, new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(32f, 28f), new Vector2(1200f, 40f));
+            float pad = st.barPaddingPx;
+            topVeil = UIBuilder.CreateShape("TopVeil", canvasRect, ui, UIRole.Veil, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                Vector2.zero, new Vector2(4000f, st.topBarHeight * 1.6f));
+            topVeil.Pad = 0f;
+            topVeil.raycastTarget = true;
+            // The same veil turned upside down fades upward from the bottom edge.
+            bottomVeil = UIBuilder.CreateShape("BottomVeil", canvasRect, ui, UIRole.Veil, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
+                Vector2.zero, new Vector2(4000f, st.bottomBarHeight * 1.5f));
+            bottomVeil.Pad = 0f;
+            bottomVeil.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 180f);
+            bottomVeil.raycastTarget = true;
+
+            var left = new Vector2(0f, 1f);
+            title = UIBuilder.CreateText("Title", canvasRect, ui.FontBold, theme.sizeTitle, TextAnchor.MiddleLeft, left, left,
+                new Vector2(pad, -st.topBarHeight * 0.5f + theme.sizeTitle * theme.lineHeight * 0.5f), new Vector2(400f, theme.sizeTitle * theme.lineHeight));
+            title.text = UIStrings.TreeTitle;
+            var top = new Vector2(0.5f, 1f);
+            float midY = -st.topBarHeight * 0.5f;
+            currencyValue = UIBuilder.CreateText("Currency", canvasRect, ui.FontBold, theme.sizeLarge, TextAnchor.MiddleCenter, top, new Vector2(0.5f, 0.5f),
+                new Vector2(0f, midY), new Vector2(600f, theme.sizeLarge * theme.lineHeight));
+            currencyLabel = UIBuilder.CreateText("CurrencyLabel", canvasRect, font, theme.sizeSmall, TextAnchor.MiddleRight, top, new Vector2(1f, 0.5f),
+                new Vector2(0f, midY), new Vector2(300f, theme.sizeSmall * theme.lineHeight));
+            currencyLabel.text = UIStrings.TreeCurrencyLabel;
+
+            var bottomLeft = new Vector2(0f, 0f);
+            hint = UIBuilder.CreateText("Hint", canvasRect, font, theme.sizeSmall, TextAnchor.MiddleLeft, bottomLeft, bottomLeft,
+                new Vector2(pad, st.bottomBarHeight * 0.5f - theme.sizeSmall * theme.lineHeight * 0.5f), new Vector2(1200f, theme.sizeSmall * theme.lineHeight));
             hint.text = UIStrings.TreeHint;
-            hint.color = LabelDim;
-            UIBuilder.CreateButton("NextRun", canvasRect, font, 30, UIStrings.NextRun, new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-32f, 24f), new Vector2(360f, 76f), () => root.RequestStartRun(), out _);
+            UIButton.Create(root, "NextRun", canvasRect, UIStrings.NextRunLabel, UIStrings.KeySpace, new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(-pad, (st.bottomBarHeight - st.nextRunButtonSize.y) * 0.5f), st.nextRunButtonSize, StartNextRun);
         }
 
-        void BuildTooltip(RectTransform canvasRect)
+        void BuildTooltip(RectTransform canvasRect, UIStyle ui)
         {
-            var img = UIBuilder.CreateImage("Tooltip", canvasRect, new Color(0.05f, 0.06f, 0.1f, 0.95f), new Vector2(0.5f, 0.5f), new Vector2(0f, 1f),
-                Vector2.zero, new Vector2(380f, 150f), UIBuilder.SolidSprite());
-            tooltip = (RectTransform)img.transform;
-            tooltipTitle = UIBuilder.CreateText("Title", tooltip, font, 24, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(16f, -12f), new Vector2(350f, 32f));
-            tooltipBody = UIBuilder.CreateText("Body", tooltip, font, 19, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(16f, -48f), new Vector2(350f, 100f));
+            tooltipShape = UIBuilder.CreateShape("Tooltip", canvasRect, ui, UIRole.Panel, new Vector2(0.5f, 0.5f), new Vector2(0f, 1f),
+                Vector2.zero, st.tooltipSize);
+            tooltip = tooltipShape.rectTransform;
+            float pad = st.tooltipPaddingPx;
+            float w = st.tooltipSize.x - pad * 2f;
+            float titleH = theme.sizeBody * theme.lineHeight;
+            tooltipTitle = UIBuilder.CreateText("Title", tooltip, ui.FontBold, theme.sizeBody, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(pad, -pad * 0.75f), new Vector2(w, titleH));
+            tooltipBody = UIBuilder.CreateText("Body", tooltip, font, theme.sizeSmall, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(pad, -pad * 0.75f - titleH - pad * 0.25f), new Vector2(w, st.tooltipSize.y - titleH - pad * 2f));
             // TextMeshPro: extra line space in hundredths of an em.
             tooltipBody.lineSpacing = 12f;
             tooltip.gameObject.SetActive(false);

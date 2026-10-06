@@ -51,6 +51,78 @@ namespace Incremental
         public Color color = Color.white;
     }
 
+    /// <summary>
+    /// 26 §9.2: the skill tree screen. Sizes are canvas units at the 1080p reference; the colors that TreeView used to
+    /// keep as constants live here.
+    /// </summary>
+    [Serializable]
+    public sealed class UITreeStyle
+    {
+        [Header("Nodes")]
+        public float statSize = 18f;
+        public float gateSize = 32f;
+        [Tooltip("Dust kind and ability unlocks: drawn larger than stat nodes (26 §5.3).")]
+        public float unlockSize = 26f;
+        public float centerSize = 44f;
+        [Tooltip("The soft glow behind a node, as a multiple of its size.")]
+        public float glowScale = 2.6f;
+        [Tooltip("Cost and level text under a node, and its distance below the node.")]
+        public float labelSize = 18f;
+        public float labelGapPx = 4f;
+        public Color locked = new Color(0.45f, 0.5f, 0.62f, 0.55f);
+        [Tooltip("Available but not affordable.")]
+        public Color shortOfCurrency = new Color(0.75f, 0.8f, 0.95f, 0.9f);
+        public Color owned = new Color(1f, 0.93f, 0.72f, 1f);
+        public Color maxed = new Color(1f, 0.84f, 0.45f, 1f);
+        public Color centerGlow = new Color(1f, 0.85f, 0.6f, 0.55f);
+        public Color labelDim = new Color(0.6f, 0.68f, 0.82f, 0.85f);
+        public Color labelOk = new Color(0.96f, 0.97f, 1f, 1f);
+        public Color labelShort = new Color(1f, 0.55f, 0.48f, 1f);
+        [Tooltip("Purchasable nodes breathe: beats per second, how much glow and how much size it adds (× effect intensity).")]
+        public float pulseHz = 0.6f;
+        public float pulseGlow = 0.45f;
+        public float pulseScale = 0.08f;
+
+        [Header("Edges and rings")]
+        public float edgeWidth = 2f;
+        public Color edgeDim = new Color(0.5f, 0.55f, 0.72f, 0.18f);
+        public Color edgeOwned = new Color(0.95f, 0.88f, 0.62f, 0.6f);
+        public Color edgeMaxed = new Color(1f, 0.9f, 0.55f, 0.95f);
+        public float ringWidth = 2f;
+        [Tooltip("Ring circles: the rings bought so far, and the next one.")]
+        public Color ringOpen = new Color(0.6f, 0.68f, 0.9f, 0.22f);
+        public Color ringNext = new Color(0.6f, 0.68f, 0.9f, 0.07f);
+
+        [Header("Purchase (26 §5.3)")]
+        [Tooltip("The node lights up: a soft flash that grows to flashScale × the node and fades over flashSec.")]
+        public Color flash = new Color(1f, 0.95f, 0.8f, 0.9f);
+        public float flashSec = 0.4f;
+        public float flashScale = 2.5f;
+        [Tooltip("A light runs along each connection from an owned prerequisite to the bought node.")]
+        public float travelSec = 0.3f;
+        public float travelDotPx = 14f;
+        [Tooltip("The connections stay lit this long afterwards.")]
+        public float edgeLightSec = 0.6f;
+        [Tooltip("Small sparks fly out of the node: how many, how long, how far and how large.")]
+        public int sparkCount = 6;
+        public float sparkSec = 0.45f;
+        public float sparkDistPx = 42f;
+        public float sparkPx = 8f;
+        [Tooltip("A gate purchase brightens its ring circle to this alpha, fading over this long.")]
+        public float gateRingAlpha = 0.7f;
+        public float gateRingSec = 0.8f;
+
+        [Header("Bars and tooltip")]
+        public float topBarHeight = 80f;
+        public float bottomBarHeight = 110f;
+        [Tooltip("Side margin of the bar contents, and the room FocusFrontier keeps around the purchasable nodes.")]
+        public float barPaddingPx = 32f;
+        public float viewMargin = 90f;
+        public Vector2 nextRunButtonSize = new Vector2(360f, 76f);
+        public Vector2 tooltipSize = new Vector2(380f, 160f);
+        public float tooltipPaddingPx = 16f;
+    }
+
     /// <summary>One visual direction of the UI (26 §3): the palette, the glyph shadow and the shapes.</summary>
     [Serializable]
     public sealed class UIDirection
@@ -201,6 +273,9 @@ namespace Incremental
         public float rowSlidePx = 16f;
         [Tooltip("The best record badge lights up once for this long when the count ends.")]
         public float badgeFlashSec = 0.7f;
+
+        [Header("Skill tree (26 §9.2)")]
+        public UITreeStyle tree = new UITreeStyle();
 
         [Header("Buttons (26 §4)")]
         public float buttonHoverSec = 0.12f;

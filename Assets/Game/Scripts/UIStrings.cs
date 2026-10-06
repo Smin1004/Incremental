@@ -36,9 +36,11 @@ namespace Incremental
 
         // Skill tree (12 §9)
         public const string TreeTitle = "스킬트리";
-        public const string TreeCurrency = "보유 재화 {0}";
+        /// <summary>26 §9.2: the label over the currency value in the tree's top bar.</summary>
+        public const string TreeCurrencyLabel = "보유 재화";
         public const string TreeHint = "클릭: 구매   누르고 있기: 연속 구매   드래그: 이동   휠: 확대";
-        public const string NextRun = "다음 런  (Space)";
+        /// <summary>26 §9.2: the button's label; the key is a chip beside it (<see cref="KeySpace"/>).</summary>
+        public const string NextRunLabel = "다음 런";
         public const string Level = "Lv {0}";
         public const string LevelOf = "Lv {0}/{1}";
         public const string LevelShort = "{0}/{1}";

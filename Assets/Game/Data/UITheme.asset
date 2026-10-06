@@ -487,6 +487,51 @@ MonoBehaviour:
   rowFadeSec: 0.2
   rowSlidePx: 16
   badgeFlashSec: 0.7
+  tree:
+    statSize: 18
+    gateSize: 32
+    unlockSize: 26
+    centerSize: 44
+    glowScale: 2.6
+    labelSize: 18
+    labelGapPx: 4
+    locked: {r: 0.45, g: 0.5, b: 0.62, a: 0.55}
+    shortOfCurrency: {r: 0.75, g: 0.8, b: 0.95, a: 0.9}
+    owned: {r: 1, g: 0.93, b: 0.72, a: 1}
+    maxed: {r: 1, g: 0.84, b: 0.45, a: 1}
+    centerGlow: {r: 1, g: 0.85, b: 0.6, a: 0.55}
+    labelDim: {r: 0.6, g: 0.68, b: 0.82, a: 0.85}
+    labelOk: {r: 0.96, g: 0.97, b: 1, a: 1}
+    labelShort: {r: 1, g: 0.55, b: 0.48, a: 1}
+    pulseHz: 0.6
+    pulseGlow: 0.45
+    pulseScale: 0.08
+    edgeWidth: 2
+    edgeDim: {r: 0.5, g: 0.55, b: 0.72, a: 0.18}
+    edgeOwned: {r: 0.95, g: 0.88, b: 0.62, a: 0.6}
+    edgeMaxed: {r: 1, g: 0.9, b: 0.55, a: 0.95}
+    ringWidth: 2
+    ringOpen: {r: 0.6, g: 0.68, b: 0.9, a: 0.22}
+    ringNext: {r: 0.6, g: 0.68, b: 0.9, a: 0.07}
+    flash: {r: 1, g: 0.95, b: 0.8, a: 0.9}
+    flashSec: 0.4
+    flashScale: 2.5
+    travelSec: 0.3
+    travelDotPx: 14
+    edgeLightSec: 0.6
+    sparkCount: 6
+    sparkSec: 0.45
+    sparkDistPx: 42
+    sparkPx: 8
+    gateRingAlpha: 0.7
+    gateRingSec: 0.8
+    topBarHeight: 80
+    bottomBarHeight: 110
+    barPaddingPx: 32
+    viewMargin: 90
+    nextRunButtonSize: {x: 360, y: 76}
+    tooltipSize: {x: 380, y: 160}
+    tooltipPaddingPx: 16
   buttonHoverSec: 0.12
   buttonPressScale: 0.96
   buttonChipGapPx: 14
