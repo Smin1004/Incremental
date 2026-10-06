@@ -33,6 +33,8 @@ MonoBehaviour:
     textDim: {r: 0.52, g: 0.64, b: 0.8, a: 1}
     accent: {r: 1, g: 0.82, b: 0.42, a: 1}
     line: {r: 0.62, g: 0.82, b: 1, a: 0.28}
+    deltaUp: {r: 0.62, g: 0.82, b: 1, a: 1}
+    newTag: {r: 1, g: 0.82, b: 0.42, a: 1}
     textShadow: {r: 0, g: 0, b: 0, a: 0.55}
     textShadowOffset: {x: 0, y: -0.5}
     textShadowSoftness: 0.25
@@ -167,6 +169,8 @@ MonoBehaviour:
     textDim: {r: 0.7, g: 0.76, b: 0.9, a: 1}
     accent: {r: 1, g: 0.9, b: 0.62, a: 1}
     line: {r: 0.78, g: 0.86, b: 1, a: 0.16}
+    deltaUp: {r: 0.75, g: 0.9, b: 1, a: 1}
+    newTag: {r: 1, g: 0.9, b: 0.62, a: 1}
     textShadow: {r: 0, g: 0, b: 0.05, a: 0.45}
     textShadowOffset: {x: 0, y: -0.7}
     textShadowSoftness: 0.45
@@ -301,6 +305,8 @@ MonoBehaviour:
     textDim: {r: 0.74, g: 0.8, b: 0.92, a: 1}
     accent: {r: 1, g: 0.84, b: 0.45, a: 1}
     line: {r: 1, g: 1, b: 1, a: 0}
+    deltaUp: {r: 0.62, g: 0.82, b: 1, a: 1}
+    newTag: {r: 1, g: 0.84, b: 0.45, a: 1}
     textShadow: {r: 0, g: 0, b: 0, a: 0.95}
     textShadowOffset: {x: 0, y: -0.9}
     textShadowSoftness: 0.6

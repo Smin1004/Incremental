@@ -370,8 +370,9 @@ namespace Incremental
             if (record != null)
             {
                 var p = root.gameParams;
-                string up = ColorUtility.ToHtmlStringRGB(p.deltaUpColor);
-                string newColor = ColorUtility.ToHtmlStringRGB(p.newTierColor);
+                var d = root.Ui.Direction;
+                string up = ColorUtility.ToHtmlStringRGB(d.deltaUp);
+                string newColor = ColorUtility.ToHtmlStringRGB(d.newTag);
                 var tiers = root.celestialTable.tiers;
                 for (int i = 0; i < tiers.Count && n < rows.Length; i++)
                 {

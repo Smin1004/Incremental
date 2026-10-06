@@ -587,7 +587,7 @@ namespace Incremental
             PutLabel(label, world + Vector3.down * ((radiusPx + (float)p.orbitLabelGapPx + 14f) / Ppu));
         }
 
-        string NewTag() => "<color=#" + ColorUtility.ToHtmlStringRGB(p.newTierColor) + ">" + UIStrings.NewBody + "</color>";
+        string NewTag() => "<color=#" + ColorUtility.ToHtmlStringRGB(root.Ui.Direction.newTag) + ">" + UIStrings.NewBody + "</color>";
 
         Label PrepareLabel(int index, string text, out float width)
         {

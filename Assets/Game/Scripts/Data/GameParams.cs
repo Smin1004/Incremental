@@ -560,9 +560,6 @@ namespace Incremental
         public double orbitLabelAngleDeg = -60;
         public double orbitLabelGapPx = 6;
         public Color orbitLabelBacking = new Color(0f, 0f, 0f, 0.6f);
-        [Tooltip("Panel increases vs the comparison run (the ratio's run; decreases are not shown, 15 §3) and the \"new body\" highlight color.")]
-        public Color deltaUpColor = new Color(0.55f, 1f, 0.6f);
-        public Color newTierColor = new Color(1f, 0.85f, 0.4f);
         [Tooltip("A tier made for the first time: its orbit pulses this many times over this many seconds after the entry, once.")]
         public double newTierHighlightSec = 2;
         public int newTierPulses = 2;

@@ -136,6 +136,9 @@ namespace Incremental
         public Color accent = new Color(1f, 0.84f, 0.45f);
         [Tooltip("Divider lines; alpha 0 = none.")]
         public Color line = new Color(0.62f, 0.8f, 1f, 0.3f);
+        [Tooltip("Result list: the increase against the comparison run (▲3) and the \"new body\" tag (26 §9.2).")]
+        public Color deltaUp = new Color(0.62f, 0.82f, 1f);
+        public Color newTag = new Color(1f, 0.84f, 0.45f);
         [Tooltip("Shadow under every glyph: color with alpha (0 = none), offset and softness 0..1.")]
         public Color textShadow = new Color(0f, 0f, 0f, 0.5f);
         public Vector2 textShadowOffset = new Vector2(0f, -0.6f);
@@ -341,6 +344,8 @@ namespace Incremental
                 textDim = new Color(0.52f, 0.64f, 0.8f),
                 accent = new Color(1f, 0.82f, 0.42f),
                 line = new Color(line.r, line.g, line.b, 0.28f),
+                deltaUp = new Color(0.62f, 0.82f, 1f),
+                newTag = new Color(1f, 0.82f, 0.42f),
                 textShadow = new Color(0f, 0f, 0f, 0.55f),
                 textShadowOffset = new Vector2(0f, -0.5f),
                 textShadowSoftness = 0.25f,
@@ -393,6 +398,8 @@ namespace Incremental
                 textDim = new Color(0.7f, 0.76f, 0.9f),
                 accent = new Color(1f, 0.9f, 0.62f),
                 line = new Color(edge.r, edge.g, edge.b, 0.16f),
+                deltaUp = new Color(0.75f, 0.9f, 1f),
+                newTag = new Color(1f, 0.9f, 0.62f),
                 textShadow = new Color(0f, 0f, 0.05f, 0.45f),
                 textShadowOffset = new Vector2(0f, -0.7f),
                 textShadowSoftness = 0.45f,
@@ -442,6 +449,8 @@ namespace Incremental
                 textDim = new Color(0.74f, 0.8f, 0.92f),
                 accent = new Color(1f, 0.84f, 0.45f),
                 line = new Color(1f, 1f, 1f, 0f),
+                deltaUp = new Color(0.62f, 0.82f, 1f),
+                newTag = new Color(1f, 0.84f, 0.45f),
                 textShadow = new Color(0f, 0f, 0f, 0.95f),
                 textShadowOffset = new Vector2(0f, -0.9f),
                 textShadowSoftness = 0.6f,
