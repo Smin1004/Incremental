@@ -15,7 +15,7 @@
 | [14_Planet_Visual_Spec.md](14_Planet_Visual_Spec.md) | 행성 비주얼 스펙 (4주차). 행성 셰이더와 티어별 외형, 형성 중인 천체, 먼지, 항성 점화와 배경, 성장 강조. §8은 3주차 보고들에 대한 답 | 구현 완료 |
 | [15_Ending_Spec.md](15_Ending_Spec.md) | 엔딩과 완주 스펙 (5주차). 4주차 검토 반영, 초신성 엔딩 시퀀스, 엔들리스 상태, 봇 완주와 링 스냅샷 | 구현 완료 |
 | [16_Release_Roadmap.md](16_Release_Roadmap.md) | **출시 로드맵.** 출시 방식(판단 기준), **완성 기준 표**, 남은 개발 단계, 판단 후 절차 역산, 결정 목록 | 확정 |
-| [26_UI_Pass_Spec.md](26_UI_Pass_Spec.md) | **UI·연출 보강 (현재 인계 문서).** 지금 UI의 문제, 시각 방향 A(관측 기기)/B(유리)/C(최소), 기반(Pretendard, TMP, UITheme, UI 셰이더), 화면별 보강, 월드 연출 3건, 완성 기준 추가 | 제안 |
+| [26_UI_Pass_Spec.md](26_UI_Pass_Spec.md) | **UI·연출 보강 (현재 인계 문서).** 방향 A(관측 기기) 확정, 기반(Pretendard, TMP, UITheme, UI 셰이더), 화면별 보강, 월드 연출 3건, §9 2단계 범위 | 확정 |
 | [25_Reference_FishLab.md](25_Reference_FishLab.md) | **레퍼런스: Fish Lab.** 개발자가 꼽은 장면(장치 작동 시 군체가 한 번에 반응), 옮길 원칙 4개, 강화 진화 후보, 가져오지 않을 것 | 참고 |
 | [24_Ability_Spec.md](24_Ability_Spec.md) | **특수 능력 1차 프로토타입 (현재 인계 문서).** 수축, 위성, 유성. 능력 축 240°, 확인용 디버그 키, 테스트·측정 생략 | 확정 |
 | [23_Week7_Review.md](23_Week7_Review.md) | **7주차 검토 (최신).** 판정, 스크린샷 검토, 보고서 §9 답 8건, 완성 기준 갱신(분량 2.2시간), 남은 어긋남, 다음 단계 묶음 | 검토 완료 |
@@ -25,7 +25,7 @@
 | [19_LowTier_Options.md](19_LowTier_Options.md) | **하위 티어가 안 나오는 문제.** 원인 계산, 방안 7개 비교, 결정(가격 곡선 완화 + 파편)과 파편 트리 설계 | 결정됨 |
 | [18_Feedback_Round1.md](18_Feedback_Round1.md) | **1차 점검 피드백 정리.** 즉시 수정 3건, 먼지 흡인 보정, 먼지 종류, 다양성 보너스, 특수 능력, 이동 제한 실험, 일정 영향 | 처리안 |
 | [17_Playtest_Guide.md](17_Playtest_Guide.md) | **점검 안내 (개발자용).** 디버그 키와 에디터 메뉴, 자유 점검과 측정 플레이의 구분, 불편한 점 넘기는 형식, 바로 고칠 수 있는 값 목록 | 안내 |
-| [Prompts/](Prompts/) | 구현 세션에 붙여 넣는 작업 프롬프트. 최신은 [UI_Proto1.md](Prompts/UI_Proto1.md) | - |
+| [Prompts/](Prompts/) | 구현 세션에 붙여 넣는 작업 프롬프트. 최신은 [UI_Proto2.md](Prompts/UI_Proto2.md) | - |
 | [90_Backlog.md](90_Backlog.md) | 결정 기록, 보류, 제안, 리스크, 용어 | - |
 | [Reports/Prototype_Week1.md](Reports/Prototype_Week1.md) | 구현 세션의 1주차 보고. 개발자 기입 항목이 남아 있다 | 구현 세션 작성 |
 | [Reports/Week2.md](Reports/Week2.md) | 구현 세션의 2주차 보고. §3 질문 9개의 답은 12 §10 | 구현 세션 작성 |
@@ -48,6 +48,6 @@
 - 기획 세션은 코드를 쓰지 않는다. 문서만 관리한다.
 - 제안은 본문과 분리해 "제안" 또는 "추천"으로 표기한다.
 - 결정이 나면 `90_Backlog.md`의 결정 기록에 적고 해당 문서를 "확정"으로 올린다.
-- **구현 세션이 지금 읽을 문서: `26_UI_Pass_Spec.md`.** 프롬프트는 `Prompts/UI_Proto1.md`. 능력은 `24_Ability_Spec.md`(개발자 확인 대기). 직전 작업은 `22_Week7_Spec.md`이고 그 검토가 `23_Week7_Review.md`다. 일정 전체는 `16_Release_Roadmap.md`.
+- **구현 세션이 지금 읽을 문서: `26_UI_Pass_Spec.md`.** 프롬프트는 `Prompts/UI_Proto2.md` (2·3단계). 능력은 `24_Ability_Spec.md`(개발자 확인 대기). 직전 작업은 `22_Week7_Spec.md`이고 그 검토가 `23_Week7_Review.md`다. 일정 전체는 `16_Release_Roadmap.md`.
 - 구현 세션의 보고는 `Reports/`에 둔다. 기획 세션은 보고를 받아 수치와 스펙을 갱신한다.
 - **커밋 메시지는 한국어로 쓴다.** 상세와 예시는 저장소 루트의 [CLAUDE.md](../CLAUDE.md).
