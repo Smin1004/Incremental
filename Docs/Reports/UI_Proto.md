@@ -14,6 +14,8 @@
 
 ## 고를 것
 
+> **결정 (2026-10-06, 개발자):** UI 방향 **A(관측 기기)**, 스태미나 **(a) 위쪽 막대**, 폰트는 **Pretendard 일단 유지**. `UITheme.direction = 0`, `staminaMode = 0`이 이미 그 값이라 바꾼 것은 없다. B/C와 (b)는 디버그 키로 여전히 볼 수 있다. 2단계(26 §6: HUD 전체, 트리, 전환, 구매 연출)는 이 결정으로 진행한다.
+
 1. **UI 방향 A / B / C.** `U` 키로 바꿔 본다. `result_A.png`, `result_B.png`, `result_C.png`.
 2. **스태미나 (a) 막대 / (b) 중력 고리.** 런 중에 `G` 키로 바꿔 본다. `hud_*.png` 4장.
 3. **Pretendard를 계속 쓸지.** 임시로 넣어 둔 상태다. 바꾸려면 `UITheme`의 `fontRegular` / `fontBold`에 다른 폰트 파일을 넣으면 된다(§3).
