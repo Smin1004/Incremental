@@ -14,7 +14,7 @@ Shader "Incremental/UIPanel"
         _Marks ("tick spacing px, tick length px, tick alpha, bar (0/1)", Vector) = (0, 5, 0.4, 0)
         _Glow ("edge light px, edge light strength, sheen, fill shade", Vector) = (16, 0, 0, 0)
         _Outer ("shadow px, shadow alpha, state light, -", Vector) = (24, 0, 0.5, 0)
-        _Segment ("bar cell px, gap px", Vector) = (0, 2, 0, 0)
+        _Segment ("bar cell px, gap px, fill fade toward the bottom", Vector) = (0, 2, 0, 0)
     }
 
     SubShader
@@ -101,7 +101,8 @@ Shader "Incremental/UIPanel"
 
                 // Fill, darker toward the bottom.
                 float3 fillRgb = _Fill.rgb * tint * (1.0 - _Glow.w * (1.0 - up));
-                float4 col = float4(fillRgb * _Fill.a, _Fill.a) * inside;
+                float fillA = _Fill.a * lerp(1.0, up, _Segment.z);
+                float4 col = float4(fillRgb * fillA, fillA) * inside;
 
                 // Bar: the filled part takes the vertex color, optionally cut into cells.
                 if (isBar)

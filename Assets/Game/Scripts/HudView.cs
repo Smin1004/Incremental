@@ -4,12 +4,14 @@ using UnityEngine;
 namespace Incremental
 {
     /// <summary>
-    /// Run HUD: currency + run number (top-left), run income (top-right), stamina bar (top-center),
-    /// a center message, the debug overlay line and the "×N" label over a multi-planet creation. Built from code; render only.
-    /// Fonts, sizes and colors come from the UI theme (26 §4).
-    /// The stamina bar (26 §5.1) is a panel-shader bar whose color goes from the full color through the mid color to
-    /// the low color as the stamina runs out, and pulses near the end. With the stamina display on (b), where the
-    /// gravity ring is the gauge (CursorView), the bar shrinks to a thin strip without numbers.
+    /// Run HUD (26 §9.2): currency and run number top-left, run income top-right, the stamina bar top-center, all over a
+    /// dark veil that fades down from the top edge so the numbers read on bright dust. Also a center message, the debug
+    /// overlay lines and the "×N" label over a multi-planet creation. Built from code; render only. Fonts, sizes and
+    /// colors come from the UI theme (26 §4).
+    /// The run income counts up to each new value and bumps once when it changes (the result screen's device). The
+    /// stamina bar (26 §5.1) is a panel-shader bar whose color goes from the full color through the mid color to the low
+    /// color as the stamina runs out, and pulses near the end. With the stamina display on (b), where the gravity ring
+    /// is the gauge (CursorView), the bar shrinks to a thin strip without numbers.
     /// </summary>
     public sealed class HudView : MonoBehaviour
     {
@@ -23,9 +25,12 @@ namespace Incremental
         GameRoot game;
         UIStyle ui;
         UITheme theme;
-        UIShape staminaBar;
+        UIShape veil, staminaBar;
         bool runHudVisible = true;
-        TMP_Text currencyText, incomeText, staminaText, centerText, debugText, abilityText, toastText;
+        TMP_Text currencyLabel, currencyValue, runText, incomeLabel, incomeValue, staminaText, centerText, debugText, abilityText, toastText;
+        string currencyShown;
+        double incomeTarget = double.NaN, incomeFrom, incomeShown;
+        float incomeAge = float.MaxValue;
         float toastAge = float.MaxValue;
         const float ToastSec = 1.5f;
         readonly TMP_Text[] countLabels = new TMP_Text[CountLabelPool];
@@ -42,11 +47,31 @@ namespace Incremental
             Canvas = UIBuilder.CreateCanvas("HUD", transform);
             CanvasRect = (RectTransform)Canvas.transform;
             var root = CanvasRect;
+            var topLeft = new Vector2(0f, 1f);
+            var topRight = new Vector2(1f, 1f);
+            float edge = theme.hudEdgePx, top = theme.hudTopPx, lh = theme.lineHeight;
+            float labelH = theme.sizeSmall * lh, valueH = theme.sizeLarge * lh;
 
-            currencyText = UIBuilder.CreateText("Currency", root, Font, theme.sizeLarge, TextAnchor.UpperLeft,
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -16f), new Vector2(600f, 40f));
-            incomeText = UIBuilder.CreateText("Income", root, Font, theme.sizeLarge, TextAnchor.UpperRight,
-                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, -16f), new Vector2(600f, 40f));
+            // The veil is wider than any screen so it has no visible side edges.
+            veil = UIBuilder.CreateShape("Veil", root, ui, UIRole.Veil, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero,
+                new Vector2(4000f, theme.hudVeilHeightPx));
+            veil.Pad = 0f;
+
+            currencyLabel = UIBuilder.CreateText("CurrencyLabel", root, Font, theme.sizeSmall, TextAnchor.UpperLeft, topLeft, topLeft,
+                new Vector2(edge, -top), new Vector2(400f, labelH));
+            currencyLabel.text = UIStrings.HudCurrency;
+            currencyValue = UIBuilder.CreateText("Currency", root, ui.FontBold, theme.sizeLarge, TextAnchor.UpperLeft, topLeft, topLeft,
+                new Vector2(edge, -top - labelH), new Vector2(600f, valueH));
+            runText = UIBuilder.CreateText("Run", root, Font, theme.sizeSmall, TextAnchor.UpperLeft, topLeft, topLeft,
+                new Vector2(edge, -top - labelH), new Vector2(300f, valueH));
+            runText.alignment = TextAlignmentOptions.BottomLeft;
+            ((RectTransform)runText.transform).sizeDelta = new Vector2(300f, valueH - (valueH - theme.sizeLarge) * 0.5f);
+
+            incomeLabel = UIBuilder.CreateText("IncomeLabel", root, Font, theme.sizeSmall, TextAnchor.UpperRight, topRight, topRight,
+                new Vector2(-edge, -top), new Vector2(400f, labelH));
+            incomeLabel.text = UIStrings.HudIncome;
+            incomeValue = UIBuilder.CreateText("Income", root, ui.FontBold, theme.sizeLarge, TextAnchor.MiddleRight, topRight, new Vector2(1f, 0.5f),
+                new Vector2(-edge, -top - labelH - valueH * 0.5f), new Vector2(600f, valueH));
 
             staminaBar = UIBuilder.CreateShape("Stamina", root, ui, UIRole.Bar, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -theme.staminaBarTopPx), theme.staminaBarSize);
@@ -92,7 +117,9 @@ namespace Incremental
             staminaBar.rectTransform.sizeDelta = ring ? theme.staminaBarSmallSize : theme.staminaBarSize;
             staminaText.gameObject.SetActive(!ring);
             staminaText.color = d.text;
-            currencyText.color = incomeText.color = centerText.color = d.text;
+            currencyLabel.color = incomeLabel.color = runText.color = d.textDim;
+            currencyValue.color = centerText.color = d.text;
+            incomeValue.color = d.accent;
             staminaBar.gameObject.SetActive(runHudVisible && BarShown);
         }
 
@@ -110,7 +137,7 @@ namespace Incremental
             var t = countLabels[i];
             t.text = string.Format(UIStrings.PlanetMulti, Fmt.Num(count));
             ((RectTransform)t.transform).anchoredPosition = local + new Vector2(0f, (float)sizePx * 0.5f + 8f);
-            t.color = Color.white;
+            t.color = ui.Direction.text;
             countAges[i] = 0f;
             t.gameObject.SetActive(true);
         }
@@ -127,6 +154,7 @@ namespace Incremental
         void Update()
         {
             float dt = Time.deltaTime;
+            TickIncome(dt);
             if (toastAge < ToastSec)
             {
                 toastAge += Time.unscaledDeltaTime;
@@ -152,22 +180,74 @@ namespace Incremental
             }
         }
 
+        /// <summary>
+        /// 26 §9.2: the shown income counts from where it was to the new value over hudIncomeRollSec and bumps once as
+        /// it starts. Both follow the effect intensity; at 0 the new value is simply there.
+        /// </summary>
+        void TickIncome(float dt)
+        {
+            if (double.IsNaN(incomeTarget)) return;
+            float fx = Mathf.Clamp01(game.EffectIntensity);
+            float roll = theme.hudIncomeRollSec * fx;
+            incomeAge += dt;
+            if (roll <= 0f || incomeAge >= roll) incomeShown = incomeTarget;
+            else
+            {
+                float k = incomeAge / roll;
+                incomeShown = incomeFrom + (incomeTarget - incomeFrom) * (1.0 - (1.0 - k) * (1.0 - k));
+            }
+            float pop = theme.hudIncomePopSec > 0f && incomeAge < theme.hudIncomePopSec
+                ? Mathf.Sin(incomeAge / theme.hudIncomePopSec * Mathf.PI) * theme.hudIncomePopScale * fx
+                : 0f;
+            incomeValue.rectTransform.localScale = new Vector3(1f + pop, 1f + pop, 1f);
+            incomeValue.text = Fmt.Num(System.Math.Floor(incomeShown));
+        }
+
         /// <summary>Currency, run income and stamina bar: shown during a run only.</summary>
         public void SetRunHudVisible(bool visible)
         {
             if (runHudVisible == visible) return;
             runHudVisible = visible;
-            currencyText.gameObject.SetActive(visible);
-            incomeText.gameObject.SetActive(visible);
+            veil.gameObject.SetActive(visible);
+            currencyLabel.gameObject.SetActive(visible);
+            currencyValue.gameObject.SetActive(visible);
+            runText.gameObject.SetActive(visible);
+            incomeLabel.gameObject.SetActive(visible);
+            incomeValue.gameObject.SetActive(visible);
             staminaBar.gameObject.SetActive(visible && BarShown);
         }
 
-        public void SetCurrency(double currency, int run) =>
-            currencyText.text = string.Format(UIStrings.CurrencyAndRun, Fmt.Num(currency), run);
+        public void SetCurrency(double currency, int run)
+        {
+            string value = Fmt.Num(currency);
+            if (value == currencyShown) return;
+            currencyShown = value;
+            currencyValue.text = value;
+            // The run number sits right after the currency, so it moves with the number's width.
+            float w = currencyValue.GetPreferredValues(value).x;
+            ((RectTransform)runText.transform).anchoredPosition = new Vector2(theme.hudEdgePx + w + theme.hudEdgePx * 0.6f, -theme.hudTopPx - theme.sizeSmall * theme.lineHeight);
+            runText.text = string.Format(UIStrings.HudRun, run);
+        }
 
         /// <summary>Run income as it will be paid: rounded up once, the same value the result screen shows (14 §8).</summary>
-        public void SetIncome(double income) =>
-            incomeText.text = string.Format(UIStrings.RunIncome, Fmt.Num(Stats.RunIncome(income)));
+        public void SetIncome(double income)
+        {
+            double target = Stats.RunIncome(income);
+            if (!double.IsNaN(incomeTarget) && target == incomeTarget) return;
+            // A run start drops the income to 0: no count-down, the number simply resets.
+            if (double.IsNaN(incomeTarget) || target < incomeTarget)
+            {
+                incomeFrom = incomeShown = target;
+                incomeAge = float.MaxValue;
+            }
+            else
+            {
+                incomeFrom = incomeShown;
+                incomeAge = 0f;
+            }
+            incomeTarget = target;
+            TickIncome(0f);
+        }
 
         public void SetStamina(double current, double max)
         {

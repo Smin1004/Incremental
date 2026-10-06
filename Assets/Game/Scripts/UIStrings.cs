@@ -11,8 +11,10 @@ namespace Incremental
     public static class UIStrings
     {
         // HUD
-        public const string CurrencyAndRun = "재화 {0}    런 {1}";
-        public const string RunIncome = "이번 런 수입 {0}";
+        /// <summary>26 §9.2: the HUD's labels; the values stand under them.</summary>
+        public const string HudCurrency = "재화";
+        public const string HudRun = "런 {0}";
+        public const string HudIncome = "이번 런 수입";
         public const string Stamina = "스태미나 {0} / {1}";
         public const string Paused = "일시정지";
 

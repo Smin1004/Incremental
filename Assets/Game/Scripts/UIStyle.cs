@@ -7,7 +7,7 @@ using UnityEngine.TextCore.LowLevel;
 namespace Incremental
 {
     /// <summary>What a shape is; each role has its own material (one look per visual direction).</summary>
-    public enum UIRole { Panel, Button, Chip, Bar, Badge }
+    public enum UIRole { Panel, Button, Chip, Bar, Badge, Veil }
 
     /// <summary>
     /// The UI look at runtime (26 §4), built once from <see cref="UITheme"/>: the two SDF font assets (dynamic atlas,
@@ -129,6 +129,7 @@ namespace Incremental
             Write(UIRole.Chip, d.chip, false);
             Write(UIRole.Bar, d.bar, true);
             Write(UIRole.Badge, d.badge, false);
+            Write(UIRole.Veil, d.veil, false);
             ApplyTextShadow(Font, d);
             if (FontBold != Font) ApplyTextShadow(FontBold, d);
             // The shadow changes how much room a glyph quad needs, which each text caches.
@@ -151,7 +152,7 @@ namespace Incremental
             m.SetVector(IdMarks, new Vector4(s.tickSpacingPx, s.tickLenPx, s.tickAlpha, bar ? 1f : 0f));
             m.SetVector(IdGlow, new Vector4(s.glowPx, s.glowStrength, s.sheen, s.fillShade));
             m.SetVector(IdOuter, new Vector4(s.shadowPx, s.shadowAlpha, s.stateGlow, 0f));
-            m.SetVector(IdSegment, new Vector4(s.segmentPx, s.segmentGapPx, 0f, 0f));
+            m.SetVector(IdSegment, new Vector4(s.segmentPx, s.segmentGapPx, s.fillFade, 0f));
         }
 
         static void ApplyTextShadow(TMP_FontAsset font, UIDirection d)

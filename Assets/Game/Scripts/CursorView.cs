@@ -9,7 +9,9 @@ namespace Incremental
     /// threshold pops it into the next look. On creation the body is handed to the planet pool (same surface, same size)
     /// and a new clump starts. All of it sits on the gravity source, which is the cursor unless the follow experiment is
     /// on (20 §7); then a thin line joins the two. With the stamina display on (b) the gravity ring is also the
-    /// stamina gauge (26 §5.1): it is drawn only as far round as there is stamina left. Render only.
+    /// stamina gauge (26 §5.1): it is drawn only as far round as there is stamina left. Just outside the ring, one thin
+    /// arc per ability with a cooldown shows its charge toward the next trigger and lights up the moment it fires
+    /// (26 §9.2); the abilities are only read. Render only.
     /// </summary>
     public sealed class CursorView : MonoBehaviour
     {
@@ -24,6 +26,15 @@ namespace Incremental
         LineRenderer track;
         Vector3[] arc;
         bool gauge;
+
+        /// <summary>26 §9.2: the charge arc of one ability with a cooldown, and the faint full circle behind it.</summary>
+        sealed class ChargeArc
+        {
+            public string id;
+            public Color color;
+            public LineRenderer arc, track;
+        }
+        readonly System.Collections.Generic.List<ChargeArc> arcs = new System.Collections.Generic.List<ChargeArc>();
         /// <summary>20 §7: the thin line from the cursor to the gravity source while the follow experiment is on.</summary>
         LineRenderer leash;
         double ringRadiusPx = -1;
@@ -60,21 +71,23 @@ namespace Incremental
             UIBuilder.UseWhiteTexture(ring);
             ring.positionCount = RingSegments;
 
-            track = new GameObject("StaminaTrack").AddComponent<LineRenderer>();
-            track.transform.SetParent(transform, false);
-            track.useWorldSpace = false;
-            track.loop = true;
-            track.alignment = LineAlignment.TransformZ;
-            track.textureMode = LineTextureMode.Stretch;
-            track.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            track.receiveShadows = false;
-            if (lineMaterial != null) track.sharedMaterial = lineMaterial;
-            track.widthMultiplier = ring.widthMultiplier;
-            track.sortingOrder = 4;
-            UIBuilder.UseWhiteTexture(track);
+            track = MakeLine("StaminaTrack", lineMaterial, true, 4);
             track.positionCount = RingSegments;
-            track.enabled = false;
             SetRingRadius(p.gravityRadius);
+
+            var th = root.Ui.Theme;
+            if (th.abilityArcs != null)
+                foreach (var row in th.abilityArcs)
+                {
+                    if (row == null || string.IsNullOrEmpty(row.abilityId)) continue;
+                    arcs.Add(new ChargeArc
+                    {
+                        id = row.abilityId,
+                        color = row.color,
+                        arc = MakeLine("Charge_" + row.abilityId, lineMaterial, false, 6),
+                        track = MakeLine("ChargeTrack_" + row.abilityId, lineMaterial, true, 4),
+                    });
+                }
 
             leash = new GameObject("FollowLine").AddComponent<LineRenderer>();
             leash.transform.SetParent(transform.parent, false);
@@ -98,6 +111,25 @@ namespace Incremental
             gaugeBg = MakeGaugeRing("Bg", (float)p.gaugeBgAlpha);
             gaugeFill = MakeGaugeRing("Fill", (float)p.gaugeFillAlpha);
             SetVisible(false);
+        }
+
+        /// <summary>A circle or arc around the gravity source, in local units, drawn with the unlit line material; off until used.</summary>
+        LineRenderer MakeLine(string name, Material lineMaterial, bool loop, int order)
+        {
+            var lr = new GameObject(name).AddComponent<LineRenderer>();
+            lr.transform.SetParent(transform, false);
+            lr.useWorldSpace = false;
+            lr.loop = loop;
+            lr.alignment = LineAlignment.TransformZ;
+            lr.textureMode = LineTextureMode.Stretch;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            if (lineMaterial != null) lr.sharedMaterial = lineMaterial;
+            lr.widthMultiplier = (float)(RingWidthPx / p.pixelsPerUnit);
+            lr.sortingOrder = order;
+            UIBuilder.UseWhiteTexture(lr);
+            lr.enabled = false;
+            return lr;
         }
 
         UIRing MakeGaugeRing(string name, float alpha)
@@ -150,6 +182,7 @@ namespace Incremental
 
             if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
             UpdateRing();
+            UpdateChargeArcs();
             // 22 §6: the lines are drawn in world units, so a zoomed-out camera would thin them to nothing. Their
             // width follows the scale, which keeps them the same thickness on screen.
             SetLineWidths((float)root.WorldScale, gauge ? root.Ui.Theme.staminaRingWidthPx : RingWidthPx);
@@ -273,6 +306,78 @@ namespace Incremental
             if (trackOn) track.startColor = track.endColor = new Color(th.staminaFull.r, th.staminaFull.g, th.staminaFull.b, th.staminaRingTrackAlpha);
         }
 
+        /// <summary>
+        /// 26 §9.2: one arc per listed ability that is unlocked and has a cooldown, concentric just outside the gravity
+        /// ring: from the top, clockwise, as full as the charge toward the next trigger, in the ability's color over a
+        /// faint full circle. The moment the ability fires the whole circle lights up and widens, then the gauge starts
+        /// over. The abilities are only read.
+        /// </summary>
+        void UpdateChargeArcs()
+        {
+            var th = root.Ui.Theme;
+            float scale = (float)root.WorldScale;
+            float ppu = (float)p.pixelsPerUnit;
+            float baseR = (float)(ringRadiusPx / ppu);
+            int segs = Mathf.Max(8, th.abilityArcSegments);
+            if (arc == null || arc.Length < segs + 1) arc = new Vector3[segs + 1];
+            int shown = 0;
+            for (int i = 0; i < arcs.Count; i++)
+            {
+                var a = arcs[i];
+                var ability = root.Abilities != null ? root.Abilities.Get(a.id) : null;
+                bool on = ability != null && ability.Level.unlocked && ability.Def.cooldownSec > 0;
+                if (!on)
+                {
+                    if (a.arc.enabled) a.arc.enabled = false;
+                    if (a.track.enabled) a.track.enabled = false;
+                    continue;
+                }
+                double cooldown = ability.Def.Cooldown(ability.Level, root.abilityTable.maxCooldownReduction);
+                float share = cooldown > 0 ? Mathf.Clamp01((float)(ability.Charge / cooldown)) : 0f;
+                float r = baseR + (th.abilityArcGapPx + shown * th.abilityArcSpacingPx) * scale / ppu;
+                shown++;
+                float age = ability.EffectAge;
+                float flash = age >= 0f && th.abilityArcFlashSec > 0f && age < th.abilityArcFlashSec
+                    ? (1f - age / th.abilityArcFlashSec) * root.EffectIntensity
+                    : 0f;
+                float width = th.abilityArcWidthPx * scale / ppu;
+
+                bool trackOn = th.abilityArcTrackAlpha > 0f;
+                if (a.track.enabled != trackOn) a.track.enabled = trackOn;
+                if (trackOn)
+                {
+                    for (int k = 0; k < segs; k++)
+                    {
+                        float ang = k / (float)segs * Mathf.PI * 2f;
+                        arc[k] = new Vector3(Mathf.Cos(ang) * r, Mathf.Sin(ang) * r, 0f);
+                    }
+                    a.track.positionCount = segs;
+                    a.track.SetPositions(arc);
+                    a.track.widthMultiplier = width;
+                    a.track.startColor = a.track.endColor = new Color(a.color.r, a.color.g, a.color.b, th.abilityArcTrackAlpha);
+                }
+
+                // While it flashes the whole circle is drawn; otherwise the arc of the charge.
+                float drawn = flash > 0f ? 1f : share;
+                bool arcOn = drawn > 0.002f;
+                if (a.arc.enabled != arcOn) a.arc.enabled = arcOn;
+                if (!arcOn) continue;
+                int n = Mathf.Max(1, Mathf.CeilToInt(segs * drawn));
+                float sweep = Mathf.PI * 2f * drawn;
+                for (int k = 0; k <= n; k++)
+                {
+                    float ang = Mathf.PI * 0.5f - sweep * k / n;
+                    arc[k] = new Vector3(Mathf.Cos(ang) * r, Mathf.Sin(ang) * r, 0f);
+                }
+                a.arc.positionCount = n + 1;
+                a.arc.SetPositions(arc);
+                a.arc.widthMultiplier = width * (1f + flash * th.abilityArcFlashWidth);
+                Color col = a.color;
+                col.a = th.abilityArcAlpha * (flash > 0f ? Mathf.Max(flash, 0.35f) : 1f);
+                a.arc.startColor = a.arc.endColor = col;
+            }
+        }
+
         /// <summary>22 §6: keeps the ring and the leash the same thickness on screen however far the camera has pulled back.</summary>
         void SetLineWidths(float worldScale, float ringWidthPx)
         {
@@ -307,6 +412,12 @@ namespace Incremental
         {
             if (ring.enabled != v) ring.enabled = v;
             if (!v && track.enabled) track.enabled = false;
+            if (!v)
+                foreach (var a in arcs)
+                {
+                    if (a.arc.enabled) a.arc.enabled = false;
+                    if (a.track.enabled) a.track.enabled = false;
+                }
             if (!v && leash.enabled) leash.enabled = false;
             if (body.gameObject.activeSelf != v) body.gameObject.SetActive(v);
             if (gaugeRoot.gameObject.activeSelf != v) gaugeRoot.gameObject.SetActive(v);

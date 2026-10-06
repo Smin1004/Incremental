@@ -56,6 +56,7 @@ MonoBehaviour:
       stateGlow: 0.3
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     button:
       fill: {r: 0.25, g: 0.5, b: 0.9, a: 0.1}
       fillShade: 0
@@ -76,6 +77,7 @@ MonoBehaviour:
       stateGlow: 0.6
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     chip:
       fill: {r: 0.62, g: 0.82, b: 1, a: 0.08}
       fillShade: 0
@@ -96,6 +98,7 @@ MonoBehaviour:
       stateGlow: 0.5
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     bar:
       fill: {r: 0.02, g: 0.04, b: 0.08, a: 0.55}
       fillShade: 0
@@ -116,6 +119,7 @@ MonoBehaviour:
       stateGlow: 0.5
       segmentPx: 12
       segmentGapPx: 2
+      fillFade: 0
     badge:
       fill: {r: 1, g: 0.82, b: 0.42, a: 0.12}
       fillShade: 0
@@ -136,6 +140,28 @@ MonoBehaviour:
       stateGlow: 1.2
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
+    veil:
+      fill: {r: 0, g: 0.01, b: 0.03, a: 0.6}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+      fillFade: 1
   - id: B
     text: {r: 0.96, g: 0.97, b: 1, a: 1}
     textDim: {r: 0.7, g: 0.76, b: 0.9, a: 1}
@@ -164,6 +190,7 @@ MonoBehaviour:
       stateGlow: 0.3
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     button:
       fill: {r: 0.36, g: 0.5, b: 0.98, a: 0.42}
       fillShade: 0.35
@@ -184,6 +211,7 @@ MonoBehaviour:
       stateGlow: 0.7
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     chip:
       fill: {r: 1, g: 1, b: 1, a: 0.14}
       fillShade: 0
@@ -204,6 +232,7 @@ MonoBehaviour:
       stateGlow: 0.5
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     bar:
       fill: {r: 0.1, g: 0.13, b: 0.28, a: 0.6}
       fillShade: 0.3
@@ -224,6 +253,7 @@ MonoBehaviour:
       stateGlow: 0.6
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     badge:
       fill: {r: 1, g: 0.9, b: 0.62, a: 0.22}
       fillShade: 0
@@ -244,6 +274,28 @@ MonoBehaviour:
       stateGlow: 1.2
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
+    veil:
+      fill: {r: 0.02, g: 0.03, b: 0.1, a: 0.55}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+      fillFade: 1
   - id: C
     text: {r: 1, g: 1, b: 1, a: 1}
     textDim: {r: 0.74, g: 0.8, b: 0.92, a: 1}
@@ -272,6 +324,7 @@ MonoBehaviour:
       stateGlow: 0.5
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     button:
       fill: {r: 0, g: 0, b: 0, a: 0}
       fillShade: 0
@@ -292,6 +345,7 @@ MonoBehaviour:
       stateGlow: 0.5
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     chip:
       fill: {r: 0, g: 0, b: 0, a: 0}
       fillShade: 0
@@ -312,6 +366,7 @@ MonoBehaviour:
       stateGlow: 0.5
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     bar:
       fill: {r: 1, g: 1, b: 1, a: 0.14}
       fillShade: 0
@@ -332,6 +387,7 @@ MonoBehaviour:
       stateGlow: 0.4
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
     badge:
       fill: {r: 0, g: 0, b: 0, a: 0}
       fillShade: 0
@@ -352,10 +408,51 @@ MonoBehaviour:
       stateGlow: 0.5
       segmentPx: 0
       segmentGapPx: 2
+      fillFade: 0
+    veil:
+      fill: {r: 0, g: 0, b: 0, a: 0.5}
+      fillShade: 0
+      border: {r: 0, g: 0, b: 0, a: 0}
+      borderPx: 1
+      cornerPx: 0
+      bracket: {r: 0, g: 0, b: 0, a: 0}
+      bracketLenPx: 0
+      bracketPx: 2
+      tickSpacingPx: 0
+      tickLenPx: 5
+      tickAlpha: 0.4
+      glowPx: 16
+      glowStrength: 0
+      sheen: 0
+      shadowPx: 24
+      shadowAlpha: 0
+      stateGlow: 0.5
+      segmentPx: 0
+      segmentGapPx: 2
+      fillFade: 1
   panelMaterial: {fileID: 2100000, guid: 766c95134a144414083efe7415801a13, type: 2}
   shapePadPx: 40
   hudDebugText: {r: 1, g: 1, b: 0.6, a: 1}
   hudToastText: {r: 1, g: 1, b: 0.75, a: 1}
+  hudEdgePx: 24
+  hudTopPx: 12
+  hudVeilHeightPx: 150
+  hudIncomeRollSec: 0.35
+  hudIncomePopScale: 0.06
+  hudIncomePopSec: 0.18
+  abilityArcs:
+  - abilityId: implode
+    color: {r: 0.72, g: 0.88, b: 1, a: 1}
+  - abilityId: meteor
+    color: {r: 1, g: 0.8, b: 0.5, a: 1}
+  abilityArcGapPx: 7
+  abilityArcSpacingPx: 7
+  abilityArcWidthPx: 3
+  abilityArcAlpha: 0.9
+  abilityArcTrackAlpha: 0.12
+  abilityArcSegments: 64
+  abilityArcFlashSec: 0.35
+  abilityArcFlashWidth: 1.5
   staminaMode: 0
   staminaFull: {r: 0.72, g: 0.88, b: 1, a: 1}
   staminaMid: {r: 1, g: 0.62, b: 0.2, a: 1}

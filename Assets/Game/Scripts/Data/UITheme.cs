@@ -38,6 +38,17 @@ namespace Incremental
         [Tooltip("Bars: the filled part is cut into cells this wide (0 = solid) with this gap between them.")]
         public float segmentPx;
         public float segmentGapPx = 2f;
+        [Tooltip("0..1: the fill fades out toward the bottom edge (1 = fully transparent there). The HUD's top veil.")]
+        public float fillFade;
+    }
+
+    /// <summary>26 §9.2: the charge arc of one ability with a cooldown, drawn just outside the gravity ring.</summary>
+    [Serializable]
+    public sealed class UIAbilityArc
+    {
+        [Tooltip("AbilityTable row id. An ability without a cooldown gets no arc.")]
+        public string abilityId = string.Empty;
+        public Color color = Color.white;
     }
 
     /// <summary>One visual direction of the UI (26 §3): the palette, the glyph shadow and the shapes.</summary>
@@ -62,6 +73,8 @@ namespace Incremental
         public UIShapeStyle chip = new UIShapeStyle();
         public UIShapeStyle bar = new UIShapeStyle();
         public UIShapeStyle badge = new UIShapeStyle();
+        [Tooltip("The dark band along the top of the run screen that keeps the HUD readable over bright dust (26 §9.2).")]
+        public UIShapeStyle veil = new UIShapeStyle();
     }
 
     /// <summary>
@@ -104,9 +117,37 @@ namespace Incremental
         [Tooltip("Room around a shape for its shadow and outer light, px.")]
         public float shapePadPx = 40f;
 
-        [Header("HUD")]
+        [Header("HUD (26 §9.2)")]
         public Color hudDebugText = new Color(1f, 1f, 0.6f, 1f);
         public Color hudToastText = new Color(1f, 1f, 0.75f, 1f);
+        [Tooltip("Margins of the HUD texts from the screen edge and the top, and the height of the top veil.")]
+        public float hudEdgePx = 24f;
+        public float hudTopPx = 12f;
+        public float hudVeilHeightPx = 150f;
+        [Tooltip("The run income counts up to a new value over this long and bumps once when it changes (× effect intensity).")]
+        public float hudIncomeRollSec = 0.35f;
+        public float hudIncomePopScale = 0.06f;
+        public float hudIncomePopSec = 0.18f;
+
+        [Header("Ability charge arcs (26 §9.2)")]
+        [Tooltip("One arc per listed ability, just outside the gravity ring, filled with the charge toward the next trigger. " +
+                 "An ability without a cooldown is skipped.")]
+        public UIAbilityArc[] abilityArcs =
+        {
+            new UIAbilityArc { abilityId = "implode", color = new Color(0.72f, 0.88f, 1f) },
+            new UIAbilityArc { abilityId = "meteor", color = new Color(1f, 0.8f, 0.5f) },
+        };
+        [Tooltip("Distance of the first arc outside the gravity ring, the spacing between arcs and their width, px.")]
+        public float abilityArcGapPx = 7f;
+        public float abilityArcSpacingPx = 7f;
+        public float abilityArcWidthPx = 3f;
+        public float abilityArcAlpha = 0.9f;
+        [Tooltip("The faint full circle behind each arc; alpha 0 = none.")]
+        public float abilityArcTrackAlpha = 0.12f;
+        public int abilityArcSegments = 64;
+        [Tooltip("When the ability fires the whole circle lights up for this long, this much wider (× effect intensity).")]
+        public float abilityArcFlashSec = 0.35f;
+        public float abilityArcFlashWidth = 1.5f;
 
         [Header("Stamina (26 §5.1)")]
         [Tooltip("0 = (a) the bar at the top, 1 = (b) the gravity ring is the gauge. The debug key switches it at runtime.")]
@@ -255,6 +296,7 @@ namespace Incremental
                     border = new Color(1f, 0.82f, 0.42f, 0.9f), borderPx = 1f, cornerPx = 0f,
                     glowPx = 10f, glowStrength = 0.1f, stateGlow = 1.2f,
                 },
+                veil = new UIShapeStyle { fill = new Color(0f, 0.01f, 0.03f, 0.6f), fillFade = 1f },
             };
         }
 
@@ -304,6 +346,7 @@ namespace Incremental
                     border = new Color(1f, 0.9f, 0.62f, 0.75f), borderPx = 1f, cornerPx = 12f,
                     glowPx = 10f, glowStrength = 0.25f, sheen = 0.15f, stateGlow = 1.2f,
                 },
+                veil = new UIShapeStyle { fill = new Color(0.02f, 0.03f, 0.1f, 0.55f), fillFade = 1f },
             };
         }
 
@@ -329,6 +372,7 @@ namespace Incremental
                     shadowPx = 6f, shadowAlpha = 0.5f, stateGlow = 0.4f,
                 },
                 badge = new UIShapeStyle(),
+                veil = new UIShapeStyle { fill = new Color(0f, 0f, 0f, 0.5f), fillFade = 1f },
             };
         }
     }
