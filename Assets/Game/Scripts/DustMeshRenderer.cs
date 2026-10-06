@@ -12,6 +12,12 @@ namespace Incremental
     /// dust is being pulled, so none is dimmed and dust near the blue giant glows; the supernova remnant (§4.3) is drawn at
     /// remnantDustBrightness. Render only.
     ///
+    /// 26 §5.5: with GameRoot.ExposureFix on, the brightness is held down where it used to pile up into white: every dust
+    /// dims a little when there is a lot of dust on screen (dustDensityRef / Floor), dust near the forming body dims
+    /// toward the center (dustCenterDimRadii / Dim) so the body's surface shows, the excite flash is weaker on large
+    /// dust (exciteSizeFalloff), and one dust is capped below the point where every channel clips (dustBrightCap). In
+    /// rings 1-2 the dust is drawn larger and brighter (earlyDustSizeMult / BrightMult); count and mass are untouched.
+    ///
     /// 22 §7: the per-dust loop writes one interleaved vertex array that goes to the GPU in a single copy
     /// (<see cref="DynamicMesh"/>), the per-kind data is read into flat arrays once a frame instead of once a dust, and
     /// nothing is built at all while the mesh is not being drawn.
@@ -155,6 +161,22 @@ namespace Incremental
             float exciteBright = root.abilityTable != null ? (float)root.abilityTable.exciteBrightness * root.EffectIntensity : 0f;
             int kinds = kindSize.Length;
 
+            // 26 §5.5: the overexposure measures, and the early-ring look.
+            bool fix = root.ExposureFix;
+            float density = fix ? DensityDim(p, n) : 1f;
+            float centerR = 0f, centerDim = 1f;
+            if (fix && holding && p.dustCenterDimRadii > 0)
+            {
+                centerR = (float)(root.RunBodyPx(root.Cursor.FormingDiameterPx) * 0.5 * p.dustCenterDimRadii / ppu);
+                centerDim = (float)p.dustCenterDim;
+            }
+            float centerR2 = centerR * centerR;
+            float exciteFalloff = fix ? (float)p.exciteSizeFalloff : 0f;
+            float cap = fix ? Mathf.Clamp((float)p.dustBrightCap, 0.01f, 2f) : 2f;
+            int ring = root.Meta.unlockedMaxTier;
+            float earlySize = EarlyMult(p.earlyDustSizeMult, ring);
+            float earlyBright = EarlyMult(p.earlyDustBrightMult, ring) * density;
+
             var items = field.Items;
             for (int i = 0; i < n; i++)
             {
@@ -163,7 +185,7 @@ namespace Incremental
                 Vector2 c = d.pos;
                 float speed = d.vel.magnitude;
                 Vector2 axis = speed > 1e-5f ? d.vel / speed : new Vector2(1f, 0f);
-                float h = halo * d.size * kindSize[kind];
+                float h = halo * d.size * kindSize[kind] * earlySize;
                 // The smear is how far the dust travels in one "shutter", which is the same distance for every kind.
                 // Multiplying the dust's own size by the speed (14 §5) drew the heavy kinds, up to 8.5x wider than base
                 // dust, as long bars. A kind that has a ribbon does not smear at all: its quad stays the round dust.
@@ -191,13 +213,19 @@ namespace Incremental
                         boost *= holdGlow;
                     }
                 }
-                float b = d.bright * kindBright[kind] * Mathf.Lerp(dim, 1f, inField) * (1f + boost) * remnantBright;
-                if (d.excite > 0f) b *= 1f + d.excite * exciteBright;
+                float b = d.bright * kindBright[kind] * Mathf.Lerp(dim, 1f, inField) * (1f + boost) * remnantBright * earlyBright;
+                if (d.excite > 0f) b *= 1f + d.excite * exciteBright / (1f + (kindSize[kind] - 1f) * exciteFalloff);
+                // 26 §5.5: dust right over the forming body dims toward its center so the body is not drowned.
+                if (centerR > 0f)
+                {
+                    float dc2 = (c - cursor).sqrMagnitude;
+                    if (dc2 < centerR2) b *= Mathf.Lerp(centerDim, 1f, Mathf.Sqrt(dc2) / centerR);
+                }
                 // A dust that was just created fades in (GameParams.dustSpawnFadeSec).
                 if (d.born < 1f) b *= d.born;
                 // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
                 // The alpha channel carries the dust kind's shape id (20 §4), which the shader reads back as 0..255.
-                float k = Mathf.Min(b, 2f) * 0.5f;
+                float k = Mathf.Min(b, cap) * 0.5f;
                 float t = d.tint;
                 var c32 = new Color32(
                     Byte01(Mathf.LerpUnclamped(colA.r, colB.r, t) * k),
@@ -224,6 +252,20 @@ namespace Incremental
             var bounds = new Bounds(new Vector3(a.center.x, a.center.y, 0f), new Vector3(a.width + 1f, a.height + 1f, 1f));
             mesh.Upload(verts, n * 4, n * 6, bounds);
         }
+
+        /// <summary>
+        /// 26 §5.5: how much every dust dims for the amount of dust on screen: 1 up to dustDensityRef, then sqrt(ref / count),
+        /// never below dustDensityFloor. A pure function so the trail renderer shares it.
+        /// </summary>
+        public static float DensityDim(GameParams p, int count)
+        {
+            if (p.dustDensityRef <= 0 || count <= p.dustDensityRef) return 1f;
+            return Mathf.Max((float)p.dustDensityFloor, Mathf.Sqrt((float)(p.dustDensityRef / count)));
+        }
+
+        /// <summary>26 §5.5: the early-ring multiplier for the highest unlocked ring; 1 past the end of the array.</summary>
+        public static float EarlyMult(double[] mults, int ring) =>
+            mults != null && ring >= 1 && ring <= mults.Length ? (float)mults[ring - 1] : 1f;
 
         /// <summary>0..1 to a colour byte, saturating. Color32's own conversion does the same, through a Color first.</summary>
         static byte Byte01(float v) => (byte)(Mathf.Clamp01(v) * 255f + 0.5f);

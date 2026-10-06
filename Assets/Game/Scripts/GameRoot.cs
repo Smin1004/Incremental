@@ -91,6 +91,8 @@ namespace Incremental
         public Camera Cam { get; private set; }
         public BackdropView Backdrop { get; private set; }
         public IgnitionFx Ignition { get; private set; }
+        /// <summary>26 §5.5: the light ring that spreads with the zoom-out after a gate purchase.</summary>
+        public GateExpandFx GateExpand { get; private set; }
         public DustField Dust { get; private set; }
         public DustMeshRenderer DustRenderer { get; private set; }
         /// <summary>22 §5: the trail ribbons of dust above the base kind.</summary>
@@ -171,6 +173,13 @@ namespace Incremental
         /// cycles it at runtime (the options screen is week 7), so the asset is never modified.
         /// </summary>
         public float EffectIntensity { get; set; } = 1f;
+        /// <summary>
+        /// 26 §5.5: the overexposure measures (density dimming, dimming near the forming body, excite falloff by dust
+        /// size, the brightness cap) are on. Starts at GameParams.exposureFix; the debug key X flips it for comparison.
+        /// </summary>
+        public bool ExposureFix { get; set; } = true;
+        /// <summary>22 §6, 26 §5.5: the drawn world scale starts moving to a new target (from, to). A gate was bought.</summary>
+        public event Action<double, double> WorldExpanding;
         /// <summary>Replace to drive the game without a mouse (autoplay bot).</summary>
         public Func<PointerState> InputProvider;
         /// <summary>True from the first blue giant ever until the ending run ends (15 §4.2): input is ignored and the dust falls into the star.</summary>
@@ -210,6 +219,7 @@ namespace Incremental
             Fmt.Mode = Settings.notation;
             hasFocus = Application.isFocused;
             EffectIntensity = Mathf.Clamp01((float)gameParams.effectIntensity);
+            ExposureFix = gameParams.exposureFix;
             PlanetVisual.ApplyGlobals(gameParams);
 
             Cam = Camera.main;
@@ -283,6 +293,11 @@ namespace Incremental
             ignitionGo.transform.SetParent(transform, false);
             Ignition = ignitionGo.AddComponent<IgnitionFx>();
             Ignition.Init(this, fxMaterial);
+
+            var gateFxGo = new GameObject("GateExpand");
+            gateFxGo.transform.SetParent(transform, false);
+            GateExpand = gateFxGo.AddComponent<GateExpandFx>();
+            GateExpand.Init(this, fxMaterial);
 
             var abilitiesGo = new GameObject("Abilities");
             abilitiesGo.transform.SetParent(transform, false);
@@ -450,6 +465,7 @@ namespace Incremental
                 worldScaleFrom = WorldScale;
                 worldScaleTo = target;
                 worldScaleAge = 0;
+                WorldExpanding?.Invoke(worldScaleFrom, worldScaleTo);
             }
             double sec = Math.Max(1e-4, gameParams.worldExpandSec);
             if (worldScaleAge < sec)

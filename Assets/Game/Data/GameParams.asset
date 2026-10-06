@@ -190,6 +190,24 @@ MonoBehaviour:
   dustDimEdgePx: 60
   dustHoldFadeSec: 0.25
   dustStreakWidth: 0.5
+  exposureFix: 1
+  dustDensityRef: 1500
+  dustDensityFloor: 0.5
+  dustCenterDimRadii: 2.5
+  dustCenterDim: 0.25
+  exciteSizeFalloff: 1
+  dustBrightCap: 1.5
+  earlyDustSizeMult:
+  - 1.6
+  - 1.3
+  earlyDustBrightMult:
+  - 1.35
+  - 1.15
+  gateRingStrength: 0.35
+  gateRingWidthPx: 28
+  gateRingCoreGlow: 0.08
+  gateRingColor: {r: 0.72, g: 0.86, b: 1, a: 1}
+  gateRingStartShare: 0.2
   palettes:
   - background: {r: 0.02, g: 0.02, b: 0.05, a: 1}
     glowColor: {r: 0.3, g: 0.35, b: 0.6, a: 1}
@@ -438,8 +456,6 @@ MonoBehaviour:
   orbitLabelAngleDeg: -60
   orbitLabelGapPx: 6
   orbitLabelBacking: {r: 0, g: 0, b: 0, a: 0.6}
-  deltaUpColor: {r: 0.55, g: 1, b: 0.6, a: 1}
-  newTierColor: {r: 1, g: 0.85, b: 0.4, a: 1}
   newTierHighlightSec: 2
   newTierPulses: 2
   newTierOrbitAlpha: 0.45

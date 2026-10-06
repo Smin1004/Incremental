@@ -324,6 +324,33 @@ namespace Incremental
         [Tooltip("Width of a fully stretched streak relative to a still dot (15 §3); the tail end narrows to a point.")]
         public double dustStreakWidth = 0.5;
 
+        [Header("Overexposure (26 §5.5)")]
+        [Tooltip("The debug key X compares the game with and without the four measures below; this is what a fresh launch uses.")]
+        public bool exposureFix = true;
+        [Tooltip("Density: with more dust on screen than this, every dust and ribbon is drawn dimmer, brightness × max(floor, sqrt(ref / count)).")]
+        public double dustDensityRef = 1500;
+        public double dustDensityFloor = 0.5;
+        [Tooltip("Near the forming body: within this many of its radii the dust and ribbons dim toward this share at the center, so the surface shows.")]
+        public double dustCenterDimRadii = 2.5;
+        public double dustCenterDim = 0.25;
+        [Tooltip("The excite brightness (AbilityTable.exciteBrightness) is divided by 1 + (kind size − 1) × this, so a large dust does not flash white.")]
+        public double exciteSizeFalloff = 1.0;
+        [Tooltip("Cap on one dust's drawn brightness. 2 is the old cap, where every color channel clips to white; lower keeps the hue.")]
+        public double dustBrightCap = 1.5;
+
+        [Header("Early dust (26 §5.5)")]
+        [Tooltip("Rings 1, 2, …: drawn size and brightness multipliers while that ring is the highest unlocked (look only; count and mass unchanged). Past the array: 1.")]
+        public double[] earlyDustSizeMult = { 1.6, 1.3 };
+        public double[] earlyDustBrightMult = { 1.35, 1.15 };
+
+        [Header("Gate expansion ring (26 §5.5)")]
+        [Tooltip("A light ring spreads from the screen center in step with the zoom-out after a gate purchase (worldExpandSec): strength (× effect intensity), width, center glow, color, and the starting diameter as a share of the screen height.")]
+        public double gateRingStrength = 0.35;
+        public double gateRingWidthPx = 28;
+        public double gateRingCoreGlow = 0.08;
+        public Color gateRingColor = new Color(0.72f, 0.86f, 1f);
+        public double gateRingStartShare = 0.2;
+
         [Header("Background (14 §6)")]
         [Tooltip("By central star stage: 0 protostar (below the first star tier), 1 red dwarf, 2 sun-like, 3 blue giant, 4 remnant nebula (after the ending, 15 §5). " +
                  "Dust takes a warm hue of its palette and background stars stay neutral white, so the two never read alike (15 §3).")]

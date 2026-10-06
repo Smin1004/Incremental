@@ -236,6 +236,14 @@ namespace Incremental
             Color colA = root.Backdrop.DustColorA.linear;
             Color colB = root.Backdrop.DustColorB.linear;
             var items = field.Items;
+            // 26 §5.5: the ribbons dim with the dust they belong to, by density and near the forming body.
+            bool fix = root.ExposureFix;
+            float density = fix ? DustMeshRenderer.DensityDim(p, field.Count) : 1f;
+            bool holding = root.Phase == GamePhase.Run && root.Run != null && root.Run.holding;
+            float centerR = fix && holding && p.dustCenterDimRadii > 0
+                ? (float)(root.RunBodyPx(root.Cursor.FormingDiameterPx) * 0.5 * p.dustCenterDimRadii / ppu)
+                : 0f;
+            float centerDim = (float)p.dustCenterDim;
 
             for (int c = 0; c < picked.Count; c++)
             {
@@ -247,7 +255,12 @@ namespace Incremental
                 float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f);
                 float headWidth = h * share;
                 // Fainter near the end of the budget, and while the dust itself is still fading in.
-                float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f) * pickedFade[c] * d.born;
+                float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f) * pickedFade[c] * d.born * density;
+                if (centerR > 0f)
+                {
+                    float dc = (d.pos - gravity).magnitude;
+                    if (dc < centerR) bright *= Mathf.Lerp(centerDim, 1f, dc / centerR);
+                }
                 float t = d.tint;
                 float r = Mathf.LerpUnclamped(colA.r, colB.r, t);
                 float g = Mathf.LerpUnclamped(colA.g, colB.g, t);

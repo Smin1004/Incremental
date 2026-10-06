@@ -20,6 +20,7 @@ namespace Incremental
     /// state is shown in the corner of the screen; nothing is saved.
     /// U: the visual direction of the UI, A → B → C (26 §3). G: the stamina display, (a) the bar at the top ↔ (b) the
     /// gravity ring as the gauge (26 §5.1). Both work on every screen, are shown in the F1 overlay and are not saved.
+    /// X: the overexposure measures on / off (26 §5.5), to compare before and after; shown in the overlay, not saved.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
     /// what a keyboard really sends.
     /// </summary>
@@ -361,6 +362,7 @@ namespace Incremental
                 if (kb.insertKey.wasPressedThisFrame) CycleFollow();
                 if (kb.uKey.wasPressedThisFrame) CycleUiDirection();
                 if (kb.gKey.wasPressedThisFrame) ToggleStaminaDisplay();
+                if (kb.xKey.wasPressedThisFrame) ToggleExposureFix();
                 if (root.Abilities != null) AbilityKeys(kb);
                 if (overlay) LogKeys(kb);
             }
@@ -370,7 +372,8 @@ namespace Incremental
                 ? string.Format(UIStrings.DebugOverlay, fps, root.Dust.Count, root.LastTickMs, root.MaxTickMs,
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
                     root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
-                    root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRingShort : UIStrings.StaminaDisplayBarShort)
+                    root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRingShort : UIStrings.StaminaDisplayBarShort,
+                    root.ExposureFix ? UIStrings.On : UIStrings.Off)
                 : string.Empty);
             root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
         }
@@ -446,6 +449,18 @@ namespace Incremental
             string name = root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRing : UIStrings.StaminaDisplayBar;
             root.Hud.ShowToast(string.Format(UIStrings.StaminaDisplayToast, name));
             Debug.Log("[UI] stamina display: " + name);
+        }
+
+        /// <summary>
+        /// X (26 §5.5): the overexposure measures on or off, in effect on the next frame, so before and after can be
+        /// compared on the same scene. Runtime only: a fresh launch starts with GameParams.exposureFix.
+        /// </summary>
+        public void ToggleExposureFix()
+        {
+            root.ExposureFix = !root.ExposureFix;
+            string state = root.ExposureFix ? UIStrings.On : UIStrings.Off;
+            root.Hud.ShowToast(string.Format(UIStrings.ExposureFixToast, state));
+            Debug.Log("[Debug] overexposure measures: " + state);
         }
 
         /// <summary>

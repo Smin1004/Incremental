@@ -296,6 +296,7 @@ namespace Incremental
                 return r;
             }
             ValidateStamina(p, r);
+            ValidateExposure(p, r);
             ValidatePull(p, r);
             ValidateDustKinds(p, r);
             ValidateFragments(p, r);
@@ -380,6 +381,19 @@ namespace Incremental
         /// Stamina (spec §6) and the debug key's drain presets (18 §A1): positive drains, a display name per preset id, and
         /// the asset's own drains must be one of the presets so the key starts from a known one.
         /// </summary>
+        /// <summary>26 §5.5: the overexposure measures, the early dust look and the gate ring.</summary>
+        static void ValidateExposure(GameParams p, ValidationReport r)
+        {
+            if (p.dustDensityRef < 0) r.Errors.Add("GameParams.dustDensityRef must be >= 0 (0 = no density dimming).");
+            if (!(p.dustDensityFloor > 0 && p.dustDensityFloor <= 1)) r.Errors.Add("GameParams.dustDensityFloor must be in (0, 1].");
+            if (p.dustCenterDimRadii < 0 || p.dustCenterDim < 0 || p.dustCenterDim > 1) r.Errors.Add("GameParams.dustCenterDimRadii must be >= 0 and dustCenterDim in [0, 1].");
+            if (p.exciteSizeFalloff < 0) r.Errors.Add("GameParams.exciteSizeFalloff must be >= 0.");
+            if (!(p.dustBrightCap > 0 && p.dustBrightCap <= 2)) r.Errors.Add("GameParams.dustBrightCap must be in (0, 2] (the vertex color holds brightness / 2).");
+            foreach (var arr in new[] { p.earlyDustSizeMult, p.earlyDustBrightMult })
+                if (arr != null) foreach (var m in arr) if (!(m > 0)) r.Errors.Add("GameParams.earlyDust*Mult entries must be above 0.");
+            if (p.gateRingStrength < 0 || p.gateRingWidthPx <= 0 || p.gateRingStartShare < 0) r.Errors.Add("GameParams.gateRing*: strength >= 0, width > 0, start share >= 0.");
+        }
+
         static void ValidateStamina(GameParams p, ValidationReport r)
         {
             if (!(p.staminaMax > 0)) r.Errors.Add("GameParams: staminaMax must be > 0.");
