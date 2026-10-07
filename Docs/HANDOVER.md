@@ -13,7 +13,7 @@
 1. `git status`, `git branch`로 지금 브랜치가 `abilities`인지, `Docs/`에 미커밋 변경이 있는지 본다 (§2.1).
 2. 어떤 역할인지 확인한다. **기획 세션**(문서만, 코드 안 씀)인지 **구현 세션**(프롬프트를 받아 코드)인지 (§4.1).
 3. 유니티를 다룰 거면 `curl http://127.0.0.1:8080/api/instances`로 에디터가 붙어 있는지 보고, `set_active_instance`로 `Incremental@…`를 고정한다 (§5.2).
-4. 구현 세션이면 가장 최근 프롬프트 [Prompts/Proto5_Build.md](Prompts/Proto5_Build.md)와 그 스펙 절(24 §18~19, 26 §10.1)을 읽는다. `Satellite_Build.md`는 Proto5에 합쳐졌다 (2026-10-07 기획 세션).
+4. 구현 세션이면 가장 최근 프롬프트 [Prompts/Proto6.md](Prompts/Proto6.md)와 그 스펙 절(24 §20)을 읽는다. Proto5_Build는 끝났다(10/7). `Satellite_Build.md`는 Proto5에 합쳐졌다 (2026-10-07 기획 세션).
 5. 개발자 세이브(`%USERPROFILE%\AppData\LocalLow\DefaultCompany\Incremental\save.json`)는 **플레이 테스트 전에 복사해 두고 끝나면 되돌린다** (§5.4).
 
 ---
