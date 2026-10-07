@@ -29,6 +29,7 @@ MonoBehaviour:
   worldScalePerRing: 0.0375
   worldExpandSec: 0.6
   bodyMinScreenPx: 8
+  bodyMinIntervalSec: 0.4
   vortexShare: 0.25
   vortexTerminalPx: 300
   trailPoints: 8

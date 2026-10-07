@@ -133,6 +133,13 @@ namespace Incremental
                  "camera pulls back (22 §6).")]
         public double bodyMinScreenPx = 8;
 
+        [Header("Body completion (24 §19.2)")]
+        [Tooltip("Seconds after a body is completed at the highest unlocked tier before the next one can be, while holding. " +
+                 "The mass past one threshold is not thrown away: it stays held and becomes the next body once the interval " +
+                 "is over, so the throughput is about the same and a burst of completions is spread out evenly. " +
+                 "0 = as before: every threshold's worth of mass becomes a body in the same tick. The run's end follows the old rule either way.")]
+        public double bodyMinIntervalSec = 0.4;
+
         [Header("Vortex and trails (22 §5)")]
         [Tooltip("Share of the pull that is turned sideways (counter-clockwise), so dust spirals in instead of falling " +
                  "straight. 0 brings back the straight lines of 20 §3.")]

@@ -531,6 +531,7 @@ namespace Incremental
             Effective = ComputeStats();
             runStartStats = Effective;
             Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
+            bodyGapLeft = 0;
 
             // 22 §6: the run is drawn at the world scale, and coming from the result screen the camera is not there
             // yet. It goes on before anything is placed, so the pointer is read and the dust laid out for the area the
@@ -583,11 +584,13 @@ namespace Incremental
             // 20 §5: the moment the held mass passes a tier threshold, that tier may drop a fragment. No mass is spent.
             if (holding && captured > 0) DropFragments(s);
 
-            // Reaching the highest unlocked tier creates immediately, without releasing.
-            if (holding)
+            // Reaching the highest unlocked tier creates immediately, without releasing. 24 §19.2: once a body is made
+            // this way the next one waits out bodyMinIntervalSec, the mass meanwhile staying held.
+            if (bodyGapLeft > 0) bodyGapLeft -= dt;
+            if (holding && bodyGapLeft <= 0)
             {
                 var top = celestialTable.Get(Meta.unlockedMaxTier);
-                if (top != null && Run.mass >= Stats.Threshold(top, s)) CreatePlanet(top);
+                if (top != null && Run.mass >= Stats.Threshold(top, s)) CreatePlanet(top, gameParams.bodyMinIntervalSec > 0);
             }
 
             if (wasHolding && !holding) Release();
@@ -714,17 +717,30 @@ namespace Incremental
         }
 
         /// <summary>
+        /// 24 §19.2: seconds left before the next body may be completed while holding at the highest tier.
+        /// </summary>
+        double bodyGapLeft;
+
+        /// <summary>
         /// Creates and sells planets of this tier from the current mass. At the highest unlocked tier the mass makes
         /// floor(mass / threshold) planets, so dust mass beyond one threshold still pays (12 §10-2); below it, one planet.
         /// Each planet pays sale price × sale multiplier with fractions; the run total is rounded up once at the end (14 §8).
+        /// With <paramref name="oneAtATime"/> (24 §19.2, the hold at the highest tier) only one body is made and the mass
+        /// past its threshold stays held for the next one, which waits out GameParams.bodyMinIntervalSec.
         /// </summary>
-        void CreatePlanet(CelestialTier tier)
+        void CreatePlanet(CelestialTier tier, bool oneAtATime = false)
         {
             double count = 1;
+            double keep = 0;
             if (tier.tier == Meta.unlockedMaxTier)
             {
                 double th = Threshold(tier);
-                if (th > 0) count = Math.Max(1.0, Math.Floor(Run.mass / th));
+                if (th > 0 && oneAtATime)
+                {
+                    keep = Math.Max(0.0, Run.mass - th);
+                    bodyGapLeft = gameParams.bodyMinIntervalSec;
+                }
+                else if (th > 0) count = Math.Max(1.0, Math.Floor(Run.mass / th));
             }
             Run.runIncome += count * Stats.SaleIncome(tier, Effective);
             int idx = tier.tier - 1;
@@ -745,8 +761,16 @@ namespace Incremental
             }
             else Planets.Show(GravityWorld, tier, bodySeed, bodyPx);
             if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(GravityWorld), tier.sizePx, count);
-            Run.mass = 0;
+            Run.mass = keep;
+            // The kept mass has crossed its thresholds once already (20 §5 rolled for them), so they are not crossed again.
             Run.crossedTier = 0;
+            if (keep > 0)
+                for (int t = 1; t <= celestialTable.MaxTier; t++)
+                {
+                    var def = celestialTable.Get(t);
+                    if (def == null || keep < Threshold(def)) break;
+                    Run.crossedTier = t;
+                }
             PlanetCreated?.Invoke(tier);
         }
 
