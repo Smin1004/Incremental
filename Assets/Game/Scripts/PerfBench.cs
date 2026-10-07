@@ -146,7 +146,9 @@ namespace Incremental
             steps.Enqueue(StageTree);
             // The heaviest scenes the game can be asked for now: the dust ceiling (22 §7) with the band outside the
             // screen, which is part of the cap (so 15% of the dust sits out of sight), and every ability as the ring 11
-            // tree gives them, first without the black hole and then with it open through the sample (24 §19.1).
+            // tree gives them, first without the black hole and then with it open through the sample (24 §19.1). An
+            // open black hole swallows the whole field in a couple of seconds, which would leave the sample measuring
+            // an empty screen, so that scene refills the dust to the ceiling every tick: the worst case, not the game.
             steps.Enqueue(() => StageRun((int)p.dustCapCeiling, Abilities.TreeWithoutBlackHole, true));
             steps.Enqueue(() => StageRun((int)p.dustCapCeiling, Abilities.AllForced, true));
             running = true;
@@ -170,7 +172,7 @@ namespace Incremental
         void StageRun(int dust, Abilities abilities, bool band)
         {
             stepName = string.Format(CultureInfo.InvariantCulture,
-                abilities == Abilities.AllForced ? "런 화면, 먼지 {0:N0}개 + 능력 전부 최대 레벨 (블랙홀 열림) + 화면 밖 먼지, 홀드 중"
+                abilities == Abilities.AllForced ? "런 화면, 먼지 {0:N0}개 + 능력 전부 최대 레벨 (블랙홀 열림, 먼지 즉시 보충) + 화면 밖 먼지, 홀드 중"
                 : abilities == Abilities.TreeWithoutBlackHole ? "런 화면, 먼지 {0:N0}개 + 능력 (블랙홀 제외, 트리대로) + 화면 밖 먼지, 홀드 중"
                 : "런 화면, 먼지 {0:N0}개, 홀드 중", dust);
             root.Tree.Hide();
@@ -197,6 +199,8 @@ namespace Incremental
                 bool forced = abilities == Abilities.AllForced;
                 root.Abilities.SetForced(forced ? root.Abilities.RowCount + 1 : 0);
                 if (forced) root.Abilities.StepForcedLevel(1000);
+                // Enough spawn to put every dust the black hole takes straight back, so the tick keeps its full count.
+                if (forced) root.Override = new StatsOverride { enabled = true, dustCap = dust, spawnRate = dust / Math.Max(1e-3, Time.fixedDeltaTime) };
             }
         }
 

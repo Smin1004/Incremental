@@ -248,8 +248,12 @@ namespace Incremental
             {
                 if (shownTier >= 0 && tier > shownTier) popAge = 0f;
                 shownTier = tier;
-                body.SetLook(reached != null ? reached.look : p.formingClumpLook, seed, p.planetAxisPitchDeg);
-                body.SetLightPoint(root.Planets.VanishPoint());
+                // 24 §19.1: while the black hole wears the body, a tier crossed meanwhile must not put the tier's look back.
+                if (lookOverride == null)
+                {
+                    body.SetLook(reached != null ? reached.look : p.formingClumpLook, seed, p.planetAxisPitchDeg);
+                    body.SetLightPoint(root.Planets.VanishPoint());
+                }
             }
             sizePx += (float)(target - sizePx) * (1f - Mathf.Exp(-(float)p.formingSizeLerpRate * dt));
 
