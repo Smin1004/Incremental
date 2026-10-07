@@ -8,7 +8,8 @@ namespace Incremental
 {
     /// <summary>
     /// Skill tree screen (12 §9, 26 §9.2), between runs after the result screen. Constellation style: nodes are glowing
-    /// points on rings (radius = treeRingR0Px + minTier × treeRingStepPx, angle = angleDeg, 12 §5), edges are thin lines,
+    /// points on rings (radius = treeRingR0Px + minTier × treeRingStepPx, angle = angleDeg, 12 §5; or, 26 §10.1, by arm:
+    /// seven arms 360/7° apart that turn with the ring, so the tree is a spiral), edges are thin lines along the arms,
     /// owned paths are bright, unlock nodes (gates, dust kinds, abilities) are drawn larger. Node states follow 12 §4;
     /// a purchasable node breathes slowly. Click buys one level, holding repeats, drag pans, the wheel zooms, hovering
     /// shows a tooltip. A purchase lights the node, runs a light along the connections from its owned prerequisites,
@@ -20,7 +21,7 @@ namespace Incremental
     {
         sealed class Edge
         {
-            public Image image;
+            public UICurve image;
             public TreeNodeWidget from;
             public TreeNodeWidget to;
             /// <summary>Seconds since a purchase lit this connection, or −1.</summary>
@@ -123,6 +124,7 @@ namespace Incremental
                 ringLight[k - 1] = -1f;
             }
 
+            twist = st.armTwistDeg;
             center = MakeWidget(null, Vector2.zero, st.centerSize);
             foreach (var n in t.nodes)
             {
@@ -633,10 +635,93 @@ namespace Incremental
 
         float RingRadius(int ring) => (float)(p.treeRingR0Px + ring * p.treeRingStepPx);
 
+        /// <summary>26 §10.1: degrees the arms turn per ring, as the T key has set it (UITheme.tree.armTwistDeg to start).</summary>
+        public float Twist => twist;
+        float twist;
+
+        /// <summary>
+        /// 26 §10.1: the seven arms, in the cyclic order the 12 §5 axes have, each gathering the seed angles of its axes:
+        /// where a node's angleDeg lands here says which arm it is on and how far beside it (in armSubOffsetDeg units).
+        /// The pairs of one axis (±10° in the seed) keep a small offset of their own. A node at an angle not listed
+        /// keeps its own angle, turned with the ring like the rest.
+        /// </summary>
+        static readonly (float angle, int arm, float sub)[] ArmMap =
+        {
+            (90f, 0, 0f),                                       // gates
+            (150f, 1, 0.5f), (140f, 1, -0.5f),                  // planet thresholds, fragments
+            (210f, 2, 0f),                                      // stamina
+            (240f, 3, 0f),                                      // abilities
+            (270f, 4, 0f),                                      // sale
+            (330f, 5, 0.5f), (340f, 5, 1f), (320f, 5, -0.5f),   // gravity pull, radius, follow
+            (30f, 6, -0.5f), (20f, 6, -1f), (40f, 6, 0f), (60f, 6, 1f),   // dust, its pairs, dust kinds
+        };
+        const int ArmCount = 7;
+
+        /// <summary>Angle of arm <paramref name="arm"/> at ring 0: the gates stay at the top, the rest follow counter-clockwise.</summary>
+        static float ArmAngle(int arm) => 90f + arm * 360f / ArmCount;
+
+        float NodeAngle(NodeDef n)
+        {
+            if (!st.arms) return n.angleDeg;
+            float best = 6f;
+            float angle = n.angleDeg;
+            foreach (var m in ArmMap)
+            {
+                float d = Mathf.Abs(Mathf.DeltaAngle(n.angleDeg, m.angle));
+                if (d >= best) continue;
+                best = d;
+                angle = ArmAngle(m.arm) + m.sub * st.armSubOffsetDeg;
+            }
+            return angle + twist * n.minTier;
+        }
+
         Vector2 NodePosition(NodeDef n)
         {
-            float a = n.angleDeg * Mathf.Deg2Rad;
+            float a = NodeAngle(n) * Mathf.Deg2Rad;
             return new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * RingRadius(n.minTier);
+        }
+
+        /// <summary>26 §10.1: the T key. Lays the nodes and their connections out again at the next twist of the list.</summary>
+        public void CycleTwist()
+        {
+            var choices = st.armTwistChoices;
+            if (choices == null || choices.Length == 0) return;
+            int cur = -1;
+            for (int i = 0; i < choices.Length; i++)
+                if (Mathf.Approximately(choices[i], twist)) cur = i;
+            SetTwist(choices[(cur + 1) % choices.Length]);
+            root.Hud.ShowToast(string.Format(UIStrings.TreeTwistToast, twist));
+            Debug.Log("[Tree] arm twist: " + twist + " deg per ring");
+        }
+
+        public void SetTwist(float degPerRing)
+        {
+            twist = degPerRing;
+            foreach (var w in widgets) w.rt.anchoredPosition = NodePosition(w.node);
+            foreach (var e in edges) LayEdge(e);
+        }
+
+        /// <summary>
+        /// The connection as a curve along the arm: radius and angle each move evenly from one end to the other, so a
+        /// link up an arm follows the spiral and one between arms sweeps the short way round.
+        /// </summary>
+        void LayEdge(Edge e)
+        {
+            Vector2 a = e.from.rt.anchoredPosition, b = e.to.rt.anchoredPosition;
+            float ra = a.magnitude, rb = b.magnitude;
+            float tb = Mathf.Atan2(b.y, b.x);
+            float ta = ra > 1e-3f ? Mathf.Atan2(a.y, a.x) : tb;
+            float sweep = Mathf.DeltaAngle(ta * Mathf.Rad2Deg, tb * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+            int segs = st.arms ? Mathf.Max(1, st.edgeSegments) : 1;
+            var pts = new Vector2[segs + 1];
+            for (int i = 0; i <= segs; i++)
+            {
+                float k = i / (float)segs;
+                float r = Mathf.Lerp(ra, rb, k);
+                float t = ta + sweep * k;
+                pts[i] = new Vector2(Mathf.Cos(t), Mathf.Sin(t)) * r;
+            }
+            e.image.SetPoints(pts, st.edgeWidth);
         }
 
         TreeNodeWidget MakeWidget(NodeDef n, Vector2 pos, float size)
@@ -658,10 +743,14 @@ namespace Incremental
 
         void AddEdge(TreeNodeWidget from, TreeNodeWidget to)
         {
-            var img = UIBuilder.CreateImage("Edge_" + (from.node != null ? from.node.id : "center") + "_" + to.node.id, edgesLayer,
-                st.edgeDim, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.one, UIBuilder.SolidSprite());
-            UIBuilder.PlaceLine((RectTransform)img.transform, from.rt.anchoredPosition, to.rt.anchoredPosition, st.edgeWidth);
-            edges.Add(new Edge { image = img, from = from, to = to });
+            var c = new Vector2(0.5f, 0.5f);
+            var rt = UIBuilder.CreateRect("Edge_" + (from.node != null ? from.node.id : "center") + "_" + to.node.id, edgesLayer, c, c, Vector2.zero, Vector2.zero);
+            var curve = rt.gameObject.AddComponent<UICurve>();
+            curve.raycastTarget = false;
+            curve.color = st.edgeDim;
+            var e = new Edge { image = curve, from = from, to = to };
+            LayEdge(e);
+            edges.Add(e);
         }
 
         /// <summary>

@@ -21,6 +21,7 @@ namespace Incremental
     /// U: the visual direction of the UI, A → B → C (26 §3). G: the stamina display, (a) the bar at the top ↔ (b) the
     /// gravity ring as the gauge (26 §5.1). Both work on every screen, are shown in the F1 overlay and are not saved.
     /// X: the overexposure measures on / off (26 §5.5), to compare before and after; shown in the overlay, not saved.
+    /// T: the twist of the skill tree's spiral arms, through UITheme.tree.armTwistChoices (26 §10.1); not saved.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
     /// what a keyboard really sends.
     /// </summary>
@@ -363,6 +364,7 @@ namespace Incremental
                 if (kb.uKey.wasPressedThisFrame) CycleUiDirection();
                 if (kb.gKey.wasPressedThisFrame) ToggleStaminaDisplay();
                 if (kb.xKey.wasPressedThisFrame) ToggleExposureFix();
+                if (kb.tKey.wasPressedThisFrame && root.Tree != null) root.Tree.CycleTwist();
                 if (root.Abilities != null) AbilityKeys(kb);
                 if (overlay) LogKeys(kb);
             }

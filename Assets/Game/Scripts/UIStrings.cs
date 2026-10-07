@@ -64,6 +64,8 @@ namespace Incremental
         /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>
         public const string UiDirectionToast = "UI 방향: {0}  (U)";
         public const string StaminaDisplayToast = "스태미나 표시: {0}  (G)";
+        /// <summary>26 §10.1: the T key, the spiral twist of the tree's arms. {0} = degrees per ring.</summary>
+        public const string TreeTwistToast = "트리 나선 비틀기: 링당 {0}°  (T)";
         public const string StaminaDisplayBar = "(a) 위쪽 막대";
         public const string StaminaDisplayRing = "(b) 중력 고리";
         public const string StaminaDisplayBarShort = "a";

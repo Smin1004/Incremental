@@ -521,6 +521,15 @@ MonoBehaviour:
     ringWidth: 2
     ringOpen: {r: 0.6, g: 0.68, b: 0.9, a: 0.22}
     ringNext: {r: 0.6, g: 0.68, b: 0.9, a: 0.07}
+    arms: 1
+    armTwistDeg: 12
+    armSubOffsetDeg: 8
+    armTwistChoices:
+    - 0
+    - 8
+    - 12
+    - 16
+    edgeSegments: 10
     flash: {r: 1, g: 0.95, b: 0.8, a: 0.9}
     flashSec: 0.4
     flashScale: 2.5
