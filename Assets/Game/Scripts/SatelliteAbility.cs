@@ -18,6 +18,12 @@ namespace Incremental
     ///
     /// The pull goes to the dust tick as one <see cref="DustForce"/> per satellite. A dust outside a satellite's reach
     /// costs that tick one distance test and nothing more, which is the condition 24 §4 sets for having four of them.
+    ///
+    /// 24 §18.1 the tow: a satellite near its nearest point moves at about 1,280 px/s and dust can manage 400, so the
+    /// clump it gathered used to be left behind at the gravity ring. Now the dust in its core (towRadiusShare of the
+    /// gravity radius) has its velocity drawn to the satellite's (towRate per second) and may go faster than the field's
+    /// top speed while it is excited (AbilityTable.exciteSpeedCapMult), so the clump comes round with the satellite and
+    /// is carried into the gravity source's reach.
     /// </summary>
     public sealed class SatelliteAbility : Ability
     {
@@ -50,6 +56,9 @@ namespace Incremental
         /// <summary>The ellipse: e, p, and h (twice the area swept per second), as in 24 §16.2.</summary>
         double eccentricity, semiLatus, areaRate;
         double clock;
+        /// <summary>Where each satellite was at the last tick, for its velocity (the tow, 24 §18.1).</summary>
+        Vector2[] lastPos = new Vector2[0];
+        bool haveLast;
 
         SatelliteDef D => root.abilityTable.satellite;
 
@@ -69,7 +78,9 @@ namespace Incremental
         protected override void Step(double dt, bool holding, in EffectiveStats s)
         {
             var d = D;
+            int had = count;
             count = holding ? d.Count(Level) : 0;
+            if (count != had) haveLast = false;
             if (count == 0) return;
 
             // The ellipse from its nearest and farthest points (24 §16.2), in gravity radii.
@@ -94,15 +105,28 @@ namespace Incremental
             unit = (float)(s.gravityRadius / ppu);
             float reach = (float)(s.gravityRadius * d.pullRadiusShare) / ppu;
             float accel = (float)(s.pullAccel * d.PullShare(Level)) / ppu;
+            // 24 §18.1: the core tows the dust in it along at the satellite's own velocity, which is where it was at the
+            // last tick to where it is now. The first tick of a hold has no last tick and tows nothing.
+            bool tow = d.Tows;
+            float towRadius = tow ? (float)(s.gravityRadius * d.towRadiusShare) / ppu : 0f;
+            if (lastPos.Length < count) System.Array.Resize(ref lastPos, count);
             for (int i = 0; i < count; i++)
-                system.AddForce(DustForce.Pull(Position(i, 0f), reach, accel));
+            {
+                Vector2 pos = Position(i, 0f);
+                Vector2 vel = haveLast && dt > 0 ? (pos - lastPos[i]) / (float)dt : Vector2.zero;
+                lastPos[i] = pos;
+                if (tow && haveLast) system.AddForce(DustForce.PullTow(pos, reach, accel, towRadius, (float)d.towRate, vel));
+                else system.AddForce(DustForce.Pull(pos, reach, accel));
+            }
+            haveLast = true;
 
             // They come and go with every hold, so the log only speaks up when their number changes.
             if (count == loggedCount) return;
             loggedCount = count;
             Log(count + " orbiting while holding, from " + RunClock + ": orbit " + (near * s.gravityRadius).ToString("F0") + " to " +
                 (far * s.gravityRadius).ToString("F0") + " px from the gravity source, one turn in " + d.orbitPeriodSec.ToString("0.##") +
-                "s, reach " + (reach * ppu).ToString("F0") + " px, pull " + (accel * ppu).ToString("F0") + " px/s²");
+                "s, reach " + (reach * ppu).ToString("F0") + " px, pull " + (accel * ppu).ToString("F0") + " px/s²" +
+                (tow ? ", core " + (towRadius * ppu).ToString("F0") + " px towing at " + d.towRate.ToString("0.##") + "/s" : ", no tow"));
         }
 
         /// <summary>Distance from the gravity source at angle <paramref name="angle"/> of the orbit, in gravity radii.</summary>
@@ -132,6 +156,7 @@ namespace Incremental
             theta = 0;
             precession = 0;
             clock = 0;
+            haveLast = false;
         }
 
         public override void Render(bool show, float lead)

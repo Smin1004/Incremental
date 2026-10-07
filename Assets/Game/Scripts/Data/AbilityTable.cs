@@ -177,8 +177,16 @@ namespace Incremental
         [Tooltip("Reach of a satellite's own pull as a share of the gravity radius. Dust inside it is pulled and excited; " +
                  "dust outside it costs one distance test and is skipped.")]
         public double pullRadiusShare = 0.45;
-        [Tooltip("A satellite's pull as a share of the gravity source's pull_accel. ability_power multiplies it.")]
-        public double pullShare = 1.0;
+        [Tooltip("A satellite's pull as a share of the gravity source's pull_accel. ability_power multiplies it. 24 §18.1 " +
+                 "raised it from 1.0.")]
+        public double pullShare = 1.4;
+        [Tooltip("24 §18.1 the tow: the satellite's core, as a share of the gravity radius. Dust inside it is not only pulled " +
+                 "but has its velocity drawn toward the satellite's own, so the clump it gathered comes round with it " +
+                 "instead of being left behind at the speed dust can manage. 0 = no core.")]
+        public double towRadiusShare = 0.15;
+        [Tooltip("How fast the velocity of a dust in the core is drawn to the satellite's, per second (6 = most of the way " +
+                 "in a sixth of a second). 0 = no tow, which is the 2차 satellite.")]
+        public double towRate = 6;
 
         [Header("Look")]
         [Tooltip("Diameter of the bright dot and of the soft glow around it, px.")]
@@ -205,6 +213,9 @@ namespace Incremental
         /// <summary>The pull share after the ability_power nodes.</summary>
         public double PullShare(in AbilityLevel lv) => pullShare * (1.0 + lv.power);
 
+        /// <summary>24 §18.1: true when the core tows at all.</summary>
+        public bool Tows => towRadiusShare > 0 && towRate > 0;
+
         public override Ability CreateRuntime() => new SatelliteAbility();
 
         public override bool Uses(string statId) => statId == StatIds.AbilityCount || statId == StatIds.AbilityPower;
@@ -221,6 +232,9 @@ namespace Incremental
             if (!(orbitPeriodSec > 0)) r.Errors.Add(Where + " orbitPeriodSec must be > 0.");
             if (!(pullRadiusShare > 0)) r.Errors.Add(Where + " pullRadiusShare must be > 0.");
             if (pullShare < 0) r.Errors.Add(Where + " pullShare must be >= 0.");
+            if (towRadiusShare < 0 || towRate < 0) r.Errors.Add(Where + " towRadiusShare and towRate must be >= 0 (24 §18.1); 0 is no tow.");
+            if (towRadiusShare > pullRadiusShare)
+                r.Warnings.Add(Where + " towRadiusShare is wider than pullRadiusShare: the core reaches past the pull, which 24 §18.1 did not intend.");
             if (!(dotPx > 0) || glowPx < 0) r.Errors.Add(Where + " dotPx must be > 0 and glowPx >= 0.");
             if (glowAlpha < 0 || glowAlpha > 1) r.Errors.Add(Where + " glowAlpha must be within 0..1.");
             if (trailSec < 0 || trailWidthPx < 0) r.Errors.Add(Where + " trailSec and trailWidthPx must be >= 0.");
@@ -334,6 +348,10 @@ namespace Incremental
                  "so a dust an ability pushed keeps going instead of stopping in half a second. 1 = as the first prototype; " +
                  "0 = it keeps all of its speed until it calms down. It lasts as long as exciteSec.")]
         public double exciteDriftRelaxMult = 0.3;
+        [Tooltip("24 §18.1: while a dust is excited its top speed is GameParams.dustMaxSpeed x this (1.8: 400 -> 720 px/s), " +
+                 "so a dust a satellite tows can keep up with it; dust pushed by 수축 or a meteor's wake is faster too. " +
+                 "1 = the cap of the field.")]
+        public double exciteSpeedCapMult = 1.8;
         [Tooltip("The most the ability_cooldown nodes can take off a cooldown (0.8 = down to a fifth), so none ever reaches 0.")]
         public double maxCooldownReduction = 0.8;
         [Tooltip("Writes what the abilities do to the Console as \"[Ability] ...\" lines: which are on when a run starts, every " +

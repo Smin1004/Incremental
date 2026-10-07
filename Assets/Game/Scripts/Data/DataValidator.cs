@@ -58,6 +58,8 @@ namespace Incremental
             if (a.exciteBrightness < 0) r.Errors.Add("AbilityTable: exciteBrightness must be >= 0.");
             if (!(a.exciteDriftRelaxMult >= 0))
                 r.Errors.Add("AbilityTable: exciteDriftRelaxMult must be >= 0 (24 §16.1); 1 leaves excited dust as it was, 0 never slows it.");
+            if (!(a.exciteSpeedCapMult >= 1))
+                r.Errors.Add("AbilityTable: exciteSpeedCapMult must be >= 1 (24 §18.1); below 1 an ability would slow the dust it touches.");
             if (!(a.maxCooldownReduction >= 0) || !(a.maxCooldownReduction < 1))
                 r.Errors.Add("AbilityTable: maxCooldownReduction must be within 0..1 (1 excluded); at 1 a cooldown could reach 0.");
             var ids = new HashSet<string>();

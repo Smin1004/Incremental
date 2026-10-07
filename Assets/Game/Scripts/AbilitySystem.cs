@@ -97,6 +97,7 @@ namespace Incremental
             // meanwhile, are table data, so the dust is told every tick.
             root.Dust.ExciteSec = root.abilityTable.exciteSec;
             root.Dust.ExciteDriftRelaxMult = root.abilityTable.exciteDriftRelaxMult;
+            root.Dust.ExciteSpeedCapMult = root.abilityTable.exciteSpeedCapMult;
             for (int i = 0; i < abilities.Length; i++)
             {
                 var level = LevelOf(i);

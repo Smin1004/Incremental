@@ -35,7 +35,9 @@ MonoBehaviour:
     orbitPeriodSec: 5
     precessionDegPerSec: 15
     pullRadiusShare: 0.45
-    pullShare: 1
+    pullShare: 1.4
+    towRadiusShare: 0.15
+    towRate: 6
     dotPx: 10
     glowPx: 44
     color: {r: 0.82, g: 0.93, b: 1, a: 1}
@@ -64,5 +66,6 @@ MonoBehaviour:
   exciteSec: 0.4
   exciteBrightness: 2
   exciteDriftRelaxMult: 0.3
+  exciteSpeedCapMult: 1.8
   maxCooldownReduction: 0.8
   logEvents: 1

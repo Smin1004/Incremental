@@ -51,10 +51,28 @@ namespace Incremental
         public Vector2 dir;
         /// <summary>The dust in reach is excited (24 §8).</summary>
         public bool excite;
+        /// <summary>
+        /// 24 §18.1 the tow: inside <see cref="towRadius2"/> a dust's velocity is drawn toward <see cref="vel"/> at
+        /// this rate per second (0 = no tow). A satellite's core, so that what it gathered comes round with it.
+        /// </summary>
+        public float tow;
+        public float towRadius2;
+        public Vector2 vel;
 
         /// <summary>A pull toward a point, which also excites the dust: a satellite (24 §4, §16.2).</summary>
         public static DustForce Pull(Vector2 at, float radius, float accel) =>
             new DustForce { at = at, radius = radius, radius2 = radius * radius, accel = accel, excite = true };
+
+        /// <summary>
+        /// 24 §18.1: the pull of a satellite with its core: inside <paramref name="towRadius"/> the dust is also towed
+        /// toward the satellite's velocity <paramref name="velocity"/> at <paramref name="towRate"/> per second.
+        /// </summary>
+        public static DustForce PullTow(Vector2 at, float radius, float accel, float towRadius, float towRate, Vector2 velocity) =>
+            new DustForce
+            {
+                at = at, radius = radius, radius2 = radius * radius, accel = accel, excite = true,
+                tow = towRate, towRadius2 = towRadius * towRadius, vel = velocity,
+            };
 
         /// <summary>A push along a direction, which also excites the dust: a meteor's wake (24 §5).</summary>
         public static DustForce Drag(Vector2 at, float radius, float accel, Vector2 dir) =>
@@ -132,6 +150,12 @@ namespace Incremental
         /// a dust an ability pushed keeps going. Handed over with <see cref="ExciteSec"/>; 1 changes nothing.
         /// </summary>
         public double ExciteDriftRelaxMult { get; set; } = 1.0;
+
+        /// <summary>
+        /// 24 §18.1: while a dust is excited its top speed is dustMaxSpeed x this, so what a satellite tows keeps up
+        /// with it. Handed over with <see cref="ExciteSec"/>; 1 changes nothing.
+        /// </summary>
+        public double ExciteSpeedCapMult { get; set; } = 1.0;
 
         public void Init(GameParams gameParams)
         {
@@ -316,6 +340,9 @@ namespace Incremental
             float vortex = (float)p.vortexShare;
             float vortexTerm = Px(p.vortexTerminalPx);
             float maxSpeed2 = maxSpeed * maxSpeed;
+            // 24 §18.1: an excited dust may go this much faster, so a tow or a push is not capped at the drift field's top speed.
+            float maxSpeedExcited = maxSpeed * (float)Math.Max(1.0, ExciteSpeedCapMult);
+            float maxSpeedExcited2 = maxSpeedExcited * maxSpeedExcited;
             float noise = (float)p.driftNoise;
             float relax = Mathf.Clamp01((float)p.driftRelaxRate * fdt);
             float relaxExcited = Mathf.Clamp01(relax * (float)Math.Max(0.0, ExciteDriftRelaxMult));
@@ -369,13 +396,16 @@ namespace Incremental
                     float push = force.accel * KindAccel(d.kind) * share * fdt;
                     if (force.dir.x != 0f || force.dir.y != 0f) d.vel += force.dir * push;
                     else if (reach > 1e-6f) d.vel += toForce * (push / reach);
+                    // 24 §18.1: in the core the dust is carried along: its velocity is drawn to the satellite's.
+                    if (force.tow > 0f && reach2 < force.towRadius2) d.vel += (force.vel - d.vel) * Mathf.Min(1f, force.tow * fdt);
                     if (force.excite) d.excite = 1f;
                     pulled = true;
                 }
                 if (pulled)
                 {
                     float sp2 = d.vel.sqrMagnitude;
-                    if (sp2 > maxSpeed2) d.vel *= maxSpeed / Mathf.Sqrt(sp2);
+                    float cap2 = d.excite > 0f ? maxSpeedExcited2 : maxSpeed2;
+                    if (sp2 > cap2) d.vel *= Mathf.Sqrt(cap2 / sp2);
                 }
                 else
                 {
