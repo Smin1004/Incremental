@@ -60,6 +60,8 @@ namespace Incremental
         /// data, and so is what the last level means (수축: the whole screen); see <see cref="AbilityLevel.rangeMaxed"/>.
         /// </summary>
         public const string AbilityRange = "ability_range";
+        /// <summary>24 §19.1: seconds added to how long the ability lasts (블랙홀: +1 s per level).</summary>
+        public const string AbilityDuration = "ability_duration";
 
         public static readonly string[] All =
         {
@@ -72,7 +74,7 @@ namespace Incremental
         /// 24 §8: the ability stats. Apart from <see cref="All"/> because Stats.Compute does not read them: what they
         /// raise lives in the AbilityTable, so they are summed per ability by <see cref="Stats.AbilityFromTree"/>.
         /// </summary>
-        public static readonly string[] AbilityStats = { AbilityPower, AbilityCooldown, AbilityCount, AbilityAmount, AbilityRange };
+        public static readonly string[] AbilityStats = { AbilityPower, AbilityCooldown, AbilityCount, AbilityAmount, AbilityRange, AbilityDuration };
 
         /// <summary>Stats that act on one dust kind and therefore need <see cref="NodeDef.dustKindId"/>.</summary>
         public static bool NeedsDustKind(string id) => id == DustChance;

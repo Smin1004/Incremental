@@ -10,7 +10,10 @@ namespace Incremental
     /// <summary>
     /// The 22 §4 / §7 performance measurement. Runs the scenes of the spec table one after another — the run screen at
     /// each dust count while holding, the result screen with a full solar system, the tree screen with every node — and
-    /// writes one markdown table per scene to a file, then quits.
+    /// writes one markdown table per scene to a file, then quits. Since the abilities (24) and the dust outside the
+    /// screen (Abilities_Proto §7) there is one more scene at the end: the run screen at the dust ceiling with every
+    /// ability forced to its top level and the band outside the screen on. The scenes before it are kept as 7주차
+    /// measured them, without either, so the two tables compare line for line (Build_Check1).
     ///
     /// It exists so the numbers come from a Windows build and not from the editor: the build is started with
     /// <c>-perfbench</c> (and optionally <c>-perfout &lt;file&gt;</c>, <c>-perflabel &lt;name&gt;</c>), plays itself and
@@ -46,6 +49,8 @@ namespace Incremental
         string outFile;
         string label = "build";
         bool quitWhenDone;
+        /// <summary>GameParams.dustMarginPx as the asset has it; the 7주차 scenes run with 0 and the last scene with this.</summary>
+        double marginPx;
 
         /// <summary>The scenes that are left to run; the head is the one being measured.</summary>
         readonly Queue<Action> steps = new Queue<Action>();
@@ -120,6 +125,7 @@ namespace Incremental
             if (trails.HasValue) p.trailBudget = (int)trails.Value;
             var world = WorldArg;
             if (world.HasValue) p.worldScalePerRing = world.Value;
+            marginPx = p.dustMarginPx;
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
             // A windowed player is held to the monitor's refresh rate by the desktop compositor whatever vSyncCount says,
@@ -134,10 +140,15 @@ namespace Incremental
                 foreach (double c in counts)
                 {
                     int dust = (int)c;
-                    steps.Enqueue(() => StageRun(dust));
+                    steps.Enqueue(() => StageRun(dust, Abilities.None, false));
                 }
             steps.Enqueue(StageResult);
             steps.Enqueue(StageTree);
+            // The heaviest scenes the game can be asked for now: the dust ceiling (22 §7) with the band outside the
+            // screen, which is part of the cap (so 15% of the dust sits out of sight), and every ability as the ring 11
+            // tree gives them, first without the black hole and then with it open through the sample (24 §19.1).
+            steps.Enqueue(() => StageRun((int)p.dustCapCeiling, Abilities.TreeWithoutBlackHole, true));
+            steps.Enqueue(() => StageRun((int)p.dustCapCeiling, Abilities.AllForced, true));
             running = true;
             // Nothing is measured until the process has settled: the window opens, the shader variants of the first frames
             // compile and the first save is written, and any of those is a one-off stall that would poison scene 1.
@@ -145,16 +156,33 @@ namespace Incremental
             if (steps.Count > 0) steps.Peek()();
         }
 
-        /// <summary>Run screen, holding still in the middle, with the field filled to <paramref name="dust"/>.</summary>
-        void StageRun(int dust)
+        /// <summary>Which abilities a run scene has (24): none, what the ring 11 tree gives minus the black hole, or everything forced to its top level.</summary>
+        enum Abilities { None, TreeWithoutBlackHole, AllForced }
+
+        /// <summary>
+        /// Run screen, holding still in the middle, with the field filled to <paramref name="dust"/>. With
+        /// <paramref name="abilities"/> None the ability nodes are taken back out of the ring start state, because 24 §6
+        /// put them into rings 4-10 and the scenes of 7주차 had none; TreeWithoutBlackHole keeps what the ring 11 start
+        /// state owns except the black hole's nodes; AllForced forces every ability to its top level (24 §7), and a
+        /// forced black hole fires on the first held tick, so it is open through the sample. <paramref name="band"/> is
+        /// the dust outside the screen, on or off the same way.
+        /// </summary>
+        void StageRun(int dust, Abilities abilities, bool band)
         {
-            stepName = string.Format(CultureInfo.InvariantCulture, "런 화면, 먼지 {0:N0}개, 홀드 중", dust);
+            stepName = string.Format(CultureInfo.InvariantCulture,
+                abilities == Abilities.AllForced ? "런 화면, 먼지 {0:N0}개 + 능력 전부 최대 레벨 (블랙홀 열림) + 화면 밖 먼지, 홀드 중"
+                : abilities == Abilities.TreeWithoutBlackHole ? "런 화면, 먼지 {0:N0}개 + 능력 (블랙홀 제외, 트리대로) + 화면 밖 먼지, 홀드 중"
+                : "런 화면, 먼지 {0:N0}개, 홀드 중", dust);
             root.Tree.Hide();
             root.Result.Hide();
+            // Before the field is laid out: the run start and the staging below both fill the band from this value.
+            p.dustMarginPx = band ? marginPx : 0;
             if (root.Phase != GamePhase.Run) root.StartRun();
             // The heaviest scene the game can reach: every node of rings 1-10 owned, so the dust kinds are unlocked at
             // full share. Without it the field would be base dust only and no trail would ever be drawn.
             root.Tools.ApplyRingStartState(root.celestialTable.MaxTier);
+            if (abilities == Abilities.None) StripAbilityNodes(null);
+            else if (abilities == Abilities.TreeWithoutBlackHole) StripAbilityNodes("blackhole");
             // Making the top tier would otherwise start the ending (15 §4.1), which stops the dust simulation and ends
             // the run in the middle of the sample. Marking the ending as already seen keeps the hold going.
             root.Meta.endingRun = 1;
@@ -162,6 +190,28 @@ namespace Incremental
             root.Tools.StageRunScene(20260929, dust, new Vector2(0.5f, 0.5f), Vector2.zero, root.celestialTable.MaxTier, 0.5);
             // The run must not end in the middle of the sample.
             root.Run.stamina = double.MaxValue / 4;
+            if (root.Abilities != null)
+            {
+                // 24 §7: "all" forced and the level stepped up to the most any ability node has; forced abilities are
+                // charged at once, so the first one fires in the warmup and they keep cycling through the sample.
+                bool forced = abilities == Abilities.AllForced;
+                root.Abilities.SetForced(forced ? root.Abilities.RowCount + 1 : 0);
+                if (forced) root.Abilities.StepForcedLevel(1000);
+            }
+        }
+
+        /// <summary>
+        /// The ability unlock and stat nodes back to level 0, so the tree gives no ability (the 7주차 scenes); or only
+        /// those of <paramref name="abilityId"/>.
+        /// </summary>
+        void StripAbilityNodes(string abilityId)
+        {
+            foreach (var n in root.nodeTable.nodes)
+            {
+                if (n == null || !(n.kind == NodeKind.AbilityUnlock || !string.IsNullOrEmpty(n.abilityId))) continue;
+                if (abilityId != null && n.abilityId != abilityId) continue;
+                root.Meta.SetLevel(n.id, 0);
+            }
         }
 
         /// <summary>
@@ -310,6 +360,8 @@ namespace Incremental
         void Finish()
         {
             running = false;
+            p.dustMarginPx = marginPx;
+            if (root.Abilities != null) root.Abilities.SetForced(0);
             root.Tools.EndStaging();
             string text = Report();
             try
@@ -344,6 +396,7 @@ namespace Incremental
               .Append(", worldScalePerRing ").Append(p.worldScalePerRing.ToString(CultureInfo.InvariantCulture))
               .Append(", worldScale ").Append(root.WorldScale.ToString("F2", CultureInfo.InvariantCulture))
               .Append(", dustCap ").Append(root.Effective.dustCap.ToString("F0", CultureInfo.InvariantCulture))
+              .Append(", dustMarginPx ").Append(marginPx.ToString(CultureInfo.InvariantCulture)).Append(" (마지막 장면만)")
               .Append(", 예열 ").Append(p.perfBenchWarmupSec).Append("초 / 표본 ").Append(p.perfBenchSampleSec).Append("초\n");
             return sb.ToString();
         }

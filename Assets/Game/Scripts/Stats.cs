@@ -240,6 +240,7 @@ namespace Incremental
                 case StatIds.AbilityCount: a.count += add; break;
                 case StatIds.AbilityAmount: a.amount += add; break;
                 case StatIds.AbilityRange: a.range += add; break;
+                case StatIds.AbilityDuration: a.duration += add; break;
                 default: return;
             }
             a.level = (int)Math.Min((long)a.level + level, int.MaxValue);

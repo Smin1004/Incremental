@@ -451,6 +451,8 @@ MonoBehaviour:
     color: {r: 0.72, g: 0.88, b: 1, a: 1}
   - abilityId: meteor
     color: {r: 1, g: 0.8, b: 0.5, a: 1}
+  - abilityId: blackhole
+    color: {r: 0.86, g: 0.6, b: 1, a: 1}
   abilityArcGapPx: 7
   abilityArcSpacingPx: 7
   abilityArcWidthPx: 3

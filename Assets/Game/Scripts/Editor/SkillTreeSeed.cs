@@ -19,7 +19,8 @@ namespace Incremental.EditorTools
     /// follows the circumference), and the planet axis reaches rings 6 and 7 so the required mass falls by 80% instead of
     /// 40%. That last one is what turns throughput into bodies, which is the 21 §4 problem.
     /// 24 §6: the ability axis is a new one at 240°, the widest gap left (between the stamina and the sale axes).
-    /// Rings 4, 6 and 8 unlock an ability and the ring after each raises it; rings 10 and 11 are left empty.
+    /// Rings 4, 6 and 8 unlock an ability and the ring after each raises it. 24 §19.1: ring 10 unlocks the black hole
+    /// and ring 11 lengthens it.
     /// </summary>
     public static class SkillTreeSeed
     {
@@ -161,7 +162,8 @@ namespace Incremental.EditorTools
 
         /// <summary>
         /// The ability axis (24 §6), by ring: 4, 6 and 8 unlock an ability, the ring after each raises it by three
-        /// levels. A new ability is two more lines here and a row in the AbilityTable. To make the 수축 node shorten the
+        /// levels; 24 §19.1 put the black hole in ring 10 and its duration in ring 11. A new ability is two more lines
+        /// here and a row in the AbilityTable. To make the 수축 node shorten the
         /// cooldown instead of widening the range, only its stat changes (StatIds.AbilityCooldown).
         ///
         /// 24 §16.1, §17.1: the 수축 node raises the range, and its last level is the whole screen. The levels before
@@ -180,6 +182,8 @@ namespace Incremental.EditorTools
                 case 7: return AbilityStat("r7_satellite_count", "satellite", 7, StatIds.AbilityCount, 1, 3, "ability_satellite");
                 case 8: return AbilityUnlock("meteor", 8);
                 case 9: return AbilityStat("r9_meteor_amount", "meteor", 9, StatIds.AbilityAmount, 0.03, 3, "ability_meteor");
+                case 10: return AbilityUnlock("blackhole", 10);
+                case 11: return AbilityStat("r11_blackhole_duration", "blackhole", 11, StatIds.AbilityDuration, 1, 3, "ability_blackhole");
                 default: return null;
             }
         }
@@ -339,6 +343,8 @@ namespace Incremental.EditorTools
             n.Add(Stat("r11_sale", 11, SaleAxis, sale, 1.00, 0, StatCost(11), EndlessGrowth, "r10_sale"));
             n.Add(Stat("r11_spawn", 11, DustAxis, spawn, 12, 0, StatCost(11), EndlessGrowth, "r10_spawn"));
             n.Add(Stat("r11_stamina", 11, StaminaAxis, stamina, 9, 0, StatCost(11), EndlessGrowth, "r10_stamina"));
+            // 24 §19.1: the black hole's duration node, the one capped node of ring 11.
+            n.Add(AbilityNode(11));
             return n;
         }
 

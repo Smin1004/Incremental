@@ -180,6 +180,8 @@ namespace Incremental
             { "ability.satellite.effect", "중력원을 도는 작은 중력원" },
             { "ability.meteor", "유성" },
             { "ability.meteor.effect", "유성이 지나가며 먼지를 흘린다" },
+            { "ability.blackhole", "블랙홀" },
+            { "ability.blackhole.effect", "충전되면 중력원이 잠시 블랙홀이 되어 화면 전체를 빨아들인다" },
 
             // Ability stats (24 §8). The node name puts the ability's name in front: 수축 범위 I, 위성 수 I, 유성 양 I.
             // The last level of a range node is the whole screen whatever the step is worth (24 §16.1).
@@ -193,6 +195,8 @@ namespace Incremental
             { "stat.ability_count.effect", "+{0}" },
             { "stat.ability_amount.name", "양" },
             { "stat.ability_amount.effect", "+{0}%p" },
+            { "stat.ability_duration.name", "지속" },
+            { "stat.ability_duration.effect", "+{0}초" },
 
             // Visual directions of the UI (26 §3), by UITheme direction id; Validate Data checks that every id has a key.
             { "ui.direction.A", "A 관측 기기" },

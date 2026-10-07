@@ -23,6 +23,8 @@ namespace Incremental
         public double amount;
         /// <summary>ability_range: steps of reach (24 §16.1).</summary>
         public double range;
+        /// <summary>ability_duration: seconds added to how long the ability lasts (24 §19.1).</summary>
+        public double duration;
         /// <summary>
         /// 24 §16.1: every ability_range node of the ability is at its last level. The rule "the last level is the whole
         /// screen" hangs on this and not on a level number, so it still holds when the nodes are given more levels.
@@ -321,6 +323,72 @@ namespace Incremental
     }
 
     /// <summary>
+    /// 24 §19.1 블랙홀. The big, rare one (40 seconds of holding): an inhale that slows the field and darkens the edges,
+    /// then the gravity source is the ending's black hole for a few seconds and pulls everything dust can be in, band
+    /// outside the screen included, harder and with more swirl; a flash lets go. Ring 10 unlocks it, ring 11 adds seconds.
+    /// </summary>
+    [Serializable]
+    public sealed class BlackHoleDef : AbilityDef
+    {
+        [Tooltip("Seconds of the inhale before the black hole opens: the dust slows to slowFactor of its speed and the edges of " +
+                 "the screen darken. The warning that something big is coming.")]
+        public double inhaleSec = 1;
+        [Tooltip("What the dust's speed is multiplied down to over the inhale (0.25 = a quarter).")]
+        public double slowFactor = 0.25;
+        [Tooltip("Seconds the black hole is open with only the unlock owned. ability_duration adds seconds: +1 per level in the seed, 4 -> 7.")]
+        public double durationSec = 4;
+        [Tooltip("While it is open, a pull from the gravity source over everything dust can be in (the band outside the screen " +
+                 "included): pull_accel x this, on top of the ordinary pull inside the gravity radius.")]
+        public double pullMult = 2.5;
+        [Tooltip("The sideways share of that pull: GameParams.vortexShare x this, so the whole screen winds in instead of falling straight.")]
+        public double vortexMult = 2;
+        [Tooltip("Seconds of the release: the flash, the darkness fading, the gravity source as it was.")]
+        public double releaseSec = 0.4;
+
+        [Header("Look")]
+        [Tooltip("The gravity source wears GameParams.blackHoleLook (the ending's black hole, accretion disc and all) at this diameter (px) while it is open.")]
+        public double sizePx = 56;
+        [Tooltip("How dark the edges of the screen get (alpha), rising over the inhale, held while open, gone with the release; x effect intensity.")]
+        public double darkenAlpha = 0.45;
+        [Tooltip("How far in from the edge the darkness reaches, as a share of the half screen (1 = to the middle).")]
+        public double darkenReach = 0.7;
+        [Tooltip("The release flash (the ending's ScreenFlash, flash rule 15 §3): peak alpha, rise seconds, color; x effect intensity.")]
+        public double flashAlpha = 0.35;
+        public double flashRiseSec = 0.1;
+        public Color flashColor = new Color(0.9f, 0.95f, 1f);
+
+        public BlackHoleDef()
+        {
+            id = "blackhole";
+            unlockRing = 10;
+            cooldownSec = 40;
+        }
+
+        /// <summary>Seconds the black hole is open after the ability_duration nodes.</summary>
+        public double Duration(in AbilityLevel lv) => durationSec + Math.Max(0.0, lv.duration);
+
+        public override Ability CreateRuntime() => new BlackHoleAbility();
+
+        public override bool Uses(string statId) => statId == StatIds.AbilityDuration || statId == StatIds.AbilityCooldown;
+
+        public override void Check(in AbilityLevel full, CelestialTable c, ValidationReport r)
+        {
+            if (!(cooldownSec > 0)) r.Errors.Add(Where + " cooldownSec must be > 0 (24 §8).");
+            if (inhaleSec < 0) r.Errors.Add(Where + " inhaleSec must be >= 0; 0 opens the black hole at once.");
+            if (!(slowFactor > 0) || slowFactor > 1) r.Errors.Add(Where + " slowFactor must be within 0..1 (0 excluded); 1 does not slow the dust.");
+            if (!(durationSec > 0)) r.Errors.Add(Where + " durationSec must be > 0, or the black hole never opens.");
+            if (pullMult < 0 || vortexMult < 0) r.Errors.Add(Where + " pullMult and vortexMult must be >= 0.");
+            if (releaseSec < 0) r.Errors.Add(Where + " releaseSec must be >= 0.");
+            if (!(sizePx > 0)) r.Errors.Add(Where + " sizePx must be > 0.");
+            if (darkenAlpha < 0 || darkenAlpha > 1 || darkenReach < 0 || darkenReach > 1)
+                r.Errors.Add(Where + " darkenAlpha and darkenReach must be within 0..1.");
+            if (flashAlpha < 0 || flashAlpha > 1 || flashRiseSec < 0) r.Errors.Add(Where + " flashAlpha must be within 0..1 and flashRiseSec >= 0.");
+            if (full.duration > 0 && cooldownSec <= durationSec + full.duration + inhaleSec)
+                r.Warnings.Add(Where + " is open longer than its cooldown with every node bought, so it would never close.");
+        }
+    }
+
+    /// <summary>
     /// Special abilities (24). One row per ability, and every number of an ability is in its row: nothing about them is
     /// a constant in code. The field initializers are the seed (PrototypeSetup creates the asset from them, and
     /// Validate Data warns where the asset holds another value), and the values are meant to be changed in the
@@ -337,6 +405,7 @@ namespace Incremental
         public ImplodeDef implode = new ImplodeDef();
         public SatelliteDef satellite = new SatelliteDef();
         public MeteorDef meteor = new MeteorDef();
+        public BlackHoleDef blackHole = new BlackHoleDef();
 
         [Header("Shared")]
         [Tooltip("Excited dust (24 §8): a dust an ability hits lights up and takes this long to calm down again (seconds).")]
@@ -364,7 +433,7 @@ namespace Incremental
         /// Every row, in the order the debug key cycles through them (24 §7). A new ability is one more field above and
         /// one more entry here.
         /// </summary>
-        public AbilityDef[] Rows => rows ?? (rows = new AbilityDef[] { implode, satellite, meteor });
+        public AbilityDef[] Rows => rows ?? (rows = new AbilityDef[] { implode, satellite, meteor, blackHole });
 
         public int Count => Rows.Length;
 

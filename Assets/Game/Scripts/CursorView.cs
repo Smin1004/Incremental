@@ -51,6 +51,23 @@ namespace Incremental
         /// <summary>Diameter the forming body is drawn at now (reference px), before the pop.</summary>
         public double FormingDiameterPx => sizePx;
 
+        PlanetLook lookOverride;
+        double lookOverridePx;
+        bool overrideShown;
+
+        /// <summary>
+        /// 24 §19.1: while set, the forming body wears this look at this diameter (reference px) instead of the tier's:
+        /// the black hole. Cleared, the body goes back to the tier's look on the next frame; the forming size has kept
+        /// moving meanwhile.
+        /// </summary>
+        public void SetLookOverride(PlanetLook look, double diameterPx)
+        {
+            lookOverride = look;
+            lookOverridePx = diameterPx;
+        }
+
+        public void ClearLookOverride() => lookOverride = null;
+
         public void Init(GameRoot gameRoot, Material lineMaterial, RectTransform canvas)
         {
             root = gameRoot;
@@ -177,6 +194,7 @@ namespace Incremental
             if (!show)
             {
                 shown = false;
+                overrideShown = false;
                 return;
             }
 
@@ -243,6 +261,25 @@ namespace Incremental
                 popAge += dt;
             }
             float drawnPx = (float)root.RunBodyPx(sizePx * (1f + pop));
+            // 24 §19.1: the black hole in place of the forming body, at its own size, until the override is cleared.
+            if (lookOverride != null)
+            {
+                if (!overrideShown)
+                {
+                    overrideShown = true;
+                    body.SetLook(lookOverride, seed, p.planetAxisPitchDeg);
+                    body.SetLightPoint(root.Planets.VanishPoint());
+                }
+                drawnPx = (float)root.RunBodyPx(lookOverridePx);
+            }
+            else if (overrideShown)
+            {
+                overrideShown = false;
+                // The tier's look again on this frame (the tier may have changed meanwhile), without the pop.
+                shownTier = tier;
+                body.SetLook(reached != null ? reached.look : p.formingClumpLook, seed, p.planetAxisPitchDeg);
+                body.SetLightPoint(root.Planets.VanishPoint());
+            }
             body.SetDiameter(drawnPx / (float)p.pixelsPerUnit);
 
             // Gauge: a thin ring just outside the body (and its ring, if any), around the gravity source.

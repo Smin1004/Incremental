@@ -1236,6 +1236,20 @@ MonoBehaviour:
     - r8_follow
     angleDeg: 320
     enabled: 1
+  - id: ability_blackhole
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 16000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: blackhole
+    minTier: 10
+    prereqs: []
+    angleDeg: 240
+    enabled: 1
   - id: gate_t11
     kind: 1
     statId: 
@@ -1295,6 +1309,21 @@ MonoBehaviour:
     prereqs:
     - r10_stamina
     angleDeg: 210
+    enabled: 1
+  - id: r11_blackhole_duration
+    kind: 0
+    statId: ability_duration
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 170000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: blackhole
+    minTier: 11
+    prereqs:
+    - ability_blackhole
+    angleDeg: 240
     enabled: 1
   ringCostMult:
   - 1

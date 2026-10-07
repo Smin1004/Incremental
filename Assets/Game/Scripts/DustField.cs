@@ -58,6 +58,11 @@ namespace Incremental
         public float tow;
         public float towRadius2;
         public Vector2 vel;
+        /// <summary>
+        /// 24 §19.1: the sideways share of the pull (counter-clockwise), as GameParams.vortexShare is for the gravity
+        /// source, capped the same way by vortexTerminalPx. 0 = a straight pull.
+        /// </summary>
+        public float vortex;
 
         /// <summary>A pull toward a point, which also excites the dust: a satellite (24 §4, §16.2).</summary>
         public static DustForce Pull(Vector2 at, float radius, float accel) =>
@@ -73,6 +78,13 @@ namespace Incremental
                 at = at, radius = radius, radius2 = radius * radius, accel = accel, excite = true,
                 tow = towRate, towRadius2 = towRadius * towRadius, vel = velocity,
             };
+
+        /// <summary>
+        /// 24 §19.1: the black hole's pull over everything dust can be in, with a swirl: a pull like a satellite's,
+        /// plus <paramref name="vortex"/> of it turned sideways.
+        /// </summary>
+        public static DustForce Global(Vector2 at, float radius, float accel, float vortex) =>
+            new DustForce { at = at, radius = radius, radius2 = radius * radius, accel = accel, excite = true, vortex = vortex };
 
         /// <summary>A push along a direction, which also excites the dust: a meteor's wake (24 §5).</summary>
         public static DustForce Drag(Vector2 at, float radius, float accel, Vector2 dir) =>
@@ -156,6 +168,12 @@ namespace Incremental
         /// with it. Handed over with <see cref="ExciteSec"/>; 1 changes nothing.
         /// </summary>
         public double ExciteSpeedCapMult { get; set; } = 1.0;
+
+        /// <summary>
+        /// 24 §19.1 the inhale: every dust's velocity is multiplied by this once per tick while it is below 1 (the
+        /// black hole sets it for the ticks of its inhale and puts it back to 1). Render has nothing to do with it.
+        /// </summary>
+        public float SpeedMul { get; set; } = 1f;
 
         public void Init(GameParams gameParams)
         {
@@ -348,6 +366,7 @@ namespace Incremental
             float relaxExcited = Mathf.Clamp01(relax * (float)Math.Max(0.0, ExciteDriftRelaxMult));
             float calm = ExciteStep(fdt);
             float grow = BornStep(fdt);
+            float speedMul = Mathf.Clamp01(SpeedMul);
             double captured = 0;
 
             for (int i = 0; i < count; i++)
@@ -395,7 +414,18 @@ namespace Incremental
                     float share = (float)PullFactor(reach, force.radius, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
                     float push = force.accel * KindAccel(d.kind) * share * fdt;
                     if (force.dir.x != 0f || force.dir.y != 0f) d.vel += force.dir * push;
-                    else if (reach > 1e-6f) d.vel += toForce * (push / reach);
+                    else if (reach > 1e-6f)
+                    {
+                        Vector2 inward = toForce / reach;
+                        d.vel += inward * push;
+                        // 24 §19.1: part of the pull turned sideways, with the same ceiling as the gravity source's swirl.
+                        if (force.vortex > 0f)
+                        {
+                            Vector2 swirl = new Vector2(inward.y, -inward.x);
+                            float sideways = Vector2.Dot(d.vel, swirl);
+                            d.vel += swirl * (push * force.vortex * (1f - sideways / vortexTerm));
+                        }
+                    }
                     // 24 §18.1: in the core the dust is carried along: its velocity is drawn to the satellite's.
                     if (force.tow > 0f && reach2 < force.towRadius2) d.vel += (force.vel - d.vel) * Mathf.Min(1f, force.tow * fdt);
                     if (force.excite) d.excite = 1f;
@@ -419,6 +449,9 @@ namespace Incremental
                     speed = Mathf.Lerp(speed, drift, d.excite > 0f ? relaxExcited : relax);
                     d.vel = dir * speed;
                 }
+
+                // 24 §19.1: the inhale slows the whole field.
+                if (speedMul < 1f) d.vel *= speedMul;
 
                 Vector2 from = d.pos;
                 Vector2 to = from + d.vel * fdt;

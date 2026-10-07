@@ -63,6 +63,22 @@ MonoBehaviour:
     sizePx: 40
     tailLength: 9
     pathTries: 16
+  blackHole:
+    id: blackhole
+    unlockRing: 10
+    cooldownSec: 40
+    inhaleSec: 1
+    slowFactor: 0.25
+    durationSec: 4
+    pullMult: 2.5
+    vortexMult: 2
+    releaseSec: 0.4
+    sizePx: 56
+    darkenAlpha: 0.45
+    darkenReach: 0.7
+    flashAlpha: 0.35
+    flashRiseSec: 0.1
+    flashColor: {r: 0.9, g: 0.95, b: 1, a: 1}
   exciteSec: 0.4
   exciteBrightness: 2
   exciteDriftRelaxMult: 0.3

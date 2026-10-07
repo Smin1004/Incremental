@@ -211,6 +211,7 @@ namespace Incremental
         {
             new UIAbilityArc { abilityId = "implode", color = new Color(0.72f, 0.88f, 1f) },
             new UIAbilityArc { abilityId = "meteor", color = new Color(1f, 0.8f, 0.5f) },
+            new UIAbilityArc { abilityId = "blackhole", color = new Color(0.86f, 0.6f, 1f) },
         };
         [Tooltip("Distance of the first arc outside the gravity ring, the spacing between arcs and their width, px.")]
         public float abilityArcGapPx = 7f;
