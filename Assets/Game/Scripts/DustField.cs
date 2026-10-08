@@ -63,6 +63,18 @@ namespace Incremental
         /// source, capped the same way by vortexTerminalPx. 0 = a straight pull.
         /// </summary>
         public float vortex;
+        /// <summary>
+        /// 24 §21.2 번개 사슬: when set the force is the segment <see cref="at"/>–<see cref="to"/> and acts from the point of
+        /// it nearest the dust, so dust is pulled onto the line and carried with it.
+        /// </summary>
+        public bool segment;
+        public Vector2 to;
+        /// <summary>
+        /// 24 §21.2 특이점: dust that comes within this radius (squared) of <see cref="at"/> is captured while holding, as the
+        /// gravity source captures; its mass goes to the body being made.
+        /// </summary>
+        public bool capture;
+        public float captureRadius2;
 
         /// <summary>A pull toward a point, which also excites the dust: a satellite (24 §4, §16.2).</summary>
         public static DustForce Pull(Vector2 at, float radius, float accel) =>
@@ -89,6 +101,18 @@ namespace Incremental
         /// <summary>A push along a direction, which also excites the dust: a meteor's wake (24 §5).</summary>
         public static DustForce Drag(Vector2 at, float radius, float accel, Vector2 dir) =>
             new DustForce { at = at, radius = radius, radius2 = radius * radius, accel = accel, dir = dir, excite = true };
+
+        /// <summary>24 §21.2: a pull onto the line from <paramref name="a"/> to <paramref name="b"/>, which also excites the dust: the lightning between two satellites.</summary>
+        public static DustForce Line(Vector2 a, Vector2 b, float radius, float accel) =>
+            new DustForce { at = a, to = b, segment = true, radius = radius, radius2 = radius * radius, accel = accel, excite = true };
+
+        /// <summary>24 §21.2: a <see cref="Global"/> pull that also captures what comes within <paramref name="captureRadius"/>: the second black hole.</summary>
+        public static DustForce GlobalCapture(Vector2 at, float radius, float accel, float vortex, float captureRadius) =>
+            new DustForce
+            {
+                at = at, radius = radius, radius2 = radius * radius, accel = accel, excite = true, vortex = vortex,
+                capture = captureRadius > 0f, captureRadius2 = captureRadius * captureRadius,
+            };
     }
 
     /// <summary>
@@ -137,6 +161,8 @@ namespace Incremental
         }
         /// <summary>Dust captured since the last <see cref="Reset"/>: the number and the mass. Measurement only (20 §3).</summary>
         public int CapturedCount { get; private set; }
+        /// <summary>24 §21.2: of <see cref="CapturedCount"/>, how many an ability's force captured (the second black hole), for its log.</summary>
+        public int ForceCapturedCount { get; private set; }
         public double CapturedMass { get; private set; }
         /// <summary>
         /// The visible area (camera rect, world units). A dust that is in it stays in it; see <see cref="Bounds"/> for
@@ -264,6 +290,7 @@ namespace Incremental
             marginAcc = 0;
             trailClock = 0;
             CapturedCount = 0;
+            ForceCapturedCount = 0;
             CapturedMass = 0;
             Area = area;
             Bounds = BoundsOf(area);
@@ -410,12 +437,28 @@ namespace Incremental
                     }
                 }
                 // 24: what the abilities put on the dust. The distance test is all a dust out of reach pays.
+                bool eaten = false;
                 for (int k = 0; k < forceCount; k++)
                 {
                     ref DustForce force = ref forces[k];
-                    Vector2 toForce = force.at - d.pos;
+                    Vector2 anchor = force.at;
+                    if (force.segment)
+                    {
+                        // 24 §21.2: a line acts from the point of it nearest the dust.
+                        Vector2 ab = force.to - force.at;
+                        float len2 = ab.sqrMagnitude;
+                        float u = len2 > 1e-8f ? Mathf.Clamp01(Vector2.Dot(d.pos - force.at, ab) / len2) : 0f;
+                        anchor = force.at + ab * u;
+                    }
+                    Vector2 toForce = anchor - d.pos;
                     float reach2 = toForce.sqrMagnitude;
                     if (reach2 >= force.radius2) continue;
+                    // 24 §21.2 특이점: the second black hole captures what reaches it, while holding, as the gravity source does.
+                    if (force.capture && holding && reach2 < force.captureRadius2)
+                    {
+                        eaten = true;
+                        break;
+                    }
                     float reach = Mathf.Sqrt(reach2);
                     float share = (float)PullFactor(reach, force.radius, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
                     float push = force.accel * KindAccel(d.kind) * share * fdt;
@@ -436,6 +479,15 @@ namespace Incremental
                     if (force.tow > 0f && reach2 < force.towRadius2) d.vel += (force.vel - d.vel) * Mathf.Min(1f, force.tow * fdt);
                     if (force.excite) d.excite = 1f;
                     pulled = true;
+                }
+                if (eaten)
+                {
+                    captured += KindMass(d.kind);
+                    CapturedCount++;
+                    ForceCapturedCount++;
+                    SwapRemove(i);
+                    i--;
+                    continue;
                 }
                 if (pulled)
                 {

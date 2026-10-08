@@ -213,6 +213,28 @@ namespace Incremental
                  "in a sixth of a second). 0 = no tow, which is the 2차 satellite.")]
         public double towRate = 6;
 
+        [Header("Evolved: 번개 사슬 (24 §21.2)")]
+        [Tooltip("Evolved, consecutive satellites are joined by lightning (two by one chain, three or more in a ring). Dust within " +
+                 "chainReachPx of a chain is pulled onto it at chainPullPx px/s² and excited, so the chains carry dust round with " +
+                 "them. 0 = the chains are only drawn.")]
+        public double chainReachPx = 40;
+        public double chainPullPx = 900;
+        [Tooltip("The snap: when the satellites pass their nearest point (together, once an orbit) the chains flash and every dust " +
+                 "within snapRadiusShare gravity radii of the gravity source is pushed to it at snapSpeedPx px/s (24 §3's push), " +
+                 "with a ring closing on it over snapFlashSec.")]
+        public double snapRadiusShare = 0.8;
+        public double snapSpeedPx = 420;
+        public double snapFlashSec = 0.3;
+        [Tooltip("The lightning: a core line this wide (px) with a glow line this wide behind it, in this color (the glow at " +
+                 "chainGlowAlpha), drawn as chainSegments pieces whose joints jump sideways up to chainJitterPx every frame. " +
+                 "The glow, the trembling and the flash follow the effect intensity; the core stays.")]
+        public double chainWidthPx = 3;
+        public double chainGlowWidthPx = 10;
+        public Color chainColor = new Color(0.75f, 0.9f, 1f, 1f);
+        public double chainGlowAlpha = 0.35;
+        public int chainSegments = 14;
+        public double chainJitterPx = 12;
+
         [Header("Look")]
         [Tooltip("Diameter of the bright dot and of the soft glow around it, px.")]
         public double dotPx = 10;
@@ -263,6 +285,13 @@ namespace Incremental
             if (!(dotPx > 0) || glowPx < 0) r.Errors.Add(Where + " dotPx must be > 0 and glowPx >= 0.");
             if (glowAlpha < 0 || glowAlpha > 1) r.Errors.Add(Where + " glowAlpha must be within 0..1.");
             if (trailSec < 0 || trailWidthPx < 0) r.Errors.Add(Where + " trailSec and trailWidthPx must be >= 0.");
+            if (chainReachPx < 0 || chainPullPx < 0) r.Errors.Add(Where + " chainReachPx and chainPullPx must be >= 0 (24 §21.2).");
+            if (snapRadiusShare < 0 || snapSpeedPx < 0 || snapFlashSec < 0) r.Errors.Add(Where + " snapRadiusShare, snapSpeedPx and snapFlashSec must be >= 0 (24 §21.2).");
+            if (!(chainWidthPx > 0) || chainGlowWidthPx < 0 || chainJitterPx < 0) r.Errors.Add(Where + " chainWidthPx must be > 0 and chainGlowWidthPx, chainJitterPx >= 0.");
+            if (chainGlowAlpha < 0 || chainGlowAlpha > 1) r.Errors.Add(Where + " chainGlowAlpha must be within 0..1.");
+            if (chainSegments < 2) r.Errors.Add(Where + " chainSegments must be >= 2: a line needs two ends.");
+            if (full.evolved && Count(full) < 2)
+                r.Warnings.Add(Where + " evolved, but reaches only one satellite with every node bought: nothing to chain to (24 §21.2).");
         }
     }
 
