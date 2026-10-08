@@ -522,7 +522,7 @@ MonoBehaviour:
     ringOpen: {r: 0.6, g: 0.68, b: 0.9, a: 0.22}
     ringNext: {r: 0.6, g: 0.68, b: 0.9, a: 0.07}
     arms: 1
-    armTwistDeg: 12
+    armTwistDeg: 16
     armSubOffsetDeg: 8
     armTwistChoices:
     - 0

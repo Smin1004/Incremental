@@ -98,8 +98,8 @@ namespace Incremental
                  "kinds; planets and fragments; stamina; sale; gravity and follow; abilities), and every arm turns with the " +
                  "ring. Off = the radial layout of 12 §5, each node at its own angle.")]
         public bool arms = true;
-        [Tooltip("Degrees an arm turns per ring: node angle = arm angle + this × ring. 0 = straight spokes; 12 turns ring 11 by 132°.")]
-        public float armTwistDeg = 12f;
+        [Tooltip("Degrees an arm turns per ring: node angle = arm angle + this × ring. 0 = straight spokes; 16 turns ring 11 by 176° (the developer chose 16 from the build captures, 24 §20).")]
+        public float armTwistDeg = 16f;
         [Tooltip("Degrees a sub-axis sits beside its arm (dust kinds beside dust, fragments beside planets, follow beside gravity).")]
         public float armSubOffsetDeg = 8f;
         [Tooltip("The twists the T key cycles through, to compare them while playing.")]
