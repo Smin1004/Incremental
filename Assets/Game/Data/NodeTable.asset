@@ -188,6 +188,20 @@ MonoBehaviour:
     - gate_t2
     angleDeg: 150
     enabled: 1
+  - id: ability_crystal
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 8.4
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 2
+    prereqs: []
+    angleDeg: 240
+    enabled: 1
   - id: gate_t3
     kind: 1
     statId: 
@@ -307,6 +321,21 @@ MonoBehaviour:
     prereqs:
     - gate_t3
     angleDeg: 140
+    enabled: 1
+  - id: r3_crystal_power
+    kind: 0
+    statId: ability_power
+    effectPerLevel: 0.1
+    maxLevel: 3
+    baseCost: 52
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 3
+    prereqs:
+    - ability_crystal
+    angleDeg: 240
     enabled: 1
   - id: gate_t4
     kind: 1

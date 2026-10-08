@@ -87,6 +87,34 @@ namespace Incremental
             return i >= 0 && i < abilities.Length ? abilities[i] : null;
         }
 
+        /// <summary>
+        /// 24 §20.2: the buffs the abilities put on this tick's stats (the amplifier crystal). GameRoot calls it right
+        /// after the stats are computed and before the abilities tick, so everything, the abilities included, reads the
+        /// amplified radius and pull; the dust's top speed multiplier is handed to the dust here as well.
+        /// </summary>
+        public void Amplify(ref EffectiveStats s)
+        {
+            double speed = 1.0;
+            for (int i = 0; i < abilities.Length; i++)
+            {
+                var a = abilities[i];
+                if (a == null || !a.Level.unlocked) continue;
+                a.Amplify(ref s);
+                speed *= a.DustSpeedMult;
+            }
+            if (root.Dust != null) root.Dust.MaxSpeedMult = speed;
+        }
+
+        /// <summary>24 §20.2: the gravity ring's tint from the abilities, with <paramref name="amount"/> 0 when there is none.</summary>
+        public Color RingTint(out float amount)
+        {
+            Color color = Color.white;
+            amount = 0f;
+            for (int i = 0; i < abilities.Length; i++)
+                if (abilities[i] != null && abilities[i].Level.unlocked) abilities[i].TintRing(ref color, ref amount);
+            return color;
+        }
+
         /// <summary>One fixed tick of a run, called right before the dust tick.</summary>
         public void Tick(double dt, bool holding, in EffectiveStats s)
         {

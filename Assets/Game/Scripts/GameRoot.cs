@@ -552,8 +552,11 @@ namespace Incremental
 
         void TickRun(double dt)
         {
-            Effective = ComputeStats();
-            var s = Effective;
+            var s = ComputeStats();
+            // 24 §20.2: the amplifier's buff goes on the stats of this tick before anything reads them, the abilities,
+            // the dust and the gravity ring alike.
+            Abilities.Amplify(ref s);
+            Effective = s;
             if (EndingActive)
             {
                 TickEnding(dt);

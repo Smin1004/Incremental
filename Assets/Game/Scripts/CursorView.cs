@@ -200,6 +200,7 @@ namespace Incremental
 
             if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
             UpdateRing();
+            TintRing();
             UpdateChargeArcs();
             // 22 §6: the lines are drawn in world units, so a zoomed-out camera would thin them to nothing. Their
             // width follows the scale, which keeps them the same thickness on screen.
@@ -374,7 +375,8 @@ namespace Incremental
                     continue;
                 }
                 double cooldown = ability.Def.Cooldown(ability.Level, root.abilityTable.maxCooldownReduction);
-                float share = cooldown > 0 ? Mathf.Clamp01((float)(ability.Charge / cooldown)) : 0f;
+                // 24 §20.2: the amplifier's arc runs down with its buff instead of up with its charge.
+                float share = ability.ArcShare(cooldown);
                 float r = baseR + (th.abilityArcGapPx + shown * th.abilityArcSpacingPx) * scale / ppu;
                 shown++;
                 float age = ability.EffectAge;
@@ -416,6 +418,29 @@ namespace Incremental
                 Color col = a.color;
                 col.a = th.abilityArcAlpha * (flash > 0f ? Mathf.Max(flash, 0.35f) : 1f);
                 a.arc.startColor = a.arc.endColor = col;
+            }
+        }
+
+        bool tinted;
+
+        /// <summary>
+        /// 24 §20.2: the gravity ring takes the abilities' tint (the amplifier's gold while its buff is on, brighter at
+        /// the flash of the moment a crystal is taken), blended over whatever color the ring has this frame.
+        /// </summary>
+        void TintRing()
+        {
+            float amount = 0f;
+            Color tint = root.Abilities != null ? root.Abilities.RingTint(out amount) : Color.white;
+            if (amount > 0f)
+            {
+                Color baseColor = gauge ? ring.startColor : RingColor;
+                ring.startColor = ring.endColor = Color.Lerp(baseColor, tint, Mathf.Clamp01(amount));
+                tinted = true;
+            }
+            else if (tinted)
+            {
+                tinted = false;
+                if (!gauge) ring.startColor = ring.endColor = RingColor;
             }
         }
 

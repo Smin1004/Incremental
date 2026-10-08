@@ -12,6 +12,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29da1264ba271f6449a7e86be8b7d132, type: 3}
   m_Name: AbilityTable
   m_EditorClassIdentifier: 
+  crystal:
+    id: crystal
+    unlockRing: 2
+    cooldownSec: 12
+    minDistanceRadii: 2
+    edgeMarginPx: 80
+    lifeSec: 8
+    blinkSec: 2
+    blinkHz: 4
+    driftSpeedPx: 14
+    pullInSpeedPx: 700
+    buffSec: 6
+    radiusMult: 1.35
+    pullMult: 1.5
+    pullPerPower: 2
+    speedMult: 1.4
+    rampSec: 0.3
+    sizePx: 26
+    color: {r: 1, g: 0.86, b: 0.45, a: 1}
+    glowPx: 90
+    glowAlpha: 0.5
+    haloPx: 70
+    haloWidthPx: 2.5
+    haloStrength: 0.5
+    pulseSec: 1.2
+    pulseScale: 0.18
+    flashSec: 0.4
+    ringColor: {r: 1, g: 0.84, b: 0.4, a: 0.9}
   implode:
     id: implode
     unlockRing: 4

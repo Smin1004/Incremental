@@ -447,6 +447,8 @@ MonoBehaviour:
   hudIncomePopScale: 0.06
   hudIncomePopSec: 0.18
   abilityArcs:
+  - abilityId: crystal
+    color: {r: 1, g: 0.86, b: 0.45, a: 1}
   - abilityId: implode
     color: {r: 0.72, g: 0.88, b: 1, a: 1}
   - abilityId: meteor

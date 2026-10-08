@@ -170,6 +170,12 @@ namespace Incremental
         public double ExciteSpeedCapMult { get; set; } = 1.0;
 
         /// <summary>
+        /// 24 §20.2: the dust's top speed is GameParams.dustMaxSpeed x this (the amplifier crystal's buff). The ability
+        /// system hands it over every tick; 1 changes nothing.
+        /// </summary>
+        public double MaxSpeedMult { get; set; } = 1.0;
+
+        /// <summary>
         /// 24 §19.1 the inhale: every dust's velocity is multiplied by this once per tick while it is below 1 (the
         /// black hole sets it for the ticks of its inhale and puts it back to 1). Render has nothing to do with it.
         /// </summary>
@@ -348,7 +354,7 @@ namespace Incremental
             float drift = Px(p.driftSpeed);
             float gravR = Px(s.gravityRadius);
             float capR = Px(p.captureRadius);
-            float maxSpeed = Px(p.dustMaxSpeed);
+            float maxSpeed = Px(p.dustMaxSpeed) * (float)Math.Max(0.01, MaxSpeedMult);
             float accel = Px(s.pullAccel);
             float outerR = gravR * (float)p.pullOuterRatio;
             float outerR2 = outerR * outerR;
@@ -606,6 +612,12 @@ namespace Incremental
                 else d.pos += step;
             }
             return absorbed;
+        }
+
+        /// <summary>24 §20.2: every dust lights up at once (24 §8), the field's answer to a crystal being taken.</summary>
+        public void ExciteAll()
+        {
+            for (int i = 0; i < count; i++) items[i].excite = 1f;
         }
 
         /// <summary>Removes every dust.</summary>

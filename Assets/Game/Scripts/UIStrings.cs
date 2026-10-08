@@ -176,6 +176,8 @@ namespace Incremental
 
             // Abilities (24): the name of each AbilityTable row and the one line its unlock node shows. Validate Data
             // checks that every row has both.
+            { "ability.crystal", "증폭 결정" },
+            { "ability.crystal.effect", "홀드 중 나타나는 결정을 먹으면 잠시 중력이 세진다" },
             { "ability.implode", "수축" },
             { "ability.implode.effect", "주기적으로 주변 먼지를 한 번에 당긴다" },
             { "ability.satellite", "위성" },

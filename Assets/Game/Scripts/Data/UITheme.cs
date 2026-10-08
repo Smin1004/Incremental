@@ -223,6 +223,7 @@ namespace Incremental
                  "An ability without a cooldown is skipped.")]
         public UIAbilityArc[] abilityArcs =
         {
+            new UIAbilityArc { abilityId = "crystal", color = new Color(1f, 0.86f, 0.45f) },
             new UIAbilityArc { abilityId = "implode", color = new Color(0.72f, 0.88f, 1f) },
             new UIAbilityArc { abilityId = "meteor", color = new Color(1f, 0.8f, 0.5f) },
             new UIAbilityArc { abilityId = "blackhole", color = new Color(0.86f, 0.6f, 1f) },

@@ -164,7 +164,7 @@ namespace Incremental.EditorTools
             Stat(id, ring, FollowAxis, StatIds.FollowSpeed, 0.15, 1, StatCost(ring), 1, prereqs);
 
         /// <summary>
-        /// The ability axis (24 §6), by ring: 4, 6 and 8 unlock an ability, the ring after each raises it by three
+        /// The ability axis (24 §6), by ring: 2 (24 §20.2, the amplifier crystal), 4, 6 and 8 unlock an ability, the ring after each raises it by three
         /// levels; 24 §19.1 put the black hole in ring 10 and its duration in ring 11. A new ability is two more lines
         /// here and a row in the AbilityTable. To make the 수축 node shorten the
         /// cooldown instead of widening the range, only its stat changes (StatIds.AbilityCooldown).
@@ -179,6 +179,8 @@ namespace Incremental.EditorTools
         {
             switch (ring)
             {
+                case 2: return AbilityUnlock("crystal", 2);
+                case 3: return AbilityStat("r3_crystal_power", "crystal", 3, StatIds.AbilityPower, 0.1, 3, "ability_crystal");
                 case 4: return AbilityUnlock("implode", 4);
                 case 5: return AbilityStat("r5_implode_power", "implode", 5, StatIds.AbilityRange, 1, 3, "ability_implode");
                 case 6: return AbilityUnlock("satellite", 6);
@@ -313,6 +315,7 @@ namespace Incremental.EditorTools
             n.Add(Ax("r2_sale", 2, SaleAxis, sale, 0.25, 2, "r1_sale"));
             n.Add(Ax("r2_stamina", 2, StaminaAxis, stamina, 6, 2, "r1_stamina"));
             n.Add(Ax("r2_threshold", 2, PlanetAxis, threshold, 0.07, 2, "gate_t2"));
+            n.Add(AbilityNode(2));   // 24 §20.2: the amplifier crystal, the first ability
             n.Add(Gate(3));
 
             // Ring 3 (I = 768): start bonus, stamina drain and the first dust kind unlock (20 §4).
@@ -323,6 +326,7 @@ namespace Incremental.EditorTools
             n.Add(Ax("r3_threshold", 3, PlanetAxis, threshold, 0.07, 2, "r2_threshold"));
             n.Add(DustKindNode(3));
             n.Add(FragmentNode(3));
+            n.Add(AbilityNode(3));   // 24 §20.2: its upgrade
             n.Add(Gate(4));
 
             // Rings 4-10: one node per axis (two levels each) + the dust kind axis node; prereq = the same axis in the ring before.

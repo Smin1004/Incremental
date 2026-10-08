@@ -76,6 +76,28 @@ namespace Incremental
         /// <summary>Seconds since the trigger that is playing out now started, or −1 when none is (captures and checks).</summary>
         public virtual float EffectAge => -1f;
 
+        /// <summary>
+        /// 24 §20.2: a buff this ability puts on the run's effective stats for the coming tick (the amplifier crystal's
+        /// radius and pull). GameRoot applies it right after the stats are computed and before anything reads them, so
+        /// the gravity ring, the dust and the other abilities all see the same amplified values.
+        /// </summary>
+        public virtual void Amplify(ref EffectiveStats s) { }
+
+        /// <summary>24 §20.2: what this ability multiplies the dust's top speed by this tick; 1 = nothing.</summary>
+        public virtual double DustSpeedMult => 1.0;
+
+        /// <summary>
+        /// 26 §9.2: how full this ability's charge arc is drawn, 0..1. The charge toward the next trigger, unless the
+        /// ability has something running down to show instead (the amplifier's buff).
+        /// </summary>
+        public virtual float ArcShare(double cooldown) => cooldown > 0 ? Mathf.Clamp01((float)(Charge / cooldown)) : 0f;
+
+        /// <summary>
+        /// 24 §20.2: a tint for the gravity ring and how much of it, 0..1; an ability only raises <paramref name="amount"/>
+        /// when it has more to say than the one before it.
+        /// </summary>
+        public virtual void TintRing(ref Color color, ref float amount) { }
+
         /// <summary>A console line about this ability, "[Ability] &lt;id&gt;: …", when AbilityTable.logEvents is on.</summary>
         protected void Log(string message) => system.Log(Def.id + ": " + message);
 

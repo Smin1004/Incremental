@@ -389,6 +389,99 @@ namespace Incremental
     }
 
     /// <summary>
+    /// 24 §20.2 증폭 결정. Every cooldown of holding a gold crystal appears on screen, a few gravity radii from the gravity
+    /// source, and waits there a while; brought inside the gravity radius it is drawn in and absorbed, and for buffSec
+    /// the gravity source is amplified: wider radius, stronger pull, faster dust. The first ability (ring 2); ring 3
+    /// raises the multipliers. The cooldownSec column is how often a crystal appears (24 §20.2 spawnEverySec).
+    /// </summary>
+    [Serializable]
+    public sealed class CrystalDef : AbilityDef
+    {
+        [Tooltip("The crystal appears at least this many gravity radii from the gravity source, so there is something to go and get.")]
+        public double minDistanceRadii = 2;
+        [Tooltip("It appears and stays at least this far inside the edge of the screen, px.")]
+        public double edgeMarginPx = 80;
+        [Tooltip("Seconds it waits before it is gone. Over the last blinkSec of them it blinks, blinkHz times a second.")]
+        public double lifeSec = 8;
+        public double blinkSec = 2;
+        public double blinkHz = 4;
+        [Tooltip("How fast it drifts while it waits, px/s; it turns back at the edge margin.")]
+        public double driftSpeedPx = 14;
+        [Tooltip("Once inside the gravity radius (while holding) it is drawn to the gravity source at this speed, px/s, and absorbed at the capture radius.")]
+        public double pullInSpeedPx = 700;
+
+        [Header("Buff")]
+        [Tooltip("Seconds the amplification lasts. Eating another crystal meanwhile starts these over; the multipliers do not stack.")]
+        public double buffSec = 6;
+        [Tooltip("The gravity radius x this while amplified, with only the unlock owned. ability_power adds to it: +0.1 per level in the seed, 1.35 -> 1.65.")]
+        public double radiusMult = 1.35;
+        [Tooltip("The pull (pull_accel) x this while amplified. ability_power x pullPerPower adds to it: +0.2 per level in the seed, 1.5 -> 2.1.")]
+        public double pullMult = 1.5;
+        [Tooltip("How much faster the pull multiplier rises with ability_power than the radius multiplier does (2 = +0.2 per +0.1).")]
+        public double pullPerPower = 2;
+        [Tooltip("The dust's top speed x this while amplified, so the stronger pull is not capped.")]
+        public double speedMult = 1.4;
+        [Tooltip("Seconds the multipliers take to come in when a crystal is absorbed, and to go when the buff ends.")]
+        public double rampSec = 0.3;
+
+        [Header("Look")]
+        [Tooltip("The crystal: a diamond this tall (px), its color, and the soft glow around it (diameter px, alpha; the glow follows the effect intensity).")]
+        public double sizePx = 26;
+        public Color color = new Color(1f, 0.86f, 0.45f, 1f);
+        public double glowPx = 90;
+        public double glowAlpha = 0.5;
+        [Tooltip("The ring pulsing around the crystal (FxRing): diameter px, line width px and strength; a pulse takes pulseSec and grows it by pulseScale.")]
+        public double haloPx = 70;
+        public double haloWidthPx = 2.5;
+        public double haloStrength = 0.5;
+        public double pulseSec = 1.2;
+        public double pulseScale = 0.18;
+        [Tooltip("The moment it is absorbed the gravity ring flashes gold for this long and every dust on screen is excited (24 §8).")]
+        public double flashSec = 0.4;
+        [Tooltip("The gravity ring's color while amplified (blended in with the ramp) and at the flash.")]
+        public Color ringColor = new Color(1f, 0.84f, 0.4f, 0.9f);
+
+        public CrystalDef()
+        {
+            id = "crystal";
+            unlockRing = 2;
+            cooldownSec = 12;
+        }
+
+        /// <summary>The gravity radius multiplier after the ability_power nodes.</summary>
+        public double RadiusMult(in AbilityLevel lv) => radiusMult + Math.Max(0.0, lv.power);
+
+        /// <summary>The pull multiplier after the ability_power nodes.</summary>
+        public double PullMult(in AbilityLevel lv) => pullMult + Math.Max(0.0, lv.power) * pullPerPower;
+
+        public override Ability CreateRuntime() => new CrystalAbility();
+
+        public override bool Uses(string statId) => statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown;
+
+        public override void Check(in AbilityLevel full, CelestialTable c, ValidationReport r)
+        {
+            if (!(cooldownSec > 0)) r.Errors.Add(Where + " cooldownSec must be > 0: it is how often a crystal appears (24 §20.2).");
+            if (minDistanceRadii < 0 || edgeMarginPx < 0) r.Errors.Add(Where + " minDistanceRadii and edgeMarginPx must be >= 0.");
+            if (!(lifeSec > 0)) r.Errors.Add(Where + " lifeSec must be > 0, or the crystal is gone before it is seen.");
+            if (blinkSec < 0 || blinkSec > lifeSec) r.Errors.Add(Where + " blinkSec must be within 0..lifeSec.");
+            if (blinkHz < 0 || driftSpeedPx < 0) r.Errors.Add(Where + " blinkHz and driftSpeedPx must be >= 0.");
+            if (!(pullInSpeedPx > 0)) r.Errors.Add(Where + " pullInSpeedPx must be > 0, or the crystal is never absorbed.");
+            if (!(buffSec > 0)) r.Errors.Add(Where + " buffSec must be > 0.");
+            if (radiusMult < 1 || pullMult < 1 || speedMult < 1)
+                r.Errors.Add(Where + " radiusMult, pullMult and speedMult must be >= 1; below 1 the buff would weaken the gravity source.");
+            if (pullPerPower < 0) r.Errors.Add(Where + " pullPerPower must be >= 0.");
+            if (rampSec < 0) r.Errors.Add(Where + " rampSec must be >= 0.");
+            if (rampSec * 2 > buffSec) r.Warnings.Add(Where + " ramps in and out longer than the buff lasts; the full multipliers are never reached.");
+            if (!(sizePx > 0) || glowPx < 0 || haloPx < 0 || haloWidthPx < 0) r.Errors.Add(Where + " sizePx must be > 0 and glowPx, haloPx, haloWidthPx >= 0.");
+            if (glowAlpha < 0 || glowAlpha > 1) r.Errors.Add(Where + " glowAlpha must be within 0..1.");
+            if (haloStrength < 0 || pulseScale < 0 || !(pulseSec > 0)) r.Errors.Add(Where + " haloStrength and pulseScale must be >= 0 and pulseSec > 0.");
+            if (flashSec < 0) r.Errors.Add(Where + " flashSec must be >= 0.");
+            if (lifeSec >= cooldownSec)
+                r.Warnings.Add(Where + " waits longer than its cooldown, so a crystal can still be there when the next is due; the next waits for it.");
+        }
+    }
+
+    /// <summary>
     /// Special abilities (24). One row per ability, and every number of an ability is in its row: nothing about them is
     /// a constant in code. The field initializers are the seed (PrototypeSetup creates the asset from them, and
     /// Validate Data warns where the asset holds another value), and the values are meant to be changed in the
@@ -402,6 +495,7 @@ namespace Incremental
     [CreateAssetMenu(fileName = "AbilityTable", menuName = "Incremental/Ability Table")]
     public sealed class AbilityTable : ScriptableObject
     {
+        public CrystalDef crystal = new CrystalDef();
         public ImplodeDef implode = new ImplodeDef();
         public SatelliteDef satellite = new SatelliteDef();
         public MeteorDef meteor = new MeteorDef();
@@ -433,7 +527,7 @@ namespace Incremental
         /// Every row, in the order the debug key cycles through them (24 §7). A new ability is one more field above and
         /// one more entry here.
         /// </summary>
-        public AbilityDef[] Rows => rows ?? (rows = new AbilityDef[] { implode, satellite, meteor, blackHole });
+        public AbilityDef[] Rows => rows ?? (rows = new AbilityDef[] { crystal, implode, satellite, meteor, blackHole });
 
         public int Count => Rows.Length;
 
