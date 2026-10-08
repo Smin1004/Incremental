@@ -107,6 +107,13 @@ namespace Incremental
         [Tooltip("Seconds the ring takes to reach the end of its range, whatever the range is.")]
         public double ringSec = 0.5;
 
+        [Header("Evolved: 연쇄 붕괴 (24 §21.2)")]
+        [Tooltip("Waves per trigger once 수축 is evolved, this many seconds apart, each from where the gravity source is at that " +
+                 "moment; and the cooldown the evolved form has instead of cooldownSec.")]
+        public int chainCount = 3;
+        public double chainGapSec = 0.35;
+        public double chainCooldownSec = 9;
+
         [Header("Look")]
         [Tooltip("Width of the ring line, px on screen.")]
         public double ringWidthPx = 4;
@@ -127,6 +134,9 @@ namespace Incremental
 
         /// <summary>The push after the ability_power nodes, px/s.</summary>
         public double PullSpeedPx(in AbilityLevel lv) => pullSpeedPx * (1.0 + lv.power);
+
+        /// <summary>24 §21.2: evolved, the cooldown is chainCooldownSec.</summary>
+        public override double BaseCooldown(in AbilityLevel lv) => lv.evolved ? chainCooldownSec : cooldownSec;
 
         /// <summary>24 §16.1: at the last level of the range nodes the ring covers the screen and <see cref="RangeScreenShare"/> is not asked.</summary>
         public bool WholeScreen(in AbilityLevel lv) => lv.rangeMaxed;
@@ -153,6 +163,11 @@ namespace Incremental
             if (!full.rangeMaxed)
                 r.Warnings.Add(Where + " has no ability_range node with a last level, so it never reaches the whole screen (24 §16.1).");
             if (!(ringSec > 0)) r.Errors.Add(Where + " ringSec must be > 0.");
+            if (chainCount < 1) r.Errors.Add(Where + " chainCount must be >= 1 (24 §21.2).");
+            if (chainGapSec < 0) r.Errors.Add(Where + " chainGapSec must be >= 0.");
+            if (!(chainCooldownSec > 0)) r.Errors.Add(Where + " chainCooldownSec must be > 0: it is the evolved form's cooldown (24 §21.2).");
+            if (full.evolved && (chainCount - 1) * chainGapSec + ringSec + ringFadeSec >= chainCooldownSec)
+                r.Warnings.Add(Where + " evolved, the waves are still on their way when the next trigger is due; it waits for them.");
             if (!(ringWidthPx > 0)) r.Errors.Add(Where + " ringWidthPx must be > 0.");
             if (ringFadeSec < 0) r.Errors.Add(Where + " ringFadeSec must be >= 0.");
             if (ringSegments < 8) r.Errors.Add(Where + " ringSegments must be >= 8.");
