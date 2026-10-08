@@ -90,6 +90,9 @@ MonoBehaviour:
     lookTier: 2
     sizePx: 40
     tailLength: 9
+    showerCount: 5
+    showerGapSec: 0.3
+    showerJitterDeg: 15
     pathTries: 16
   blackHole:
     id: blackhole

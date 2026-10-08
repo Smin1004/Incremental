@@ -291,6 +291,13 @@ namespace Incremental
         public double sizePx = 40;
         public double tailLength = 9;
 
+        [Header("Evolved: 유성우 (24 §21.2)")]
+        [Tooltip("Meteors per trigger once the meteor is evolved, this many seconds apart, their headings fanned out evenly " +
+                 "(360° / count) around a random one with this much jitter either way (degrees). Each sheds its own share of the cap.")]
+        public int showerCount = 5;
+        public double showerGapSec = 0.3;
+        public double showerJitterDeg = 15;
+
         [Header("Internals")]
         [Tooltip("Random paths tried for one that passes the gravity source inside the screen, before settling for any path.")]
         public int pathTries = 16;
@@ -327,6 +334,10 @@ namespace Incremental
             if (c != null && c.Get(lookTier) == null) r.Errors.Add(Where + $" lookTier {lookTier} is not a tier of the CelestialTable.");
             if (!(sizePx > 0) || tailLength < 0) r.Errors.Add(Where + " sizePx must be > 0 and tailLength >= 0.");
             if (pathTries < 1) r.Errors.Add(Where + " pathTries must be >= 1.");
+            if (showerCount < 1) r.Errors.Add(Where + " showerCount must be >= 1 (24 §21.2).");
+            if (showerGapSec < 0 || showerJitterDeg < 0) r.Errors.Add(Where + " showerGapSec and showerJitterDeg must be >= 0.");
+            if (full.evolved && showerCount * (dustShare + full.amount) > 1.0 + 1e-9)
+                r.Warnings.Add(Where + $" sheds {showerCount * (dustShare + full.amount) * 100:F0}% of the cap per shower with every node bought; the cap stops it there.");
         }
     }
 

@@ -19,47 +19,113 @@ namespace Incremental
     ///
     /// It wears the look of the comet tier with a longer tail. The planet shader points a tail away from the light, so
     /// the light is put straight ahead of the meteor.
+    ///
+    /// 24 §21.2 유성우, the evolved form: one trigger launches showerCount meteors showerGapSec apart, their headings
+    /// fanned out evenly around a random one (plus a little jitter), so they cross from every side and their wakes
+    /// churn the whole screen. Each sheds its own share; the dust cap still holds.
     /// </summary>
     public sealed class MeteorAbility : Ability
     {
         /// <summary>Over the dust, the rings and the satellites; under the bodies the player makes.</summary>
         const int SortingOrder = 9;
 
+        struct Meteor
+        {
+            public bool active;
+            public double age, duration;
+            public Vector2 start, end, pos, dir;
+            public float speed;
+            /// <summary>How far outside the screen the meteor starts and ends, so that its tail is off screen too.</summary>
+            public float margin;
+            /// <summary>From the gravity source to the point of the planned path nearest to it: what the homing keeps.</summary>
+            public Vector2 passOffset;
+            public bool entered;
+            /// <summary>Dust per second while on screen, and how many dust one crossing sheds in all.</summary>
+            public double shedRate, shedAcc;
+            public int shedCount, shed, notShed;
+            public float closestPx;
+        }
+
         /// <summary>Path and shed positions. Apart from the dust and visual RNGs, like the fragment rolls.</summary>
         readonly System.Random rng = new System.Random();
-        PlanetVisual body;
-        bool active;
-        double age;
-        double duration = 1;
-        Vector2 start, end;
-        Vector2 pos, dir;
-        float speed;
-        /// <summary>How far outside the screen the meteor starts and ends, so that its tail is off screen too.</summary>
-        float margin;
-        /// <summary>From the gravity source to the point of the planned path nearest to it: what the homing keeps.</summary>
-        Vector2 passOffset;
-        bool entered;
-        /// <summary>Dust per second while on screen, and how many dust one crossing sheds in all.</summary>
-        double shedRate, shedAcc;
-        int shedCount, shed, notShed;
-        float closestPx;
+        Transform holder;
+        Meteor[] meteors = new Meteor[0];
+        PlanetVisual[] bodies = new PlanetVisual[0];
+        /// <summary>24 §21.2: launches still to come from this trigger, seconds to the next, and the heading they fan out from.</summary>
+        int pending, launched;
+        double launchIn;
+        double fanBase;
+        int triggerCount = 1;
 
         MeteorDef D => root.abilityTable.meteor;
 
-        public override float EffectAge => active ? (float)age : -1f;
+        public override float EffectAge
+        {
+            get
+            {
+                float oldest = -1f;
+                for (int i = 0; i < meteors.Length; i++)
+                    if (meteors[i].active && (float)meteors[i].age > oldest) oldest = (float)meteors[i].age;
+                return oldest;
+            }
+        }
 
-        /// <summary>One meteor at a time: a charge that fills while one is still crossing waits for it.</summary>
-        protected override bool Ready => !active;
+        /// <summary>How many meteors are crossing right now (captures and checks).</summary>
+        public int ActiveCount
+        {
+            get
+            {
+                int n = 0;
+                for (int i = 0; i < meteors.Length; i++) if (meteors[i].active) n++;
+                return n;
+            }
+        }
+
+        /// <summary>One trigger at a time: a charge that fills while meteors are still crossing waits for them.</summary>
+        protected override bool Ready => pending == 0 && ActiveCount == 0;
 
         protected override void Build(Transform parent)
         {
-            body = PlanetVisual.Create("Meteor", parent, root.planetMaterial, SortingOrder);
-            body.gameObject.SetActive(false);
+            holder = new GameObject("Meteors").transform;
+            holder.SetParent(parent, false);
+            Grow(1);
+        }
+
+        void Grow(int n)
+        {
+            if (meteors.Length >= n) return;
+            int had = meteors.Length;
+            Array.Resize(ref meteors, n);
+            Array.Resize(ref bodies, n);
+            for (int i = had; i < n; i++)
+            {
+                bodies[i] = PlanetVisual.Create("Meteor" + i, holder, root.planetMaterial, SortingOrder);
+                bodies[i].gameObject.SetActive(false);
+            }
         }
 
         protected override void Trigger(in EffectiveStats s)
         {
             var d = D;
+            triggerCount = Level.evolved ? Math.Max(1, d.showerCount) : 1;
+            Grow(triggerCount);
+            pending = triggerCount;
+            launched = 0;
+            launchIn = 0;
+            fanBase = rng.NextDouble() * Math.PI * 2.0;
+            if (triggerCount > 1)
+                Log("shower at " + RunClock + ": " + triggerCount + " meteors " + d.showerGapSec.ToString("0.##") + "s apart, headings " +
+                    (360.0 / triggerCount).ToString("F0") + "° apart (±" + d.showerJitterDeg.ToString("F0") + "°)");
+        }
+
+        /// <summary>One meteor off: its path, its shedding plan and its look.</summary>
+        void Launch(in EffectiveStats s)
+        {
+            var d = D;
+            int slot = -1;
+            for (int i = 0; i < meteors.Length; i++) if (!meteors[i].active) { slot = i; break; }
+            if (slot < 0) return;
+            ref Meteor m = ref meteors[slot];
             float ppu = (float)p.pixelsPerUnit;
             Rect area = root.CameraArea();
             Vector2 gravity = root.GravityWorld;
@@ -68,39 +134,45 @@ namespace Incremental
             var look = tier != null && tier.look != null ? tier.look.Clone() : new PlanetLook();
             look.tailLength = (float)d.tailLength;
             float diameter = (float)(root.RunBodyPx(d.sizePx) / ppu);
-            // The path starts and ends this far outside the screen, so no part of the meteor, tail included, pops in or out.
-            margin = diameter * 0.5f * look.Extent();
+            m.margin = diameter * 0.5f * look.Extent();
 
-            PickPath(d, area, gravity, (float)(s.gravityRadius / ppu));
-            Vector2 path = end - start;
+            // 24 §21.2: a shower fans its headings out evenly around the first; a single meteor takes any heading.
+            bool fanned = triggerCount > 1;
+            double heading = fanBase + Math.PI * 2.0 * launched / Math.Max(1, triggerCount) +
+                             (rng.NextDouble() * 2.0 - 1.0) * d.showerJitterDeg * Math.PI / 180.0;
+            PickPath(ref m, d, area, gravity, (float)(s.gravityRadius / ppu), fanned, heading);
+            Vector2 path = m.end - m.start;
             float length = Mathf.Max(1e-4f, path.magnitude);
-            pos = start;
-            dir = path / length;
-            duration = Math.Max(1e-3, d.crossSec);
-            speed = (float)(length / duration);
-            passOffset = start + dir * Vector2.Dot(gravity - start, dir) - gravity;
-            entered = false;
+            m.pos = m.start;
+            m.dir = path / length;
+            m.duration = Math.Max(1e-3, d.crossSec);
+            m.speed = (float)(length / m.duration);
+            m.passOffset = m.start + m.dir * Vector2.Dot(gravity - m.start, m.dir) - gravity;
+            m.entered = false;
 
             // Dust is shed at an even rate over the part of the planned path that is on screen.
             double share = d.DustShare(Level);
-            shedCount = (int)Math.Round(share * s.dustCap);
-            double onScreenSec = Clip(start, dir, area, out float t0, out float t1)
-                ? (Mathf.Clamp(t1, 0f, length) - Mathf.Clamp(t0, 0f, length)) / length * duration
+            m.shedCount = (int)Math.Round(share * s.dustCap);
+            double onScreenSec = Clip(m.start, m.dir, area, out float t0, out float t1)
+                ? (Mathf.Clamp(t1, 0f, length) - Mathf.Clamp(t0, 0f, length)) / length * m.duration
                 : 0.0;
-            shedRate = onScreenSec > 0 ? shedCount / onScreenSec : 0.0;
-            shedAcc = 0;
-            shed = notShed = 0;
-            closestPx = float.MaxValue;
-            age = 0;
-            active = true;
+            m.shedRate = onScreenSec > 0 ? m.shedCount / onScreenSec : 0.0;
+            m.shedAcc = 0;
+            m.shed = m.notShed = 0;
+            m.closestPx = float.MaxValue;
+            m.age = 0;
+            m.active = true;
+            launched++;
 
-            float pass = passOffset.magnitude * ppu;
-            Log("fired at " + RunClock + ": crossing in " + duration.ToString("0.##") + "s at " + (speed * ppu).ToString("F0") +
-                " px/s, planned to pass the gravity source at " + pass.ToString("F0") + " px (" + Radii(pass, s) +
-                " radii), to shed " + shedCount + " dust (" + (share * 100.0).ToString("0.#") + "% of the cap " + s.dustCap.ToString("F0") + ")");
+            float pass = m.passOffset.magnitude * ppu;
+            Log((fanned ? "#" + launched + " " : "") + "fired at " + RunClock + ": crossing in " + m.duration.ToString("0.##") + "s at " +
+                (m.speed * ppu).ToString("F0") + " px/s, planned to pass the gravity source at " + pass.ToString("F0") + " px (" +
+                Radii(pass, s) + " radii), to shed " + m.shedCount + " dust (" + (share * 100.0).ToString("0.#") + "% of the cap " +
+                s.dustCap.ToString("F0") + ")");
 
+            var body = bodies[slot];
             body.SetLook(look, root.NextVisualSeed(), p.planetAxisPitchDeg);
-            body.SetLightDirection(dir);
+            body.SetLightDirection(m.dir);
             body.SetDiameter(diameter);
             body.SetFade(1f);
         }
@@ -108,35 +180,36 @@ namespace Incremental
         static string Radii(float px, in EffectiveStats s) => (px / Math.Max(1e-6, s.gravityRadius)).ToString("0.##");
 
         /// <summary>
-        /// A random straight line across the screen. Each try takes a random direction and puts the line at a random
-        /// distance within the pass range to one side of the gravity source; the first one whose nearest point to the
-        /// gravity source is on screen is taken. When none is (the gravity source sits in a corner), the last try that
-        /// crossed the screen at all is kept, and when there is none of those either, the line goes through the middle.
+        /// A straight line across the screen. Each try takes a direction (a random one, or the shower's heading) and puts
+        /// the line at a random distance within the pass range to one side of the gravity source; the first one whose
+        /// nearest point to the gravity source is on screen is taken. When none is (the gravity source sits in a corner),
+        /// the last try that crossed the screen at all is kept, and when there is none of those either, the line goes
+        /// through the middle.
         /// </summary>
-        void PickPath(MeteorDef d, Rect area, Vector2 gravity, float gravityRadius)
+        void PickPath(ref Meteor m, MeteorDef d, Rect area, Vector2 gravity, float gravityRadius, bool fixedHeading, double heading)
         {
-            Rect outer = Expand(area, margin);
+            Rect outer = Expand(area, m.margin);
             bool crossed = false;
             Vector2 u = Vector2.right;
             int tries = Math.Max(1, d.pathTries);
             for (int i = 0; i < tries; i++)
             {
-                double angle = rng.NextDouble() * Math.PI * 2.0;
+                double angle = fixedHeading ? heading : rng.NextDouble() * Math.PI * 2.0;
                 u = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
                 var side = new Vector2(-u.y, u.x);
                 double radii = d.passMinRadii + (d.passMaxRadii - d.passMinRadii) * rng.NextDouble();
                 float pass = gravityRadius * (float)radii * (rng.Next(2) == 0 ? 1f : -1f);
                 Vector2 nearest = gravity + side * pass;
                 if (!Clip(nearest, u, outer, out float t0, out float t1)) continue;
-                start = nearest + u * t0;
-                end = nearest + u * t1;
+                m.start = nearest + u * t0;
+                m.end = nearest + u * t1;
                 crossed = true;
                 if (area.Contains(nearest)) return;
             }
             if (crossed) return;
             Clip(area.center, u, outer, out float c0, out float c1);
-            start = area.center + u * c0;
-            end = area.center + u * c1;
+            m.start = area.center + u * c0;
+            m.end = area.center + u * c1;
         }
 
         static Rect Expand(Rect r, float by) => new Rect(r.xMin - by, r.yMin - by, r.width + by * 2f, r.height + by * 2f);
@@ -166,49 +239,65 @@ namespace Incremental
 
         protected override void Step(double dt, bool holding, in EffectiveStats s)
         {
-            if (!active) return;
             var d = D;
+            // 24 §21.2: the launches of a shower, showerGapSec apart; the first one goes the tick the trigger fired.
+            if (pending > 0)
+            {
+                launchIn -= dt;
+                while (pending > 0 && launchIn <= 0)
+                {
+                    Launch(s);
+                    pending--;
+                    launchIn += Math.Max(0.0, d.showerGapSec);
+                }
+            }
+            for (int i = 0; i < meteors.Length; i++)
+                if (meteors[i].active) StepMeteor(ref meteors[i], dt, s, d);
+        }
+
+        void StepMeteor(ref Meteor m, double dt, in EffectiveStats s, MeteorDef d)
+        {
             float ppu = (float)p.pixelsPerUnit;
             float fdt = (float)dt;
             Rect area = root.CameraArea();
             Vector2 gravity = root.GravityWorld;
-            bool onScreen = area.Contains(pos);
-            entered |= onScreen;
+            bool onScreen = area.Contains(m.pos);
+            m.entered |= onScreen;
 
             // Homing: the planned path passed the gravity source at passOffset. If the gravity source has moved since,
             // the meteor turns toward where that point is now, until it has gone by it. It only does so for the time
             // the crossing was planned to take, so it always leaves the screen in the end.
-            if (onScreen && age < duration && d.homingDegPerSec > 0)
+            if (onScreen && m.age < m.duration && d.homingDegPerSec > 0)
             {
-                Vector2 to = gravity + passOffset - pos;
-                if (Vector2.Dot(to, dir) > 0f)
+                Vector2 to = gravity + m.passOffset - m.pos;
+                if (Vector2.Dot(to, m.dir) > 0f)
                 {
                     float most = (float)d.homingDegPerSec * fdt;
-                    float turn = Mathf.Clamp(Vector2.SignedAngle(dir, to), -most, most) * Mathf.Deg2Rad;
+                    float turn = Mathf.Clamp(Vector2.SignedAngle(m.dir, to), -most, most) * Mathf.Deg2Rad;
                     float cos = Mathf.Cos(turn), sin = Mathf.Sin(turn);
-                    dir = new Vector2(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos);
+                    m.dir = new Vector2(m.dir.x * cos - m.dir.y * sin, m.dir.x * sin + m.dir.y * cos);
                 }
             }
 
-            Vector2 from = pos;
-            pos += dir * (speed * fdt);
+            Vector2 from = m.pos;
+            m.pos += m.dir * (m.speed * fdt);
 
             // The dust of this tick goes somewhere on the stretch the meteor covered in it, so the crossing sheds evenly
             // along the on-screen part of the path.
-            if (onScreen && shed + notShed < shedCount)
+            if (onScreen && m.shed + m.notShed < m.shedCount)
             {
-                shedAcc += shedRate * dt;
-                var side = new Vector2(-dir.y, dir.x);
-                Vector2 vel = dir * (speed * (float)d.dustSpeedShare);
+                m.shedAcc += m.shedRate * dt;
+                var side = new Vector2(-m.dir.y, m.dir.x);
+                Vector2 vel = m.dir * (m.speed * (float)d.dustSpeedShare);
                 float spread = (float)(d.shedSpreadPx / ppu);
-                while (shedAcc >= 1.0 && shed + notShed < shedCount)
+                while (m.shedAcc >= 1.0 && m.shed + m.notShed < m.shedCount)
                 {
-                    shedAcc -= 1.0;
-                    Vector2 at = Vector2.LerpUnclamped(from, pos, (float)rng.NextDouble()) +
+                    m.shedAcc -= 1.0;
+                    Vector2 at = Vector2.LerpUnclamped(from, m.pos, (float)rng.NextDouble()) +
                                  side * (spread * (float)(rng.NextDouble() * 2.0 - 1.0));
                     // At the cap this returns false and the dust is simply not shed (24 §5).
-                    if (root.Dust.Shed(at, vel, s, d.heavyWeight)) shed++;
-                    else notShed++;
+                    if (root.Dust.Shed(at, vel, s, d.heavyWeight)) m.shed++;
+                    else m.notShed++;
                 }
             }
 
@@ -216,38 +305,48 @@ namespace Incremental
             if (d.wakeAccelPx > 0 && d.wakeRadiusShare > 0)
             {
                 float radius = (float)(s.gravityRadius * d.wakeRadiusShare) / ppu;
-                system.AddForce(DustForce.Drag(pos, radius, (float)(d.wakeAccelPx / ppu), dir));
+                system.AddForce(DustForce.Drag(m.pos, radius, (float)(d.wakeAccelPx / ppu), m.dir));
             }
 
-            closestPx = Mathf.Min(closestPx, (gravity - pos).magnitude * ppu);
-            age += dt;
+            m.closestPx = Mathf.Min(m.closestPx, (gravity - m.pos).magnitude * ppu);
+            m.age += dt;
             // Done once it is off screen, tail and all: after having been on screen, or after the planned crossing time
             // for a path that never came on screen.
-            if (Expand(area, margin).Contains(pos) || !(entered || age >= duration)) return;
-            active = false;
-            Log("gone after " + age.ToString("0.##") + "s: came within " + closestPx.ToString("F0") + " px (" + Radii(closestPx, s) +
-                " radii) of the gravity source, shed " + shed + " dust" +
-                (notShed > 0 ? ", " + notShed + " not shed (at the dust cap, or the spot was off screen)" : string.Empty) +
+            if (Expand(area, m.margin).Contains(m.pos) || !(m.entered || m.age >= m.duration)) return;
+            m.active = false;
+            Log("gone after " + m.age.ToString("0.##") + "s: came within " + m.closestPx.ToString("F0") + " px (" + Radii(m.closestPx, s) +
+                " radii) of the gravity source, shed " + m.shed + " dust" +
+                (m.notShed > 0 ? ", " + m.notShed + " not shed (at the dust cap, or the spot was off screen)" : string.Empty) +
                 ", " + (root.Dust.Count - root.Dust.OutsideCount) + " on screen and " + root.Dust.OutsideCount + " outside it now");
         }
 
         protected override void OnClear()
         {
-            active = false;
-            age = 0;
+            for (int i = 0; i < meteors.Length; i++)
+            {
+                meteors[i].active = false;
+                meteors[i].age = 0;
+            }
+            pending = 0;
+            launched = 0;
         }
 
         public override void Render(bool show, float lead)
         {
-            bool on = show && active;
-            if (body.gameObject.activeSelf != on) body.gameObject.SetActive(on);
-            if (!on) return;
-            Vector2 at = pos + dir * (speed * lead);
-            body.transform.position = new Vector3(at.x, at.y, 0f);
-            // The tail trails behind, so the light stays straight ahead as the meteor turns.
-            body.SetLightDirection(dir);
-            // The coma is a glow like any other and follows the effect intensity; the head and the tail stay.
-            body.SetGlowMul(root.EffectIntensity);
+            for (int i = 0; i < meteors.Length; i++)
+            {
+                ref Meteor m = ref meteors[i];
+                var body = bodies[i];
+                bool on = show && m.active;
+                if (body.gameObject.activeSelf != on) body.gameObject.SetActive(on);
+                if (!on) continue;
+                Vector2 at = m.pos + m.dir * (m.speed * lead);
+                body.transform.position = new Vector3(at.x, at.y, 0f);
+                // The tail trails behind, so the light stays straight ahead as the meteor turns.
+                body.SetLightDirection(m.dir);
+                // The coma is a glow like any other and follows the effect intensity; the head and the tail stay.
+                body.SetGlowMul(root.EffectIntensity);
+            }
         }
     }
 }
