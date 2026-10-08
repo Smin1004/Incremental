@@ -121,6 +121,15 @@ MonoBehaviour:
     pullMult: 2.5
     vortexMult: 2
     releaseSec: 0.4
+    twinCooldownSec: 25
+    twinOrbitShare: 1
+    twinOrbitSec: 3
+    twinSizeMult: 0.7
+    twinPullMult: 1.5
+    twinCaptureRadiusPx: 24
+    twinTrailSec: 0.5
+    twinTrailWidthPx: 6
+    twinTrailColor: {r: 0.6, g: 0.7, b: 1, a: 0.8}
     sizePx: 56
     darkenAlpha: 0.45
     darkenReach: 0.7

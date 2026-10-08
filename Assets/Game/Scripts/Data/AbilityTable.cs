@@ -408,6 +408,22 @@ namespace Incremental
         [Tooltip("Seconds of the release: the flash, the darkness fading, the gravity source as it was.")]
         public double releaseSec = 0.4;
 
+        [Header("Evolved: 특이점 (24 §21.2)")]
+        [Tooltip("Evolved, the cooldown is this instead of cooldownSec, and a second black hole opens with the first: it circles the " +
+                 "gravity source at twinOrbitShare gravity radii, once in twinOrbitSec seconds (counter-clockwise), drawn at sizePx x " +
+                 "twinSizeMult, pulling everything as the first does at pullMult x twinPullMult, and the dust that comes within " +
+                 "twinCaptureRadiusPx of it is captured for the body being made, while holding.")]
+        public double twinCooldownSec = 25;
+        public double twinOrbitShare = 1.0;
+        public double twinOrbitSec = 3;
+        public double twinSizeMult = 0.7;
+        public double twinPullMult = 1.5;
+        public double twinCaptureRadiusPx = 24;
+        [Tooltip("The ribbon the second black hole leaves: seconds (0 = none), width at the head (px) and color; x effect intensity.")]
+        public double twinTrailSec = 0.5;
+        public double twinTrailWidthPx = 6;
+        public Color twinTrailColor = new Color(0.6f, 0.7f, 1f, 0.8f);
+
         [Header("Look")]
         [Tooltip("The gravity source wears GameParams.blackHoleLook (the ending's black hole, accretion disc and all) at this diameter (px) while it is open.")]
         public double sizePx = 56;
@@ -430,6 +446,9 @@ namespace Incremental
         /// <summary>Seconds the black hole is open after the ability_duration nodes.</summary>
         public double Duration(in AbilityLevel lv) => durationSec + Math.Max(0.0, lv.duration);
 
+        /// <summary>24 §21.2: evolved, the cooldown is twinCooldownSec.</summary>
+        public override double BaseCooldown(in AbilityLevel lv) => lv.evolved ? twinCooldownSec : cooldownSec;
+
         public override Ability CreateRuntime() => new BlackHoleAbility();
 
         public override bool Uses(string statId) => statId == StatIds.AbilityDuration || statId == StatIds.AbilityCooldown;
@@ -448,6 +467,13 @@ namespace Incremental
             if (flashAlpha < 0 || flashAlpha > 1 || flashRiseSec < 0) r.Errors.Add(Where + " flashAlpha must be within 0..1 and flashRiseSec >= 0.");
             if (full.duration > 0 && cooldownSec <= durationSec + full.duration + inhaleSec)
                 r.Warnings.Add(Where + " is open longer than its cooldown with every node bought, so it would never close.");
+            if (!(twinCooldownSec > 0)) r.Errors.Add(Where + " twinCooldownSec must be > 0: it is the evolved form's cooldown (24 §21.2).");
+            if (twinOrbitShare < 0 || !(twinOrbitSec > 0)) r.Errors.Add(Where + " twinOrbitShare must be >= 0 and twinOrbitSec > 0 (24 §21.2).");
+            if (!(twinSizeMult > 0) || twinPullMult < 0 || twinCaptureRadiusPx < 0)
+                r.Errors.Add(Where + " twinSizeMult must be > 0 and twinPullMult, twinCaptureRadiusPx >= 0 (24 §21.2).");
+            if (twinTrailSec < 0 || twinTrailWidthPx < 0) r.Errors.Add(Where + " twinTrailSec and twinTrailWidthPx must be >= 0.");
+            if (full.evolved && twinCooldownSec <= durationSec + full.duration + inhaleSec)
+                r.Warnings.Add(Where + " evolved, is open longer than twinCooldownSec with every node bought, so it would never close.");
         }
     }
 
