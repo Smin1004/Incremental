@@ -202,7 +202,10 @@ namespace Incremental
             float ppu = (float)p.pixelsPerUnit;
             Rect inner = Inner(root.CameraArea());
             Vector2 g = root.GravityWorld;
-            float least = (float)(s.gravityRadius * Math.Max(0.0, d.minDistanceRadii) / ppu);
+            // From the radius as it is without the buff: during a buff the amplified radius would ask for a distance the
+            // screen has not got, and every crystal would fall back to the farthest corner.
+            double baseRadius = s.gravityRadius / Factor(d.RadiusMult(Level));
+            float least = (float)(baseRadius * Math.Max(0.0, d.minDistanceRadii) / ppu);
             int n = Level.evolved ? Math.Max(1, d.resonanceCount) : 1;
             Grow(n);
             float spread = (float)(Math.Max(0.0, d.resonanceSpreadPx) / ppu);

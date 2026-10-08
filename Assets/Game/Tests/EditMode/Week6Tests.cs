@@ -469,6 +469,8 @@ namespace Incremental.Tests
                 foreach (var n in t.nodes)
                 {
                     if (n.minTier != ring || n.IsGate || n.maxLevel == 0) continue;
+                    // 24 §21.2: an evolve node is priced at its ability's unlock x 2 until the balance pass decides.
+                    if (n.IsAbilityEvolve) continue;
                     if (baseCost < 0) baseCost = n.baseCost;
                     Assert.AreEqual(baseCost, n.baseCost, Eps, "'" + n.id + "' does not use its ring's node price (20 §8.2)");
                 }

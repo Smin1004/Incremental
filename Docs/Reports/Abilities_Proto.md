@@ -10,7 +10,7 @@
 | 캡처 | `Docs/Reports/Abilities_Screens/` 5장 (링 8 상태, 디버그 키로 켬) |
 | 하지 않은 것 | 봇 완주 런, 밸런스 조정, 빌드 성능 측정, 새 테스트 (24 §1) |
 
-> **2차(§6)에서 수축의 강화, 위성의 궤도, 유성 값 일부가 바뀌었다.** §1~§5는 1차 그대로 두었다. 바뀐 값은 §6.4 표가 맞다. **수축의 범위 규칙은 3차(§8)에서 다시 바뀌었다.** §6.4의 `rangeRadiiBase` / `rangeRadiiPerLevel`은 이제 없다. **6차(§10)에서 기본 중력 반경과 반경 노드가 줄었고 링 2에 첫 능력(증폭 결정)이 들어갔다.** 디버그 숫자 키 순서도 §10.2가 맞다.
+> **2차(§6)에서 수축의 강화, 위성의 궤도, 유성 값 일부가 바뀌었다.** §1~§5는 1차 그대로 두었다. 바뀐 값은 §6.4 표가 맞다. **수축의 범위 규칙은 3차(§8)에서 다시 바뀌었다.** §6.4의 `rangeRadiiBase` / `rangeRadiiPerLevel`은 이제 없다. **6차(§10)에서 기본 중력 반경과 반경 노드가 줄었고 링 2에 첫 능력(증폭 결정)이 들어갔다.** 디버그 숫자 키 순서도 §10.2가 맞다. **7차(§11)에서 능력마다 진화형(링 7~11)과 묶음 완성이 더해졌다.**
 
 시작 전: `scale`을 main에 fast-forward 병합했다. 개발자 플레이 기록(`run_log.csv`, `save.json`, `save.bak`)은 `human_playtest_20260930_172209\`에 보존했고, 작업이 끝난 뒤 **그 사본을 제자리에 되돌려 놓았다** (링 11, 재화 98억 상태라 능력 노드를 바로 사 볼 수 있다). 기획 문서는 "기획 문서 갱신"으로 두 번 커밋했다(시작 시점, 9/30 추가분).
 
@@ -647,3 +647,121 @@
 4. **처리량이 크게 줄었다** (반경 축소). 링 비용은 스펙대로 손대지 않았다. 증폭이 메우는 양은 재지 않았다.
 5. **성능은 재지 않았다.** 결정 하나와 고리 색은 비용이 거의 없고, 흡수 순간의 들뜸은 먼지 전체를 한 번 훑는다.
 6. 블랙홀, 위성 같은 다른 능력과 버프가 겹칠 때의 모양은 보지 않았다.
+
+## 11. 7차 (2026-10-08): 강화 진화 5종, 묶음 완성
+
+| 항목 | 값 |
+|---|---|
+| 스펙 | [24_Ability_Spec.md](../24_Ability_Spec.md) §21 · 프롬프트 [Proto7.md](../Prompts/Proto7.md) |
+| 브랜치 | `proto6` (6차에 이어서). main 병합 안 함 |
+| 커밋 | A `40573b6` (진화 노드 틀) · B `d4043eb` (유성우) · C `d97b73a` (연쇄 붕괴) · D `56562f6` (공명) · E `0ebdcba` (번개 사슬) · F `26e7d8a` (특이점) · G `0dee12d` (묶음 완성) · H (캡처, 이 절, 결정 출현 거리 수정) |
+| Validate Data | 오류 0, 경고 0 (체크포인트마다). 능력 5행, 노드 95개(진화 노드 5개 추가) |
+| EditMode 테스트 | 기존 227개 전부 통과 (G까지 끝낸 뒤 한 번). 진화 노드가 들어가자 데이터 형태 테스트 둘이 깨져 `DataTests.ProjectTree_MatchesSpecShape`의 상한(80 → 90)과 `Week6Tests.EveryNodeCost_ComesFromTheRingFormula`의 예외(진화 노드는 해금 × 2)만 고쳤다. 새 테스트 없음 |
+| 캡처 | `Abilities_Screens/p7_*.png` 27장 |
+| 하지 않은 것 | 봇 완주 런, 링 비용 조정, 빌드 성능 측정, 새 테스트, main 병합. 프롬프트가 허용한 "F, E 미루기"는 쓰지 않았다: 다섯 진화를 전부 만들었다 |
+
+개발자 세이브(런 11, 링 11, 진행 중이던 런 포함, 10/8 15:13 저장)는 작업 전에 복사해 두었고, 끝낸 뒤 되돌려 같은 파일임을 확인했다. 복사본은 `proto7_tests\dev_current_20261008_152155\`, 테스트가 남긴 상태는 `proto7_tests\claude_tests_*\`에 있다(세이브 폴더 안).
+
+> 작업 중(15:08~15:13) 에디터가 플레이 모드인 채로 이 세션의 컴파일이 돌아 플레이 중 도메인 리로드가 일어났고, 그 몇 초 동안 `DustField.Tick`·`GameRoot.Update`에서 예외가 쏟아진 뒤 플레이가 끝나며 세이브가 기록됐다. 게임 버그가 아니라 리로드 중 상태 소실이다. 세션이 코드를 고치는 동안은 에디터 플레이를 피하는 편이 안전하다.
+
+### 11.1 만든 것
+
+**A. 진화 노드 틀.** `NodeKind.AbilityEvolve`. 능력마다 진화 노드 하나(`evolve_<id>`)가 링 7~11의 능력 축에 둘째 노드로 붙는다(해금 노드 각도 + 10°, 해금 노드 크기). 비용은 임시로 그 링 해금 계열 × 2(`SkillTreeSeed.EvolveCostMult`): 14만 / 58만 / 600만 / 3,200만 / 3억 4,000만. 선행은 그 능력의 강화 노드(`r3_crystal_power`, `r5_implode_power`, `r7_satellite_count`, `r9_meteor_amount`, `r11_blackhole_duration`). `AbilityLevel.evolved`는 트리(진화 노드 레벨 1)에서도, 디버그 강제 레벨(최대 강화 + 1 = Lv4 "진화")에서도 켜진다. 진화형이 쿨다운을 바꿀 수 있게 `AbilityDef.BaseCooldown(lv)`를 가상 메서드로 뺐다. 검증: 능력당 진화 노드 최대 1개, maxLevel 1, 링 ≥ 해금 링, 이름·효과 문자열 키.
+
+| 능력 | 진화 | 링 | 구현 (값은 전부 `AbilityTable`의 그 능력 행) |
+|---|---|---|---|
+| 증폭 결정 | **공명** | 7 | 결정 `resonanceCount`(3)개가 서로 `resonanceSpreadPx`(160) 이상 떨어져 동시에 나타난다. 버프 중에 또 먹으면 중첩(최대 `resonanceMaxStacks` 3): 배수가 ×(1 + (배수 − 1) × 중첩), 시계는 다시 6초. 링 7(힘 Lv3, ×1.65)에서 1 / 2 / 3중첩 반경 ×1.65 / ×2.3 / ×2.95 = 416 / 580 / 743px(월드), 3중첩 화면 반지름 607px: 고리 지름이 화면 높이의 112%, 넓이로 화면의 56%. 인력 ×4.3, 먼지 속도 ×2.2. 고리 색은 중첩마다 진해진다 |
+| 수축 | **연쇄 붕괴** | 8 | 파동 `chainCount`(3)개가 `chainGapSec`(0.35초) 간격으로, 각각 그 순간의 중력원에서 퍼진다. 파동마다 지나는 먼지를 밀고 들뜨게 한다(`Impulse`). 쿨다운 `chainCooldownSec` 9초(기본 14). 다음 발동은 파동이 전부 사라진 뒤(1.45초) |
+| 위성 | **번개 사슬** | 9 | 이웃 위성 사이에 번개(둘이면 1개, 셋 이상이면 고리). 사슬에서 `chainReachPx`(40) 안의 먼지는 선 위 가장 가까운 점으로 `chainPullPx`(900px/s²) 당겨지고 들뜬다(`DustForce.Line`: 먼지당 사슬 수만큼 선분 거리 판정). 위성들이 근점을 동시에 지나는 틱(θ가 2π를 넘는 순간, 5초마다)에 **스냅**: `snapRadiusShare`(0.8) 반경 안 먼지를 `snapSpeedPx`(420px/s)로 중심에 한꺼번에 밀고(수축과 같은 Impulse), 사슬이 번쩍이며 FxRing 고리가 `snapFlashSec`(0.3초)에 걸쳐 중심으로 닫힌다. 번개는 LineRenderer 두 겹(심 3px + 글로우 10px), `chainSegments`(14) 꺾임이 매 프레임 `chainJitterPx`(12) 안에서 흔들린다 |
+| 유성 | **유성우** | 10 | `showerCount`(5)개가 `showerGapSec`(0.3초) 간격, 진행 방향은 기준 각도에서 360° / 5 = 72°씩 벌려 ±`showerJitterDeg`(15°). 유성마다 1개분 몫(상한의 6~15%)을 흘린다. 다음 발동은 전부 지나간 뒤 |
+| 블랙홀 | **특이점** | 11 | 둘째 블랙홀이 중력원 둘레 `twinOrbitShare`(1.0) 반경을 `twinOrbitSec`(3초)에 한 바퀴 돌며 같은 전역 당김을 `twinPullMult`(×1.5)로 더한다. `twinCaptureRadiusPx`(24) 안에 든 먼지는 포획되어 본체 질량이 된다(홀드 중, `DustForce.GlobalCapture`, `DustField.ForceCapturedCount`). 쿨다운 `twinCooldownSec` 25초(기본 40). `GameParams.blackHoleLook`을 입은 `PlanetVisual`(지름 × `twinSizeMult` 0.7)과 리본(`twinTrailSec` 0.5초) |
+
+링 11 측정(7초 열림): 포획 1,372개 중 둘째 블랙홀이 380개.
+
+**G. 묶음 완성** (`GameParams`, 24 §21.3). 최고 티어 홀드 중 보유 질량이 임계값 × `bundleAt`(3) 이상이면 다음 완성이 floor(질량 / 임계값)개 몫의 천체 하나다: 수입 N배, 결과 화면 개수 N, 크기 ×(1 + `bundleSizeGrowth` 0.12 × (N − 1), 최대 `bundleSizeMax` 2.0), 팝 × `bundlePopMult`(1.6), ×N 라벨 × `bundleLabelScale`(1.6). 0이면 끔(이전과 같다). `GameRoot.LastBundleCount / LastBundleAt`, 콘솔 `[Bundle] x3 of tier 11 at 32.9s: 3 thresholds of 10000 held, drawn x1.24, 9281 mass kept`. 다섯 진화를 전부 켠 링 11 장면에서는 저절로 ×3 ~ ×5 묶음이 몇 초마다 나왔다.
+
+- 먼지 쪽: `DustForce.segment / to`(선분 힘), `capture / captureRadius2`(힘에 의한 포획, 홀드 중만), `DustField.ForceCapturedCount`.
+- 로그: `[Ability] meteor: shower at …: 5 meteors 0.3s apart, headings 72° apart (±15°)`, `implode: fired … 3 waves 0.35s apart` + `wave n done`, `crystal: 3 appeared … / absorbed … at 3 stacks, gravity radius x2.95 (743 px)`, `satellite: … lightning: 4 chain(s) … / snap at …: 855 dust within 235 px pushed`, `blackhole: … a second black hole at 345 px … / closed …: 1372 dust captured (380 of them by the second black hole)`.
+
+### 11.2 확인 방법
+
+| 키 | 동작 |
+|---|---|
+| 숫자 `1`~`5` | 능력 하나만 강제 (1 증폭 결정, 2 수축, 3 위성, 4 유성, 5 블랙홀), `6` 전부, `0` 끔 |
+| `=` / `-` | 강제 레벨. **Lv3 다음이 "진화"**(Lv4). 왼쪽 아래 상태 줄에 "진화"가 붙는다. `6` + Lv4면 다섯 진화가 한꺼번에 켜진다 |
+| 트리 | 링 7~11 능력 팔(240°)의 큰 둘째 노드 "진화: 공명 / 연쇄 붕괴 / 번개 사슬 / 유성우 / 특이점". 선행은 그 능력의 강화 노드 |
+| `F1` | 오버레이(FPS, 먼지 수, 틱 ms)와 능력 상태 줄 |
+| `X` | 과노출 억제 켜고 끄기 |
+
+공명은 결정 셋이 나오면 중력원(커서)을 차례로 가져가 먹는다. 둘째부터 "N stacks"가 로그에 찍히고 고리가 그만큼 커진다. 번개 사슬은 홀드 중 위성이 둘 이상이어야 보인다(Lv4 강제면 4기). 묶음은 `GameParams.bundleAt`을 0으로 두면 꺼진다.
+
+### 11.3 바꿀 수 있는 값
+
+**`Assets/Game/Data/AbilityTable.asset`** (플레이 중 바꾸면 바로 반영)
+
+| 행 | 필드 | 지금 값 | 바뀌는 것 |
+|---|---|---|---|
+| `crystal` | `resonanceCount` / `resonanceMaxStacks` / `resonanceSpreadPx` | 3 / 3 / 160 | 공명의 결정 수, 중첩 한도, 결정 사이 최소 간격(px) |
+| `implode` | `chainCount` / `chainGapSec` / `chainCooldownSec` | 3 / 0.35 / 9 | 연쇄 붕괴의 파동 수, 간격, 진화 쿨다운 |
+| `satellite` | `chainReachPx` / `chainPullPx` | 40 / 900 | 사슬이 먼지를 끌어 붙이는 거리와 가속 (0이면 그리기만) |
+| `satellite` | `snapRadiusShare` / `snapSpeedPx` / `snapFlashSec` | 0.8 / 420 / 0.3 | 스냅 반경(중력 반경 배), 미는 속도, 번쩍임·고리 시간 |
+| `satellite` | `chainWidthPx` / `chainGlowWidthPx` / `chainColor` / `chainGlowAlpha` / `chainSegments` / `chainJitterPx` | 3 / 10 / 청백 / 0.35 / 14 / 12 | 번개의 심·글로우 굵기, 색, 글로우 세기, 꺾임 수, 떨림 폭 |
+| `meteor` | `showerCount` / `showerGapSec` / `showerJitterDeg` | 5 / 0.3 / 15 | 유성우의 개수, 간격, 각도 지터 |
+| `blackHole` | `twinCooldownSec` | 25 | 특이점 쿨다운 |
+| `blackHole` | `twinOrbitShare` / `twinOrbitSec` | 1.0 / 3 | 둘째 블랙홀의 궤도 반경(중력 반경 배)과 주기 |
+| `blackHole` | `twinSizeMult` / `twinPullMult` / `twinCaptureRadiusPx` | 0.7 / 1.5 / 24 | 둘째의 크기(본체 대비), 당김(본체 대비), 포획 반경 |
+| `blackHole` | `twinTrailSec` / `twinTrailWidthPx` / `twinTrailColor` | 0.5 / 6 / 푸른 흰색 | 둘째의 리본 |
+
+**`Assets/Game/Data/GameParams.asset`** (Body completion 아래)
+
+| 필드 | 지금 값 | 바뀌는 것 |
+|---|---|---|
+| `bundleAt` | 3 | 보유 질량이 임계값의 몇 배부터 묶음인지. 0 = 끔 |
+| `bundleSizeGrowth` / `bundleSizeMax` | 0.12 / 2.0 | 묶음 천체 크기: 개당 +12%, 최대 ×2 |
+| `bundlePopMult` | 1.6 | 묶음 천체의 팝 배수 |
+| `bundleLabelScale` | 1.6 | ×N 라벨 배수 |
+
+**`NodeTable` (시드)**: `SkillTreeSeed.EvolveCostMult` 2 (진화 비용 = 해금 계열 × 2), `EvolveNode(ring)`의 선행 노드.
+
+### 11.4 캡처 (27장)
+
+전부 1920×1080 에디터 Game 뷰. 링 상태는 `ApplyRingStartState`, 능력은 디버그 강제 Lv4(진화). 먼지가 "채움"인 장면은 `StageRunScene`으로 3,000~5,000개를 깔았다.
+
+| 캡처 | 내용 |
+|---|---|
+| `p7_meteor_shower_500ms` / `_1200ms` / `_1800ms` | 링 10, 유성우. 첫 유성 → 셋 → 다섯이 서로 다른 각도로 가로지르며 항적을 남긴다 |
+| `p7_implode_chain_300ms` / `_800ms` / `_1200ms` | 링 8 자연 런(먼지 ~350), 연쇄 붕괴. 첫 파동, 둘째 파동 고리가 보이는 순간, 셋째 파동 |
+| `p7_implode_chain_dense_300ms` / `_800ms` / `_1200ms` | 같은 순간, 먼지 3,500개 채움. 화면 전체가 세 번 안으로 꺾인다 |
+| `p7_crystal_resonance_appear_600ms` | 링 7, 결정 셋이 나타난 0.6초 뒤 (오른쪽 위, 오른쪽, 아래) |
+| `p7_crystal_resonance_3stacks_50ms` / `_1500ms` | 셋째 결정을 먹은 순간과 1.5초 뒤. 금색 고리 반지름 607px(×2.95) |
+| `p7_satellite_chain_1000ms` / `_2500ms` / `_4000ms` | 링 9, 먼지 3,000개 채움, 위성 4기. 사각 사슬이 커졌다 작아지며 먼지를 끌고 돈다 |
+| `p7_satellite_snap_0ms` / `_150ms` | 근점 스냅의 순간과 0.15초 뒤. 사슬이 중심에 모이고 고리가 닫힌다 |
+| `p7_blackhole_twin_2500ms` / `_5000ms` / `_7500ms` | 링 11, 먼지 3,500개 채움, 특이점. 둘째 블랙홀이 돌며 먼지 띠를 끌고 다닌다 |
+| `p7_all_five_1500ms` / `_4000ms` / `_8000ms` | 링 11, 먼지 5,000개, 다섯 진화 동시, F1 오버레이(FPS 46.6 / 47.9, 틱 9.0 / 6.7ms) |
+| `p7_all_five_exposure_off_500ms` | 같은 장면, 과노출 억제 끔(X). ×5 묶음 천체가 흰 덩어리로 날아간다 |
+| `p7_bundle_0ms` / `_300ms` | 묶음 완성 ×3의 순간과 0.3초 뒤(먼지 4,000개, 강제 끔). 큰 천체 위에 큰 ×3 |
+| `p7_tree_evolve_1500ms` | 링 11 상태의 트리. 능력 팔의 큰 둘째 노드가 진화 노드(`evolve_blackhole` 3억 4,000만은 안 산 상태) |
+
+### 11.5 스펙과 다르게 한 것, 정한 것
+
+1. **진화 노드 각도**: 팔 안 둘째 축을 기존 `Pair`(10°)로 썼다(스펙 ±8°). 다른 팔의 둘째 축과 같은 폭이다.
+2. **공명 중첩은 배수를 더한다**(곱하지 않는다): ×(1 + (m − 1) × n). 곱이면 3중첩 반경 ×4.5로 화면을 넘는다. 먼지 속도 배수도 같이 중첩된다(3중첩 ×2.2).
+3. 공명의 결정 자리: 16회 추첨 중 "중력원에서 2반경 이상"과 "다른 결정에서 160px 이상"을 둘 다 만족하는 첫 자리, 없으면 가장 덜 어긋나는 자리. 기준 반경은 버프 전 반경이다(H에서 고침).
+4. 연쇄 붕괴의 파동 원점은 그 순간의 중력원 위치다(중력원이 움직이면 파동 중심도 옮겨 간다). 전체 범위 상태에서는 세 파동이 전부 화면 끝까지 간다.
+5. **번개 사슬의 "사슬 안의 먼지"**: 근점에서 사슬 다각형은 중력 반경의 절반 안쪽이라 매우 작다. 그래서 스냅은 "중력 반경 × 0.8 안의 먼지"를 민다. 사슬의 견인은 "선 위로 당김"이다: 사슬이 움직이면 붙은 먼지가 따라온다. 번개는 LineRenderer(기존 궤적 재료) 두 겹이고 FxRing은 스냅 고리에만 썼다. 사슬 심은 연출 강도 0에서도 남고 글로우·떨림·번쩍임은 강도를 따른다.
+6. 유성우의 각도는 균등 분할(72°) + 지터. 유성마다 자기 몫을 흘리므로 한 소나기가 상한의 최대 75%를 흘릴 수 있고 상한에서 멈춘다(Validate가 100%를 넘으면 경고).
+7. **특이점**: 둘째 블랙홀은 원 궤도(반경 1.0R, 3초, 반시계). 8자는 두 당김이 만들고 궤도 자체는 원이다. 둘째의 당김은 본체의 ×1.5(움직이는 쪽이 세야 화면을 휘젓는다). 포획 반경 24px, 홀드 중에만(본체와 같은 규칙). 둘째가 잡은 것도 본체 질량이다.
+8. 묶음: 완성 간격 0.4초는 그대로다. 묶음일 때만 크기·팝·라벨이 커진다. 엔딩을 여는 완성은 묶음과 무관하게 전처럼 간다.
+9. 디버그 강제 레벨은 모든 강제 능력에 같은 레벨을 준다. `6` + Lv4 = 다섯 진화 동시.
+10. 결정 출현 거리의 기준 반경을 버프 전 반경으로 고쳤다. 버프 중 다음 결정이 나오면 "1487px 이상"처럼 화면에 없는 거리를 요구해 전부 구석으로 몰렸다.
+
+### 11.6 알려진 문제
+
+1. **성능은 재지 않았다**(에디터 수치만). 1920×1080, 먼지 5,000, 다섯 진화 동시: FPS 46~48, 틱 9.0ms(최대 10.3). 블랙홀이 먼지를 비운 뒤(393개) FPS 89. 사슬 4개 = 먼지당 선분 거리 판정 4회, 둘째 블랙홀 = 전역 힘 1개 추가. 빌드에서 다시 재야 한다.
+2. **과노출**: 억제를 끄면(X) ×5 묶음 천체가 흰 덩어리로 날아간다(`p7_all_five_exposure_off_500ms`). 켜면 천체가 보인다(`p7_bundle_*`, `p7_all_five_4000ms`). 연쇄 붕괴 세 파동이 겹치는 0.5초는 억제를 켜도 가운데가 밝다.
+3. 연쇄 붕괴(전체 범위)는 9초마다 화면 먼지를 거의 다 쓸어 담아 자연 런의 먼지 밀도가 낮게 유지된다(링 8 자연 런: 파동당 350개). 처리량은 재지 않았다.
+4. 공명 3중첩 고리는 화면 높이보다 커서 고리 선이 위아래로 화면 밖에 걸린다. 넓이로는 화면의 56%("절반")다.
+5. 번개의 떨림은 매 프레임 새 난수라 낮은 FPS에서는 느리게 떨린다.
+6. 연속 묶음에서 ×N 라벨이 겹쳐 보일 때가 있다(`p7_bundle_0ms`의 ×3 위에 앞 묶음의 라벨).
+7. 콘솔에 "The referenced script (Unknown) on this Behaviour is missing!" 경고 15줄이 리로드마다 뜬다. 열린 씬(Prototype)에는 빠진 스크립트가 없었다. 에셋이나 패키지 쪽으로 보이며 이번 작업과 무관하다.
+8. 17_Playtest_Guide §1의 키 표는 6차(숫자 키 순서)와 7차(진화 레벨)를 반영하지 않았다.
