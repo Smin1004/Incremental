@@ -11,9 +11,11 @@ namespace Incremental
     /// amplified restarts the clock; the multipliers do not stack. The first ability of the tree (ring 2), and the one
     /// reason to move the gravity source now that the ring is smaller (24 §20.3).
     ///
-    /// 24 §21.2 공명, the evolved form: resonanceCount crystals appear at once, apart from each other, and the buff
-    /// stacks: a crystal absorbed while the buff is on adds the multipliers once more (up to resonanceMaxStacks) and
-    /// starts the clock over. Three stacks of ring 7's x1.65 radius are x2.95: the gravity ring over half the screen.
+    /// 24 §21.2 공명, the evolved form as decided on 10/8: crystals come every resonanceCooldownSec of holding instead of
+    /// cooldownSec, still one at a time, and the buff stacks: a crystal absorbed while the buff is on adds the
+    /// multipliers once more (up to resonanceMaxStacks, 2) and starts the clock over. Two stacks of ring 7's x1.65
+    /// radius are x2.3. Three at once and three stacks were tried in the 7th pass and rejected as too much; the shard
+    /// array below is what is left of that and holds one.
     ///
     /// The buff goes on the run's effective stats through <see cref="Amplify"/>, which GameRoot applies before anything
     /// reads them each tick, so the gravity ring, the dust and the other abilities all see the amplified radius. The
@@ -192,9 +194,8 @@ namespace Incremental
         }
 
         /// <summary>
-        /// The crystals appear: inside the edge margin, at least minDistanceRadii gravity radii from the gravity source
-        /// and, evolved, resonanceSpreadPx from each other. Of 16 random points each takes the first that manages both,
-        /// else the one that comes nearest to it.
+        /// The crystal appears: inside the edge margin, at least minDistanceRadii gravity radii from the gravity source
+        /// (the radius as it is without the buff). Of 16 random points it takes the first that is far enough, else the farthest.
         /// </summary>
         protected override void Trigger(in EffectiveStats s)
         {
@@ -202,48 +203,35 @@ namespace Incremental
             float ppu = (float)p.pixelsPerUnit;
             Rect inner = Inner(root.CameraArea());
             Vector2 g = root.GravityWorld;
-            // From the radius as it is without the buff: during a buff the amplified radius would ask for a distance the
-            // screen has not got, and every crystal would fall back to the farthest corner.
+            // During a buff the amplified radius would ask for a distance the screen has not got, and every crystal
+            // would fall back to the farthest corner; so the distance is measured in the radius without the buff.
             double baseRadius = s.gravityRadius / Factor(d.RadiusMult(Level));
             float least = (float)(baseRadius * Math.Max(0.0, d.minDistanceRadii) / ppu);
-            int n = Level.evolved ? Math.Max(1, d.resonanceCount) : 1;
-            Grow(n);
-            float spread = (float)(Math.Max(0.0, d.resonanceSpreadPx) / ppu);
-            var where = new System.Text.StringBuilder();
-            for (int k = 0; k < n; k++)
+            Grow(1);
+            Vector2 best = inner.center;
+            float bestDist = -1f;
+            for (int tries = 0; tries < 16; tries++)
             {
-                Vector2 best = inner.center;
-                float bestScore = float.NegativeInfinity;
-                float bestDist = 0f;
-                for (int tries = 0; tries < 16; tries++)
+                var candidate = new Vector2(inner.xMin + (float)rng.NextDouble() * inner.width, inner.yMin + (float)rng.NextDouble() * inner.height);
+                float dist = (candidate - g).magnitude;
+                if (dist > bestDist)
                 {
-                    var candidate = new Vector2(inner.xMin + (float)rng.NextDouble() * inner.width, inner.yMin + (float)rng.NextDouble() * inner.height);
-                    float dist = (candidate - g).magnitude;
-                    float apart = float.PositiveInfinity;
-                    for (int j = 0; j < k; j++) apart = Mathf.Min(apart, (candidate - shards[j].pos).magnitude);
-                    float score = Mathf.Min(dist - least, k > 0 ? apart - spread : float.PositiveInfinity);
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                        best = candidate;
-                        bestDist = dist;
-                    }
-                    if (score >= 0f) break;
+                    bestDist = dist;
+                    best = candidate;
                 }
-                ref Shard sh = ref shards[k];
-                sh.alive = true;
-                sh.pos = best;
-                sh.vel = RandomDir() * (float)(d.driftSpeedPx / ppu);
-                sh.age = 0;
-                sh.pulled = false;
-                if (where.Length > 0) where.Append(", ");
-                where.Append((bestDist * ppu).ToString("F0"));
+                if (dist >= least) break;
             }
-            for (int k = n; k < shards.Length; k++) shards[k].alive = false;
+            ref Shard sh = ref shards[0];
+            sh.alive = true;
+            sh.pos = best;
+            sh.vel = RandomDir() * (float)(d.driftSpeedPx / ppu);
+            sh.age = 0;
+            sh.pulled = false;
+            for (int k = 1; k < shards.Length; k++) shards[k].alive = false;
             clock = 0;
-            Log((n > 1 ? n + " appeared" : "appeared") + " at " + RunClock + ": " + where + " px from the gravity source (" +
-                (least * ppu).ToString("F0") + " px or more wanted" + (n > 1 ? ", " + (spread * ppu).ToString("F0") + " px apart" : "") +
-                "), gone in " + d.lifeSec.ToString("0.##") + "s unless taken");
+            Log("appeared at " + RunClock + ": " + (bestDist * ppu).ToString("F0") + " px from the gravity source (" +
+                (least * ppu).ToString("F0") + " px or more wanted), gone in " + d.lifeSec.ToString("0.##") + "s unless taken" +
+                (Level.evolved ? ", the next " + d.resonanceCooldownSec.ToString("0.##") + "s of holding after it is gone" : ""));
         }
 
         protected override void Step(double dt, bool holding, in EffectiveStats s)

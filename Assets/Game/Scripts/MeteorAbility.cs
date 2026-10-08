@@ -20,9 +20,9 @@ namespace Incremental
     /// It wears the look of the comet tier with a longer tail. The planet shader points a tail away from the light, so
     /// the light is put straight ahead of the meteor.
     ///
-    /// 24 §21.2 유성우, the evolved form: one trigger launches showerCount meteors showerGapSec apart, their headings
-    /// fanned out evenly around a random one (plus a little jitter), so they cross from every side and their wakes
-    /// churn the whole screen. Each sheds its own share; the dust cap still holds.
+    /// 24 §21.2 유성우, the evolved form as decided on 10/8: the same meteor at a shorter cooldown (MeteorDef.showerCooldownSec),
+    /// one at a time. The five-at-once shower of the 7th pass was rejected as too much; the array of meteors below is
+    /// what is left of it and holds one.
     /// </summary>
     public sealed class MeteorAbility : Ability
     {
@@ -51,9 +51,8 @@ namespace Incremental
         Transform holder;
         Meteor[] meteors = new Meteor[0];
         PlanetVisual[] bodies = new PlanetVisual[0];
-        /// <summary>24 §21.2: launches still to come from this trigger, seconds to the next, and the heading they fan out from.</summary>
+        /// <summary>Launches still to come from this trigger (one), and the heading the next one takes.</summary>
         int pending, launched;
-        double launchIn;
         double fanBase;
         int triggerCount = 1;
 
@@ -106,16 +105,12 @@ namespace Incremental
 
         protected override void Trigger(in EffectiveStats s)
         {
-            var d = D;
-            triggerCount = Level.evolved ? Math.Max(1, d.showerCount) : 1;
+            // One meteor per trigger; evolved, the triggers just come faster (10/8, MeteorDef.showerCooldownSec).
+            triggerCount = 1;
             Grow(triggerCount);
             pending = triggerCount;
             launched = 0;
-            launchIn = 0;
             fanBase = rng.NextDouble() * Math.PI * 2.0;
-            if (triggerCount > 1)
-                Log("shower at " + RunClock + ": " + triggerCount + " meteors " + d.showerGapSec.ToString("0.##") + "s apart, headings " +
-                    (360.0 / triggerCount).ToString("F0") + "° apart (±" + d.showerJitterDeg.ToString("F0") + "°)");
         }
 
         /// <summary>One meteor off: its path, its shedding plan and its look.</summary>
@@ -136,10 +131,9 @@ namespace Incremental
             float diameter = (float)(root.RunBodyPx(d.sizePx) / ppu);
             m.margin = diameter * 0.5f * look.Extent();
 
-            // 24 §21.2: a shower fans its headings out evenly around the first; a single meteor takes any heading.
-            bool fanned = triggerCount > 1;
-            double heading = fanBase + Math.PI * 2.0 * launched / Math.Max(1, triggerCount) +
-                             (rng.NextDouble() * 2.0 - 1.0) * d.showerJitterDeg * Math.PI / 180.0;
+            // A single meteor takes any heading (the fanned headings of the shower went with it, 10/8).
+            bool fanned = false;
+            double heading = fanBase;
             PickPath(ref m, d, area, gravity, (float)(s.gravityRadius / ppu), fanned, heading);
             Vector2 path = m.end - m.start;
             float length = Mathf.Max(1e-4f, path.magnitude);
@@ -240,16 +234,11 @@ namespace Incremental
         protected override void Step(double dt, bool holding, in EffectiveStats s)
         {
             var d = D;
-            // 24 §21.2: the launches of a shower, showerGapSec apart; the first one goes the tick the trigger fired.
-            if (pending > 0)
+            // The launch goes the tick after the trigger fired (one per trigger since 10/8).
+            while (pending > 0)
             {
-                launchIn -= dt;
-                while (pending > 0 && launchIn <= 0)
-                {
-                    Launch(s);
-                    pending--;
-                    launchIn += Math.Max(0.0, d.showerGapSec);
-                }
+                Launch(s);
+                pending--;
             }
             for (int i = 0; i < meteors.Length; i++)
                 if (meteors[i].active) StepMeteor(ref meteors[i], dt, s, d);

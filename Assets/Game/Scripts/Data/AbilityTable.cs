@@ -107,13 +107,6 @@ namespace Incremental
         [Tooltip("Seconds the ring takes to reach the end of its range, whatever the range is.")]
         public double ringSec = 0.5;
 
-        [Header("Evolved: 연쇄 붕괴 (24 §21.2)")]
-        [Tooltip("Waves per trigger once 수축 is evolved, this many seconds apart, each from where the gravity source is at that " +
-                 "moment; and the cooldown the evolved form has instead of cooldownSec.")]
-        public int chainCount = 3;
-        public double chainGapSec = 0.35;
-        public double chainCooldownSec = 9;
-
         [Header("Look")]
         [Tooltip("Width of the ring line, px on screen.")]
         public double ringWidthPx = 4;
@@ -129,14 +122,12 @@ namespace Incremental
         {
             id = "implode";
             unlockRing = 4;
-            cooldownSec = 14;
+            // 10/8 (developer, after the 7th pass): 14 -> 20, so the field has time to refill between waves.
+            cooldownSec = 20;
         }
 
         /// <summary>The push after the ability_power nodes, px/s.</summary>
         public double PullSpeedPx(in AbilityLevel lv) => pullSpeedPx * (1.0 + lv.power);
-
-        /// <summary>24 §21.2: evolved, the cooldown is chainCooldownSec.</summary>
-        public override double BaseCooldown(in AbilityLevel lv) => lv.evolved ? chainCooldownSec : cooldownSec;
 
         /// <summary>24 §16.1: at the last level of the range nodes the ring covers the screen and <see cref="RangeScreenShare"/> is not asked.</summary>
         public bool WholeScreen(in AbilityLevel lv) => lv.rangeMaxed;
@@ -163,11 +154,6 @@ namespace Incremental
             if (!full.rangeMaxed)
                 r.Warnings.Add(Where + " has no ability_range node with a last level, so it never reaches the whole screen (24 §16.1).");
             if (!(ringSec > 0)) r.Errors.Add(Where + " ringSec must be > 0.");
-            if (chainCount < 1) r.Errors.Add(Where + " chainCount must be >= 1 (24 §21.2).");
-            if (chainGapSec < 0) r.Errors.Add(Where + " chainGapSec must be >= 0.");
-            if (!(chainCooldownSec > 0)) r.Errors.Add(Where + " chainCooldownSec must be > 0: it is the evolved form's cooldown (24 §21.2).");
-            if (full.evolved && (chainCount - 1) * chainGapSec + ringSec + ringFadeSec >= chainCooldownSec)
-                r.Warnings.Add(Where + " evolved, the waves are still on their way when the next trigger is due; it waits for them.");
             if (!(ringWidthPx > 0)) r.Errors.Add(Where + " ringWidthPx must be > 0.");
             if (ringFadeSec < 0) r.Errors.Add(Where + " ringFadeSec must be >= 0.");
             if (ringSegments < 8) r.Errors.Add(Where + " ringSegments must be >= 8.");
@@ -212,28 +198,6 @@ namespace Incremental
         [Tooltip("How fast the velocity of a dust in the core is drawn to the satellite's, per second (6 = most of the way " +
                  "in a sixth of a second). 0 = no tow, which is the 2차 satellite.")]
         public double towRate = 6;
-
-        [Header("Evolved: 번개 사슬 (24 §21.2)")]
-        [Tooltip("Evolved, consecutive satellites are joined by lightning (two by one chain, three or more in a ring). Dust within " +
-                 "chainReachPx of a chain is pulled onto it at chainPullPx px/s² and excited, so the chains carry dust round with " +
-                 "them. 0 = the chains are only drawn.")]
-        public double chainReachPx = 40;
-        public double chainPullPx = 900;
-        [Tooltip("The snap: when the satellites pass their nearest point (together, once an orbit) the chains flash and every dust " +
-                 "within snapRadiusShare gravity radii of the gravity source is pushed to it at snapSpeedPx px/s (24 §3's push), " +
-                 "with a ring closing on it over snapFlashSec.")]
-        public double snapRadiusShare = 0.8;
-        public double snapSpeedPx = 420;
-        public double snapFlashSec = 0.3;
-        [Tooltip("The lightning: a core line this wide (px) with a glow line this wide behind it, in this color (the glow at " +
-                 "chainGlowAlpha), drawn as chainSegments pieces whose joints jump sideways up to chainJitterPx every frame. " +
-                 "The glow, the trembling and the flash follow the effect intensity; the core stays.")]
-        public double chainWidthPx = 3;
-        public double chainGlowWidthPx = 10;
-        public Color chainColor = new Color(0.75f, 0.9f, 1f, 1f);
-        public double chainGlowAlpha = 0.35;
-        public int chainSegments = 14;
-        public double chainJitterPx = 12;
 
         [Header("Look")]
         [Tooltip("Diameter of the bright dot and of the soft glow around it, px.")]
@@ -285,13 +249,6 @@ namespace Incremental
             if (!(dotPx > 0) || glowPx < 0) r.Errors.Add(Where + " dotPx must be > 0 and glowPx >= 0.");
             if (glowAlpha < 0 || glowAlpha > 1) r.Errors.Add(Where + " glowAlpha must be within 0..1.");
             if (trailSec < 0 || trailWidthPx < 0) r.Errors.Add(Where + " trailSec and trailWidthPx must be >= 0.");
-            if (chainReachPx < 0 || chainPullPx < 0) r.Errors.Add(Where + " chainReachPx and chainPullPx must be >= 0 (24 §21.2).");
-            if (snapRadiusShare < 0 || snapSpeedPx < 0 || snapFlashSec < 0) r.Errors.Add(Where + " snapRadiusShare, snapSpeedPx and snapFlashSec must be >= 0 (24 §21.2).");
-            if (!(chainWidthPx > 0) || chainGlowWidthPx < 0 || chainJitterPx < 0) r.Errors.Add(Where + " chainWidthPx must be > 0 and chainGlowWidthPx, chainJitterPx >= 0.");
-            if (chainGlowAlpha < 0 || chainGlowAlpha > 1) r.Errors.Add(Where + " chainGlowAlpha must be within 0..1.");
-            if (chainSegments < 2) r.Errors.Add(Where + " chainSegments must be >= 2: a line needs two ends.");
-            if (full.evolved && Count(full) < 2)
-                r.Warnings.Add(Where + " evolved, but reaches only one satellite with every node bought: nothing to chain to (24 §21.2).");
         }
     }
 
@@ -335,12 +292,10 @@ namespace Incremental
         public double sizePx = 40;
         public double tailLength = 9;
 
-        [Header("Evolved: 유성우 (24 §21.2)")]
-        [Tooltip("Meteors per trigger once the meteor is evolved, this many seconds apart, their headings fanned out evenly " +
-                 "(360° / count) around a random one with this much jitter either way (degrees). Each sheds its own share of the cap.")]
-        public int showerCount = 5;
-        public double showerGapSec = 0.3;
-        public double showerJitterDeg = 15;
+        [Header("Evolved: 유성우 (24 §21.2; 10/8: 간격 단축)")]
+        [Tooltip("Evolved, meteors come every this many seconds of holding instead of cooldownSec, still one at a time, each on " +
+                 "its own random path. (Five at once, 0.3 s apart, was tried in the 7th pass and rejected on 10/8 as too much.)")]
+        public double showerCooldownSec = 5;
 
         [Header("Internals")]
         [Tooltip("Random paths tried for one that passes the gravity source inside the screen, before settling for any path.")]
@@ -355,6 +310,9 @@ namespace Incremental
 
         /// <summary>The share of the dust cap one crossing sheds after the ability_amount nodes, never above <see cref="maxDustShare"/>.</summary>
         public double DustShare(in AbilityLevel lv) => Math.Max(0.0, Math.Min(maxDustShare, dustShare + lv.amount));
+
+        /// <summary>24 §21.2 (10/8): evolved, the cooldown is showerCooldownSec.</summary>
+        public override double BaseCooldown(in AbilityLevel lv) => lv.evolved ? showerCooldownSec : cooldownSec;
 
         public override Ability CreateRuntime() => new MeteorAbility();
 
@@ -378,10 +336,9 @@ namespace Incremental
             if (c != null && c.Get(lookTier) == null) r.Errors.Add(Where + $" lookTier {lookTier} is not a tier of the CelestialTable.");
             if (!(sizePx > 0) || tailLength < 0) r.Errors.Add(Where + " sizePx must be > 0 and tailLength >= 0.");
             if (pathTries < 1) r.Errors.Add(Where + " pathTries must be >= 1.");
-            if (showerCount < 1) r.Errors.Add(Where + " showerCount must be >= 1 (24 §21.2).");
-            if (showerGapSec < 0 || showerJitterDeg < 0) r.Errors.Add(Where + " showerGapSec and showerJitterDeg must be >= 0.");
-            if (full.evolved && showerCount * (dustShare + full.amount) > 1.0 + 1e-9)
-                r.Warnings.Add(Where + $" sheds {showerCount * (dustShare + full.amount) * 100:F0}% of the cap per shower with every node bought; the cap stops it there.");
+            if (!(showerCooldownSec > 0)) r.Errors.Add(Where + " showerCooldownSec must be > 0: it is the evolved form's cooldown (24 §21.2).");
+            if (full.evolved && showerCooldownSec < crossSec)
+                r.Warnings.Add(Where + " evolved, the next meteor is due while the last is still crossing; it waits for it.");
         }
     }
 
@@ -408,22 +365,6 @@ namespace Incremental
         [Tooltip("Seconds of the release: the flash, the darkness fading, the gravity source as it was.")]
         public double releaseSec = 0.4;
 
-        [Header("Evolved: 특이점 (24 §21.2)")]
-        [Tooltip("Evolved, the cooldown is this instead of cooldownSec, and a second black hole opens with the first: it circles the " +
-                 "gravity source at twinOrbitShare gravity radii, once in twinOrbitSec seconds (counter-clockwise), drawn at sizePx x " +
-                 "twinSizeMult, pulling everything as the first does at pullMult x twinPullMult, and the dust that comes within " +
-                 "twinCaptureRadiusPx of it is captured for the body being made, while holding.")]
-        public double twinCooldownSec = 25;
-        public double twinOrbitShare = 1.0;
-        public double twinOrbitSec = 3;
-        public double twinSizeMult = 0.7;
-        public double twinPullMult = 1.5;
-        public double twinCaptureRadiusPx = 24;
-        [Tooltip("The ribbon the second black hole leaves: seconds (0 = none), width at the head (px) and color; x effect intensity.")]
-        public double twinTrailSec = 0.5;
-        public double twinTrailWidthPx = 6;
-        public Color twinTrailColor = new Color(0.6f, 0.7f, 1f, 0.8f);
-
         [Header("Look")]
         [Tooltip("The gravity source wears GameParams.blackHoleLook (the ending's black hole, accretion disc and all) at this diameter (px) while it is open.")]
         public double sizePx = 56;
@@ -446,9 +387,6 @@ namespace Incremental
         /// <summary>Seconds the black hole is open after the ability_duration nodes.</summary>
         public double Duration(in AbilityLevel lv) => durationSec + Math.Max(0.0, lv.duration);
 
-        /// <summary>24 §21.2: evolved, the cooldown is twinCooldownSec.</summary>
-        public override double BaseCooldown(in AbilityLevel lv) => lv.evolved ? twinCooldownSec : cooldownSec;
-
         public override Ability CreateRuntime() => new BlackHoleAbility();
 
         public override bool Uses(string statId) => statId == StatIds.AbilityDuration || statId == StatIds.AbilityCooldown;
@@ -467,13 +405,6 @@ namespace Incremental
             if (flashAlpha < 0 || flashAlpha > 1 || flashRiseSec < 0) r.Errors.Add(Where + " flashAlpha must be within 0..1 and flashRiseSec >= 0.");
             if (full.duration > 0 && cooldownSec <= durationSec + full.duration + inhaleSec)
                 r.Warnings.Add(Where + " is open longer than its cooldown with every node bought, so it would never close.");
-            if (!(twinCooldownSec > 0)) r.Errors.Add(Where + " twinCooldownSec must be > 0: it is the evolved form's cooldown (24 §21.2).");
-            if (twinOrbitShare < 0 || !(twinOrbitSec > 0)) r.Errors.Add(Where + " twinOrbitShare must be >= 0 and twinOrbitSec > 0 (24 §21.2).");
-            if (!(twinSizeMult > 0) || twinPullMult < 0 || twinCaptureRadiusPx < 0)
-                r.Errors.Add(Where + " twinSizeMult must be > 0 and twinPullMult, twinCaptureRadiusPx >= 0 (24 §21.2).");
-            if (twinTrailSec < 0 || twinTrailWidthPx < 0) r.Errors.Add(Where + " twinTrailSec and twinTrailWidthPx must be >= 0.");
-            if (full.evolved && twinCooldownSec <= durationSec + full.duration + inhaleSec)
-                r.Warnings.Add(Where + " evolved, is open longer than twinCooldownSec with every node bought, so it would never close.");
         }
     }
 
@@ -514,13 +445,13 @@ namespace Incremental
         [Tooltip("Seconds the multipliers take to come in when a crystal is absorbed, and to go when the buff ends.")]
         public double rampSec = 0.3;
 
-        [Header("Evolved: 공명 (24 §21.2)")]
-        [Tooltip("Crystals per cooldown once evolved, placed at least resonanceSpreadPx apart, and how many absorptions stack while " +
-                 "the buff is on: each stack adds the multipliers once more, radius x(1 + (radiusMult - 1) x stacks). " +
-                 "Three stacks of ring 7's x1.65 are x2.95: the gravity ring over half the screen.")]
-        public int resonanceCount = 3;
-        public int resonanceMaxStacks = 3;
-        public double resonanceSpreadPx = 160;
+        [Header("Evolved: 공명 (24 §21.2; 10/8: 간격 단축, 2중첩)")]
+        [Tooltip("Evolved, a crystal appears every this many seconds of holding instead of cooldownSec (still one at a time), and " +
+                 "absorptions stack while the buff is on, up to resonanceMaxStacks: each stack adds the multipliers once more, " +
+                 "radius x(1 + (radiusMult - 1) x stacks); two stacks of ring 7's x1.65 are x2.3. (Three at once and three stacks " +
+                 "were tried in the 7th pass and rejected on 10/8 as too much.)")]
+        public double resonanceCooldownSec = 5;
+        public int resonanceMaxStacks = 2;
 
         [Header("Look")]
         [Tooltip("The crystal: a diamond this tall (px), its color, and the soft glow around it (diameter px, alpha; the glow follows the effect intensity).")]
@@ -552,6 +483,9 @@ namespace Incremental
         /// <summary>The pull multiplier after the ability_power nodes.</summary>
         public double PullMult(in AbilityLevel lv) => pullMult + Math.Max(0.0, lv.power) * pullPerPower;
 
+        /// <summary>24 §21.2 (10/8): evolved, a crystal comes every resonanceCooldownSec of holding instead of cooldownSec.</summary>
+        public override double BaseCooldown(in AbilityLevel lv) => lv.evolved ? resonanceCooldownSec : cooldownSec;
+
         public override Ability CreateRuntime() => new CrystalAbility();
 
         public override bool Uses(string statId) => statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown;
@@ -574,8 +508,10 @@ namespace Incremental
             if (glowAlpha < 0 || glowAlpha > 1) r.Errors.Add(Where + " glowAlpha must be within 0..1.");
             if (haloStrength < 0 || pulseScale < 0 || !(pulseSec > 0)) r.Errors.Add(Where + " haloStrength and pulseScale must be >= 0 and pulseSec > 0.");
             if (flashSec < 0) r.Errors.Add(Where + " flashSec must be >= 0.");
-            if (resonanceCount < 1 || resonanceMaxStacks < 1) r.Errors.Add(Where + " resonanceCount and resonanceMaxStacks must be >= 1 (24 §21.2).");
-            if (resonanceSpreadPx < 0) r.Errors.Add(Where + " resonanceSpreadPx must be >= 0.");
+            if (!(resonanceCooldownSec > 0)) r.Errors.Add(Where + " resonanceCooldownSec must be > 0: it is the evolved form's cooldown (24 §21.2).");
+            if (resonanceMaxStacks < 1) r.Errors.Add(Where + " resonanceMaxStacks must be >= 1 (24 §21.2).");
+            if (full.evolved && resonanceCooldownSec >= buffSec)
+                r.Warnings.Add(Where + " evolved, the next crystal comes only after the buff has ended, so the stacks never build.");
             if (lifeSec >= cooldownSec)
                 r.Warnings.Add(Where + " waits longer than its cooldown, so a crystal can still be there when the next is due; the next waits for it.");
         }

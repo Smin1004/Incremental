@@ -12,15 +12,8 @@ namespace Incremental
     /// the swirl: the whole screen winds in. What is pulled is excited (24 §8) and is captured the normal way, which
     /// 24 §19.2 spreads out. At the end a flash (the ending's, ScreenFlash) and the gravity source is itself again.
     ///
-    /// 24 §21.2 특이점, the evolved form: the cooldown is twinCooldownSec, and while the hole is open a second black hole
-    /// circles the gravity source at twinOrbitShare gravity radii, once in twinOrbitSec, pulling everything as the first
-    /// does (x twinPullMult) and capturing what comes within twinCaptureRadiusPx of it for the body being made, while
-    /// holding, as the gravity source does. Two attractors, one of them on the move: the whole screen is whipped round
-    /// in a figure of eight and wound in.
-    ///
-    /// The darkening and the flash follow the effect intensity and are gone at 0; the look of the gravity source, the
-    /// second black hole and the pull are the ability itself and stay (its ribbon follows the intensity). Everything it
-    /// reads is its row of the AbilityTable.
+    /// The darkening and the flash follow the effect intensity and are gone at 0; the look of the gravity source and the
+    /// pull are the ability itself and stay. Everything it reads is its row of the AbilityTable.
     /// </summary>
     public sealed class BlackHoleAbility : Ability
     {
@@ -28,9 +21,6 @@ namespace Incremental
         const int DarkSortingOrder = 40;
         /// <summary>The release flash, just over the ending's (60).</summary>
         const int FlashSortingOrder = 61;
-        /// <summary>The second black hole: with the forming body (11), over the dust, the satellites and the rings.</summary>
-        const int TwinSortingOrder = 11;
-        const double TwoPi = Math.PI * 2.0;
 
         enum Phase { Off, Inhale, Hole, Release }
 
@@ -39,19 +29,12 @@ namespace Incremental
         double age;
         /// <summary>This trigger's black hole length, the row's seconds plus the duration nodes.</summary>
         double duration;
-        int capturedFrom, twinCapturedFrom;
+        int capturedFrom;
         ScreenFlash flash;
         MeshRenderer dark;
         Mesh darkMesh;
         readonly Vector3[] darkVerts = new Vector3[8];
         readonly Color[] darkColors = new Color[8];
-        /// <summary>24 §21.2: the second black hole: whether this trigger has one, its orbit angle, where it is and its orbit radius (world units).</summary>
-        PlanetVisual twin;
-        TrailRenderer twinTrail;
-        bool twinOn, twinShown;
-        double twinAngle;
-        Vector2 twinPos;
-        float twinRadius;
 
         BlackHoleDef D => root.abilityTable.blackHole;
 
@@ -59,9 +42,6 @@ namespace Incremental
 
         /// <summary>True while the black hole itself is on (after the inhale, before the release): for checks and the perf bench.</summary>
         public bool HoleOpen => phase == Phase.Hole;
-        /// <summary>24 §21.2: true while the second black hole is out, and where it is, world units.</summary>
-        public bool TwinOpen => twinOn && phase == Phase.Hole;
-        public Vector2 TwinPosition => twinPos;
 
         /// <summary>One at a time: a charge that fills during one waits for it to finish.</summary>
         protected override bool Ready => phase == Phase.Off;
@@ -99,23 +79,6 @@ namespace Incremental
             dark.sortingOrder = DarkSortingOrder;
             UIBuilder.UseWhiteTexture(dark);
             dark.enabled = false;
-
-            // 24 §21.2: the second black hole wears the look the first does, with a ribbon behind it (on a child of its
-            // own: a GameObject holds one renderer).
-            twin = PlanetVisual.Create("BlackHoleTwin", parent, root.planetMaterial, TwinSortingOrder);
-            var ribbon = new GameObject("Ribbon");
-            ribbon.transform.SetParent(twin.transform, false);
-            twinTrail = ribbon.AddComponent<TrailRenderer>();
-            if (root.unlitMaterial != null) twinTrail.sharedMaterial = root.unlitMaterial;
-            twinTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            twinTrail.receiveShadows = false;
-            twinTrail.alignment = LineAlignment.TransformZ;
-            twinTrail.textureMode = LineTextureMode.Stretch;
-            twinTrail.widthCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
-            twinTrail.sortingOrder = TwinSortingOrder - 1;
-            twinTrail.autodestruct = false;
-            UIBuilder.UseWhiteTexture(twinTrail);
-            twin.gameObject.SetActive(false);
         }
 
         protected override void Trigger(in EffectiveStats s)
@@ -125,22 +88,10 @@ namespace Incremental
             age = 0;
             duration = Math.Max(0.0, d.Duration(Level));
             capturedFrom = root.Dust.CapturedCount;
-            twinCapturedFrom = root.Dust.ForceCapturedCount;
-            // 24 §21.2: evolved, the second black hole comes with it, starting anywhere on its circle.
-            twinOn = Level.evolved;
-            twinAngle = UnityEngine.Random.value * TwoPi;
-            if (twinOn)
-            {
-                twin.SetLook(p.blackHoleLook, UnityEngine.Random.value, p.planetAxisPitchDeg);
-                twin.SetLightDirection(new Vector2(0.45f, 0.9f).normalized);
-                twin.SetFade(1f);
-            }
             Log("fired at " + RunClock + ": inhale " + InhaleEnd.ToString("0.##") + "s (dust slows to x" + d.slowFactor.ToString("0.##") +
                 "), black hole " + duration.ToString("0.##") + "s (" + d.durationSec.ToString("0.##") + " + " + Level.duration.ToString("0.##") +
                 " from the tree), pull x" + d.pullMult.ToString("0.##") + " over " + (root.Dust.Count - root.Dust.OutsideCount) + " dust on screen and " +
-                root.Dust.OutsideCount + " outside, vortex x" + d.vortexMult.ToString("0.##") + ", release " + d.releaseSec.ToString("0.##") + "s" +
-                (twinOn ? "; a second black hole at " + (s.gravityRadius * d.twinOrbitShare).ToString("F0") + " px, round in " + d.twinOrbitSec.ToString("0.##") +
-                    "s, pull x" + (d.pullMult * d.twinPullMult).ToString("0.##") + ", capturing within " + d.twinCaptureRadiusPx.ToString("F0") + " px" : ""));
+                root.Dust.OutsideCount + " outside, vortex x" + d.vortexMult.ToString("0.##") + ", release " + d.releaseSec.ToString("0.##") + "s");
         }
 
         protected override void Step(double dt, bool holding, in EffectiveStats s)
@@ -161,7 +112,7 @@ namespace Incremental
                 if (phase != Phase.Hole)
                 {
                     phase = Phase.Hole;
-                    Log("open at " + RunClock + " for " + duration.ToString("0.##") + "s" + (twinOn ? ", the second black hole with it" : ""));
+                    Log("open at " + RunClock + " for " + duration.ToString("0.##") + "s");
                 }
                 // The pull over everything dust can be in: the radius is set so that even the far corner of the band
                 // outside the screen is inside the full-strength part of the falloff.
@@ -174,27 +125,13 @@ namespace Incremental
                 float vortex = (float)(p.vortexShare * d.vortexMult);
                 system.AddForce(DustForce.Global(g, radius, accel, vortex));
                 root.Cursor.SetLookOverride(p.blackHoleLook, d.sizePx);
-                if (twinOn)
-                {
-                    // 24 §21.2: the second black hole goes round the gravity source, counter-clockwise like everything
-                    // else, pulling the same everything toward itself and eating what reaches it.
-                    float ppu = (float)p.pixelsPerUnit;
-                    twinAngle = (twinAngle + TwoPi * dt / Math.Max(1e-3, d.twinOrbitSec)) % TwoPi;
-                    twinRadius = (float)(s.gravityRadius * Math.Max(0.0, d.twinOrbitShare) / ppu);
-                    twinPos = g + new Vector2((float)Math.Cos(twinAngle), (float)Math.Sin(twinAngle)) * twinRadius;
-                    float twinReach = radius + twinRadius;
-                    system.AddForce(DustForce.GlobalCapture(twinPos, twinReach, accel * (float)Math.Max(0.0, d.twinPullMult), vortex,
-                        (float)(Math.Max(0.0, d.twinCaptureRadiusPx) / ppu)));
-                }
                 return;
             }
             if (phase == Phase.Hole)
             {
                 phase = Phase.Release;
                 root.Cursor.ClearLookOverride();
-                int twinTook = root.Dust.ForceCapturedCount - twinCapturedFrom;
-                Log("closed at " + RunClock + ": " + (root.Dust.CapturedCount - capturedFrom) + " dust captured since it fired" +
-                    (twinOn ? " (" + twinTook + " of them by the second black hole)" : "") + ", " +
+                Log("closed at " + RunClock + ": " + (root.Dust.CapturedCount - capturedFrom) + " dust captured since it fired, " +
                     (root.Dust.Count - root.Dust.OutsideCount) + " on screen and " + root.Dust.OutsideCount + " outside it now");
             }
             if (age >= ReleaseEnd) End();
@@ -203,19 +140,10 @@ namespace Incremental
         void End()
         {
             phase = Phase.Off;
-            twinOn = false;
             root.Dust.SpeedMul = 1f;
             root.Cursor.ClearLookOverride();
             flash.Hide();
             if (dark.enabled) dark.enabled = false;
-            HideTwin();
-        }
-
-        void HideTwin()
-        {
-            if (!twinShown) return;
-            twinShown = false;
-            twin.gameObject.SetActive(false);
         }
 
         protected override void OnClear()
@@ -227,9 +155,6 @@ namespace Incremental
         public override void Render(bool show, float lead)
         {
             float intensity = root.EffectIntensity;
-            var d = D;
-            RenderTwin(show, lead, d, intensity);
-
             bool on = show && phase != Phase.Off && intensity > 0f;
             if (!on)
             {
@@ -237,6 +162,7 @@ namespace Incremental
                 flash.Hide();
                 return;
             }
+            var d = D;
             double t = age + lead;
 
             // The darkness: in over the inhale, full while the hole is open, out over the release.
@@ -257,42 +183,6 @@ namespace Incremental
             float flashAlpha = env * Mathf.Clamp01((float)d.flashAlpha) * intensity;
             if (flashAlpha > 0f) flash.Show(root.GravityWorld, d.flashColor, flashAlpha);
             else flash.Hide();
-        }
-
-        /// <summary>24 §21.2: the second black hole, where it is a frame's lead on; hidden while paused like the gravity source's own look.</summary>
-        void RenderTwin(bool show, float lead, BlackHoleDef d, float intensity)
-        {
-            bool visible = show && twinOn && phase == Phase.Hole && !root.Paused;
-            if (!visible)
-            {
-                HideTwin();
-                return;
-            }
-            float ppu = (float)p.pixelsPerUnit;
-            double angle = twinAngle + TwoPi * lead / Math.Max(1e-3, d.twinOrbitSec);
-            Vector2 g = root.GravityWorld;
-            Vector2 at = g + new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * twinRadius;
-            twin.transform.position = new Vector3(at.x, at.y, 0f);
-            // 22 §6: it keeps the floor the bodies keep as the camera pulls back, like the first.
-            float sizePx = (float)(d.sizePx * Math.Max(0.05, d.twinSizeMult));
-            float diameter = (float)(root.RunBodyPx(sizePx) / ppu);
-            twin.SetDiameter(diameter);
-            float scale = diameter / Mathf.Max(1e-6f, sizePx / ppu);
-            bool ribbon = d.twinTrailSec > 0 && d.twinTrailWidthPx > 0 && intensity > 0f;
-            twinTrail.time = (float)d.twinTrailSec;
-            twinTrail.widthMultiplier = (float)(d.twinTrailWidthPx / ppu) * scale;
-            Color rc = d.twinTrailColor;
-            rc.a *= intensity;
-            twinTrail.startColor = rc;
-            twinTrail.endColor = new Color(rc.r, rc.g, rc.b, 0f);
-            twinTrail.emitting = ribbon;
-            if (!twinShown)
-            {
-                twinShown = true;
-                twin.gameObject.SetActive(true);
-                // It appears where it is now; without this the ribbon would be drawn from where it last was.
-                twinTrail.Clear();
-            }
         }
 
         /// <summary>The frame over the camera view: black at the edge, clear <paramref name="reach"/> of the half screen in.</summary>

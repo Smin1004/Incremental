@@ -29,9 +29,8 @@ MonoBehaviour:
     pullPerPower: 2
     speedMult: 1.4
     rampSec: 0.3
-    resonanceCount: 3
-    resonanceMaxStacks: 3
-    resonanceSpreadPx: 160
+    resonanceCooldownSec: 5
+    resonanceMaxStacks: 2
     sizePx: 26
     color: {r: 1, g: 0.86, b: 0.45, a: 1}
     glowPx: 90
@@ -46,14 +45,11 @@ MonoBehaviour:
   implode:
     id: implode
     unlockRing: 4
-    cooldownSec: 14
+    cooldownSec: 20
     pullSpeedPx: 260
     rangeScreenStart: 0.4
     rangeMinRadii: 1.5
     ringSec: 0.5
-    chainCount: 3
-    chainGapSec: 0.35
-    chainCooldownSec: 9
     ringWidthPx: 4
     ringColor: {r: 0.72, g: 0.88, b: 1, a: 0.85}
     ringFadeSec: 0.25
@@ -72,17 +68,6 @@ MonoBehaviour:
     pullShare: 1.4
     towRadiusShare: 0.15
     towRate: 6
-    chainReachPx: 40
-    chainPullPx: 900
-    snapRadiusShare: 0.8
-    snapSpeedPx: 420
-    snapFlashSec: 0.3
-    chainWidthPx: 3
-    chainGlowWidthPx: 10
-    chainColor: {r: 0.75, g: 0.9, b: 1, a: 1}
-    chainGlowAlpha: 0.35
-    chainSegments: 14
-    chainJitterPx: 12
     dotPx: 10
     glowPx: 44
     color: {r: 0.82, g: 0.93, b: 1, a: 1}
@@ -107,9 +92,7 @@ MonoBehaviour:
     lookTier: 2
     sizePx: 40
     tailLength: 9
-    showerCount: 5
-    showerGapSec: 0.3
-    showerJitterDeg: 15
+    showerCooldownSec: 5
     pathTries: 16
   blackHole:
     id: blackhole
@@ -121,15 +104,6 @@ MonoBehaviour:
     pullMult: 2.5
     vortexMult: 2
     releaseSec: 0.4
-    twinCooldownSec: 25
-    twinOrbitShare: 1
-    twinOrbitSec: 3
-    twinSizeMult: 0.7
-    twinPullMult: 1.5
-    twinCaptureRadiusPx: 24
-    twinTrailSec: 0.5
-    twinTrailWidthPx: 6
-    twinTrailColor: {r: 0.6, g: 0.7, b: 1, a: 0.8}
     sizePx: 56
     darkenAlpha: 0.45
     darkenReach: 0.7

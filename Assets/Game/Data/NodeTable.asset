@@ -1069,21 +1069,6 @@ MonoBehaviour:
     prereqs: []
     angleDeg: 240
     enabled: 1
-  - id: evolve_implode
-    kind: 4
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 580000
-    growth: 1
-    tier: 0
-    dustKindId: 
-    abilityId: implode
-    minTier: 8
-    prereqs:
-    - r5_implode_power
-    angleDeg: 250
-    enabled: 1
   - id: gate_t9
     kind: 1
     statId: 
@@ -1189,21 +1174,6 @@ MonoBehaviour:
     prereqs:
     - ability_meteor
     angleDeg: 240
-    enabled: 1
-  - id: evolve_satellite
-    kind: 4
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 6000000
-    growth: 1
-    tier: 0
-    dustKindId: 
-    abilityId: satellite
-    minTier: 9
-    prereqs:
-    - r7_satellite_count
-    angleDeg: 250
     enabled: 1
   - id: gate_t10
     kind: 1
@@ -1413,21 +1383,6 @@ MonoBehaviour:
     prereqs:
     - ability_blackhole
     angleDeg: 240
-    enabled: 1
-  - id: evolve_blackhole
-    kind: 4
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 340000000
-    growth: 1
-    tier: 0
-    dustKindId: 
-    abilityId: blackhole
-    minTier: 11
-    prereqs:
-    - r11_blackhole_duration
-    angleDeg: 250
     enabled: 1
   ringCostMult:
   - 1

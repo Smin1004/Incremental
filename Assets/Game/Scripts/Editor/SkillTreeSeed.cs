@@ -204,11 +204,10 @@ namespace Incremental.EditorTools
         {
             switch (ring)
             {
+                // 10/8: the implode (ring 8), satellite (ring 9) and black hole (ring 11) evolutions of the 7th pass were
+                // rejected; those rings have no evolve node until a new design comes.
                 case 7: return AbilityEvolve("crystal", 7, "r3_crystal_power");
-                case 8: return AbilityEvolve("implode", 8, "r5_implode_power");
-                case 9: return AbilityEvolve("satellite", 9, "r7_satellite_count");
                 case 10: return AbilityEvolve("meteor", 10, "r9_meteor_amount");
-                case 11: return AbilityEvolve("blackhole", 11, "r11_blackhole_duration");
                 default: return null;
             }
         }
@@ -381,7 +380,6 @@ namespace Incremental.EditorTools
             n.Add(Stat("r11_stamina", 11, StaminaAxis, stamina, 9, 0, StatCost(11), EndlessGrowth, "r10_stamina"));
             // 24 §19.1: the black hole's duration node, the one capped node of ring 11. 24 §21.2: and its evolution.
             n.Add(AbilityNode(11));
-            n.Add(EvolveNode(11));
             return n;
         }
 
