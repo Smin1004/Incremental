@@ -17,7 +17,7 @@ MonoBehaviour:
   dustCap: 300
   driftSpeed: 22
   dustMass: 1
-  gravityRadius: 180
+  gravityRadius: 150
   pullAccel: 600
   dustMaxSpeed: 400
   captureRadius: 30

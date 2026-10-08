@@ -20,7 +20,10 @@ namespace Incremental.EditorTools
     /// 40%. That last one is what turns throughput into bodies, which is the 21 §4 problem.
     /// 24 §6: the ability axis is a new one at 240°, the widest gap left (between the stamina and the sale axes).
     /// Rings 4, 6 and 8 unlock an ability and the ring after each raises it. 24 §19.1: ring 10 unlocks the black hole
-    /// and ring 11 lengthens it.
+    /// and ring 11 lengthens it. 24 §20.2: ring 2 unlocks the amplifier crystal and ring 3 raises it.
+    /// 24 §20.3: the radius nodes were cut (0.15 / 0.15 / 0.20 / 0.20 / 0.25 -> 0.10 / 0.10 / 0.14 / 0.14 / 0.17, x2.9 -> x2.3)
+    /// with the base radius 180 -> 150, so the gravity ring is 28% of the screen height at ring 1 and 48% at ring 10;
+    /// the crystal buff brings it back up for a while.
     /// </summary>
     public static class SkillTreeSeed
     {
@@ -305,7 +308,7 @@ namespace Incremental.EditorTools
             // Ring 2 (I = 96): dust cap and gravity radius arrive ("dust surge", 10 §4.3); the planet axis starts here.
             n.Add(Ax("r2_spawn", 2, DustAxis - Pair, spawn, 2, 2, "r1_spawn"));
             n.Add(Ax("r2_cap", 2, DustAxis + Pair, cap, 100, 2, "r1_spawn"));
-            n.Add(Ax("r2_radius", 2, GravityAxis + Pair, radius, 0.15, 2, "r1_pull"));
+            n.Add(Ax("r2_radius", 2, GravityAxis + Pair, radius, 0.10, 2, "r1_pull"));
             n.Add(FollowNode(2));
             n.Add(Ax("r2_sale", 2, SaleAxis, sale, 0.25, 2, "r1_sale"));
             n.Add(Ax("r2_stamina", 2, StaminaAxis, stamina, 6, 2, "r1_stamina"));
@@ -323,19 +326,19 @@ namespace Incremental.EditorTools
             n.Add(Gate(4));
 
             // Rings 4-10: one node per axis (two levels each) + the dust kind axis node; prereq = the same axis in the ring before.
-            Ring(n, 4, (spawn, 3, DustAxis, "r3_start"), (radius, 0.15, GravityAxis + Pair, "r3_pull"), (threshold, 0.12, PlanetAxis, "r3_threshold"),
+            Ring(n, 4, (spawn, 3, DustAxis, "r3_start"), (radius, 0.10, GravityAxis + Pair, "r3_pull"), (threshold, 0.12, PlanetAxis, "r3_threshold"),
                 (sale, 0.50, SaleAxis, "r3_sale"), (stamina, 6, StaminaAxis, "r3_drain"));
             Ring(n, 5, (cap, 300, DustAxis, "r4_spawn"), (pull, 0.40, GravityAxis, "r4_radius"), (threshold, 0.10, PlanetAxis, "r4_threshold"),
                 (sale, 0.50, SaleAxis, "r4_sale"), (drain, 0.05, StaminaAxis, "r4_stamina"));
-            Ring(n, 6, (spawn, 5, DustAxis, "r5_cap"), (radius, 0.20, GravityAxis + Pair, "r5_pull"),
+            Ring(n, 6, (spawn, 5, DustAxis, "r5_cap"), (radius, 0.14, GravityAxis + Pair, "r5_pull"),
                 (threshold, 0.06, PlanetAxis, "r5_threshold"), (sale, 1.00, SaleAxis, "r5_sale"), (stamina, 9, StaminaAxis, "r5_drain"));
             Ring(n, 7, (cap, 500, DustAxis, "r6_spawn"), (pull, 0.50, GravityAxis, "r6_radius"),
                 (threshold, 0.04, PlanetAxis, "r6_threshold"), (sale, 1.00, SaleAxis, "r6_sale"), (drain, 0.05, StaminaAxis, "r6_stamina"));
-            Ring(n, 8, (spawn, 8, DustAxis - Pair, "r7_cap"), (start, 200, DustAxis + Pair, "r7_cap"), (radius, 0.20, GravityAxis + Pair, "r7_pull"),
+            Ring(n, 8, (spawn, 8, DustAxis - Pair, "r7_cap"), (start, 200, DustAxis + Pair, "r7_cap"), (radius, 0.14, GravityAxis + Pair, "r7_pull"),
                 (sale, 2.00, SaleAxis, "r7_sale"), (stamina, 12, StaminaAxis, "r7_drain"));
             Ring(n, 9, (cap, 800, DustAxis, "r8_spawn|r8_start"), (pull, 0.60, GravityAxis, "r8_radius"),
                 (sale, 2.00, SaleAxis, "r8_sale"), (drain, 0.05, StaminaAxis, "r8_stamina"));
-            Ring(n, 10, (spawn, 12, DustAxis, "r9_cap"), (radius, 0.25, GravityAxis + Pair, "r9_pull"),
+            Ring(n, 10, (spawn, 12, DustAxis, "r9_cap"), (radius, 0.17, GravityAxis + Pair, "r9_pull"),
                 (sale, 4.00, SaleAxis, "r9_sale"), (stamina, 15, StaminaAxis, "r9_drain"));
 
             // Ring 11: endless nodes with unlimited levels. The dust kind axis ends at ring 10, so the third endless node

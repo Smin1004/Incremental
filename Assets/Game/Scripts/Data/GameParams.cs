@@ -104,7 +104,7 @@ namespace Incremental
         public double dustMass = 1;
 
         [Header("Gravity (spec §6)")]
-        public double gravityRadius = 180;    // px
+        public double gravityRadius = 150;    // px (24 §20.3: 180 -> 150; the amplifier crystal buff makes up for it for a while)
         public double pullAccel = 600;        // px/s^2, upgrade target
         public double dustMaxSpeed = 400;     // px/s
         public double captureRadius = 30;     // px

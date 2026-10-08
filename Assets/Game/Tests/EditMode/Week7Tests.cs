@@ -447,7 +447,12 @@ namespace Incremental.Tests
             var t = ProjectNodes();
             var bare = Stats.Compute(p, t, new MetaState());
             var full = Stats.Compute(p, t, AllNodes(t));
-            Assert.Greater(full.gravityRadius, bare.gravityRadius * 2.5, "22 §8: the gravity radius grows more than before");
+            // 24 §20.3 cut the radius curve (x2.9 -> x2.3), so the growth is read from the radius nodes instead of a fixed ratio.
+            double radiusNodes = 0;
+            foreach (var n in t.nodes)
+                if (n != null && n.enabled && n.kind == NodeKind.Stat && n.statId == StatIds.GravityRadius && n.maxLevel > 0)
+                    radiusNodes += n.effectPerLevel * n.maxLevel;
+            Assert.AreEqual(bare.gravityRadius * (1 + radiusNodes), full.gravityRadius, 1e-6, "the gravity radius grows by what the radius nodes add up to");
             Assert.Greater(full.dustMassAvg, bare.dustMassAvg * 30, "the dust kinds carry most of the late throughput");
             Assert.Less(full.staminaMax, bare.staminaMax * 2.5, "the stamina axis grows far less than the 6.5x of 20 §8");
             Assert.AreEqual(22, p.driftSpeed, Eps, "22 §8: 15 -> 22");

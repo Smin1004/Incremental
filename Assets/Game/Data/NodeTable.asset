@@ -116,7 +116,7 @@ MonoBehaviour:
   - id: r2_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.15
+    effectPerLevel: 0.1
     maxLevel: 2
     baseCost: 8.4
     growth: 1.5
@@ -341,7 +341,7 @@ MonoBehaviour:
   - id: r4_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.15
+    effectPerLevel: 0.1
     maxLevel: 2
     baseCost: 290
     growth: 1.5
@@ -625,7 +625,7 @@ MonoBehaviour:
   - id: r6_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.2
+    effectPerLevel: 0.14
     maxLevel: 2
     baseCost: 7900
     growth: 1.5
@@ -924,7 +924,7 @@ MonoBehaviour:
   - id: r8_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.2
+    effectPerLevel: 0.14
     maxLevel: 2
     baseCost: 290000
     growth: 1.5
@@ -1164,7 +1164,7 @@ MonoBehaviour:
   - id: r10_radius
     kind: 0
     statId: gravity_radius
-    effectPerLevel: 0.25
+    effectPerLevel: 0.17
     maxLevel: 2
     baseCost: 16000000
     growth: 1.5
