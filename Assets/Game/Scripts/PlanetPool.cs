@@ -18,6 +18,8 @@ namespace Incremental
             public float fromDiameter;
             public float age;
             public bool active;
+            /// <summary>24 §21.3: the pop of this body, x GameParams.planetPopScale (1 for an ordinary body).</summary>
+            public float pop;
         }
 
         Slot[] slots = new Slot[0];
@@ -61,12 +63,17 @@ namespace Incremental
         /// Same, at <paramref name="scale"/> of the tier's display size: a fragment is drawn smaller than the body it
         /// fell off (20 §5). It leaves for the vanishing point like any other body.
         /// </summary>
-        public void Show(Vector2 pos, CelestialTier tier, float seed, double fromDiameterPx, double scale)
+        public void Show(Vector2 pos, CelestialTier tier, float seed, double fromDiameterPx, double scale) =>
+            Show(pos, tier, seed, fromDiameterPx, scale, 1.0);
+
+        /// <summary>Same, with its pop x <paramref name="popMult"/>: a bundle (24 §21.3) lands harder than one body.</summary>
+        public void Show(Vector2 pos, CelestialTier tier, float seed, double fromDiameterPx, double scale, double popMult)
         {
             ref Slot s = ref slots[next];
             next = (next + 1) % slots.Length;
             s.active = true;
             s.age = 0f;
+            s.pop = Mathf.Max(0f, (float)popMult);
             s.start = new Vector3(pos.x, pos.y, 0f);
             // 22 §6: the body keeps its world size as the camera pulls back, but never shrinks past bodyMinScreenPx
             // on screen, so an asteroid or a fragment is still a body at ring 11 and not a dot.
@@ -112,7 +119,7 @@ namespace Incremental
             float popDur = (float)p.planetPopDurationSec;
             float hold = (float)p.planetHoldSec;
             float depart = Mathf.Max(0.01f, (float)p.planetDepartSec);
-            float pop = (float)p.planetPopScale * root.EffectIntensity;
+            float pop = (float)p.planetPopScale * root.EffectIntensity * (s.pop > 0f ? s.pop : 1f);
 
             float tPop = popDur > 0f ? Mathf.Clamp01(s.age / popDur) : 1f;
             float baseD = Mathf.Lerp(s.fromDiameter, s.diameter, tPop);

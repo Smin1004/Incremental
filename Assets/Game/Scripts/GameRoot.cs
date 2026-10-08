@@ -532,6 +532,8 @@ namespace Incremental
             runStartStats = Effective;
             Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
             bodyGapLeft = 0;
+            LastBundleCount = 0;
+            LastBundleAt = -1;
 
             // 22 §6: the run is drawn at the world scale, and coming from the result screen the camera is not there
             // yet. It goes on before anything is placed, so the pointer is read and the dust laid out for the area the
@@ -724,6 +726,10 @@ namespace Incremental
         /// </summary>
         double bodyGapLeft;
 
+        /// <summary>24 §21.3: the last bundle of this run, for captures and checks: how many bodies it was worth, and when (−1 = none yet).</summary>
+        public int LastBundleCount { get; private set; }
+        public double LastBundleAt { get; private set; } = -1;
+
         /// <summary>
         /// Creates and sells planets of this tier from the current mass. At the highest unlocked tier the mass makes
         /// floor(mass / threshold) planets, so dust mass beyond one threshold still pays (12 §10-2); below it, one planet.
@@ -735,16 +741,20 @@ namespace Incremental
         {
             double count = 1;
             double keep = 0;
-            if (tier.tier == Meta.unlockedMaxTier)
+            bool bundle = false;
+            double th = tier.tier == Meta.unlockedMaxTier ? Threshold(tier) : 0;
+            if (th > 0 && oneAtATime)
             {
-                double th = Threshold(tier);
-                if (th > 0 && oneAtATime)
+                // 24 §21.3 묶음 완성: mass that has piled up to bundleAt thresholds becomes one body worth all of them.
+                if (gameParams.bundleAt > 0 && Run.mass >= th * gameParams.bundleAt)
                 {
-                    keep = Math.Max(0.0, Run.mass - th);
-                    bodyGapLeft = gameParams.bodyMinIntervalSec;
+                    count = Math.Max(1.0, Math.Floor(Run.mass / th));
+                    bundle = count > 1;
                 }
-                else if (th > 0) count = Math.Max(1.0, Math.Floor(Run.mass / th));
+                keep = Math.Max(0.0, Run.mass - th * count);
+                bodyGapLeft = gameParams.bodyMinIntervalSec;
             }
+            else if (th > 0) count = Math.Max(1.0, Math.Floor(Run.mass / th));
             Run.runIncome += count * Stats.SaleIncome(tier, Effective);
             int idx = tier.tier - 1;
             if (idx >= 0 && idx < Run.planetCounts.Length)
@@ -762,8 +772,19 @@ namespace Incremental
                 SupernovaRun.Begin(GravityWorld, tier, bodySeed, bodyPx);
                 UnityEngine.Debug.Log($"[Ending] tier {tier.tier} created in run {Meta.runCount}: the ending starts");
             }
+            else if (bundle)
+            {
+                // 24 §21.3: the bundle is one body, bigger for every body in it, landing harder, with a big x N over it.
+                double scale = Math.Min(gameParams.bundleSizeMax, 1.0 + Math.Max(0.0, gameParams.bundleSizeGrowth) * (count - 1));
+                Planets.Show(GravityWorld, tier, bodySeed, bodyPx, scale, gameParams.bundlePopMult);
+                Hud.ShowPlanetCount(Cam.WorldToScreenPoint(GravityWorld), tier.sizePx * scale, count, gameParams.bundleLabelScale);
+                LastBundleCount = (int)count;
+                LastBundleAt = Run.elapsed;
+                if (abilityTable == null || abilityTable.logEvents)
+                    UnityEngine.Debug.Log($"[Bundle] x{count:0} of tier {tier.tier} at {Run.elapsed:F1}s: {count:0} thresholds of {th:F0} held, drawn x{scale:0.##}, {keep:F0} mass kept");
+            }
             else Planets.Show(GravityWorld, tier, bodySeed, bodyPx);
-            if (count > 1) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(GravityWorld), tier.sizePx, count);
+            if (count > 1 && !bundle) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(GravityWorld), tier.sizePx, count);
             Run.mass = keep;
             // The kept mass has crossed its thresholds once already (20 §5 rolled for them), so they are not crossed again.
             Run.crossedTier = 0;

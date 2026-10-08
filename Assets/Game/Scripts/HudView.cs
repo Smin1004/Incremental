@@ -129,13 +129,17 @@ namespace Incremental
         public void SetCountLifetime(double seconds) => countLifetime = Mathf.Max(0.1f, (float)seconds);
 
         /// <summary>"×N" above a planet created N at once (12 §10-2). screenPos in pixels, sizePx = planet diameter.</summary>
-        public void ShowPlanetCount(Vector3 screenPos, double sizePx, double count)
+        public void ShowPlanetCount(Vector3 screenPos, double sizePx, double count) => ShowPlanetCount(screenPos, sizePx, count, 1.0);
+
+        /// <summary>Same, with the label x <paramref name="scale"/>: a bundle's (24 §21.3) is big.</summary>
+        public void ShowPlanetCount(Vector3 screenPos, double sizePx, double count, double scale)
         {
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(CanvasRect, screenPos, null, out var local)) return;
             int i = nextCountLabel;
             nextCountLabel = (nextCountLabel + 1) % CountLabelPool;
             var t = countLabels[i];
             t.text = string.Format(UIStrings.PlanetMulti, Fmt.Num(count));
+            t.transform.localScale = Vector3.one * Mathf.Max(0.1f, (float)scale);
             ((RectTransform)t.transform).anchoredPosition = local + new Vector2(0f, (float)sizePx * 0.5f + 8f);
             t.color = ui.Direction.text;
             countAges[i] = 0f;

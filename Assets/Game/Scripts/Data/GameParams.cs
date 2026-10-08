@@ -139,6 +139,15 @@ namespace Incremental
                  "is over, so the throughput is about the same and a burst of completions is spread out evenly. " +
                  "0 = as before: every threshold's worth of mass becomes a body in the same tick. The run's end follows the old rule either way.")]
         public double bodyMinIntervalSec = 0.4;
+        [Tooltip("24 §21.3 묶음 완성: while holding at the highest tier, once the mass held has piled up to this many thresholds, the " +
+                 "next completion is one body worth all of them: income x N, N bodies in the result, drawn bigger (+bundleSizeGrowth " +
+                 "of its size per body past the first, up to x bundleSizeMax) with a bigger pop (planetPopScale x bundlePopMult) and " +
+                 "its x N label x bundleLabelScale. 0 = off: one body per interval, the rest of the mass waits.")]
+        public int bundleAt = 3;
+        public double bundleSizeGrowth = 0.12;
+        public double bundleSizeMax = 2.0;
+        public double bundlePopMult = 1.6;
+        public double bundleLabelScale = 1.6;
 
         [Header("Vortex and trails (22 §5)")]
         [Tooltip("Share of the pull that is turned sideways (counter-clockwise), so dust spirals in instead of falling " +

@@ -569,6 +569,13 @@ namespace Incremental
                 r.Errors.Add("GameParams: maxReduction must be within 0..1 (1 excluded); at 1 the threshold_mult nodes could take " +
                              "the required mass down to 0, and the stamina_drain nodes the drain (24 §17.2).");
             if (!(p.dustCapCeiling > 0)) r.Errors.Add("GameParams: dustCapCeiling must be > 0 (22 §7).");
+            if (p.bundleAt < 0) r.Errors.Add("GameParams: bundleAt must be >= 0 (24 §21.3); 0 switches bundles off.");
+            if (p.bundleSizeGrowth < 0 || !(p.bundleSizeMax >= 1))
+                r.Errors.Add("GameParams: bundleSizeGrowth must be >= 0 and bundleSizeMax >= 1 (24 §21.3); a bundle is never smaller than one body.");
+            if (p.bundlePopMult < 0 || !(p.bundleLabelScale > 0))
+                r.Errors.Add("GameParams: bundlePopMult must be >= 0 and bundleLabelScale > 0 (24 §21.3).");
+            if (p.bundleAt > 0 && !(p.bodyMinIntervalSec > 0))
+                r.Warnings.Add("GameParams: bundleAt is on but bodyMinIntervalSec is 0, so no mass is ever held back and nothing is bundled (24 §21.3).");
             if (p.dustMarginPx < 0) r.Errors.Add("GameParams: dustMarginPx must be >= 0; 0 keeps every dust on screen.");
             if (p.dustMarginCapShare < 0 || p.dustMarginCapShare > 0.5)
                 r.Errors.Add("GameParams: dustMarginCapShare must be within 0..0.5; it is the share of the dust cap kept outside the screen.");
