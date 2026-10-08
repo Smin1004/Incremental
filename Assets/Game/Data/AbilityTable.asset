@@ -29,6 +29,9 @@ MonoBehaviour:
     pullPerPower: 2
     speedMult: 1.4
     rampSec: 0.3
+    resonanceCount: 3
+    resonanceMaxStacks: 3
+    resonanceSpreadPx: 160
     sizePx: 26
     color: {r: 1, g: 0.86, b: 0.45, a: 1}
     glowPx: 90

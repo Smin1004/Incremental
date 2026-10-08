@@ -445,7 +445,8 @@ namespace Incremental
         public double pullInSpeedPx = 700;
 
         [Header("Buff")]
-        [Tooltip("Seconds the amplification lasts. Eating another crystal meanwhile starts these over; the multipliers do not stack.")]
+        [Tooltip("Seconds the amplification lasts. Eating another crystal meanwhile starts these over; the multipliers do not stack " +
+                 "unless the crystal is evolved (공명, 24 §21.2), when each one adds them once more up to resonanceMaxStacks.")]
         public double buffSec = 6;
         [Tooltip("The gravity radius x this while amplified, with only the unlock owned. ability_power adds to it: +0.1 per level in the seed, 1.35 -> 1.65.")]
         public double radiusMult = 1.35;
@@ -457,6 +458,14 @@ namespace Incremental
         public double speedMult = 1.4;
         [Tooltip("Seconds the multipliers take to come in when a crystal is absorbed, and to go when the buff ends.")]
         public double rampSec = 0.3;
+
+        [Header("Evolved: 공명 (24 §21.2)")]
+        [Tooltip("Crystals per cooldown once evolved, placed at least resonanceSpreadPx apart, and how many absorptions stack while " +
+                 "the buff is on: each stack adds the multipliers once more, radius x(1 + (radiusMult - 1) x stacks). " +
+                 "Three stacks of ring 7's x1.65 are x2.95: the gravity ring over half the screen.")]
+        public int resonanceCount = 3;
+        public int resonanceMaxStacks = 3;
+        public double resonanceSpreadPx = 160;
 
         [Header("Look")]
         [Tooltip("The crystal: a diamond this tall (px), its color, and the soft glow around it (diameter px, alpha; the glow follows the effect intensity).")]
@@ -510,6 +519,8 @@ namespace Incremental
             if (glowAlpha < 0 || glowAlpha > 1) r.Errors.Add(Where + " glowAlpha must be within 0..1.");
             if (haloStrength < 0 || pulseScale < 0 || !(pulseSec > 0)) r.Errors.Add(Where + " haloStrength and pulseScale must be >= 0 and pulseSec > 0.");
             if (flashSec < 0) r.Errors.Add(Where + " flashSec must be >= 0.");
+            if (resonanceCount < 1 || resonanceMaxStacks < 1) r.Errors.Add(Where + " resonanceCount and resonanceMaxStacks must be >= 1 (24 §21.2).");
+            if (resonanceSpreadPx < 0) r.Errors.Add(Where + " resonanceSpreadPx must be >= 0.");
             if (lifeSec >= cooldownSec)
                 r.Warnings.Add(Where + " waits longer than its cooldown, so a crystal can still be there when the next is due; the next waits for it.");
         }
