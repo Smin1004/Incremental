@@ -58,7 +58,7 @@ namespace Incremental
 
         // Debug overlay
         /// <summary>{8} = the UI direction id (key U), {9} = the stamina display, a or b (key G), 26 §6.</summary>
-        public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI {8} [U]   스태미나 {9} [G]   노출 억제 {10} [X]";
+        public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7}, 생성 ×{11:0.0})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI {8} [U]   스태미나 {9} [G]   노출 억제 {10} [X]";
         /// <summary>26 §5.5: the toast of the overexposure key. {0} = on / off.</summary>
         public const string ExposureFixToast = "과노출 억제: {0}  (X)";
         /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>

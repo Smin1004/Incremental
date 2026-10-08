@@ -375,7 +375,7 @@ namespace Incremental
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
                     root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
                     root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRingShort : UIStrings.StaminaDisplayBarShort,
-                    root.ExposureFix ? UIStrings.On : UIStrings.Off)
+                    root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost)
                 : string.Empty);
             root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
         }

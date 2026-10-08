@@ -102,6 +102,10 @@ namespace Incremental
         public double dustCap = 300;
         public double driftSpeed = 22;        // px/s (22 §8: 15 -> 22, influx is proportional to it)
         public double dustMass = 1;
+        [Tooltip("10/8: the emptier the field, the faster it refills. The spawn rate (on screen and in the band outside it) is " +
+                 "x(1 + this x (1 - dust / cap)): x1 at the cap, x(1 + this) on an empty screen. Without it an ability that sweeps " +
+                 "the screen clean (수축) left it bare for most of the run. 0 = off.")]
+        public double dustRefillBoost = 3;
 
         [Header("Gravity (spec §6)")]
         public double gravityRadius = 150;    // px (24 §20.3: 180 -> 150; the amplifier crystal buff makes up for it for a while)

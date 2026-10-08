@@ -152,6 +152,8 @@ namespace Incremental
         public Rect Bounds { get; private set; }
         /// <summary>Dust outside the visible area as of the last tick. It counts toward the dust cap like any other.</summary>
         public int OutsideCount { get; private set; }
+        /// <summary>10/8: the spawn rate multiplier of the last tick: 1 at the dust cap, up to 1 + GameParams.dustRefillBoost on an empty screen.</summary>
+        public double SpawnBoost { get; private set; } = 1.0;
         /// <summary>
         /// 24 §8: seconds an excited dust takes to calm down. The ability system hands it over from the AbilityTable every
         /// tick; at 0, which is what it is when there are no abilities, a dust calms down at once.
@@ -501,8 +503,12 @@ namespace Incremental
             }
 
             // Spawn. At the cap the spawn is skipped, not banked.
-            spawnAcc += s.spawnRate * dt;
+            // 10/8: the emptier the field, the faster it refills (x1 at the cap, x(1 + dustRefillBoost) when empty), so an
+            // ability that sweeps the screen clean does not leave it bare for most of the run.
             int cap = (int)s.dustCap;
+            float fill = cap > 0 ? Mathf.Clamp01(count / (float)cap) : 1f;
+            SpawnBoost = 1.0 + Math.Max(0.0, p.dustRefillBoost) * (1f - fill);
+            spawnAcc += s.spawnRate * SpawnBoost * dt;
             while (spawnAcc >= 1.0)
             {
                 spawnAcc -= 1.0;
@@ -515,7 +521,7 @@ namespace Incremental
             if (banded)
             {
                 int budget = MarginBudget(cap);
-                marginAcc += s.spawnRate * Math.Max(0.0, p.dustMarginSpawnShare) * dt;
+                marginAcc += s.spawnRate * SpawnBoost * Math.Max(0.0, p.dustMarginSpawnShare) * dt;
                 while (marginAcc >= 1.0)
                 {
                     marginAcc -= 1.0;

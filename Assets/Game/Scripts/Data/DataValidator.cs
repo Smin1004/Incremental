@@ -579,6 +579,7 @@ namespace Incremental
             if (p.dustMarginPx < 0) r.Errors.Add("GameParams: dustMarginPx must be >= 0; 0 keeps every dust on screen.");
             if (p.dustMarginCapShare < 0 || p.dustMarginCapShare > 0.5)
                 r.Errors.Add("GameParams: dustMarginCapShare must be within 0..0.5; it is the share of the dust cap kept outside the screen.");
+            if (p.dustRefillBoost < 0) r.Errors.Add("GameParams: dustRefillBoost must be >= 0; 0 switches the refill boost off.");
             if (p.dustMarginSpawnShare < 0 || p.dustMarginSpawnShare > 1)
                 r.Errors.Add("GameParams: dustMarginSpawnShare must be within 0..1; it is a share of the spawn rate.");
             if (p.dustMarginPx > 0 && !(p.dustEdgePassSpeedPx > p.driftSpeed))
