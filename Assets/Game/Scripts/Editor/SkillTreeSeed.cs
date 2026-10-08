@@ -193,6 +193,35 @@ namespace Incremental.EditorTools
             }
         }
 
+        /// <summary>24 §21.2: the evolve nodes cost this many times an unlock of their ring, until the balance pass prices them.</summary>
+        const double EvolveCostMult = 2;
+
+        /// <summary>
+        /// 24 §21.2: the evolutions, one per ability, rings 7 to 11 (공명, 연쇄 붕괴, 번개 사슬, 유성우, 특이점), each the
+        /// second node of its ring on the ability arm, beside the arm (Pair), after the ability's upgrade node.
+        /// </summary>
+        static NodeDef EvolveNode(int ring)
+        {
+            switch (ring)
+            {
+                case 7: return AbilityEvolve("crystal", 7, "r3_crystal_power");
+                case 8: return AbilityEvolve("implode", 8, "r5_implode_power");
+                case 9: return AbilityEvolve("satellite", 9, "r7_satellite_count");
+                case 10: return AbilityEvolve("meteor", 10, "r9_meteor_amount");
+                case 11: return AbilityEvolve("blackhole", 11, "r11_blackhole_duration");
+                default: return null;
+            }
+        }
+
+        /// <summary>An ability's evolution (24 §21.2): one level, drawn like an unlock, after the ability's upgrade node.</summary>
+        static NodeDef AbilityEvolve(string ability, int ring, string prereq) =>
+            new NodeDef
+            {
+                id = "evolve_" + ability, kind = NodeKind.AbilityEvolve, abilityId = ability, maxLevel = 1,
+                baseCost = Nice(KindCost(ring) * EvolveCostMult), growth = 1, minTier = ring, prereqs = new List<string> { prereq },
+                angleDeg = AbilityAxis + Pair, enabled = true,
+            };
+
         /// <summary>
         /// An ability's unlock: one level, at the price of a dust kind unlock of that ring (24 §6). It has no prereq
         /// entry. 24 §6 lists the gate of its ring, and the ring being open already means exactly that; naming the
@@ -350,8 +379,9 @@ namespace Incremental.EditorTools
             n.Add(Stat("r11_sale", 11, SaleAxis, sale, 1.00, 0, StatCost(11), EndlessGrowth, "r10_sale"));
             n.Add(Stat("r11_spawn", 11, DustAxis, spawn, 12, 0, StatCost(11), EndlessGrowth, "r10_spawn"));
             n.Add(Stat("r11_stamina", 11, StaminaAxis, stamina, 9, 0, StatCost(11), EndlessGrowth, "r10_stamina"));
-            // 24 §19.1: the black hole's duration node, the one capped node of ring 11.
+            // 24 §19.1: the black hole's duration node, the one capped node of ring 11. 24 §21.2: and its evolution.
             n.Add(AbilityNode(11));
+            n.Add(EvolveNode(11));
             return n;
         }
 
@@ -368,6 +398,8 @@ namespace Incremental.EditorTools
             if (follow != null) n.Add(follow);
             var ability = AbilityNode(ring);
             if (ability != null) n.Add(ability);
+            var evolve = EvolveNode(ring);
+            if (evolve != null) n.Add(evolve);
             if (ring + 1 <= RingCount) n.Add(Gate(ring + 1));
         }
 

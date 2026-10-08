@@ -79,16 +79,29 @@ namespace Incremental
                     r.Errors.Add($"AbilityTable: '{def.id}' unlockRing {def.unlockRing} is outside 1..{c.MaxTier}.");
                 def.Check(Stats.AbilityAt(t, def.id, int.MaxValue), c, r);
 
-                int unlocks = 0;
+                int unlocks = 0, evolves = 0;
                 foreach (var n in t.nodes)
-                    if (n != null && n.IsAbilityUnlock && n.abilityId == def.id) unlocks++;
+                {
+                    if (n == null || n.abilityId != def.id) continue;
+                    if (n.IsAbilityUnlock) unlocks++;
+                    if (n.IsAbilityEvolve) evolves++;
+                }
                 if (unlocks != 1)
                     r.Errors.Add($"NodeTable: ability '{def.id}' has {unlocks} unlock nodes, expected exactly one (24 §8).");
+                if (evolves > 1)
+                    r.Errors.Add($"NodeTable: ability '{def.id}' has {evolves} evolve nodes, expected at most one (24 §21.2).");
+                if (evolves == 1)
+                {
+                    if (!UIStrings.Has(UIStrings.AbilityEvolveKey(def.id)))
+                        r.Errors.Add($"UIStrings: missing key '{UIStrings.AbilityEvolveKey(def.id)}' (evolution name, 24 §21.2).");
+                    if (!UIStrings.Has(UIStrings.AbilityEvolveEffectKey(def.id)))
+                        r.Errors.Add($"UIStrings: missing key '{UIStrings.AbilityEvolveEffectKey(def.id)}' (evolve node line, 24 §21.2).");
+                }
             }
             foreach (var n in t.nodes)
             {
                 if (n == null) continue;
-                bool needsAbility = n.IsAbilityUnlock || (n.kind == NodeKind.Stat && StatIds.NeedsAbility(n.statId));
+                bool needsAbility = n.IsAbilityUnlock || n.IsAbilityEvolve || (n.kind == NodeKind.Stat && StatIds.NeedsAbility(n.statId));
                 if (!needsAbility)
                 {
                     if (!string.IsNullOrEmpty(n.abilityId))
@@ -106,6 +119,12 @@ namespace Incremental
                     if (n.maxLevel != 1) r.Errors.Add($"NodeTable: ability unlock '{n.id}' must have maxLevel 1.");
                     if (n.minTier != def.unlockRing)
                         r.Errors.Add($"NodeTable: '{n.id}' is in ring {n.minTier}, but ability '{def.id}' says ring {def.unlockRing} (24 §6).");
+                }
+                else if (n.IsAbilityEvolve)
+                {
+                    if (n.maxLevel != 1) r.Errors.Add($"NodeTable: ability evolve '{n.id}' must have maxLevel 1 (24 §21.2).");
+                    if (n.minTier < def.unlockRing)
+                        r.Errors.Add($"NodeTable: '{n.id}' is in ring {n.minTier}, before ability '{def.id}' is unlocked in ring {def.unlockRing}.");
                 }
                 else if (!def.Uses(n.statId))
                     r.Warnings.Add($"NodeTable: '{n.id}' raises {n.statId}, which ability '{def.id}' does not read; buying it would do nothing.");

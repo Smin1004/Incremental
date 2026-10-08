@@ -92,6 +92,8 @@ namespace Incremental
         public const string AbilityDebugTree = "능력(트리): {0}";
         public const string AbilityDebugNone = "없음";
         public const string AbilityDebugEntry = "{0} Lv{1}";
+        /// <summary>24 §21.2: after the entry of an ability in its evolved form.</summary>
+        public const string AbilityDebugEvolved = " 진화";
         public const string AbilityDebugCharge = " {0:0.0}초";
         public const string AbilityDebugSeparator = " · ";
         /// <summary>
@@ -178,6 +180,17 @@ namespace Incremental
             // checks that every row has both.
             { "ability.crystal", "증폭 결정" },
             { "ability.crystal.effect", "홀드 중 나타나는 결정을 먹으면 잠시 중력이 세진다" },
+            // 24 §21.2: each ability's evolution, the name and the one line its evolve node shows.
+            { "ability.crystal.evolve", "공명" },
+            { "ability.crystal.evolve.effect", "결정이 세 개씩 나오고, 버프 중에 또 먹으면 세 겹까지 쌓인다" },
+            { "ability.implode.evolve", "연쇄 붕괴" },
+            { "ability.implode.evolve.effect", "파동이 세 번 연달아 퍼지고 쿨다운이 짧아진다" },
+            { "ability.satellite.evolve", "번개 사슬" },
+            { "ability.satellite.evolve.effect", "위성끼리 번개로 이어져 먼지를 끌고, 근점에서 한꺼번에 당긴다" },
+            { "ability.meteor.evolve", "유성우" },
+            { "ability.meteor.evolve.effect", "유성이 다섯 개씩 서로 다른 각도로 쏟아진다" },
+            { "ability.blackhole.evolve", "특이점" },
+            { "ability.blackhole.evolve.effect", "블랙홀이 둘이 되어 화면을 함께 휘젓고, 쿨다운이 짧아진다" },
             { "ability.implode", "수축" },
             { "ability.implode.effect", "주기적으로 주변 먼지를 한 번에 당긴다" },
             { "ability.satellite", "위성" },
@@ -227,6 +240,8 @@ namespace Incremental
         /// the tier 4 body of the same name.
         /// </summary>
         public const string AbilityUnlockName = "능력: {0}";
+        /// <summary>24 §21.2: name of an ability's evolve node: {0} = the evolution's own name (e.g. 공명).</summary>
+        public const string AbilityEvolveName = "진화: {0}";
         /// <summary>Name of an ability's stat node: the ability name plus the stat name, e.g. 수축 범위 I.</summary>
         public const string AbilityStatName = "{0} {1}";
 
@@ -235,6 +250,8 @@ namespace Incremental
         public static string DustKindName(string id) => Get(DustKindKey(id));
         public static string AbilityKey(string id) => "ability." + id;
         public static string AbilityEffectKey(string id) => "ability." + id + ".effect";
+        public static string AbilityEvolveKey(string id) => "ability." + id + ".evolve";
+        public static string AbilityEvolveEffectKey(string id) => "ability." + id + ".evolve.effect";
         public static string AbilityName(string id) => Get(AbilityKey(id));
         public static string StaminaPresetKey(string id) => "stamina.preset." + id;
         public static string UiDirectionKey(string id) => "ui.direction." + id;
@@ -255,6 +272,7 @@ namespace Incremental
         {
             if (n.IsGate) return string.Empty;
             if (n.IsAbilityUnlock) return Get(AbilityEffectKey(n.abilityId));
+            if (n.IsAbilityEvolve) return Get(AbilityEvolveEffectKey(n.abilityId));
             if (n.IsDustUnlock)
             {
                 var kind = p != null ? p.DustKind(p.DustKindIndex(n.dustKindId)) : null;
@@ -272,6 +290,7 @@ namespace Incremental
             if (n.IsGate) return TierName(n.tier);
             if (n.IsDustUnlock) return DustKindName(n.dustKindId);
             if (n.IsAbilityUnlock) return string.Format(AbilityUnlockName, AbilityName(n.abilityId));
+            if (n.IsAbilityEvolve) return string.Format(AbilityEvolveName, Get(AbilityEvolveKey(n.abilityId)));
             int self = t.nodes.IndexOf(n);
             int index = 1;
             bool perKind = StatIds.NeedsDustKind(n.statId);
@@ -279,7 +298,7 @@ namespace Incremental
             for (int i = 0; i < t.nodes.Count; i++)
             {
                 var o = t.nodes[i];
-                if (i == self || o.IsGate || o.IsDustUnlock || o.IsAbilityUnlock || o.statId != n.statId) continue;
+                if (i == self || o.IsGate || o.IsDustUnlock || o.IsAbilityUnlock || o.IsAbilityEvolve || o.statId != n.statId) continue;
                 // Nodes of a per-kind stat are numbered within their own kind, so every kind starts at I; the same
                 // goes for the stats of one ability (24 §8).
                 if (perKind && o.dustKindId != n.dustKindId) continue;

@@ -190,6 +190,7 @@ namespace Incremental
                 var n = t.Get(levels[i].id);
                 if (n == null || !n.enabled || n.abilityId != abilityId) continue;
                 if (n.IsAbilityUnlock) a.unlocked = true;
+                else if (n.IsAbilityEvolve) a.evolved = true;
                 else if (n.kind == NodeKind.Stat) AddAbilityStat(ref a, n, level);
             }
             CloseAbilityRange(ref a, t, abilityId);
@@ -212,7 +213,21 @@ namespace Incremental
                 AddAbilityStat(ref a, n, level);
             }
             CloseAbilityRange(ref a, t, abilityId);
+            // 24 §21.2: the debug level past every stat node is the evolved form, when the tree has one for it.
+            a.evolved = level > AbilityMaxLevel(t, abilityId) && AbilityHasEvolve(t, abilityId);
             return a;
+        }
+
+        /// <summary>24 §21.2: whether the tree holds an evolve node for the ability (the debug level cycle adds one step for it).</summary>
+        public static bool AbilityHasEvolve(NodeTable t, string abilityId)
+        {
+            if (t == null || string.IsNullOrEmpty(abilityId)) return false;
+            for (int i = 0; i < t.nodes.Count; i++)
+            {
+                var n = t.nodes[i];
+                if (n != null && n.enabled && n.IsAbilityEvolve && n.abilityId == abilityId) return true;
+            }
+            return false;
         }
 
         /// <summary>The most levels any stat node of that ability has: where the debug key's level cycle ends (24 §7).</summary>

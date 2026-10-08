@@ -101,6 +101,11 @@ namespace Incremental
         /// AbilityTable row.
         /// </summary>
         AbilityUnlock = 3,
+        /// <summary>
+        /// 24 §21.2: the evolution of the ability named by <see cref="NodeDef.abilityId"/>: owned, the ability takes its
+        /// evolved form (유성우, 연쇄 붕괴, 공명, 번개 사슬, 특이점). One level; at most one per ability, in the late rings.
+        /// </summary>
+        AbilityEvolve = 4,
     }
 
     /// <summary>One node of the skill tree (12 §3). Ring = minTier.</summary>
@@ -138,6 +143,8 @@ namespace Incremental
         public bool IsDustUnlock => kind == NodeKind.DustKindUnlock;
         /// <summary>24 §8: this node turns an ability on.</summary>
         public bool IsAbilityUnlock => kind == NodeKind.AbilityUnlock;
+        /// <summary>24 §21.2: this node evolves an ability.</summary>
+        public bool IsAbilityEvolve => kind == NodeKind.AbilityEvolve;
     }
 
     /// <summary>Skill tree nodes (12 §3) and the per-ring cost multiplier, the pacing lever of the balance pass (12 §7).</summary>

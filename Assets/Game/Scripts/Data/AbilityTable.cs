@@ -36,6 +36,11 @@ namespace Incremental
         /// more levels divides the same span into more, smaller steps.
         /// </summary>
         public double rangeShare;
+        /// <summary>
+        /// 24 §21.2: the ability's evolve node is owned (or the debug level is past every stat node), so the ability
+        /// takes its evolved form.
+        /// </summary>
+        public bool evolved;
     }
 
     /// <summary>
@@ -53,9 +58,12 @@ namespace Incremental
                  "0 = nothing to trigger: the ability is simply there while holding.")]
         public double cooldownSec;
 
+        /// <summary>The cooldown before the ability_cooldown nodes: cooldownSec, unless the evolved form has one of its own (24 §21.2).</summary>
+        public virtual double BaseCooldown(in AbilityLevel lv) => cooldownSec;
+
         /// <summary>The cooldown after the ability_cooldown nodes, which can take off <paramref name="maxReduction"/> at most.</summary>
         public double Cooldown(in AbilityLevel lv, double maxReduction) =>
-            cooldownSec * (1.0 - Math.Min(Math.Max(lv.cooldown, 0.0), maxReduction));
+            BaseCooldown(lv) * (1.0 - Math.Min(Math.Max(lv.cooldown, 0.0), maxReduction));
 
         /// <summary>True when this ability reads that ability stat. Validate Data warns about a node raising one it does not.</summary>
         public abstract bool Uses(string statId);

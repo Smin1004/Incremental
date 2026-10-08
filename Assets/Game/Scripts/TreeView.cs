@@ -163,7 +163,7 @@ namespace Incremental
         }
 
         /// <summary>26 §5.3: gates and unlock nodes (dust kinds, abilities) are drawn larger than stat nodes.</summary>
-        float NodeSize(NodeDef n) => n.IsGate ? st.gateSize : (n.IsDustUnlock || n.IsAbilityUnlock ? st.unlockSize : st.statSize);
+        float NodeSize(NodeDef n) => n.IsGate ? st.gateSize : (n.IsDustUnlock || n.IsAbilityUnlock || n.IsAbilityEvolve ? st.unlockSize : st.statSize);
 
         /// <summary>Colors of the visual direction for the header, the help line and the tooltip.</summary>
         void ApplyStyle()
@@ -576,9 +576,9 @@ namespace Incremental
                     double mass = tier != null ? Stats.Threshold(tier, s) : 0;
                     sb.Append(string.Format(UIStrings.GateEffect, n.tier, Fmt.Price(price), Fmt.Num(mass, Rounding.Up)));
                 }
-                else if (n.IsDustUnlock || n.IsAbilityUnlock)
+                else if (n.IsDustUnlock || n.IsAbilityUnlock || n.IsAbilityEvolve)
                 {
-                    // 20 §4, 24 §6: an unlock has one level, so "per level" would read oddly.
+                    // 20 §4, 24 §6, 24 §21.2: an unlock or an evolution has one level, so "per level" would read oddly.
                     sb.Append(UIStrings.NodeEffect(n, p));
                 }
                 else
@@ -650,7 +650,7 @@ namespace Incremental
             (90f, 0, 0f),                                       // gates
             (150f, 1, 0.5f), (140f, 1, -0.5f),                  // planet thresholds, fragments
             (210f, 2, 0f),                                      // stamina
-            (240f, 3, 0f),                                      // abilities
+            (240f, 3, 0f), (250f, 3, 1f),                       // abilities, their evolutions (24 §21.2)
             (270f, 4, 0f),                                      // sale
             (330f, 5, 0.5f), (340f, 5, 1f), (320f, 5, -0.5f),   // gravity pull, radius, follow
             (30f, 6, -0.5f), (20f, 6, -1f), (40f, 6, 0f), (60f, 6, 1f),   // dust, its pairs, dust kinds

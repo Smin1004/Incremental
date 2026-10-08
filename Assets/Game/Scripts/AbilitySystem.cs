@@ -184,7 +184,7 @@ namespace Incremental
         {
             string id = root.abilityTable.Rows[i].id;
             if (!level.unlocked) return id + " (locked)";
-            return id + " Lv" + level.level + (ForcedMode == 0 ? " (tree)" : " (debug key)");
+            return id + " Lv" + level.level + (level.evolved ? "+evolved" : "") + (ForcedMode == 0 ? " (tree)" : " (debug key)");
         }
 
         /// <summary>
@@ -270,8 +270,10 @@ namespace Incremental
         {
             int max = 0;
             var rows = root.abilityTable.Rows;
+            // 24 §21.2: one step past the last stat level is the evolved form, for an ability that has one.
             for (int i = 0; i < rows.Length; i++)
-                if (IsForced(i)) max = Mathf.Max(max, Stats.AbilityMaxLevel(root.nodeTable, rows[i].id));
+                if (IsForced(i))
+                    max = Mathf.Max(max, Stats.AbilityMaxLevel(root.nodeTable, rows[i].id) + (Stats.AbilityHasEvolve(root.nodeTable, rows[i].id) ? 1 : 0));
             return max;
         }
 
@@ -312,6 +314,7 @@ namespace Incremental
                 if (!level.unlocked) continue;
                 if (label.Length > 0) label.Append(UIStrings.AbilityDebugSeparator);
                 label.AppendFormat(UIStrings.AbilityDebugEntry, UIStrings.AbilityName(rows[i].id), level.level);
+                if (level.evolved) label.Append(UIStrings.AbilityDebugEvolved);
                 if (i < abilities.Length && abilities[i] != null && rows[i].cooldownSec > 0)
                     label.AppendFormat(UIStrings.AbilityDebugCharge, abilities[i].SecondsToTrigger(level));
             }
