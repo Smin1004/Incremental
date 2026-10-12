@@ -506,6 +506,9 @@ namespace Incremental
             }
 
             // Spawn. At the cap the spawn is skipped, not banked.
+            // 24 §23.1.1 (10/12): new dust keeps out of the gravity radius only while holding, so it does not land in the
+            // pull. Kept out while idle too, the dust around a still gravity source thinned to half in 13 s at ring 11.
+            float avoidR = holding ? gravR : 0f;
             // 10/8: the emptier the field, the faster it refills (x1 at the cap, x(1 + dustRefillBoost) when empty), so an
             // ability that sweeps the screen clean does not leave it bare for most of the run.
             int cap = (int)s.dustCap;
@@ -515,7 +518,7 @@ namespace Incremental
             while (spawnAcc >= 1.0)
             {
                 spawnAcc -= 1.0;
-                if (count < cap) SpawnRandom(gravity, gravR, s);
+                if (count < cap) SpawnRandom(gravity, avoidR, s);
             }
 
             // The band outside the screen has a trickle of its own, which stops at the band's share of the cap: it is
@@ -529,7 +532,7 @@ namespace Incremental
                 {
                     marginAcc -= 1.0;
                     if (count >= cap || outside >= budget) continue;
-                    SpawnOutside(gravity, gravR, margin, s);
+                    SpawnOutside(gravity, avoidR, margin, s);
                     outside++;
                 }
             }
