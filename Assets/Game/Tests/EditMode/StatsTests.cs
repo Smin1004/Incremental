@@ -43,7 +43,8 @@ namespace Incremental.Tests
 
         [Test] public void SaleMult_SumsPercentAcrossNodes() => Assert.AreEqual(1 + 0.5 + 1.0, With(("e_sale", 2), ("d_sale", 1)).saleMult, Eps);
 
-        [Test] public void StaminaMax_AddsPerLevel() => Assert.AreEqual(60 + 30, With(("e_stamina", 3)).staminaMax, Eps);
+        // 24 §23.3: the stamina_max nodes count for GameParams.staminaNodeScale of what they say.
+        [Test] public void StaminaMax_AddsPerLevel() => Assert.AreEqual(60 + 30 * p.staminaNodeScale, With(("e_stamina", 3)).staminaMax, Eps);
 
         [Test] public void ThresholdMult_SubtractsPercent() => Assert.AreEqual(0.8, With(("e_threshold", 5)).thresholdMult, Eps);
 
@@ -60,7 +61,8 @@ namespace Incremental.Tests
             Assert.AreEqual(3.375 * 2.25, With(("e_mass", 3), ("b_mass", 2)).dustMass, Eps);
         }
 
-        [Test] public void GravityRadius_AddsPercent() => Assert.AreEqual(180 * 1.5, With(("e_radius", 5)).gravityRadius, Eps);
+        // 24 §23.2: the radius nodes count for GameParams.gravityGrowthScale of what they say.
+        [Test] public void GravityRadius_AddsPercent() => Assert.AreEqual(180 * (1 + 0.5 * p.gravityGrowthScale), With(("e_radius", 5)).gravityRadius, Eps);
 
         [Test]
         public void StaminaDrain_ReducesIdleAndHoldDrain()
