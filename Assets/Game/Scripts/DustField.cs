@@ -255,7 +255,8 @@ namespace Incremental
         public void Reseed(int seed) { rng = new System.Random(seed); }
 
         /// <summary>
-        /// Clears the field and places the initial dust outside the (effective) gravity radius of the cursor. The band
+        /// Clears the field and places the initial dust, outside GameParams.initialDustClearShare of the (effective) gravity
+        /// radius around the gravity source (0 = evenly over the area). The band
         /// outside the screen starts as full as the screen does: its share of the cap, scaled by how much of the cap
         /// <paramref name="initial"/> is.
         /// </summary>
@@ -280,9 +281,11 @@ namespace Incremental
                 // No room for both under the cap (a scene staged at the cap): the band's part comes out of the screen's.
                 if (initial + outside > cap) initial = cap - outside;
             }
+            // 24 §23.1.1: the starting dust keeps out of initialDustClearShare of the radius (0 = evenly everywhere).
+            float clearR = gravR * (float)Math.Max(0.0, p.initialDustClearShare);
             // The screen first, so the dust on it is where the same seed put it before there was a band.
-            for (int i = 0; i < initial; i++) SpawnRandom(cursor, gravR, s);
-            for (int i = 0; i < outside; i++) SpawnOutside(cursor, gravR, margin, s);
+            for (int i = 0; i < initial; i++) SpawnRandom(cursor, clearR, s);
+            for (int i = 0; i < outside; i++) SpawnOutside(cursor, clearR, margin, s);
             OutsideCount = outside;
         }
 

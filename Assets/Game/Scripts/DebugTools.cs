@@ -365,6 +365,8 @@ namespace Incremental
                 if (kb.gKey.wasPressedThisFrame) ToggleStaminaDisplay();
                 if (kb.xKey.wasPressedThisFrame) ToggleExposureFix();
                 if (kb.tKey.wasPressedThisFrame && root.Tree != null) root.Tree.CycleTwist();
+                if (kb.kKey.wasPressedThisFrame) CycleGravityRange();
+                if (kb.lKey.wasPressedThisFrame) CycleStaminaScale();
                 if (root.Abilities != null) AbilityKeys(kb);
                 if (overlay) LogKeys(kb);
             }
@@ -427,6 +429,79 @@ namespace Incremental
             root.StaminaDrain = new StaminaOverride { enabled = true, holdDrain = next.holdDrain, idleDrain = next.idleDrain };
             root.Hud.ShowToast(string.Format(UIStrings.StaminaPreset, UIStrings.StaminaPresetName(next.id), next.holdDrain, next.idleDrain));
             Debug.Log($"[Debug] stamina preset: {next.id} hold={next.holdDrain} idle={next.idleDrain}");
+        }
+
+        /// <summary>
+        /// K (24 §23.2): the next gravity range preset (radius node scale, crystal radius x at unlock and per level). The
+        /// running run feels it on its next tick. Runtime only: the asset and the save are untouched. The toast shows the
+        /// gravity ring's diameter at ring 10 (every radius node to ring 10 bought) as a share of the screen height, plain
+        /// and with the crystal at Lv3.
+        /// </summary>
+        public void CycleGravityRange()
+        {
+            var p = root.gameParams;
+            var presets = p.gravityRangePresets;
+            if (presets == null || presets.Length == 0) return;
+            var next = presets[(p.GravityRangePresetIndex(root.GrowthScaleNow) + 1) % presets.Length];
+            root.GravityRange = new GravityRangeOverride
+            {
+                set = true, id = next.id, growthScale = next.growthScale,
+                crystalRadiusMult = next.crystalRadiusMult, crystalRadiusPerPower = next.crystalRadiusPerPower,
+            };
+            double plain = RingShare(10, next.growthScale, 1.0);
+            double lv3 = CrystalLv3Mult(next.crystalRadiusMult, next.crystalRadiusPerPower);
+            double buffed = RingShare(10, next.growthScale, lv3);
+            double resonance = RingShare(10, next.growthScale, 1.0 + (lv3 - 1.0) * 2);
+            root.Hud.ShowToast(string.Format(UIStrings.GravityRangeToast, UIStrings.Get(UIStrings.GravityPresetKey(next.id)),
+                next.growthScale, next.crystalRadiusMult, next.crystalRadiusPerPower * 0.1, plain * 100, buffed * 100));
+            Debug.Log($"[Debug] gravity range: {next.id} growth x{next.growthScale} crystal x{next.crystalRadiusMult} +{next.crystalRadiusPerPower}/power; " +
+                $"ring 1 {RingShare(1, next.growthScale, 1.0):P1}, ring 10 {plain:P1}, crystal Lv3 x{lv3:0.00} {buffed:P1}, resonance 2 stacks {resonance:P1} of the screen height");
+        }
+
+        /// <summary>
+        /// The gravity ring's diameter at <paramref name="ring"/>, every gravity_radius node up to that ring bought, x
+        /// <paramref name="mult"/>, as a share of the screen height that ring's world scale shows.
+        /// </summary>
+        public double RingShare(int ring, double growthScale, double mult)
+        {
+            var p = root.gameParams;
+            double nodes = 0;
+            foreach (var n in root.nodeTable.nodes)
+                if (n != null && n.enabled && n.statId == StatIds.GravityRadius && n.minTier <= ring) nodes += n.effectPerLevel * n.maxLevel;
+            double radiusPx = p.gravityRadius * (1.0 + nodes * growthScale) * mult;
+            return root.RingShareOfScreen(radiusPx, Stats.WorldScale(p, ring));
+        }
+
+        /// <summary>The crystal's radius multiplier with every ability_power node of it bought (Lv3 in the seed).</summary>
+        double CrystalLv3Mult(double atUnlock, double perPower)
+        {
+            double power = 0;
+            foreach (var n in root.nodeTable.nodes)
+                if (n != null && n.enabled && n.statId == StatIds.AbilityPower && n.abilityId == "crystal") power += n.effectPerLevel * n.maxLevel;
+            return CrystalDef.RadiusMult(new AbilityLevel { power = power }, atUnlock, perPower);
+        }
+
+        /// <summary>
+        /// L (24 §23.3): the next stamina_max node scale. A run keeps the scale it started with, so it shows from the next
+        /// run. The toast says how long the next run lasts held throughout, with the save's nodes. Runtime only.
+        /// </summary>
+        public void CycleStaminaScale()
+        {
+            var p = root.gameParams;
+            var steps = p.staminaNodeScaleSteps;
+            if (steps == null || steps.Length == 0) return;
+            double now = root.StaminaScaleNext;
+            int at = -1;
+            for (int i = 0; i < steps.Length; i++) if (Math.Abs(steps[i] - now) < 1e-9) { at = i; break; }
+            double next = steps[(at + 1) % steps.Length];
+            root.StaminaScaleDebug = next;
+            double hold = root.StaminaDrain.enabled ? root.StaminaDrain.holdDrain : p.staminaHoldDrain;
+            double idle = root.StaminaDrain.enabled ? root.StaminaDrain.idleDrain : p.staminaIdleDrain;
+            var s = Stats.Compute(p, root.nodeTable, root.Meta, hold, idle, root.GrowthScaleNow, next);
+            double longest = s.staminaMax / Math.Max(1e-9, s.staminaHoldDrain + s.staminaIdleDrain);
+            root.Hud.ShowToast(string.Format(UIStrings.StaminaScaleToast, next, s.staminaMax, longest));
+            Debug.Log($"[Debug] stamina node scale: x{next} from the next run; stamina {s.staminaMax:0.#}, drain {s.staminaHoldDrain:0.###} + {s.staminaIdleDrain:0.###}/s, " +
+                $"a run held throughout {longest:0} s");
         }
 
         /// <summary>

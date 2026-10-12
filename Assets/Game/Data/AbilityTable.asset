@@ -24,7 +24,8 @@ MonoBehaviour:
     driftSpeedPx: 14
     pullInSpeedPx: 700
     buffSec: 6
-    radiusMult: 1.35
+    radiusMult: 1.2
+    radiusPerPower: 0.5
     pullMult: 1.5
     pullPerPower: 2
     speedMult: 1.4
@@ -97,14 +98,14 @@ MonoBehaviour:
   blackHole:
     id: blackhole
     unlockRing: 10
-    cooldownSec: 40
+    cooldownSec: 60
     inhaleSec: 1
     slowFactor: 0.25
     durationSec: 4
     pullMult: 2.5
     vortexMult: 2
     releaseSec: 0.4
-    sizePx: 56
+    sizePx: 112
     darkenAlpha: 0.45
     darkenReach: 0.7
     flashAlpha: 0.35

@@ -79,6 +79,10 @@ namespace Incremental
         public const string EndingReplayBetweenRuns = "엔딩 재생은 런 사이에만 됩니다";
         public const string DebugStaminaDrained = "스태미나 0 (런 종료)";
         public const string StaminaPreset = "스태미나 소모: {0} (홀드 {1:0.0}/초, 대기 {2:0.0}/초)";
+        /// <summary>24 §23.2, key K: {0} preset name, {1} radius node scale, {2} crystal x at unlock, {3} per level, {4}/{5} ring 10 diameter share.</summary>
+        public const string GravityRangeToast = "중력 범위: {0} (성장 ×{1:0.##}, 결정 ×{2:0.00} / 레벨당 +{3:0.00}) · 링 10 평소 {4:0.0}% / 버프 Lv3 {5:0.0}%";
+        /// <summary>24 §23.3, key L: {0} stamina_max node scale, {1} stamina, {2} seconds of a run held throughout.</summary>
+        public const string StaminaScaleToast = "스태미나 성장 ×{0:0.##} (다음 판부터) · 스태미나 {1:0} · 계속 홀드 시 최대 길이 {2:0}초";
         public const string DebugDuringRunOnly = "런 중에만 됩니다";
         /// <summary>22 §3: the follow debug key's toast; {0} = the top speed in px/s.</summary>
         public const string FollowOn = "중력원 추종: 켜짐 (최대 {0:0} px/초)";
@@ -187,14 +191,15 @@ namespace Incremental
             { "ability.meteor.evolve.effect", "유성이 더 자주 떨어진다" },
             { "ability.implode", "수축" },
             { "ability.implode.effect", "주기적으로 주변 먼지를 한 번에 당긴다" },
-            { "ability.satellite", "위성" },
+            // 24 §23.5: shown as 궤도석; the id stays satellite (save key), and tier 4 is still 위성.
+            { "ability.satellite", "궤도석" },
             { "ability.satellite.effect", "중력원을 도는 작은 중력원" },
             { "ability.meteor", "유성" },
             { "ability.meteor.effect", "유성이 지나가며 먼지를 흘린다" },
             { "ability.blackhole", "블랙홀" },
             { "ability.blackhole.effect", "충전되면 중력원이 잠시 블랙홀이 되어 화면 전체를 빨아들인다" },
 
-            // Ability stats (24 §8). The node name puts the ability's name in front: 수축 범위 I, 위성 수 I, 유성 양 I.
+            // Ability stats (24 §8). The node name puts the ability's name in front: 수축 범위 I, 궤도석 수 I, 유성 양 I.
             // The last level of a range node is the whole screen whatever the step is worth (24 §16.1).
             { "stat.ability_range.name", "범위" },
             { "stat.ability_range.effect", "+{0}단계 (마지막 레벨은 화면 전체)" },
@@ -215,6 +220,11 @@ namespace Incremental
             { "ui.direction.C", "C 패널 없음" },
 
             // Stamina drain presets of the debug key (18 §A1); Validate Data checks that every preset id has a key.
+            // Gravity range presets of the debug key K (24 §23.2); Validate Data checks that every preset id has a key.
+            { "gravity.preset.now", "지금" },
+            { "gravity.preset.plan1", "안 1" },
+            { "gravity.preset.plan2", "안 2" },
+
             { "stamina.preset.loose", "느슨함" },
             { "stamina.preset.proposed", "제안" },
             { "stamina.preset.fast", "빠름" },
@@ -230,8 +240,8 @@ namespace Incremental
         /// <summary>Name of a dust kind's chance node: the kind name plus the stat name, e.g. 중형 먼지 출현 확률 I.</summary>
         public const string DustChanceName = "{0} {1}";
         /// <summary>
-        /// Name of an ability's unlock node (24 §6): {0} = the ability name. The prefix keeps the 위성 ability apart from
-        /// the tier 4 body of the same name.
+        /// Name of an ability's unlock node (24 §6): {0} = the ability name. The prefix keeps abilities apart from bodies
+        /// (the 궤도석 ability was called 위성, like tier 4, until 10/12).
         /// </summary>
         public const string AbilityUnlockName = "능력: {0}";
         /// <summary>24 §21.2: name of an ability's evolve node: {0} = the evolution's own name (e.g. 공명).</summary>
@@ -255,6 +265,7 @@ namespace Incremental
 
         public static string TierName(int tier) => Get(TierKey(tier));
         public static string StaminaPresetName(string id) => Get(StaminaPresetKey(id));
+        public static string GravityPresetKey(string id) => "gravity.preset." + id;
         public static string StatName(string statId) => Get(StatNameKey(statId));
 
         /// <summary>

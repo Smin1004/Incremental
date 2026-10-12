@@ -441,6 +441,10 @@ namespace Incremental
                 if (!(s.holdDrain > 0) || !(s.idleDrain > 0))
                     r.Errors.Add($"GameParams: staminaPresets[{i}] drains must be > 0.");
             }
+            if (p.gravityRangePresets != null)
+                foreach (var g in p.gravityRangePresets)
+                    if (g != null && !UIStrings.Has(UIStrings.GravityPresetKey(g.id)))
+                        r.Errors.Add($"UIStrings: missing key '{UIStrings.GravityPresetKey(g.id)}' (gravity range preset, 24 §23.2).");
             if (p.StaminaPresetIndex(p.staminaHoldDrain, p.staminaIdleDrain) < 0)
                 r.Warnings.Add($"GameParams: the stamina drains ({p.staminaHoldDrain} / {p.staminaIdleDrain}) are not one of staminaPresets; " +
                                "the debug key starts from the first preset (18 §A1).");

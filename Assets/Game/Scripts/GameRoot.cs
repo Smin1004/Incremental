@@ -34,6 +34,19 @@ namespace Incremental
     }
 
     /// <summary>
+    /// 24 §23.2: the gravity range the debug key K picked (radius node scale and the crystal's radius multiplier).
+    /// Not set = the GameParams and AbilityTable values. Nothing is saved.
+    /// </summary>
+    public struct GravityRangeOverride
+    {
+        public bool set;
+        public string id;
+        public double growthScale;
+        public double crystalRadiusMult;
+        public double crystalRadiusPerPower;
+    }
+
+    /// <summary>
     /// Runtime setting of the gravity source follow (22 §3). The debug key cycles it; nothing is saved, and the
     /// GameParams value plus the follow nodes decide what a fresh launch does.
     /// </summary>
@@ -168,6 +181,18 @@ namespace Incremental
         public StatsOverride Override;
         /// <summary>Runtime stamina drain from the debug preset key (18 §A1); disabled = the GameParams values.</summary>
         public StaminaOverride StaminaDrain;
+        /// <summary>24 §23.2: the debug key K's gravity range; not set = the asset values.</summary>
+        public GravityRangeOverride GravityRange;
+        /// <summary>
+        /// 24 §23.3: the stamina_max node scale the debug key L picked, NaN = GameParams.staminaNodeScale. A run keeps the
+        /// scale it started with (<see cref="runStaminaScale"/>), so a change shows from the next run.
+        /// </summary>
+        public double StaminaScaleDebug = double.NaN;
+        double runStaminaScale = double.NaN;
+        /// <summary>The stamina_max node scale the next run starts with.</summary>
+        public double StaminaScaleNext => double.IsNaN(StaminaScaleDebug) ? gameParams.staminaNodeScale : StaminaScaleDebug;
+        /// <summary>The radius node scale in use: the debug key K's, else GameParams.gravityGrowthScale.</summary>
+        public double GrowthScaleNow => GravityRange.set ? GravityRange.growthScale : gameParams.gravityGrowthScale;
         /// <summary>
         /// 0..1, multiplies every flash, light bleed and pop (10 §8). Starts at GameParams.effectIntensity; the debug key
         /// cycles it at runtime (the options screen is week 7), so the asset is never modified.
@@ -257,6 +282,7 @@ namespace Incremental
             Hud = hudGo.AddComponent<HudView>();
             Hud.Build(this);
             Hud.SetCountLifetime(gameParams.planetPopDurationSec + gameParams.planetHoldSec + gameParams.planetDepartSec * 0.5);
+            Hud.SetCountYield(gameParams.bundleLabelYieldSec);
             UIBuilder.EnsureEventSystem(transform);
 
             var transitionGo = new GameObject("Transition");
@@ -479,6 +505,13 @@ namespace Incremental
         }
 
         /// <summary>Puts the drawn world scale on the camera. Everything that reads the camera follows from here.</summary>
+        /// <summary>
+        /// 24 §23.2: a gravity radius (px) as a share of the screen height, for the diameter, at world scale
+        /// <paramref name="worldScale"/>. The camera shows baseOrthoSize x the world scale.
+        /// </summary>
+        public double RingShareOfScreen(double radiusPx, double worldScale) =>
+            radiusPx * 2.0 / gameParams.pixelsPerUnit / (baseOrthoSize * 2.0 * worldScale);
+
         void ApplyWorldScale()
         {
             if (Cam == null) return;
@@ -528,6 +561,7 @@ namespace Incremental
             runStartLevels = Meta.CopyLevels();
             EndingActive = false;
             EndingAge = 0;
+            runStaminaScale = StaminaScaleNext;
             Effective = ComputeStats();
             runStartStats = Effective;
             Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
@@ -541,11 +575,23 @@ namespace Incremental
             Phase = GamePhase.Run;
             ApplyWorldScale();
 
+            // 24 §23.1.1: the gravity source starts in the middle of the screen. The pointer is moved there too, unless the
+            // flag is off (then the gravity source follows it from the middle) or something else drives the input (the bot).
+            Vector2 middle = CameraArea().center;
             var ps = ReadPointer();
+            bool warp = gameParams.warpPointerOnRunStart && InputProvider == null && Mouse.current != null;
+            if (warp)
+            {
+                var screenMiddle = new Vector2(Cam.pixelWidth * 0.5f, Cam.pixelHeight * 0.5f);
+                Mouse.current.WarpCursorPosition(screenMiddle);
+                ps.screenPos = screenMiddle;
+            }
             LastPointer = ps;
-            CursorWorld = ToWorld(ps.screenPos);
-            GravityWorld = CursorWorld;
-            Dust.Reset((int)Effective.dustInitial, CameraArea(), CursorWorld, Effective);
+            CursorWorld = warp ? middle : ToWorld(ps.screenPos);
+            GravityWorld = middle;
+            UnityEngine.Debug.Log("[Run] start: gravity source in the middle of the screen" + (warp ? ", pointer moved there" : ", pointer left where it is") +
+                "; starting dust " + (int)Effective.dustInitial + ", clear of " + gameParams.initialDustClearShare.ToString("0.##") + " gravity radius");
+            Dust.Reset((int)Effective.dustInitial, CameraArea(), GravityWorld, Effective);
             Planets.Clear();
             pendingSaveTimer = 0;
             Save();
@@ -1050,9 +1096,10 @@ namespace Incremental
 
         EffectiveStats ComputeStats()
         {
-            var s = StaminaDrain.enabled
-                ? Stats.Compute(gameParams, nodeTable, Meta, StaminaDrain.holdDrain, StaminaDrain.idleDrain)
-                : Stats.Compute(gameParams, nodeTable, Meta);
+            double hold = StaminaDrain.enabled ? StaminaDrain.holdDrain : gameParams.staminaHoldDrain;
+            double idle = StaminaDrain.enabled ? StaminaDrain.idleDrain : gameParams.staminaIdleDrain;
+            double stamina = Phase == GamePhase.Run && !double.IsNaN(runStaminaScale) ? runStaminaScale : StaminaScaleNext;
+            var s = Stats.Compute(gameParams, nodeTable, Meta, hold, idle, GrowthScaleNow, stamina);
             if (Override.enabled)
             {
                 s.dustCap = Override.dustCap;

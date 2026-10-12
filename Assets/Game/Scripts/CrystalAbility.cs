@@ -205,7 +205,7 @@ namespace Incremental
             Vector2 g = root.GravityWorld;
             // During a buff the amplified radius would ask for a distance the screen has not got, and every crystal
             // would fall back to the farthest corner; so the distance is measured in the radius without the buff.
-            double baseRadius = s.gravityRadius / Factor(d.RadiusMult(Level));
+            double baseRadius = s.gravityRadius / Factor(RadiusMult());
             float least = (float)(baseRadius * Math.Max(0.0, d.minDistanceRadii) / ppu);
             Grow(1);
             Vector2 best = inner.center;
@@ -312,7 +312,7 @@ namespace Incremental
             var d = D;
             bool again = buffLeft > 0;
             // The radius before this crystal, with whatever buff was already on it taken off again.
-            double before = s.gravityRadius / Factor(d.RadiusMult(Level));
+            double before = s.gravityRadius / Factor(RadiusMult());
             taken++;
             // 24 §21.2: evolved, a crystal taken while the buff is on adds the multipliers once more.
             int most = Level.evolved ? Math.Max(1, d.resonanceMaxStacks) : 1;
@@ -321,12 +321,19 @@ namespace Incremental
             flashAge = 0;
             // 25 §3: the moment it is taken, the whole field answers.
             root.Dust.ExciteAll();
-            double radiusMult = 1.0 + (d.RadiusMult(Level) - 1.0) * stacks;
+            double radiusMult = 1.0 + (RadiusMult() - 1.0) * stacks;
             double pullMult = 1.0 + (d.PullMult(Level) - 1.0) * stacks;
             double speedMult = 1.0 + (d.speedMult - 1.0) * stacks;
             Log("absorbed at " + RunClock + ": amplified for " + d.buffSec.ToString("0.##") + "s" + (stacks > 1 ? " at " + stacks + " stacks" : "") +
                 ", gravity radius x" + radiusMult.ToString("0.##") + " (" + (before * radiusMult).ToString("F0") + " px), pull x" +
                 pullMult.ToString("0.##") + ", dust speed x" + speedMult.ToString("0.##") + (again ? " (the clock started over)" : ""));
+        }
+
+        /// <summary>The radius multiplier at this level: the row's, or the debug key K's (24 §23.2).</summary>
+        double RadiusMult()
+        {
+            var o = root.GravityRange;
+            return o.set ? CrystalDef.RadiusMult(Level, o.crystalRadiusMult, o.crystalRadiusPerPower) : D.RadiusMult(Level);
         }
 
         /// <summary>A multiplier of the row, added once per stack, as far as the ramp has come: 1 when the buff is off.</summary>
@@ -337,7 +344,7 @@ namespace Incremental
         {
             if (strength <= 0f || stacks <= 0) return;
             var d = D;
-            s.gravityRadius *= Factor(d.RadiusMult(Level));
+            s.gravityRadius *= Factor(RadiusMult());
             s.pullAccel *= Factor(d.PullMult(Level));
         }
 

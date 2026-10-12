@@ -18,7 +18,22 @@ MonoBehaviour:
   driftSpeed: 22
   dustMass: 1
   dustRefillBoost: 3
+  initialDustClearShare: 0
   gravityRadius: 150
+  gravityGrowthScale: 0.7
+  gravityRangePresets:
+  - id: now
+    growthScale: 1
+    crystalRadiusMult: 1.35
+    crystalRadiusPerPower: 1
+  - id: plan1
+    growthScale: 0.7
+    crystalRadiusMult: 1.2
+    crystalRadiusPerPower: 0.5
+  - id: plan2
+    growthScale: 0.5
+    crystalRadiusMult: 1.15
+    crystalRadiusPerPower: 0.5
   pullAccel: 600
   dustMaxSpeed: 400
   captureRadius: 30
@@ -36,6 +51,7 @@ MonoBehaviour:
   bundleSizeMax: 2
   bundlePopMult: 1.6
   bundleLabelScale: 1.6
+  bundleLabelYieldSec: 0.15
   vortexShare: 0.25
   vortexTerminalPx: 300
   trailPoints: 8
@@ -49,11 +65,17 @@ MonoBehaviour:
   - 1
   - 1.5
   - 2
+  warpPointerOnRunStart: 1
   followLineWidthPx: 1.5
   followLineColor: {r: 1, g: 1, b: 1, a: 0.35}
   staminaMax: 86
   staminaHoldDrain: 1.5
   staminaIdleDrain: 0.3
+  staminaNodeScale: 0.5
+  staminaNodeScaleSteps:
+  - 1
+  - 0.5
+  - 0.25
   staminaPresets:
   - id: loose
     holdDrain: 1

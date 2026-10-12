@@ -161,7 +161,7 @@ namespace Incremental
     }
 
     /// <summary>
-    /// 24 §4, §16.2 위성. Small gravity sources that orbit the gravity source while holding, on an ellipse that takes
+    /// 24 §4, §16.2 궤도석 (위성 until 24 §23.5). Small gravity sources that orbit the gravity source while holding, on an ellipse that takes
     /// them out past the gravity ring and back in close. They pull and never capture: the dust they drag along ends up
     /// in the gravity source's own field.
     /// </summary>
@@ -367,7 +367,7 @@ namespace Incremental
 
         [Header("Look")]
         [Tooltip("The gravity source wears GameParams.blackHoleLook (the ending's black hole, accretion disc and all) at this diameter (px) while it is open.")]
-        public double sizePx = 56;
+        public double sizePx = 112;
         [Tooltip("How dark the edges of the screen get (alpha), rising over the inhale, held while open, gone with the release; x effect intensity.")]
         public double darkenAlpha = 0.45;
         [Tooltip("How far in from the edge the darkness reaches, as a share of the half screen (1 = to the middle).")]
@@ -381,7 +381,7 @@ namespace Incremental
         {
             id = "blackhole";
             unlockRing = 10;
-            cooldownSec = 40;
+            cooldownSec = 60;
         }
 
         /// <summary>Seconds the black hole is open after the ability_duration nodes.</summary>
@@ -434,8 +434,11 @@ namespace Incremental
         [Tooltip("Seconds the amplification lasts. Eating another crystal meanwhile starts these over; the multipliers do not stack " +
                  "unless the crystal is evolved (공명, 24 §21.2), when each one adds them once more up to resonanceMaxStacks.")]
         public double buffSec = 6;
-        [Tooltip("The gravity radius x this while amplified, with only the unlock owned. ability_power adds to it: +0.1 per level in the seed, 1.35 -> 1.65.")]
-        public double radiusMult = 1.35;
+        [Tooltip("The gravity radius x this while amplified, with only the unlock owned. ability_power x radiusPerPower adds to it " +
+                 "(24 §23.2: +0.1 x 0.5 = +0.05 per level in the seed, 1.20 -> 1.35).")]
+        public double radiusMult = 1.20;
+        [Tooltip("24 §23.2: how much the radius multiplier rises per ability_power (0.5 = +0.05 per +0.1; 1 = as before 10/12).")]
+        public double radiusPerPower = 0.5;
         [Tooltip("The pull (pull_accel) x this while amplified. ability_power x pullPerPower adds to it: +0.2 per level in the seed, 1.5 -> 2.1.")]
         public double pullMult = 1.5;
         [Tooltip("How much faster the pull multiplier rises with ability_power than the radius multiplier does (2 = +0.2 per +0.1).")]
@@ -478,7 +481,11 @@ namespace Incremental
         }
 
         /// <summary>The gravity radius multiplier after the ability_power nodes.</summary>
-        public double RadiusMult(in AbilityLevel lv) => radiusMult + Math.Max(0.0, lv.power);
+        public double RadiusMult(in AbilityLevel lv) => RadiusMult(lv, radiusMult, radiusPerPower);
+
+        /// <summary>Same, with the two values given (the debug key K, 24 §23.2).</summary>
+        public static double RadiusMult(in AbilityLevel lv, double atUnlock, double perPower) =>
+            atUnlock + Math.Max(0.0, lv.power) * perPower;
 
         /// <summary>The pull multiplier after the ability_power nodes.</summary>
         public double PullMult(in AbilityLevel lv) => pullMult + Math.Max(0.0, lv.power) * pullPerPower;

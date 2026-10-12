@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Incremental
 {
     /// <summary>
-    /// 24 §4, §16.2 위성. While the player holds, small gravity sources orbit the gravity source, counter-clockwise
+    /// 24 §4, §16.2 궤도석 (위성 until 24 §23.5). While the player holds, small gravity sources orbit the gravity source, counter-clockwise
     /// like the vortex. Each pulls the dust inside its own small reach toward itself, lights it up (24 §8) and captures
     /// nothing, so the dust it drags along is left to the gravity source: one more hand for the same body. They move
     /// with the gravity source and are gone the moment the hold is released. They are always there while holding, so

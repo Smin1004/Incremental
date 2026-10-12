@@ -41,6 +41,20 @@ namespace Incremental
         public double idleDrain = 0.2;
     }
 
+    /// <summary>
+    /// 24 §23.2: one gravity range setting the debug key K cycles through: how much of the radius nodes counts, and the
+    /// amplifier crystal's radius multiplier at unlock and per ability_power. <see cref="id"/> names the UIStrings key
+    /// <c>gravity.preset.&lt;id&gt;</c> shown in the toast.
+    /// </summary>
+    [Serializable]
+    public sealed class GravityRangePreset
+    {
+        public string id = string.Empty;
+        public double growthScale = 1;
+        public double crystalRadiusMult = 1.35;
+        public double crystalRadiusPerPower = 1;
+    }
+
     /// <summary>Silhouette the dust shader draws for a dust kind (20 §4). Only the shape branches; the hue is the palette's.</summary>
     public enum DustShape
     {
@@ -106,9 +120,24 @@ namespace Incremental
                  "x(1 + this x (1 - dust / cap)): x1 at the cap, x(1 + this) on an empty screen. Without it an ability that sweeps " +
                  "the screen clean (수축) left it bare for most of the run. 0 = off.")]
         public double dustRefillBoost = 3;
+        [Tooltip("24 §23.1.1: the starting dust keeps out of this share of the gravity radius around the gravity source. " +
+                 "0 = laid evenly over the whole screen (the dust inside the radius is the first hold's catch); 1 = only outside " +
+                 "the radius, as before 10/12.")]
+        public double initialDustClearShare = 0;
 
         [Header("Gravity (spec §6)")]
         public double gravityRadius = 150;    // px (24 §20.3: 180 -> 150; the amplifier crystal buff makes up for it for a while)
+        [Tooltip("24 §23.2: the gravity_radius nodes' sum is x this, so the ring grows less per ring (1 = as before 10/12). " +
+                 "Ring 1 is untouched. The debug key K cycles gravityRangePresets at runtime.")]
+        public double gravityGrowthScale = 0.7;
+        [Tooltip("24 §23.2: the debug key K cycles these (radius node scale, crystal radius x at unlock, crystal radius per " +
+                 "ability_power). Runtime only; a fresh launch uses gravityGrowthScale and the AbilityTable crystal row.")]
+        public GravityRangePreset[] gravityRangePresets =
+        {
+            new GravityRangePreset { id = "now", growthScale = 1.0, crystalRadiusMult = 1.35, crystalRadiusPerPower = 1.0 },
+            new GravityRangePreset { id = "plan1", growthScale = 0.7, crystalRadiusMult = 1.20, crystalRadiusPerPower = 0.5 },
+            new GravityRangePreset { id = "plan2", growthScale = 0.5, crystalRadiusMult = 1.15, crystalRadiusPerPower = 0.5 },
+        };
         public double pullAccel = 600;        // px/s^2, upgrade target
         public double dustMaxSpeed = 400;     // px/s
         public double captureRadius = 30;     // px
@@ -152,6 +181,9 @@ namespace Incremental
         public double bundleSizeMax = 2.0;
         public double bundlePopMult = 1.6;
         public double bundleLabelScale = 1.6;
+        [Tooltip("24 §23.6: when a new x N label appears, the ones still showing are gone within this many seconds, so labels " +
+                 "of back-to-back bundles do not pile up on each other.")]
+        public double bundleLabelYieldSec = 0.15;
 
         [Header("Vortex and trails (22 §5)")]
         [Tooltip("Share of the pull that is turned sideways (counter-clockwise), so dust spirals in instead of falling " +
@@ -181,6 +213,9 @@ namespace Incremental
         public double followSpeedPx = 220;
         [Tooltip("The debug key (Insert) cycles off → these multiples of the effective speed → off (22 §3).")]
         public double[] followDebugMults = { 1, 1.5, 2 };
+        [Tooltip("24 §23.1.1: a run starts with the gravity source in the middle of the screen. On, the pointer is moved " +
+                 "there too (Mouse.WarpCursorPosition); off, only the gravity source starts there and follows the pointer.")]
+        public bool warpPointerOnRunStart = true;
         [Tooltip("The line drawn from the cursor to the gravity source while following: width (px) and color.")]
         public double followLineWidthPx = 1.5;
         public Color followLineColor = new Color(1f, 1f, 1f, 0.35f);
@@ -189,6 +224,11 @@ namespace Incremental
         public double staminaMax = 86;        // upgrade target (22 §8: the first run is 48s at the base drain)
         public double staminaHoldDrain = 1.5; // per second while holding (additional)
         public double staminaIdleDrain = 0.3; // per second, always
+        [Tooltip("24 §23.3: the stamina_max nodes' sum is x this, so a late run is shorter (1 = as before 10/12). The base " +
+                 "staminaMax and the drain reduction nodes are untouched. The debug key L cycles staminaNodeScaleSteps.")]
+        public double staminaNodeScale = 0.5;
+        [Tooltip("24 §23.3: the values the debug key L cycles staminaNodeScale through. Runtime only; takes effect from the next run.")]
+        public double[] staminaNodeScaleSteps = { 1, 0.5, 0.25 };
         [Tooltip("The stamina debug key (F10) cycles the runtime drain through these, in order (18 §A1); the asset values above " +
                  "must be one of them. Runtime only: nothing is saved, and the next launch is back to the values above.")]
         public StaminaPreset[] staminaPresets =
@@ -679,6 +719,15 @@ namespace Incremental
             if (dustKinds == null || id == null) return -1;
             for (int i = 0; i < dustKinds.Length; i++)
                 if (dustKinds[i] != null && dustKinds[i].id == id) return i;
+            return -1;
+        }
+
+        /// <summary>24 §23.2: index of the gravity range preset with this node scale, or -1 when none has it.</summary>
+        public int GravityRangePresetIndex(double growthScale)
+        {
+            if (gravityRangePresets == null) return -1;
+            for (int i = 0; i < gravityRangePresets.Length; i++)
+                if (gravityRangePresets[i] != null && Math.Abs(gravityRangePresets[i].growthScale - growthScale) < 1e-9) return i;
             return -1;
         }
 

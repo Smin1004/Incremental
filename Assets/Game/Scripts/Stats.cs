@@ -63,7 +63,15 @@ namespace Incremental
         /// Same, with the two stamina drains taken from somewhere else than the asset: the stamina debug key hands its
         /// preset in (18 §A1) so the node reduction still applies to it. The asset is untouched.
         /// </summary>
-        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase)
+        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase) =>
+            Compute(p, t, m, holdDrainBase, idleDrainBase, p.gravityGrowthScale, p.staminaNodeScale);
+
+        /// <summary>
+        /// Same, with the two node scales of 24 §23 (gravity_radius nodes x <paramref name="growthScale"/>, stamina_max
+        /// nodes x <paramref name="staminaScale"/>) taken from somewhere else than the asset: the debug keys K and L.
+        /// </summary>
+        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase,
+            double growthScale, double staminaScale)
         {
             double spawn = 0, pull = 0, sale = 0, stamina = 0, threshold = 0, cap = 0, radius = 0, drain = 0, start = 0, follow = 0;
             double mass = 1, frag = 0, fragRange = 0;
@@ -112,12 +120,14 @@ namespace Incremental
                 spawnRate = p.spawnRate + spawn,
                 pullAccel = p.pullAccel * (1.0 + pull),
                 saleMult = p.saleMult * (1.0 + sale),
-                staminaMax = p.staminaMax + stamina,
+                // 24 §23.3: the stamina_max nodes count for staminaNodeScale of what they say, the base does not.
+                staminaMax = p.staminaMax + stamina * Math.Max(0.0, staminaScale),
                 thresholdMult = p.thresholdMult * (1.0 - Math.Min(threshold, p.maxReduction)),
                 // 22 §6: the cap follows the area, so a wider world holds the same density of dust.
                 dustCap = (p.dustCap + cap) * area,
                 dustMass = p.dustMass * mass,
-                gravityRadius = p.gravityRadius * (1.0 + radius),
+                // 24 §23.2: the radius nodes count for gravityGrowthScale of what they say, so ring 1 stays where it was.
+                gravityRadius = p.gravityRadius * (1.0 + radius * Math.Max(0.0, growthScale)),
                 followSpeedPx = p.followSpeedPx * (1.0 + follow),
             };
             double drainMult = 1.0 - Math.Min(drain, p.maxReduction);

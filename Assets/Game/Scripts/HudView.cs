@@ -35,6 +35,13 @@ namespace Incremental
         const float ToastSec = 1.5f;
         readonly TMP_Text[] countLabels = new TMP_Text[CountLabelPool];
         readonly float[] countAges = new float[CountLabelPool];
+        /// <summary>
+        /// 24 §23.6: per label, the age it is gone at and the age its fade starts at. Normally the shared lifetime and 60%
+        /// of it; a newer label cuts both short.
+        /// </summary>
+        readonly float[] countEnds = new float[CountLabelPool];
+        readonly float[] countFades = new float[CountLabelPool];
+        float countYield = 0.15f;
         int nextCountLabel;
         float countLifetime = 1.5f;
 
@@ -128,6 +135,9 @@ namespace Incremental
         /// <summary>How long a "×N" label stays (the planet's display time).</summary>
         public void SetCountLifetime(double seconds) => countLifetime = Mathf.Max(0.1f, (float)seconds);
 
+        /// <summary>24 §23.6: seconds the labels still showing have left once a new one appears (GameParams.bundleLabelYieldSec).</summary>
+        public void SetCountYield(double seconds) => countYield = Mathf.Max(0f, (float)seconds);
+
         /// <summary>"×N" above a planet created N at once (12 §10-2). screenPos in pixels, sizePx = planet diameter.</summary>
         public void ShowPlanetCount(Vector3 screenPos, double sizePx, double count) => ShowPlanetCount(screenPos, sizePx, count, 1.0);
 
@@ -137,13 +147,35 @@ namespace Incremental
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(CanvasRect, screenPos, null, out var local)) return;
             int i = nextCountLabel;
             nextCountLabel = (nextCountLabel + 1) % CountLabelPool;
+            // 24 §23.6: back-to-back bundles put their labels on the same spot; the older ones make way within countYield,
+            // fading from where they are so none of them blinks.
+            for (int j = 0; j < CountLabelPool; j++)
+            {
+                if (j == i || countLabels[j] == null || !countLabels[j].gameObject.activeSelf) continue;
+                float age = countAges[j];
+                float end = Mathf.Min(countEnds[j], age + countYield);
+                if (end >= countEnds[j]) continue;
+                float a = CountAlpha(j);
+                countEnds[j] = end;
+                // The fade restarts now at alpha a: a straight line from a to 0 over what is left.
+                countFades[j] = a > 0.01f ? age - (end - age) * (1f - a) / a : age;
+            }
             var t = countLabels[i];
             t.text = string.Format(UIStrings.PlanetMulti, Fmt.Num(count));
             t.transform.localScale = Vector3.one * Mathf.Max(0.1f, (float)scale);
             ((RectTransform)t.transform).anchoredPosition = local + new Vector2(0f, (float)sizePx * 0.5f + 8f);
             t.color = ui.Direction.text;
             countAges[i] = 0f;
+            countEnds[i] = countLifetime;
+            countFades[i] = countLifetime * 0.6f;
             t.gameObject.SetActive(true);
+        }
+
+        float CountAlpha(int i)
+        {
+            float age = countAges[i], fade = countFades[i], end = countEnds[i];
+            if (age <= fade) return 1f;
+            return end > fade ? Mathf.Clamp01(1f - (age - fade) / (end - fade)) : 0f;
         }
 
         /// <summary>Short message at the bottom center that fades out (debug keys).</summary>
@@ -172,14 +204,13 @@ namespace Incremental
                 var t = countLabels[i];
                 if (t == null || !t.gameObject.activeSelf) continue;
                 countAges[i] += dt;
-                if (countAges[i] >= countLifetime)
+                if (countAges[i] >= countEnds[i])
                 {
                     t.gameObject.SetActive(false);
                     continue;
                 }
-                float fadeStart = countLifetime * 0.6f;
                 var c = t.color;
-                c.a = countAges[i] <= fadeStart ? 1f : 1f - (countAges[i] - fadeStart) / (countLifetime - fadeStart);
+                c.a = CountAlpha(i);
                 t.color = c;
             }
         }
