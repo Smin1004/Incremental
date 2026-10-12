@@ -26,7 +26,7 @@
 | [19_LowTier_Options.md](19_LowTier_Options.md) | **하위 티어가 안 나오는 문제.** 원인 계산, 방안 7개 비교, 결정(가격 곡선 완화 + 파편)과 파편 트리 설계 | 결정됨 |
 | [18_Feedback_Round1.md](18_Feedback_Round1.md) | **1차 점검 피드백 정리.** 즉시 수정 3건, 먼지 흡인 보정, 먼지 종류, 다양성 보너스, 특수 능력, 이동 제한 실험, 일정 영향 | 처리안 |
 | [17_Playtest_Guide.md](17_Playtest_Guide.md) | **점검 안내 (개발자용).** 디버그 키와 에디터 메뉴, 자유 점검과 측정 플레이의 구분, 불편한 점 넘기는 형식, 바로 고칠 수 있는 값 목록 | 안내 |
-| [Prompts/](Prompts/) | 구현 세션에 붙여 넣는 작업 프롬프트. 최신은 [Proto7.md](Prompts/Proto7.md) (Proto6 다음) | - |
+| [Prompts/](Prompts/) | 구현 세션에 붙여 넣는 작업 프롬프트. 최신은 [Proto8.md](Prompts/Proto8.md) (마감 회신 반영) | - |
 | [90_Backlog.md](90_Backlog.md) | 결정 기록, 보류, 제안, 리스크, 용어 | - |
 | [Reports/Prototype_Week1.md](Reports/Prototype_Week1.md) | 구현 세션의 1주차 보고. 개발자 기입 항목이 남아 있다 | 구현 세션 작성 |
 | [Reports/Week2.md](Reports/Week2.md) | 구현 세션의 2주차 보고. §3 질문 9개의 답은 12 §10 | 구현 세션 작성 |
@@ -49,6 +49,6 @@
 - 기획 세션은 코드를 쓰지 않는다. 문서만 관리한다.
 - 제안은 본문과 분리해 "제안" 또는 "추천"으로 표기한다.
 - 결정이 나면 `90_Backlog.md`의 결정 기록에 적고 해당 문서를 "확정"으로 올린다.
-- **지금 (10/12): 능력 단계 마감 회신 대기** (`24_Ability_Spec.md` §22.3). 마지막 구현은 `Prompts/Proto7.md`와 그 회신 반영(보고서 `Reports/Abilities_Proto.md` §12). 다음 프롬프트는 회신을 받은 뒤 쓴다(8차 또는 병합 + 빌드 확인 2차). 일정 전체는 `16_Release_Roadmap.md`, 인계는 `HANDOVER.md`.
+- **지금 (10/12): 8차 프롬프트 `Prompts/Proto8.md`** (스펙 `24_Ability_Spec.md` §23, 마감 회신 반영). 그 뒤 기획 세션이 빈 진화 자리 안건을 내고, 병합 + 빌드 확인 2차로 간다. 일정 전체는 `16_Release_Roadmap.md`, 인계는 `HANDOVER.md`.
 - 구현 세션의 보고는 `Reports/`에 둔다. 기획 세션은 보고를 받아 수치와 스펙을 갱신한다.
 - **커밋 메시지는 한국어로 쓴다.** 상세와 예시는 저장소 루트의 [CLAUDE.md](../CLAUDE.md).
