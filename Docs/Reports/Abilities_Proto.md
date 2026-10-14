@@ -1194,3 +1194,12 @@
 | `v10c_bh_ring11_lens_compare` | 위 둘의 가운데 600px 나란히 |
 
 개발자 세이브는 `proto10_tests\dev_current_r3_1602\`에 복사해 두고, 끝난 뒤 되돌려 `cmp`로 확인했다.
+
+## 18. 먼지는 원래대로 (2026-10-14)
+
+**개발자 회신:** "그냥 먼지는 원래대로 가자." §15~§17의 먼지 변경을 모두 걷어냈다.
+
+- `DustMeshRenderer`, `DustTrailRenderer`, `DustTrail.mat`, 먼지 관련 `GameParams` 필드와 에셋 값, `Week7Tests`가 10차 이전(`656d8a5`)과 같다. `Dust.shader`와 `DustTrail.shader`에는 블랙홀 왜곡(§15 B) 몇 줄만 남았다.
+- 디버그 키 `V`와 토스트 문자열, `GameRoot.DustLookNew`도 지웠다. `17_Playtest_Guide.md` §1의 `V` 줄은 기획 문서라 손대지 않았다(기획 세션이 지울 것).
+- 남은 10차 결과: 블랙홀 천체 작게(§15 A), 왜곡(§15 B, §17.2의 1.0 / 4배), 궤도석이 중력 범위 안 먼지를 놓기(§16.2).
+- Validate Data 오류 0, 경고 0. 기존 EditMode 227개 통과.

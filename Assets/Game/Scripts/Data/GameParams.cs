@@ -384,14 +384,6 @@ namespace Incremental
         [Tooltip("Width of a fully stretched streak relative to a still dot (15 §3); the tail end narrows to a point.")]
         public double dustStreakWidth = 0.5;
 
-        [Header("Dust head and tail (26 §11)")]
-        [Tooltip("A fresh launch clears the ribbon out of its head (on) or draws it as before (off). The debug key V swaps the two at runtime.")]
-        public bool dustLookNew = true;
-        [Tooltip("A ribbon starts at the centre of its dust, so its bright middle line used to run across the round head and cut it " +
-                 "in half. Over this share of the dust's drawn half-size behind the head the ribbon's brightness rises from 0 to " +
-                 "full; its width and length are untouched. 0 = the line across the head, as before.")]
-        public double trailHeadClearShare = 0.8;
-
         [Header("Overexposure (26 §5.5)")]
         [Tooltip("The debug key X compares the game with and without the four measures below; this is what a fresh launch uses.")]
         public bool exposureFix = true;

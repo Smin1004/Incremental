@@ -219,8 +219,6 @@ MonoBehaviour:
   dustDimEdgePx: 60
   dustHoldFadeSec: 0.25
   dustStreakWidth: 0.5
-  dustLookNew: 1
-  trailHeadClearShare: 0.8
   exposureFix: 1
   dustDensityRef: 1500
   dustDensityFloor: 0.5

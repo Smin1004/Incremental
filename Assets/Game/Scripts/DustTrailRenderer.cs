@@ -50,9 +50,6 @@ namespace Incremental
         Vector2[] points = new Vector2[0];
         /// <summary>Age of each kept point, in sample intervals, so a skipped duplicate does not shift the taper.</summary>
         int[] ages = new int[0];
-        /// <summary>Per point of the ribbon being built: its taper, and how far it is from the head along the path.</summary>
-        float[] tapers = new float[0];
-        float[] along = new float[0];
         Vector2 gravity;
         float phase;
         System.Comparison<int> nearestFirst;
@@ -89,10 +86,8 @@ namespace Incremental
             EnsureKinds();
             nearestFirst = CompareByDistance;
             // 22 §7: as with the dust mesh, size for the worst case once instead of growing during a run.
-            points = new Vector2[Mathf.Max(2, p.trailPoints + 2)];
+            points = new Vector2[Mathf.Max(2, p.trailPoints + 1)];
             ages = new int[points.Length];
-            tapers = new float[points.Length];
-            along = new float[points.Length];
             EnsureCapacity(Mathf.Max(1, p.trailBudget) * (Mathf.Max(0, p.trailPoints) + 1));
         }
 
@@ -211,12 +206,10 @@ namespace Incremental
                 return;
             }
             EnsureKinds();
-            if (points.Length < trailLen + 2)
+            if (points.Length < trailLen + 1)
             {
-                points = new Vector2[trailLen + 2];
+                points = new Vector2[trailLen + 1];
                 ages = new int[points.Length];
-                tapers = new float[points.Length];
-                along = new float[points.Length];
             }
 
             gravity = root.EndingActive && root.Phase == GamePhase.Run ? root.EndingCenter : root.GravityWorld;
@@ -228,14 +221,12 @@ namespace Incremental
             }
 
             // Worst case every ribbon is full length: one point for "now" plus every kept position, two vertices each.
-            int maxPoints = picked.Count * (trailLen + 2);
+            int maxPoints = picked.Count * (trailLen + 1);
             EnsureCapacity(maxPoints);
 
             float ppu = (float)p.pixelsPerUnit;
             float halo = (float)(p.dustHaloPx / ppu) * 0.5f;
             float share = (float)p.trailWidthShare;
-            // 26 §11 (10차 2회신): the ribbon is not drawn bright across its own head. V turns it off at runtime.
-            float clearShare = root.DustLookNew ? Mathf.Max(0f, (float)p.trailHeadClearShare) : 0f;
             // 22 §5 "그 먼지 표시 크기의 60%": a moving dust is drawn as a streak that narrows across its travel, so the
             // ribbon follows that thickness and not the round halo, or the trail comes out fatter than the dust leaving it.
             float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
@@ -274,7 +265,7 @@ namespace Incremental
                 float r = Mathf.LerpUnclamped(colA.r, colB.r, t);
                 float g = Mathf.LerpUnclamped(colA.g, colB.g, t);
                 float bl = Mathf.LerpUnclamped(colA.b, colB.b, t);
-                if (AppendRibbon(i, d.trailFill, headWidth, h * clearShare, r, g, bl, bright)) DrawnTrails++;
+                if (AppendRibbon(i, d.trailFill, headWidth, r, g, bl, bright)) DrawnTrails++;
             }
 
             if (vertCount == 0 || triCount == 0)
@@ -305,7 +296,7 @@ namespace Incremental
         /// One ribbon: the dust's position now, then the positions kept for it, newest first. Width and brightness go
         /// from full at the head to 0 at the tail. Returns false when the path is too short to draw.
         /// </summary>
-        bool AppendRibbon(int index, int fill, float headWidth, float clear, float cr, float cg, float cb, float bright)
+        bool AppendRibbon(int index, int fill, float headWidth, float cr, float cg, float cb, float bright)
         {
             if (fill < 1 || headWidth <= 0f) return false;
             // Read the path once: the ribbon needs each point's neighbours, and TrailPoint walks the ring buffer.
@@ -324,35 +315,6 @@ namespace Incremental
                 count++;
             }
             if (count < 2) return false;
-            along[0] = 0f;
-            for (int j = 0; j < count; j++)
-            {
-                tapers[j] = Taper(ages[j], fill, phase);
-                if (j > 0) along[j] = along[j - 1] + (points[j] - points[j - 1]).magnitude;
-            }
-            // 26 §11 (10차 2회신): the brightness rises from 0 at the head over the first `clear` of the path, so the
-            // ribbon's bright middle does not cut the round head in half. A point is put in where that ends, so the rise
-            // is not spread over a whole sample interval of a fast dust.
-            if (clear > 0f)
-                for (int j = 1; j < count; j++)
-                {
-                    if (along[j] <= clear) continue;
-                    if (along[j - 1] < clear && along[j] - clear > 1e-5f)
-                    {
-                        float u = (clear - along[j - 1]) / (along[j] - along[j - 1]);
-                        for (int m = count; m > j; m--)
-                        {
-                            points[m] = points[m - 1];
-                            tapers[m] = tapers[m - 1];
-                            along[m] = along[m - 1];
-                        }
-                        points[j] = Vector2.Lerp(points[j - 1], points[j + 1], u);
-                        tapers[j] = Mathf.Lerp(tapers[j - 1], tapers[j + 1], u);
-                        along[j] = clear;
-                        count++;
-                    }
-                    break;
-                }
 
             int firstVert = vertCount;
             for (int j = 0; j < count; j++)
@@ -365,10 +327,9 @@ namespace Incremental
                 dir.Normalize();
                 float px = -dir.y, py = dir.x;
 
-                float taper = tapers[j];
+                float taper = Taper(ages[j], fill, phase);
                 float w = headWidth * taper;
-                float rise = clear > 0f ? Mathf.Clamp01(along[j] / clear) : 1f;
-                float k = Mathf.Min(bright * taper * rise * rise * (3f - 2f * rise), 2f) * 0.5f;
+                float k = Mathf.Min(bright * taper, 2f) * 0.5f;
                 var c32 = new Color32(Byte01(cr * k), Byte01(cg * k), Byte01(cb * k), 255);
 
                 verts[vertCount].pos = new Vector3(here.x - px * w, here.y - py * w, 0f);

@@ -223,8 +223,6 @@ namespace Incremental
         /// size, the brightness cap) are on. Starts at GameParams.exposureFix; the debug key X flips it for comparison.
         /// </summary>
         public bool ExposureFix { get; set; } = true;
-        /// <summary>26 §11: the dust's head and tail look (true) or the one before it; the debug key V swaps them. Runtime only.</summary>
-        public bool DustLookNew { get; set; } = true;
         /// <summary>22 §6, 26 §5.5: the drawn world scale starts moving to a new target (from, to). A gate was bought.</summary>
         public event Action<double, double> WorldExpanding;
         /// <summary>Replace to drive the game without a mouse (autoplay bot).</summary>
@@ -267,7 +265,6 @@ namespace Incremental
             hasFocus = Application.isFocused;
             EffectIntensity = Mathf.Clamp01((float)gameParams.effectIntensity);
             ExposureFix = gameParams.exposureFix;
-            DustLookNew = gameParams.dustLookNew;
             PlanetVisual.ApplyGlobals(gameParams);
 
             Cam = Camera.main;

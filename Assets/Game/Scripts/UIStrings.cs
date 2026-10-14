@@ -61,10 +61,6 @@ namespace Incremental
         public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7}, 생성 ×{11:0.0})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI {8} [U]   스태미나 {9} [G]   노출 억제 {10} [X]";
         /// <summary>26 §5.5: the toast of the overexposure key. {0} = on / off.</summary>
         public const string ExposureFixToast = "과노출 억제: {0}  (X)";
-        /// <summary>26 §11: the dust look key. {0} = the look's name.</summary>
-        public const string DustLookToast = "먼지 모양: {0}  (V)";
-        public const string DustLookNew = "머리를 가르는 줄 없앰";
-        public const string DustLookOld = "지금 모양";
         /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>
         public const string UiDirectionToast = "UI 방향: {0}  (U)";
         public const string StaminaDisplayToast = "스태미나 표시: {0}  (G)";
