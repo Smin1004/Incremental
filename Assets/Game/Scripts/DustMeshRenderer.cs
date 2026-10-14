@@ -28,6 +28,8 @@ namespace Incremental
         static readonly int IdCore = Shader.PropertyToID("_Core");
         static readonly int IdHaloAlpha = Shader.PropertyToID("_HaloAlpha");
         static readonly int IdStreakDim = Shader.PropertyToID("_StreakDim");
+        static readonly int IdCoreFade = Shader.PropertyToID("_CoreFadeAtStretch");
+        static readonly int IdMotionMax = Shader.PropertyToID("_MotionStretchMax");
 
         GameRoot root;
         DustField field;
@@ -36,6 +38,16 @@ namespace Incremental
         MeshRenderer mr;
         DustVertex[] verts = new DustVertex[0];
         float holdGlow;
+        MaterialPropertyBlock mpb;
+        int lookShown = -1;
+        float[] headBright = new float[0];
+
+        /// <summary>
+        /// 26 §11.3: per dust (same index as the field), the brightness its head is drawn at this frame (the number its core
+        /// would be drawn at, with the gravity field, the dimming and the fade-in). The trail renderer starts each ribbon from
+        /// it (trailHeadMatch), so the ribbon is under the head's halo plus itself and never brighter; it runs after this.
+        /// </summary>
+        public float[] HeadBright => headBright;
         // 22 §7: one entry per dust kind, read out of the data once a frame. The old code asked GameParams for the kind of
         // every single dust, three times each.
         float[] kindSize = new float[0];
@@ -70,7 +82,7 @@ namespace Incremental
             mr.lightProbeUsage = LightProbeUsage.Off;
             mr.reflectionProbeUsage = ReflectionProbeUsage.Off;
             mr.sortingOrder = 0;
-            var mpb = new MaterialPropertyBlock();
+            mpb = new MaterialPropertyBlock();
             mpb.SetFloat(IdCore, (float)(p.dustCorePx / System.Math.Max(p.dustHaloPx, 1e-3)));
             mpb.SetFloat(IdHaloAlpha, (float)p.dustHaloAlpha);
             mpb.SetFloat(IdStreakDim, (float)p.dustStreakDim);
@@ -135,6 +147,12 @@ namespace Incremental
             float full = Mathf.Max(drift + 1e-3f, (float)(p.dustStretchFullSpeedPx / ppu));
             float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
             float exposure = (float)p.dustStreakExposureSec;
+            // 26 §11.3: with the new look a moving dust loses its core disc. The shader reads how much the dust moves from
+            // the vertex alpha (above the shape id), because a dust with a ribbon is drawn unstretched however fast it goes.
+            bool newLook = root.DustLookNew;
+            ApplyLook(newLook, stretchMax);
+            float coreFadeAt = (float)p.dustCoreFadeAtStretch;
+            bool coreFades = newLook && coreFadeAt > 1f;
             // 22 §5: a kind that draws a trail ribbon does not also smear its own quad. Two pictures of the same motion
             // left a round head sticking out of the front of the ribbon and a hard shoulder where the ribbon met the
             // middle of the dust; the bigger the kind, the more it showed. The ribbon carries the motion, the quad is
@@ -191,6 +209,9 @@ namespace Incremental
                 // dust, as long bars. A kind that has a ribbon does not smear at all: its quad stays the round dust.
                 bool ribboned = trailsOn && kind > 0;
                 float s = ribboned ? 1f : Mathf.Min(1f + speed * exposure / Mathf.Max(h, 1e-6f), stretchMax);
+                // 26 §11.3: how much it moves is the stretch a dust of the base size would have at this speed, so a heavy
+                // kind (up to 8.5x wider, barely stretched) loses its core at the same speed as the rest.
+                float moving = Mathf.Min(1f + speed * exposure / Mathf.Max(halo * earlySize, 1e-6f), stretchMax);
                 // The streak also narrows, but by how much it actually stretched, not by the raw speed.
                 float narrow = stretchMax > 1f ? (s - 1f) / (stretchMax - 1f) : 0f;
                 float stretch = Mathf.Clamp01((speed - drift) / (full - drift));
@@ -227,11 +248,19 @@ namespace Incremental
                 // The alpha channel carries the dust kind's shape id (20 §4), which the shader reads back as 0..255.
                 float k = Mathf.Min(b, cap) * 0.5f;
                 float t = d.tint;
+                // 26 §11.3: 0..31 of how far the dust is toward a full stretch, above the shape id (0..7).
+                int motion = 0;
+                if (coreFades)
+                {
+                    float m = stretchMax > 1f ? (moving - 1f) / (stretchMax - 1f) : 0f;
+                    motion = Mathf.RoundToInt(Mathf.Clamp01(m) * 31f);
+                }
+                headBright[i] = k * 2f;
                 var c32 = new Color32(
                     Byte01(Mathf.LerpUnclamped(colA.r, colB.r, t) * k),
                     Byte01(Mathf.LerpUnclamped(colA.g, colB.g, t) * k),
                     Byte01(Mathf.LerpUnclamped(colA.b, colB.b, t) * k),
-                    (byte)kindShape[kind]);
+                    (byte)((int)kindShape[kind] + motion * 8));
 
                 int v = i * 4;
                 verts[v].pos = new Vector3(c.x - along.x - across.x, c.y - along.y - across.y, 0f);
@@ -251,6 +280,17 @@ namespace Incremental
             Rect a = field.Area;
             var bounds = new Bounds(new Vector3(a.center.x, a.center.y, 0f), new Vector3(a.width + 1f, a.height + 1f, 1f));
             mesh.Upload(verts, n * 4, n * 6, bounds);
+        }
+
+        /// <summary>26 §11: the shader values of the look the V key is on, set when it changes.</summary>
+        void ApplyLook(bool newLook, float stretchMax)
+        {
+            int want = newLook ? 1 : 0;
+            if (want == lookShown) return;
+            lookShown = want;
+            mpb.SetFloat(IdCoreFade, newLook ? (float)p.dustCoreFadeAtStretch : 0f);
+            mpb.SetFloat(IdMotionMax, stretchMax);
+            mr.SetPropertyBlock(mpb);
         }
 
         /// <summary>
@@ -277,6 +317,7 @@ namespace Incremental
             int cap = Mathf.Max(256, verts.Length / 4);
             while (cap < n) cap *= 2;
             verts = new DustVertex[cap * 4];
+            headBright = new float[cap];
         }
     }
 }

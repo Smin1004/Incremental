@@ -364,6 +364,7 @@ namespace Incremental
                 if (kb.uKey.wasPressedThisFrame) CycleUiDirection();
                 if (kb.gKey.wasPressedThisFrame) ToggleStaminaDisplay();
                 if (kb.xKey.wasPressedThisFrame) ToggleExposureFix();
+                if (kb.vKey.wasPressedThisFrame) ToggleDustLook();
                 if (kb.tKey.wasPressedThisFrame && root.Tree != null) root.Tree.CycleTwist();
                 if (kb.kKey.wasPressedThisFrame) CycleGravityRange();
                 if (kb.lKey.wasPressedThisFrame) CycleStaminaScale();
@@ -538,6 +539,23 @@ namespace Incremental
             string state = root.ExposureFix ? UIStrings.On : UIStrings.Off;
             root.Hud.ShowToast(string.Format(UIStrings.ExposureFixToast, state));
             Debug.Log("[Debug] overexposure measures: " + state);
+        }
+
+        /// <summary>
+        /// V (26 §11): the dust's head and tail look ↔ the look before it, on the next frame, for comparing on the same scene.
+        /// Runtime only: a fresh launch starts with GameParams.dustLookNew.
+        /// </summary>
+        public void ToggleDustLook()
+        {
+            root.DustLookNew = !root.DustLookNew;
+            var p = root.gameParams;
+            string name = root.DustLookNew ? UIStrings.DustLookNew : UIStrings.DustLookOld;
+            root.Hud.ShowToast(string.Format(UIStrings.DustLookToast, name));
+            Debug.Log(root.DustLookNew
+                ? "[Dust] look: new head and tail (core gone at stretch " + p.dustCoreFadeAtStretch.ToString("0.##") + ", ribbon x" +
+                  p.trailBrightMult.ToString("0.##") + (p.trailHeadMatch ? " of its head" : "") + ", width " + p.trailWidthShare.ToString("0.##") + ")"
+                : "[Dust] look: as before 26 §11 (core always, ribbon own brightness, width " + p.dustOldTrailWidthShare.ToString("0.##") +
+                  ", edge softness " + p.dustOldTrailEdgeSoftness.ToString("0.##") + ")");
         }
 
         /// <summary>
