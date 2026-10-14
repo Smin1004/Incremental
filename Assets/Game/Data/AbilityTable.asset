@@ -115,10 +115,12 @@ MonoBehaviour:
     blackHoleBodyScale: 0.4
     blackHoleBodyMaxShare: 0.6
     blackHoleBodyRestoreSec: 0.3
+    blackHoleBodyGlowScale: 0.3
     lensStrength: 1
     lensReachRadii: 4
     lensRingAlpha: 0.05
     lensRingWidth: 0.08
+    lensClearDisc: 1
   exciteSec: 0.4
   exciteBrightness: 2
   exciteDriftRelaxMult: 0.3

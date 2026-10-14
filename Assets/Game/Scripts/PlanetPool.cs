@@ -128,6 +128,8 @@ namespace Incremental
             float baseD = Mathf.Lerp(s.fromDiameter, s.diameter, tPop);
             float d = baseD * (1f + pop * Mathf.Sin(tPop * Mathf.PI));
             if (s.underHole) d = (float)(root.GravityBodyPx(d * p.pixelsPerUnit) / p.pixelsPerUnit);
+            // 24 §24.3: and its corona further still.
+            s.v.SetGlowSizeMul(s.underHole ? root.GravityGlowSizeMul() : 1f);
             float alpha = 1f;
             Vector3 pos = s.start;
 

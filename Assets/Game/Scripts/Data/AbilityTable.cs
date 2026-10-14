@@ -390,6 +390,9 @@ namespace Incremental
         public double blackHoleBodyMaxShare = 0.6;
         [Tooltip("Seconds over which the bodies grow back to their own size after the release.")]
         public double blackHoleBodyRestoreSec = 0.3;
+        [Tooltip("24 §24.3: the glow (corona) of those bodies reaches this share of its own reach, on top of the body's " +
+                 "shrink, so it does not lie round the disc as a thick ring. 1 = shrinks with the body only.")]
+        public double blackHoleBodyGlowScale = 0.3;
 
         [Header("Lens (24 §24.2-2)")]
         [Tooltip("How far the background stars, the dust and the trails are pushed outward around the black hole, in black hole " +
@@ -402,6 +405,9 @@ namespace Incremental
                  "additive; 0 = none) and width as a share of the black hole radius.")]
         public double lensRingAlpha = 0.05;
         public double lensRingWidth = 0.08;
+        [Tooltip("24 §24.3: dust and trails inside the disc are drawn pushed out past its edge (radius x (1 + lensRingWidth) " +
+                 "and on), so the disc stays black and the dust gathers into a bright ring round it. Off = the 10th pass lens.")]
+        public bool lensClearDisc = true;
 
         public BlackHoleDef()
         {
@@ -429,6 +435,8 @@ namespace Incremental
             if (darkenAlpha < 0 || darkenAlpha > 1 || darkenReach < 0 || darkenReach > 1)
                 r.Errors.Add(Where + " darkenAlpha and darkenReach must be within 0..1.");
             if (flashAlpha < 0 || flashAlpha > 1 || flashRiseSec < 0) r.Errors.Add(Where + " flashAlpha must be within 0..1 and flashRiseSec >= 0.");
+            if (!(blackHoleBodyGlowScale > 0) || blackHoleBodyGlowScale > 1)
+                r.Errors.Add(Where + " blackHoleBodyGlowScale must be within 0..1 (0 excluded).");
             if (!(blackHoleBodyScale > 0) || blackHoleBodyScale > 1 || !(blackHoleBodyMaxShare > 0) || blackHoleBodyRestoreSec < 0)
                 r.Errors.Add(Where + " blackHoleBodyScale must be within 0..1 (0 excluded), blackHoleBodyMaxShare > 0 and blackHoleBodyRestoreSec >= 0.");
             if (lensStrength < 0 || lensStrength > 1.5 || !(lensReachRadii > 1) || lensRingAlpha < 0 || !(lensRingWidth > 0))

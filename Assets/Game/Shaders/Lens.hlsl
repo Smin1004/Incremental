@@ -6,7 +6,8 @@
 
 // xy centre (world), z radius (world), w push at the edge in radii (0 = no lens).
 float4 _BHLens;
-// x reach in radii, y brightness of the light ring, z ring width as a share of the radius.
+// x reach in radii, y brightness of the light ring, z ring width as a share of the radius, w how far the dust inside the
+// disc is cleared out of it (0 = not at all, 1 = fully: 24 §24.3, the lens strength's ramp x lensClearDisc).
 float4 _BHLensShape;
 
 // How far (world) a point at distance r is pushed outward. Inside the hole the push grows from 0 at the centre so that
@@ -22,14 +23,30 @@ float LensPushAt(float r)
     return _BHLens.w * radius * f * f;
 }
 
+// 24 §24.3: the push for what is drawn on top of the disc (dust and trail vertices). Inside the disc nothing may stay on
+// it, or the black hole reads grey under a dense field: the centre goes to just outside the edge, radius x (1 + ring
+// width), and the edge itself to where the edge from outside is drawn, radius x (1 + push). So the disc stays black and
+// the dust that was over it piles up into a bright ring round it, continuous across the edge.
+float LensForwardPush(float r)
+{
+    float radius = max(_BHLens.z, 1e-4);
+    float u = r / radius;
+    if (u > 1.0 || _BHLensShape.w <= 0.0) return LensPushAt(r);
+    float inner = radius * (1.0 + _BHLensShape.z * _BHLensShape.w);
+    float outer = radius * (1.0 + _BHLens.w);
+    float cleared = inner + (max(outer, inner) - inner) * u;
+    return lerp(LensPushAt(r), cleared - r, _BHLensShape.w);
+}
+
 // A world position as it is drawn under the lens (dust and trail vertices).
 float2 LensForward(float2 p)
 {
     if (_BHLens.w <= 0.0) return p;
     float2 d = p - _BHLens.xy;
     float r = length(d);
-    if (r < 1e-6) return p;
-    return p + d / r * LensPushAt(r);
+    // The very centre has no direction; it goes up, like any point it would be pushed out with.
+    if (r < 1e-6) { d = float2(0.0, 1e-6); r = 1e-6; }
+    return p + d / r * LensForwardPush(r);
 }
 
 // The world position whose picture lands at p under the lens (the background is drawn per pixel, so it looks back).

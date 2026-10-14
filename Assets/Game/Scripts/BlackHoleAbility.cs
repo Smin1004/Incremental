@@ -56,6 +56,17 @@ namespace Incremental
         /// </summary>
         public bool Shrinking => shrink > 0f;
 
+        /// <summary>
+        /// 24 §24.3: the glow reach (corona) multiplier of a body at the gravity source now: blackHoleBodyGlowScale while
+        /// the bodies are shrunk, blended back with them. The body's own shrink already scales the glow; this takes it
+        /// further so the corona does not stay round the disc as a thick ring.
+        /// </summary>
+        public float GlowSizeMul()
+        {
+            if (shrink <= 0f) return 1f;
+            return 1f + ((float)D.blackHoleBodyGlowScale - 1f) * shrink;
+        }
+
         public double BodyPx(double px)
         {
             if (shrink <= 0f) return px;
@@ -237,7 +248,9 @@ namespace Incremental
             Vector2 g = root.GravityWorld;
             float radius = (float)(root.RunBodyPx(d.sizePx) * 0.5 / p.pixelsPerUnit);
             Shader.SetGlobalVector(IdLens, new Vector4(g.x, g.y, radius, strength));
-            Shader.SetGlobalVector(IdLensShape, new Vector4((float)d.lensReachRadii, (float)d.lensRingAlpha * amount, (float)d.lensRingWidth, 0f));
+            // 24 §24.3: the dust inside the disc is cleared out with the same ramp as the push.
+            float clear = d.lensClearDisc ? Mathf.Clamp01(amount) : 0f;
+            Shader.SetGlobalVector(IdLensShape, new Vector4((float)d.lensReachRadii, (float)d.lensRingAlpha * amount, (float)d.lensRingWidth, clear));
         }
 
         /// <summary>The frame over the camera view: black at the edge, clear <paramref name="reach"/> of the half screen in.</summary>

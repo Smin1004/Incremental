@@ -153,6 +153,13 @@ namespace Incremental
             return blackHole != null ? blackHole.BodyPx(px) : px;
         }
 
+        /// <summary>24 §24.3: the glow reach multiplier of a body at the gravity source (1 unless the black hole shrinks it). Render only.</summary>
+        public float GravityGlowSizeMul()
+        {
+            if (blackHole == null && Abilities != null) blackHole = Abilities.Get("blackhole") as BlackHoleAbility;
+            return blackHole != null ? blackHole.GlowSizeMul() : 1f;
+        }
+
         /// <summary>24 §24.2-1: true while bodies at the gravity source are drawn smaller (a body made now stays shrunk until the restore).</summary>
         public bool GravityBodiesShrunk
         {

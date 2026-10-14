@@ -279,6 +279,8 @@ namespace Incremental
                 body.SetLightPoint(root.Planets.VanishPoint());
             }
             body.SetDiameter(drawnPx / (float)p.pixelsPerUnit);
+            // 24 §24.3: the corona shrinks further than the body while the black hole is on (not the black hole itself).
+            body.SetGlowSizeMul(lookOverride != null ? 1f : root.GravityGlowSizeMul());
 
             // Gauge: a thin ring just outside the body (and its ring, if any), around the gravity source.
             var bodyScreen = (Vector2)root.Cam.WorldToScreenPoint(new Vector3(w.x, w.y, 0f));
