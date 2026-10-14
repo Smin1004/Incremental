@@ -36,6 +36,12 @@ namespace Incremental
         public double totalIncome;
         /// <summary>Sum of run lengths, seconds.</summary>
         public double totalPlayTimeSec;
+        /// <summary>
+        /// 28 §4: seconds played since the new game, runs, result screens and the tree alike, pauses left out. The
+        /// progress log (progress.csv) stamps the gate purchases with it. Saves from before v4 start it at
+        /// totalPlayTimeSec (the run time only), so for them it runs a little behind.
+        /// </summary>
+        public double playClockSec;
         /// <summary>Planets created over all runs. Index = tier - 1. Fragments are counted apart (20 §5).</summary>
         public int[] totalPlanets = new int[0];
         /// <summary>Fragments dropped over all runs. Index = tier - 1 (20 §5).</summary>

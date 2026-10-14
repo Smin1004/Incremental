@@ -523,6 +523,7 @@ namespace Incremental
         void Update()
         {
             TickHoldToggle();
+            TickPlayClock();
             ApplyWorldScale();
             // 26 §4: the light of the UI follows the effect intensity like every other effect.
             UIStyle.SetEffect(EffectIntensity);
@@ -547,6 +548,19 @@ namespace Incremental
                 shownPaused = paused;
                 Hud.SetCenter(paused ? UIStrings.Paused : string.Empty);
             }
+        }
+
+        /// <summary>
+        /// 28 §4: the play clock of the progress log runs on every screen (run, result, tree), in game time so a bot
+        /// measurement at a raised time scale reads like a real play. It stops while the game is paused, and between
+        /// runs while the window is unfocused under the same setting that pauses a run.
+        /// </summary>
+        void TickPlayClock()
+        {
+            if (Paused) return;
+            bool away = !hasFocus && Settings.pauseOnFocusLoss && !(Bot != null && Bot.Enabled);
+            if (away || (Gallery != null && Gallery.IsOpen)) return;
+            Meta.playClockSec += Time.deltaTime;
         }
 
         /// <summary>
@@ -937,6 +951,8 @@ namespace Incremental
             Phase = GamePhase.Result;
             Ending.Stop();
             pendingStart = true;
+            // 28 §4: a new game is where a measurement play starts; the play clock is 0 again (a new MetaState).
+            ProgressLogger.Write(DataDir, "new_game", null, Meta, 0, 0);
             UnityEngine.Debug.Log("[Save] save deleted; starting again from run 1");
         }
 
@@ -983,9 +999,23 @@ namespace Incremental
         /// <summary>Buys one level of a node (stat or gate). Between runs only; saves after every purchase.</summary>
         public bool TryBuy(string nodeId)
         {
-            if (Phase != GamePhase.Result || !Shop.Buy(nodeTable, Meta, nodeId)) return false;
+            if (Phase != GamePhase.Result) return false;
+            var node = nodeTable.Get(nodeId);
+            double before = Meta.currency;
+            double cost = node != null ? Shop.Cost(nodeTable, Meta, node) : 0;
+            bool first = !AnyLevel(Meta);
+            if (!Shop.Buy(nodeTable, Meta, nodeId)) return false;
             Save();
+            // 28 §4: every gate, and the very first purchase of the game, goes into the progress log.
+            if (node != null && node.IsGate) ProgressLogger.Write(DataDir, "gate", nodeId, Meta, before, cost);
+            else if (first) ProgressLogger.Write(DataDir, "first_purchase", nodeId, Meta, before, cost);
             return true;
+        }
+
+        static bool AnyLevel(MetaState m)
+        {
+            foreach (var l in m.upgradeLevels) if (l != null && l.level > 0) return true;
+            return false;
         }
 
         // ---------------- debug (DebugTools) ----------------

@@ -17,7 +17,8 @@ namespace Incremental
 
     /// <summary>
     /// F4 autoplay bot for unattended measurement runs. Simple rules only:
-    /// during a run, move the cursor toward the densest dust cell and hold; release once the goal tier
+    /// during a run, move the cursor toward the densest dust cell and hold (27 §1.1 P1: or toward an amplifier crystal
+    /// on screen that it can still reach before it runs out, then back to the dust once it is drawn in); release once the goal tier
     /// (highest unlocked tier) threshold is reached; between runs buy purchasable skill tree nodes, cheapest first,
     /// until nothing is affordable, then start the next run. Drives the game through GameRoot.InputProvider.
     /// <see cref="gateSaving"/> (12 §3): the next gate is bought first when affordable, and the bot saves for it once the
@@ -42,6 +43,10 @@ namespace Incremental
         [Tooltip("Stop: buy the next gate first and buy nothing else once currency + last run income would pay for it (12 §3). " +
                  "KeepReserve (default, 14 §8): while saving, still spend what exceeds gate − last run income.")]
         public GateSaving gateSaving = GateSaving.KeepReserve;
+        [Tooltip("27 §1.1 P1: go for an amplifier crystal when it can be reached before it runs out (crystal resonance too).")]
+        public bool chaseCrystals = true;
+        [Tooltip("Seconds of a crystal's life the bot keeps in hand when deciding whether it can still reach it.")]
+        public double chaseMarginSec = 0.3;
 
         GameRoot root;
         Vector2 cursor;
@@ -122,7 +127,8 @@ namespace Incremental
             }
 
             float step = (float)moveSpeedPx * Time.fixedDeltaTime;
-            Vector2 target = DensestCellScreen();
+            Vector2 target;
+            if (!(chaseCrystals && CrystalTarget(out target))) target = DensestCellScreen();
             Vector2 d = target - cursor;
             if (d.magnitude > step) cursor += d.normalized * step; else cursor = target;
 
@@ -131,6 +137,40 @@ namespace Incremental
             var goal = root.celestialTable.Get(root.Meta.unlockedMaxTier);
             bool reached = goal != null && root.Run.mass >= root.Threshold(goal);
             pressed = !reached;
+        }
+
+        CrystalAbility crystal;
+        bool chasing;
+
+        /// <summary>
+        /// 27 §1.1 P1: the screen position of the waiting crystal nearest the gravity source, when the gravity source can
+        /// get it inside its pull radius before the crystal runs out: the distance left over the slower of the bot's
+        /// cursor and the gravity source's follow speed, plus chaseMarginSec. False otherwise (then the dust as before).
+        /// </summary>
+        bool CrystalTarget(out Vector2 screen)
+        {
+            screen = Vector2.zero;
+            if (crystal == null && root.Abilities != null) crystal = root.Abilities.Get("crystal") as CrystalAbility;
+            if (crystal == null) return Chasing(false);
+            Vector2 g = root.GravityWorld;
+            if (!crystal.NearestWaiting(g, out var pos, out double lifeLeft, out float pullRadius)) return Chasing(false);
+            // World units per screen pixel, to compare the bot's cursor speed with the follow speed.
+            float worldPerPx = 2f * root.Cam.orthographicSize / Mathf.Max(1, root.Cam.pixelHeight);
+            double speed = moveSpeedPx * worldPerPx;
+            if (root.FollowEnabled) speed = Math.Min(speed, root.FollowSpeedPx / root.gameParams.pixelsPerUnit);
+            double gap = Math.Max(0.0, (pos - g).magnitude - pullRadius);
+            if (gap / Math.Max(1e-6, speed) + chaseMarginSec > lifeLeft) return Chasing(false);
+            Vector3 sp = root.Cam.WorldToScreenPoint(new Vector3(pos.x, pos.y, 0f));
+            screen = new Vector2(sp.x, sp.y);
+            return Chasing(true);
+        }
+
+        bool Chasing(bool on)
+        {
+            if (on != chasing && root.abilityTable != null && root.abilityTable.logEvents)
+                Debug.Log(on ? "[Bot] going for the crystal" : "[Bot] back to the dust");
+            chasing = on;
+            return on;
         }
 
         /// <summary>Screen position of the center of the grid cell holding the most dust.</summary>

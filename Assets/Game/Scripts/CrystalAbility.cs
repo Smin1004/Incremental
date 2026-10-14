@@ -115,6 +115,34 @@ namespace Incremental
                 return best;
             }
         }
+        /// <summary>
+        /// 27 §1.1 P1 (the bot): the waiting crystal nearest <paramref name="from"/> that is not being drawn in yet, its
+        /// position (world units) and the seconds it has left. False when none is waiting.
+        /// </summary>
+        public bool NearestWaiting(Vector2 from, out Vector2 pos, out double lifeLeft, out float pullRadiusWorld)
+        {
+            pos = from;
+            lifeLeft = 0;
+            pullRadiusWorld = (float)(root.Effective.gravityRadius / p.pixelsPerUnit);
+            float bestDist = float.PositiveInfinity;
+            for (int i = 0; i < shards.Length; i++)
+            {
+                if (!shards[i].alive || shards[i].pulled) continue;
+                float dist = (shards[i].pos - from).sqrMagnitude;
+                if (dist >= bestDist) continue;
+                bestDist = dist;
+                pos = shards[i].pos;
+                lifeLeft = D.lifeSec - shards[i].age;
+            }
+            return !float.IsPositiveInfinity(bestDist);
+        }
+
+        /// <summary>11th pass C: crystals that appeared, were taken and ran out since <see cref="ResetCounts"/> (bot measurement).</summary>
+        public int Appeared { get; private set; }
+        public int Taken { get; private set; }
+        public int Missed { get; private set; }
+        public void ResetCounts() => Appeared = Taken = Missed = 0;
+
         /// <summary>Seconds of amplification left, 0 when none.</summary>
         public double BuffLeft => buffLeft;
         /// <summary>How far the buff is in, 0..1: 1 while amplified, ramping over rampSec at both ends.</summary>
@@ -229,6 +257,7 @@ namespace Incremental
             sh.pulled = false;
             for (int k = 1; k < shards.Length; k++) shards[k].alive = false;
             clock = 0;
+            Appeared++;
             Log("appeared at " + RunClock + ": " + (bestDist * ppu).ToString("F0") + " px from the gravity source (" +
                 (least * ppu).ToString("F0") + " px or more wanted), gone in " + d.lifeSec.ToString("0.##") + "s unless taken" +
                 (Level.evolved ? ", the next " + d.resonanceCooldownSec.ToString("0.##") + "s of holding after it is gone" : ""));
@@ -302,6 +331,7 @@ namespace Incremental
                 {
                     sh.alive = false;
                     missed++;
+                    Missed++;
                     Log("missed at " + RunClock + ": gone after " + d.lifeSec.ToString("0.##") + "s, " + (dist * ppu).ToString("F0") + " px from the gravity source");
                 }
             }
@@ -314,6 +344,7 @@ namespace Incremental
             // The radius before this crystal, with whatever buff was already on it taken off again.
             double before = s.gravityRadius / Factor(RadiusMult());
             taken++;
+            Taken++;
             // 24 §21.2: evolved, a crystal taken while the buff is on adds the multipliers once more.
             int most = Level.evolved ? Math.Max(1, d.resonanceMaxStacks) : 1;
             stacks = again ? Math.Min(most, stacks + 1) : 1;

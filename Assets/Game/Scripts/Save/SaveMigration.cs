@@ -69,6 +69,8 @@ namespace Incremental
                         r.endReason = EndReason.TimeUp;
                         renamed++;
                     }
+            // 28 §4: the play clock did not exist; the run time is the closest thing the save has.
+            if (d.meta != null && d.meta.playClockSec <= 0) d.meta.playClockSec = d.meta.totalPlayTimeSec;
             Debug.Log($"[Save] v3 -> v4 (time-based runs, 28 §2): {renamed} stamina-ended runs in the history renamed to \"{EndReason.TimeUp}\"");
         }
 
