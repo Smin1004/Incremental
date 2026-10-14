@@ -377,6 +377,27 @@ namespace Incremental
         public double flashRiseSec = 0.1;
         public Color flashColor = new Color(0.9f, 0.95f, 1f);
 
+        [Header("Bodies while open (24 §24.2-1)")]
+        [Tooltip("From the inhale to the end of the release, bodies at the gravity source (the forming one and the ones just made) " +
+                 "are drawn at this share of their size. 1 = off. Income, the x N label and the result screen are untouched.")]
+        public double blackHoleBodyScale = 0.4;
+        [Tooltip("A body drawn then (bundle growth included) is never wider on screen than this share of the black hole's diameter.")]
+        public double blackHoleBodyMaxShare = 0.6;
+        [Tooltip("Seconds over which the bodies grow back to their own size after the release.")]
+        public double blackHoleBodyRestoreSec = 0.3;
+
+        [Header("Lens (24 §24.2-2)")]
+        [Tooltip("How far the background stars, the dust and the trails are pushed outward around the black hole, in black hole " +
+                 "radii at its edge (0 = no lens). Only where they are drawn moves; the simulation does not. x effect intensity; " +
+                 "rises over the inhale, gone over the release.")]
+        public double lensStrength = 0.6;
+        [Tooltip("The push reaches out to this many black hole radii from its centre, fading to nothing there.")]
+        public double lensReachRadii = 3;
+        [Tooltip("The thin ring of light (Einstein ring) just outside the edge, drawn into the background: brightness (linear, " +
+                 "additive; 0 = none) and width as a share of the black hole radius.")]
+        public double lensRingAlpha = 0.05;
+        public double lensRingWidth = 0.08;
+
         public BlackHoleDef()
         {
             id = "blackhole";
@@ -403,6 +424,10 @@ namespace Incremental
             if (darkenAlpha < 0 || darkenAlpha > 1 || darkenReach < 0 || darkenReach > 1)
                 r.Errors.Add(Where + " darkenAlpha and darkenReach must be within 0..1.");
             if (flashAlpha < 0 || flashAlpha > 1 || flashRiseSec < 0) r.Errors.Add(Where + " flashAlpha must be within 0..1 and flashRiseSec >= 0.");
+            if (!(blackHoleBodyScale > 0) || blackHoleBodyScale > 1 || !(blackHoleBodyMaxShare > 0) || blackHoleBodyRestoreSec < 0)
+                r.Errors.Add(Where + " blackHoleBodyScale must be within 0..1 (0 excluded), blackHoleBodyMaxShare > 0 and blackHoleBodyRestoreSec >= 0.");
+            if (lensStrength < 0 || lensStrength > 1.5 || !(lensReachRadii > 1) || lensRingAlpha < 0 || !(lensRingWidth > 0))
+                r.Errors.Add(Where + " lensStrength must be within 0..1.5, lensReachRadii > 1, lensRingAlpha >= 0 and lensRingWidth > 0.");
             if (full.duration > 0 && cooldownSec <= durationSec + full.duration + inhaleSec)
                 r.Warnings.Add(Where + " is open longer than its cooldown with every node bought, so it would never close.");
         }

@@ -153,6 +153,26 @@ namespace Incremental
         /// floor is bodyMinScreenPx on screen.
         /// </summary>
         public double RunBodyPx(double px) => Math.Max(px, gameParams.bodyMinScreenPx * WorldScale);
+
+        BlackHoleAbility blackHole;
+        /// <summary>
+        /// 24 §24.2-1: the drawn diameter (px) of a body at the gravity source, shrunk while the black hole is on. Render only.
+        /// </summary>
+        public double GravityBodyPx(double px)
+        {
+            if (blackHole == null && Abilities != null) blackHole = Abilities.Get("blackhole") as BlackHoleAbility;
+            return blackHole != null ? blackHole.BodyPx(px) : px;
+        }
+
+        /// <summary>24 §24.2-1: true while bodies at the gravity source are drawn smaller (a body made now stays shrunk until the restore).</summary>
+        public bool GravityBodiesShrunk
+        {
+            get
+            {
+                if (blackHole == null && Abilities != null) blackHole = Abilities.Get("blackhole") as BlackHoleAbility;
+                return blackHole != null && blackHole.Shrinking;
+            }
+        }
         /// <summary>
         /// Where the gravity actually pulls from (20 §7). The cursor itself unless the follow experiment is on, in which
         /// case it trails the cursor at a top speed. Bodies form here too, so the whole hold follows this point.

@@ -22,6 +22,10 @@ namespace Incremental
         /// <summary>The release flash, just over the ending's (60).</summary>
         const int FlashSortingOrder = 61;
 
+        /// <summary>24 §24.2-2: the lens the Starfield, Dust and DustTrail shaders read (Lens.hlsl).</summary>
+        static readonly int IdLens = Shader.PropertyToID("_BHLens");
+        static readonly int IdLensShape = Shader.PropertyToID("_BHLensShape");
+
         enum Phase { Off, Inhale, Hole, Release }
 
         Phase phase;
@@ -35,6 +39,9 @@ namespace Incremental
         Mesh darkMesh;
         readonly Vector3[] darkVerts = new Vector3[8];
         readonly Color[] darkColors = new Color[8];
+        /// <summary>24 §24.2-1: how much the bodies at the gravity source are shrunk now, 0..1 (1 from the trigger to the end of the release).</summary>
+        float shrink;
+        bool lensSet;
 
         BlackHoleDef D => root.abilityTable.blackHole;
 
@@ -42,6 +49,20 @@ namespace Incremental
 
         /// <summary>True while the black hole itself is on (after the inhale, before the release): for checks and the perf bench.</summary>
         public bool HoleOpen => phase == Phase.Hole;
+
+        /// <summary>
+        /// 24 §24.2-1: the diameter (px) a body at the gravity source is drawn at now, given the one it would have: x
+        /// blackHoleBodyScale and never past blackHoleBodyMaxShare of the black hole, blended back over the restore.
+        /// </summary>
+        public bool Shrinking => shrink > 0f;
+
+        public double BodyPx(double px)
+        {
+            if (shrink <= 0f) return px;
+            var d = D;
+            double small = Math.Min(px * d.blackHoleBodyScale, root.RunBodyPx(d.sizePx) * d.blackHoleBodyMaxShare);
+            return px + (Math.Min(small, px) - px) * shrink;
+        }
 
         /// <summary>One at a time: a charge that fills during one waits for it to finish.</summary>
         protected override bool Ready => phase == Phase.Off;
@@ -155,11 +176,20 @@ namespace Incremental
         public override void Render(bool show, float lead)
         {
             float intensity = root.EffectIntensity;
+            // 24 §24.2-1: the bodies are small from the trigger to the end of the release, then grow back. The look of the
+            // bodies is the ability's own, like the black hole itself, so it does not follow the effect intensity.
+            if (show && phase != Phase.Off) shrink = 1f;
+            else if (shrink > 0f)
+            {
+                float restore = (float)D.blackHoleBodyRestoreSec;
+                shrink = restore > 0f && show ? Mathf.MoveTowards(shrink, 0f, Time.deltaTime / restore) : 0f;
+            }
             bool on = show && phase != Phase.Off && intensity > 0f;
             if (!on)
             {
                 if (dark.enabled) dark.enabled = false;
                 flash.Hide();
+                SetLens(0f);
                 return;
             }
             var d = D;
@@ -171,6 +201,8 @@ namespace Incremental
             else if (t < HoleEnd) k = 1f;
             else k = ReleaseEnd > HoleEnd ? 1f - Mathf.Clamp01((float)((t - HoleEnd) / (ReleaseEnd - HoleEnd))) : 0f;
             float alpha = Mathf.Clamp01((float)d.darkenAlpha) * Mathf.Clamp01(k) * intensity;
+            // 24 §24.2-2: the lens comes in with the inhale and goes with the release, like the darkness.
+            SetLens(Mathf.Clamp01(k) * intensity);
             if (alpha > 0.002f)
             {
                 DrawDark(alpha, Mathf.Clamp01((float)d.darkenReach));
@@ -183,6 +215,29 @@ namespace Incremental
             float flashAlpha = env * Mathf.Clamp01((float)d.flashAlpha) * intensity;
             if (flashAlpha > 0f) flash.Show(root.GravityWorld, d.flashColor, flashAlpha);
             else flash.Hide();
+        }
+
+        /// <summary>
+        /// 24 §24.2-2: hands the lens to the shaders as global values: centre and radius of the black hole (world), the
+        /// push at its edge (radii, x <paramref name="amount"/>), its reach and the light ring. 0 turns it off.
+        /// </summary>
+        void SetLens(float amount)
+        {
+            var d = D;
+            float strength = (float)d.lensStrength * amount;
+            if (strength <= 0f)
+            {
+                if (!lensSet) return;
+                lensSet = false;
+                Shader.SetGlobalVector(IdLens, Vector4.zero);
+                Shader.SetGlobalVector(IdLensShape, Vector4.zero);
+                return;
+            }
+            lensSet = true;
+            Vector2 g = root.GravityWorld;
+            float radius = (float)(root.RunBodyPx(d.sizePx) * 0.5 / p.pixelsPerUnit);
+            Shader.SetGlobalVector(IdLens, new Vector4(g.x, g.y, radius, strength));
+            Shader.SetGlobalVector(IdLensShape, new Vector4((float)d.lensReachRadii, (float)d.lensRingAlpha * amount, (float)d.lensRingWidth, 0f));
         }
 
         /// <summary>The frame over the camera view: black at the edge, clear <paramref name="reach"/> of the half screen in.</summary>

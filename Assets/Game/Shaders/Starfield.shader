@@ -33,6 +33,7 @@ Shader "Incremental/Starfield"
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Noise.hlsl"
+            #include "Lens.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _BgColor;
@@ -84,20 +85,24 @@ Shader "Incremental/Starfield"
 
             float4 frag(Varyings i) : SV_Target
             {
+                // 24 §24.2-2: around the black hole the stars and the clouds are drawn pushed outward.
+                float2 world = i.px / max(_PxPerUnit, 1e-3);
+                float2 px = LensBackward(world) * _PxPerUnit;
                 float3 col = _BgColor.rgb;
                 float2 dg = (i.px - _Glow.xy) / max(_Glow.z, 1.0);
                 col += _GlowColor.rgb * _Glow.w * exp(-dot(dg, dg));
                 if (_Nebula.x > 0.0)
                 {
                     // Two slowly drifting noise fields: one shapes the clouds, the other picks the color between A and B.
-                    float2 q = i.px / max(_Nebula.y, 1.0);
+                    float2 q = px / max(_Nebula.y, 1.0);
                     float shape = Fbm4(float3(q, _Time.y * 0.006));
                     float hue = Fbm3(float3(q * 0.7 + 17.3, _Time.y * 0.004));
                     float cloud = smoothstep(0.38, 0.82, shape);
                     col += lerp(_NebulaA.rgb, _NebulaB.rgb, smoothstep(0.3, 0.7, hue)) * cloud * _Nebula.x;
                 }
-                col += StarLayer(i.px, _LayerA, 0.0);
-                col += StarLayer(i.px, _LayerB, 37.0);
+                col += StarLayer(px, _LayerA, 0.0);
+                col += StarLayer(px, _LayerB, 37.0);
+                col += _StarTint.rgb * LensRing(world);
                 return float4(col, 1);
             }
             ENDHLSL

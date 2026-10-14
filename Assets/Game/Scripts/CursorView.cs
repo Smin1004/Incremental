@@ -265,7 +265,8 @@ namespace Incremental
                 pop = Mathf.Sin(popAge / popSec * Mathf.PI) * (float)p.formingPopScale * root.EffectIntensity;
                 popAge += dt;
             }
-            float drawnPx = (float)root.RunBodyPx(sizePx * (1f + pop));
+            // 24 §24.2-1: smaller while the black hole is on (the inhale and the release; while open it wears the hole).
+            float drawnPx = (float)root.GravityBodyPx(root.RunBodyPx(sizePx * (1f + pop)));
             // 24 §19.1: the black hole in place of the forming body, at its own size, until the override is cleared.
             if (lookOverride != null)
             {

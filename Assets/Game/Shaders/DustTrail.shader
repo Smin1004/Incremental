@@ -22,6 +22,7 @@ Shader "Incremental/DustTrail"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Lens.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float _EdgeSoftness;
@@ -44,7 +45,10 @@ Shader "Incremental/DustTrail"
             Varyings vert(Attributes v)
             {
                 Varyings o;
-                o.positionHCS = TransformObjectToHClip(v.positionOS.xyz);
+                // 24 §24.2-2: drawn pushed outward around the black hole; the dust itself stays where it is.
+                float3 world = TransformObjectToWorld(v.positionOS.xyz);
+                world.xy = LensForward(world.xy);
+                o.positionHCS = TransformWorldToHClip(world);
                 o.color = v.color;
                 o.uv = v.uv;
                 return o;

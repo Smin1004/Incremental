@@ -111,6 +111,13 @@ MonoBehaviour:
     flashAlpha: 0.35
     flashRiseSec: 0.1
     flashColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    blackHoleBodyScale: 0.4
+    blackHoleBodyMaxShare: 0.6
+    blackHoleBodyRestoreSec: 0.3
+    lensStrength: 0.6
+    lensReachRadii: 3
+    lensRingAlpha: 0.05
+    lensRingWidth: 0.08
   exciteSec: 0.4
   exciteBrightness: 2
   exciteDriftRelaxMult: 0.3

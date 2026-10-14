@@ -20,6 +20,8 @@ namespace Incremental
             public bool active;
             /// <summary>24 §21.3: the pop of this body, x GameParams.planetPopScale (1 for an ordinary body).</summary>
             public float pop;
+            /// <summary>24 §24.2-1: made while the black hole was on, so drawn smaller until it has closed and the bodies grow back.</summary>
+            public bool underHole;
         }
 
         Slot[] slots = new Slot[0];
@@ -74,6 +76,7 @@ namespace Incremental
             s.active = true;
             s.age = 0f;
             s.pop = Mathf.Max(0f, (float)popMult);
+            s.underHole = root.GravityBodiesShrunk;
             s.start = new Vector3(pos.x, pos.y, 0f);
             // 22 §6: the body keeps its world size as the camera pulls back, but never shrinks past bodyMinScreenPx
             // on screen, so an asteroid or a fragment is still a body at ring 11 and not a dot.
@@ -124,6 +127,7 @@ namespace Incremental
             float tPop = popDur > 0f ? Mathf.Clamp01(s.age / popDur) : 1f;
             float baseD = Mathf.Lerp(s.fromDiameter, s.diameter, tPop);
             float d = baseD * (1f + pop * Mathf.Sin(tPop * Mathf.PI));
+            if (s.underHole) d = (float)(root.GravityBodyPx(d * p.pixelsPerUnit) / p.pixelsPerUnit);
             float alpha = 1f;
             Vector3 pos = s.start;
 
