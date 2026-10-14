@@ -46,5 +46,10 @@ namespace Incremental
         public Notation notation = Notation.Letters;
         /// <summary>Pause the run while the game window is not focused (never while the autoplay bot runs).</summary>
         public bool pauseOnFocusLoss = true;
+        /// <summary>
+        /// 28 §2.1: one click starts holding and the next click lets go, instead of keeping the button down (for the
+        /// wrist). Off by default. The debug key H flips it until the options screen has it.
+        /// </summary>
+        public bool holdToggle;
     }
 }

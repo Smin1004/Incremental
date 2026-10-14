@@ -20,6 +20,7 @@ namespace Incremental
     /// state is shown in the corner of the screen; nothing is saved.
     /// U: the visual direction of the UI, A → B → C (26 §3). Works on every screen, is shown in the F1 overlay and is
     /// not saved.
+    /// H: the hold toggle on / off (28 §2.1), written to settings.json.
     /// X: the overexposure measures on / off (26 §5.5), to compare before and after; shown in the overlay, not saved.
     /// T: the twist of the skill tree's spiral arms, through UITheme.tree.armTwistChoices (26 §10.1); not saved.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
@@ -362,6 +363,7 @@ namespace Incremental
                 if (kb.insertKey.wasPressedThisFrame) CycleFollow();
                 if (kb.uKey.wasPressedThisFrame) CycleUiDirection();
                 if (kb.xKey.wasPressedThisFrame) ToggleExposureFix();
+                if (kb.hKey.wasPressedThisFrame) ToggleHoldToggle();
                 if (kb.tKey.wasPressedThisFrame && root.Tree != null) root.Tree.CycleTwist();
                 if (kb.kKey.wasPressedThisFrame) CycleGravityRange();
                 if (root.Abilities != null) AbilityKeys(kb);
@@ -373,7 +375,7 @@ namespace Incremental
                 ? string.Format(UIStrings.DebugOverlay, fps, root.Dust.Count, root.LastTickMs, root.MaxTickMs,
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
                     root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
-                    string.Empty,
+                    root.Settings.holdToggle ? UIStrings.On : UIStrings.Off,
                     root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost)
                 : string.Empty);
             root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
@@ -472,6 +474,17 @@ namespace Incremental
             string name = UIStrings.UiDirectionName(root.Ui.Direction.id);
             root.Hud.ShowToast(string.Format(UIStrings.UiDirectionToast, name));
             Debug.Log("[UI] direction: " + name);
+        }
+
+        /// <summary>
+        /// H (28 §2.1): the hold toggle on or off. Saved in settings.json, so it stays on the next launch.
+        /// </summary>
+        public void ToggleHoldToggle()
+        {
+            root.SetHoldToggle(!root.Settings.holdToggle);
+            string state = root.Settings.holdToggle ? UIStrings.On : UIStrings.Off;
+            root.Hud.ShowToast(string.Format(UIStrings.HoldToggleToast, state));
+            Debug.Log("[Feature] hold toggle setting: " + state + " (settings.json)");
         }
 
         /// <summary>

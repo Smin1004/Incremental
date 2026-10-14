@@ -58,8 +58,10 @@ namespace Incremental
         public const string EndingContinue = "계속하기  (Space)";
 
         // Debug overlay
-        /// <summary>{8} = the UI direction id (key U), 26 §6. {9} is free (it was the stamina display, removed by 28 §2).</summary>
-        public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7}, 생성 ×{11:0.0})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI {8} [U]   노출 억제 {10} [X]";
+        /// <summary>{8} = the UI direction id (key U), 26 §6. {9} = the hold toggle (key H), 28 §2.1.</summary>
+        public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7}, 생성 ×{11:0.0})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI {8} [U]   홀드 토글 {9} [H]   노출 억제 {10} [X]";
+        /// <summary>28 §2.1: the H key's toast. {0} = on / off.</summary>
+        public const string HoldToggleToast = "홀드 토글: {0}  (H, 클릭 한 번 = 누르기, 다시 클릭 = 놓기)";
         /// <summary>26 §5.5: the toast of the overexposure key. {0} = on / off.</summary>
         public const string ExposureFixToast = "과노출 억제: {0}  (X)";
         /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>

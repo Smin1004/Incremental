@@ -226,6 +226,8 @@ namespace Incremental
         List<UpgradeLevel> runStartLevels = new List<UpgradeLevel>();
         EffectiveStats runStartStats;
         bool pendingStart;
+        /// <summary>28 §2.1: the hold the toggle mode keeps on between clicks. Let go whenever a run starts or ends.</summary>
+        bool toggleHeld;
         bool hasFocus = true;
         bool shownPaused;
         double pendingSaveTimer;
@@ -520,6 +522,7 @@ namespace Incremental
 
         void Update()
         {
+            TickHoldToggle();
             ApplyWorldScale();
             // 26 §4: the light of the UI follows the effect intensity like every other effect.
             UIStyle.SetEffect(EffectIntensity);
@@ -546,6 +549,31 @@ namespace Incremental
             }
         }
 
+        /// <summary>
+        /// 28 §2.1: with the hold toggle on, a click during a run flips the hold. Done here, once a frame, because the
+        /// fixed tick can miss the frame a click lands on. Paused runs and the ending ignore clicks.
+        /// </summary>
+        void TickHoldToggle()
+        {
+            if (!Settings.holdToggle || Phase != GamePhase.Run || Run == null || EndingActive || Paused)
+                return;
+            var m = Mouse.current;
+            if (m == null || !m.leftButton.wasPressedThisFrame) return;
+            toggleHeld = !toggleHeld;
+            UnityEngine.Debug.Log("[Feature] hold toggle: " + (toggleHeld ? "holding" : "let go"));
+        }
+
+        /// <summary>
+        /// 28 §2.1, debug key H: the hold toggle on or off, written to settings.json. Turning it off lets go of a hold
+        /// the toggle was keeping.
+        /// </summary>
+        public void SetHoldToggle(bool on)
+        {
+            Settings.holdToggle = on;
+            if (!on) toggleHeld = false;
+            SaveSettings();
+        }
+
         // ---------------- run lifecycle ----------------
 
         /// <summary>Starts the next run on the next fixed tick (safe to call from UI / Update).</summary>
@@ -563,6 +591,7 @@ namespace Incremental
             Effective = ComputeStats();
             runStartStats = Effective;
             Run = new RunState(celestialTable.MaxTier) { timeLeft = Effective.runTimeSec };
+            toggleHeld = false;
             bodyGapLeft = 0;
             LastBundleCount = 0;
             LastBundleAt = -1;
@@ -852,6 +881,8 @@ namespace Incremental
             Session.ApplyRunEnd(Meta, rec);
             Phase = GamePhase.Result;
             EndingActive = false;
+            // 28 §2.1: the toggle's hold ends with the run.
+            toggleHeld = false;
             Save();
             LogRun(rec);
             if (showResult) RunEnded?.Invoke(rec);
@@ -1073,7 +1104,9 @@ namespace Incremental
             if (InputProvider != null) return InputProvider();
             var m = Mouse.current;
             if (m == null) return LastPointer;
-            return new PointerState { screenPos = m.position.ReadValue(), pressed = m.leftButton.isPressed };
+            // 28 §2.1: in toggle mode the hold is what the clicks left it at, not the button.
+            bool pressed = Settings.holdToggle ? toggleHeld : m.leftButton.isPressed;
+            return new PointerState { screenPos = m.position.ReadValue(), pressed = pressed };
         }
 
         public Vector2 ToWorld(Vector2 screen)
