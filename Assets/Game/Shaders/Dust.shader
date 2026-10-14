@@ -9,8 +9,6 @@ Shader "Incremental/Dust"
         _Core ("Core radius (share of the halo radius)", Float) = 0.3
         _HaloAlpha ("Halo brightness", Float) = 0.35
         _StreakDim ("Brightness at full stretch", Float) = 0.7
-        _CoreFadeAtStretch ("Core gone at this stretch of motion (26 §11; <= 1 = core always)", Float) = 0
-        _MotionStretchMax ("Stretch the motion value 31 stands for", Float) = 4
     }
 
     SubShader
@@ -32,8 +30,6 @@ Shader "Incremental/Dust"
                 float _Core;
                 float _HaloAlpha;
                 float _StreakDim;
-                float _CoreFadeAtStretch;
-                float _MotionStretchMax;
             CBUFFER_END
 
             struct Attributes
@@ -86,17 +82,11 @@ Shader "Incremental/Dust"
                     ? length(float2(x - (s - 1.0), i.uv.y))
                     : length(float2(max(-x - (s - 1.0), 0.0), i.uv.y / w));
                 // The kind's shape rides on the still dot; a fast streak is already a shape of its own, so it fades out.
-                // 26 §11.3: the alpha byte is shape id + 8 x motion (0..31): how fast the dust moves, also for a dust whose
-                // ribbon carries its motion and is drawn unstretched.
-                float a = round(i.color.a * 255.0);
-                int shape = (int)fmod(a, 8.0);
-                float moving = 1.0 + floor(a / 8.0) / 31.0 * (max(_MotionStretchMax, 1.0) - 1.0);
-                float coreKeep = _CoreFadeAtStretch > 1.0 ? 1.0 - saturate((moving - 1.0) / (_CoreFadeAtStretch - 1.0)) : 1.0;
-                float shapeFade = _CoreFadeAtStretch > 1.0 ? max(taper, saturate(moving - 1.0)) : taper;
-                float reach = lerp(ShapeReach(shape, x, i.uv.y), 1.0, shapeFade);
+                int shape = (int)round(i.color.a * 255.0);
+                float reach = lerp(ShapeReach(shape, x, i.uv.y), 1.0, taper);
                 d /= max(reach, 1e-3);
                 float aa = max(fwidth(d), 1e-3);
-                float core = smoothstep(_Core + aa, _Core - aa, d) * coreKeep;
+                float core = smoothstep(_Core + aa, _Core - aa, d);
                 float halo = exp(-d * d * 5.0) * saturate(1.0 - d);
                 float k = (core + halo * _HaloAlpha) * lerp(1.0, _StreakDim, saturate((s - 1.0) / 3.0));
                 // A streak fades toward its tail (the head is at +along, the velocity direction) so it reads as motion.

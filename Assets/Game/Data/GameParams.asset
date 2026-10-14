@@ -220,12 +220,7 @@ MonoBehaviour:
   dustHoldFadeSec: 0.25
   dustStreakWidth: 0.5
   dustLookNew: 1
-  trailJoinWidthShare: 0.3
-  trailJoinEdgeSoftness: 1
-  trailBrightMult: 1
-  trailHeadMatch: 1
-  trailNoseShare: 0
-  dustCoreFadeAtStretch: 0
+  trailHeadClearShare: 0.8
   exposureFix: 1
   dustDensityRef: 1500
   dustDensityFloor: 0.5

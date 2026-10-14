@@ -395,9 +395,9 @@ namespace Incremental
         [Tooltip("How far the background stars, the dust and the trails are pushed outward around the black hole, in black hole " +
                  "radii at its edge (0 = no lens). Only where they are drawn moves; the simulation does not. x effect intensity; " +
                  "rises over the inhale, gone over the release.")]
-        public double lensStrength = 0.6;
+        public double lensStrength = 1.0;
         [Tooltip("The push reaches out to this many black hole radii from its centre, fading to nothing there.")]
-        public double lensReachRadii = 3;
+        public double lensReachRadii = 4;
         [Tooltip("The thin ring of light (Einstein ring) just outside the edge, drawn into the background: brightness (linear, " +
                  "additive; 0 = none) and width as a share of the black hole radius.")]
         public double lensRingAlpha = 0.05;

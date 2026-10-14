@@ -24,16 +24,10 @@ namespace Incremental
     /// nothing is built while the mesh is not drawn. Render only.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    // 26 §11.3: after the dust mesh, whose head brightness of this frame the ribbons start from.
-    [DefaultExecutionOrder(50)]
     public sealed class DustTrailRenderer : MonoBehaviour
     {
-        static readonly int IdEdgeSoftness = Shader.PropertyToID("_EdgeSoftness");
-
         GameRoot root;
         DustField field;
-        MaterialPropertyBlock mpb;
-        int lookShown = -1;
         GameParams p;
         DynamicMesh mesh;
         MeshRenderer mr;
@@ -56,6 +50,9 @@ namespace Incremental
         Vector2[] points = new Vector2[0];
         /// <summary>Age of each kept point, in sample intervals, so a skipped duplicate does not shift the taper.</summary>
         int[] ages = new int[0];
+        /// <summary>Per point of the ribbon being built: its taper, and how far it is from the head along the path.</summary>
+        float[] tapers = new float[0];
+        float[] along = new float[0];
         Vector2 gravity;
         float phase;
         System.Comparison<int> nearestFirst;
@@ -91,10 +88,11 @@ namespace Incremental
             mr.sortingOrder = -1;
             EnsureKinds();
             nearestFirst = CompareByDistance;
-            mpb = new MaterialPropertyBlock();
             // 22 §7: as with the dust mesh, size for the worst case once instead of growing during a run.
             points = new Vector2[Mathf.Max(2, p.trailPoints + 2)];
             ages = new int[points.Length];
+            tapers = new float[points.Length];
+            along = new float[points.Length];
             EnsureCapacity(Mathf.Max(1, p.trailBudget) * (Mathf.Max(0, p.trailPoints) + 1));
         }
 
@@ -217,6 +215,8 @@ namespace Incremental
             {
                 points = new Vector2[trailLen + 2];
                 ages = new int[points.Length];
+                tapers = new float[points.Length];
+                along = new float[points.Length];
             }
 
             gravity = root.EndingActive && root.Phase == GamePhase.Run ? root.EndingCenter : root.GravityWorld;
@@ -233,17 +233,9 @@ namespace Incremental
 
             float ppu = (float)p.pixelsPerUnit;
             float halo = (float)(p.dustHaloPx / ppu) * 0.5f;
-            // 26 §11.3: the new look is thinner and softer (the material holds the new edge softness) and starts each ribbon
-            // from its head; the V key brings back the look before it.
-            bool newLook = root.DustLookNew;
-            ApplyLook(newLook);
-            float share = (float)(newLook ? p.trailJoinWidthShare : p.trailWidthShare);
-            // The joined look starts the ribbon at the core's width, so it uses the same size the dust mesh draws at.
-            float early = newLook ? DustMeshRenderer.EarlyMult(p.earlyDustSizeMult, root.Meta.unlockedMaxTier) : 1f;
-            var heads = root.DustRenderer;
-            float[] headBright = newLook && p.trailHeadMatch && heads != null ? heads.HeadBright : null;
-            float brightMult = newLook ? Mathf.Max(0f, (float)p.trailBrightMult) : 1f;
-            float noseShare = newLook ? Mathf.Max(0f, (float)p.trailNoseShare) : 0f;
+            float share = (float)p.trailWidthShare;
+            // 26 §11 (10차 2회신): the ribbon is not drawn bright across its own head. V turns it off at runtime.
+            float clearShare = root.DustLookNew ? Mathf.Max(0f, (float)p.trailHeadClearShare) : 0f;
             // 22 §5 "그 먼지 표시 크기의 60%": a moving dust is drawn as a streak that narrows across its travel, so the
             // ribbon follows that thickness and not the round halo, or the trail comes out fatter than the dust leaving it.
             float stretchMax = Mathf.Max(1f, (float)p.dustStretchMax);
@@ -269,27 +261,20 @@ namespace Incremental
                 var kindDef = p.DustKind(d.kind);
                 // A ribboned dust is drawn as a round dot of half-size h, so a head of share x h starts inside that
                 // dot and the ribbon slides out from under it with no shoulder to see.
-                float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f) * early;
+                float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f);
                 float headWidth = h * share;
                 // Fainter near the end of the budget, and while the dust itself is still fading in.
-                float bright;
-                if (headBright != null && i < headBright.Length)
-                    // The head's own brightness already has the density, the field, the center dimming and the fade-in.
-                    bright = headBright[i] * pickedFade[c] * brightMult;
-                else
+                float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f) * pickedFade[c] * d.born * density;
+                if (centerR > 0f)
                 {
-                    bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f) * pickedFade[c] * d.born * density * brightMult;
-                    if (centerR > 0f)
-                    {
-                        float dc = (d.pos - gravity).magnitude;
-                        if (dc < centerR) bright *= Mathf.Lerp(centerDim, 1f, dc / centerR);
-                    }
+                    float dc = (d.pos - gravity).magnitude;
+                    if (dc < centerR) bright *= Mathf.Lerp(centerDim, 1f, dc / centerR);
                 }
                 float t = d.tint;
                 float r = Mathf.LerpUnclamped(colA.r, colB.r, t);
                 float g = Mathf.LerpUnclamped(colA.g, colB.g, t);
                 float bl = Mathf.LerpUnclamped(colA.b, colB.b, t);
-                if (AppendRibbon(i, d.trailFill, headWidth, h * noseShare, r, g, bl, bright)) DrawnTrails++;
+                if (AppendRibbon(i, d.trailFill, headWidth, h * clearShare, r, g, bl, bright)) DrawnTrails++;
             }
 
             if (vertCount == 0 || triCount == 0)
@@ -320,7 +305,7 @@ namespace Incremental
         /// One ribbon: the dust's position now, then the positions kept for it, newest first. Width and brightness go
         /// from full at the head to 0 at the tail. Returns false when the path is too short to draw.
         /// </summary>
-        bool AppendRibbon(int index, int fill, float headWidth, float nose, float cr, float cg, float cb, float bright)
+        bool AppendRibbon(int index, int fill, float headWidth, float clear, float cr, float cg, float cb, float bright)
         {
             if (fill < 1 || headWidth <= 0f) return false;
             // Read the path once: the ribbon needs each point's neighbours, and TrailPoint walks the ring buffer.
@@ -339,23 +324,35 @@ namespace Incremental
                 count++;
             }
             if (count < 2) return false;
-            // 26 §11.3: a nose ahead of the dust, of no width and no brightness, so the ribbon starts in a point under the
-            // head's halo instead of a flat cut across it.
-            if (nose > 0f)
+            along[0] = 0f;
+            for (int j = 0; j < count; j++)
             {
-                Vector2 forward = points[0] - points[1];
-                if (forward.sqrMagnitude > 1e-12f)
-                {
-                    for (int j = count; j > 0; j--)
-                    {
-                        points[j] = points[j - 1];
-                        ages[j] = ages[j - 1];
-                    }
-                    points[0] = points[1] + forward.normalized * nose;
-                    ages[0] = -1;
-                    count++;
-                }
+                tapers[j] = Taper(ages[j], fill, phase);
+                if (j > 0) along[j] = along[j - 1] + (points[j] - points[j - 1]).magnitude;
             }
+            // 26 §11 (10차 2회신): the brightness rises from 0 at the head over the first `clear` of the path, so the
+            // ribbon's bright middle does not cut the round head in half. A point is put in where that ends, so the rise
+            // is not spread over a whole sample interval of a fast dust.
+            if (clear > 0f)
+                for (int j = 1; j < count; j++)
+                {
+                    if (along[j] <= clear) continue;
+                    if (along[j - 1] < clear && along[j] - clear > 1e-5f)
+                    {
+                        float u = (clear - along[j - 1]) / (along[j] - along[j - 1]);
+                        for (int m = count; m > j; m--)
+                        {
+                            points[m] = points[m - 1];
+                            tapers[m] = tapers[m - 1];
+                            along[m] = along[m - 1];
+                        }
+                        points[j] = Vector2.Lerp(points[j - 1], points[j + 1], u);
+                        tapers[j] = Mathf.Lerp(tapers[j - 1], tapers[j + 1], u);
+                        along[j] = clear;
+                        count++;
+                    }
+                    break;
+                }
 
             int firstVert = vertCount;
             for (int j = 0; j < count; j++)
@@ -368,9 +365,10 @@ namespace Incremental
                 dir.Normalize();
                 float px = -dir.y, py = dir.x;
 
-                float taper = ages[j] < 0 ? 0f : Taper(ages[j], fill, phase);
+                float taper = tapers[j];
                 float w = headWidth * taper;
-                float k = Mathf.Min(bright * taper, 2f) * 0.5f;
+                float rise = clear > 0f ? Mathf.Clamp01(along[j] / clear) : 1f;
+                float k = Mathf.Min(bright * taper * rise * rise * (3f - 2f * rise), 2f) * 0.5f;
                 var c32 = new Color32(Byte01(cr * k), Byte01(cg * k), Byte01(cb * k), 255);
 
                 verts[vertCount].pos = new Vector3(here.x - px * w, here.y - py * w, 0f);
@@ -393,20 +391,6 @@ namespace Incremental
                 tris[triCount++] = v + 2;
             }
             return true;
-        }
-
-        /// <summary>26 §11: the joined look puts its edge softness over the material's; the look before uses the material's.</summary>
-        void ApplyLook(bool newLook)
-        {
-            int want = newLook ? 1 : 0;
-            if (want == lookShown) return;
-            lookShown = want;
-            if (!newLook) mr.SetPropertyBlock(null);
-            else
-            {
-                mpb.SetFloat(IdEdgeSoftness, (float)p.trailJoinEdgeSoftness);
-                mr.SetPropertyBlock(mpb);
-            }
         }
 
         static byte Byte01(float v) => (byte)(Mathf.Clamp01(v) * 255f + 0.5f);

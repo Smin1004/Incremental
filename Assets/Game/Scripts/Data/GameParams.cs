@@ -196,8 +196,7 @@ namespace Incremental
         [Tooltip("Positions kept per trailed dust, and the fixed time between two of them (seconds).")]
         public int trailPoints = 8;
         public double trailSampleSec = 0.08;
-        [Tooltip("Width of the head of a trail as a share of that dust's drawn size; it narrows to 0 at the tail. The look before " +
-                 "26 §11; the joined look (dustLookNew) uses trailJoinWidthShare.")]
+        [Tooltip("Width of the head of a trail as a share of that dust's drawn size; it narrows to 0 at the tail.")]
         public double trailWidthShare = 0.6;
         [Tooltip("Trails drawn at once. Over it, the heavier kinds win, then the ones closer to the gravity source.")]
         public int trailBudget = 300;
@@ -386,27 +385,12 @@ namespace Incremental
         public double dustStreakWidth = 0.5;
 
         [Header("Dust head and tail (26 §11)")]
-        [Tooltip("A fresh launch draws the dust with the head and tail joined (on, 10차 회신) or as before (off). The head keeps its " +
-                 "look either way. The debug key V swaps the two at runtime.")]
+        [Tooltip("A fresh launch clears the ribbon out of its head (on) or draws it as before (off). The debug key V swaps the two at runtime.")]
         public bool dustLookNew = true;
-        [Tooltip("Joined look: the ribbon starts as wide as the head's core disc (share of the dust's drawn half-size; the core " +
-                 "is dustCorePx / dustHaloPx = 0.29 of it) and narrows from there, so the core runs on into the tail like a drop.")]
-        public double trailJoinWidthShare = 0.3;
-        [Tooltip("Joined look: edge softness of the ribbon (DustTrail _EdgeSoftness; the material's 1.5 is the look before). Lower " +
-                 "is a harder edge, closer to the core's.")]
-        public double trailJoinEdgeSoftness = 1;
-        [Tooltip("Joined look: ribbon brightness x this. With trailHeadMatch the ribbon starts from the brightness its head is drawn " +
-                 "at (gravity field, dimming and all), so 1 is the head's own brightness.")]
-        public double trailBrightMult = 1;
-        [Tooltip("Joined look: the first point of a ribbon is as bright as the head it leaves (x trailBrightMult). Off: the ribbon " +
-                 "has its own brightness, which ignored the dimming outside the gravity field.")]
-        public bool trailHeadMatch = true;
-        [Tooltip("Joined look: a point of no width and no brightness this share of the dust's half-size ahead of it. 0 = none " +
-                 "(the core covers the front of the ribbon).")]
-        public double trailNoseShare = 0;
-        [Tooltip("Joined look: a moving dust loses its core disc once a base-size dust would stretch this many times at its speed. " +
-                 "<= 1 = the core always stays (10차 회신: the head keeps its look).")]
-        public double dustCoreFadeAtStretch = 0;
+        [Tooltip("A ribbon starts at the centre of its dust, so its bright middle line used to run across the round head and cut it " +
+                 "in half. Over this share of the dust's drawn half-size behind the head the ribbon's brightness rises from 0 to " +
+                 "full; its width and length are untouched. 0 = the line across the head, as before.")]
+        public double trailHeadClearShare = 0.8;
 
         [Header("Overexposure (26 §5.5)")]
         [Tooltip("The debug key X compares the game with and without the four measures below; this is what a fresh launch uses.")]
