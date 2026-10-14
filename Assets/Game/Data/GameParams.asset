@@ -56,7 +56,7 @@ MonoBehaviour:
   vortexTerminalPx: 300
   trailPoints: 8
   trailSampleSec: 0.08
-  trailWidthShare: 0.45
+  trailWidthShare: 0.6
   trailBudget: 300
   trailBudgetFadeShare: 0.35
   followEnabled: 1
@@ -220,12 +220,12 @@ MonoBehaviour:
   dustHoldFadeSec: 0.25
   dustStreakWidth: 0.5
   dustLookNew: 1
-  dustCoreFadeAtStretch: 2
-  trailBrightMult: 0.5
+  trailJoinWidthShare: 0.3
+  trailJoinEdgeSoftness: 1
+  trailBrightMult: 1
   trailHeadMatch: 1
-  trailNoseShare: 1
-  dustOldTrailWidthShare: 0.6
-  dustOldTrailEdgeSoftness: 1.5
+  trailNoseShare: 0
+  dustCoreFadeAtStretch: 0
   exposureFix: 1
   dustDensityRef: 1500
   dustDensityFloor: 0.5

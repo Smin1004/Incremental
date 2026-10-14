@@ -237,7 +237,9 @@ namespace Incremental
             // from its head; the V key brings back the look before it.
             bool newLook = root.DustLookNew;
             ApplyLook(newLook);
-            float share = (float)(newLook ? p.trailWidthShare : p.dustOldTrailWidthShare);
+            float share = (float)(newLook ? p.trailJoinWidthShare : p.trailWidthShare);
+            // The joined look starts the ribbon at the core's width, so it uses the same size the dust mesh draws at.
+            float early = newLook ? DustMeshRenderer.EarlyMult(p.earlyDustSizeMult, root.Meta.unlockedMaxTier) : 1f;
             var heads = root.DustRenderer;
             float[] headBright = newLook && p.trailHeadMatch && heads != null ? heads.HeadBright : null;
             float brightMult = newLook ? Mathf.Max(0f, (float)p.trailBrightMult) : 1f;
@@ -267,7 +269,7 @@ namespace Incremental
                 var kindDef = p.DustKind(d.kind);
                 // A ribboned dust is drawn as a round dot of half-size h, so a head of share x h starts inside that
                 // dot and the ribbon slides out from under it with no shoulder to see.
-                float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f);
+                float h = halo * d.size * (kindDef != null ? (float)kindDef.sizeMult : 1f) * early;
                 float headWidth = h * share;
                 // Fainter near the end of the budget, and while the dust itself is still fading in.
                 float bright;
@@ -393,16 +395,16 @@ namespace Incremental
             return true;
         }
 
-        /// <summary>26 §11: the old look puts the old edge softness over the material's; the new one uses the material's.</summary>
+        /// <summary>26 §11: the joined look puts its edge softness over the material's; the look before uses the material's.</summary>
         void ApplyLook(bool newLook)
         {
             int want = newLook ? 1 : 0;
             if (want == lookShown) return;
             lookShown = want;
-            if (newLook) mr.SetPropertyBlock(null);
+            if (!newLook) mr.SetPropertyBlock(null);
             else
             {
-                mpb.SetFloat(IdEdgeSoftness, (float)p.dustOldTrailEdgeSoftness);
+                mpb.SetFloat(IdEdgeSoftness, (float)p.trailJoinEdgeSoftness);
                 mr.SetPropertyBlock(mpb);
             }
         }

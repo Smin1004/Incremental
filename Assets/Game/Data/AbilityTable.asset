@@ -69,6 +69,7 @@ MonoBehaviour:
     pullShare: 1.4
     towRadiusShare: 0.15
     towRate: 6
+    yieldRadiusShare: 1
     dotPx: 10
     glowPx: 44
     color: {r: 0.82, g: 0.93, b: 1, a: 1}

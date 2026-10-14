@@ -552,10 +552,9 @@ namespace Incremental
             string name = root.DustLookNew ? UIStrings.DustLookNew : UIStrings.DustLookOld;
             root.Hud.ShowToast(string.Format(UIStrings.DustLookToast, name));
             Debug.Log(root.DustLookNew
-                ? "[Dust] look: new head and tail (core gone at stretch " + p.dustCoreFadeAtStretch.ToString("0.##") + ", ribbon x" +
-                  p.trailBrightMult.ToString("0.##") + (p.trailHeadMatch ? " of its head" : "") + ", width " + p.trailWidthShare.ToString("0.##") + ")"
-                : "[Dust] look: as before 26 §11 (core always, ribbon own brightness, width " + p.dustOldTrailWidthShare.ToString("0.##") +
-                  ", edge softness " + p.dustOldTrailEdgeSoftness.ToString("0.##") + ")");
+                ? "[Dust] look: head and tail joined (ribbon from the core's width " + p.trailJoinWidthShare.ToString("0.##") + ", edge " +
+                  p.trailJoinEdgeSoftness.ToString("0.##") + ", x" + p.trailBrightMult.ToString("0.##") + (p.trailHeadMatch ? " of its head" : "") + ")"
+                : "[Dust] look: as before (ribbon width " + p.trailWidthShare.ToString("0.##") + ", own brightness, material edge)");
         }
 
         /// <summary>

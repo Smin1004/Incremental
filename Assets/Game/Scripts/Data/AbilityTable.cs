@@ -198,6 +198,10 @@ namespace Incremental
         [Tooltip("How fast the velocity of a dust in the core is drawn to the satellite's, per second (6 = most of the way " +
                  "in a sixth of a second). 0 = no tow, which is the 2차 satellite.")]
         public double towRate = 6;
+        [Tooltip("Inside this share of the gravity radius (while holding) a satellite lets go: its pull and its tow stop and the dust " +
+                 "is held to the field's ordinary top speed, so the gravity source keeps what it has instead of the satellite " +
+                 "dragging it back out (10차 회신). 0 = the satellite pulls everywhere, as before.")]
+        public double yieldRadiusShare = 1;
 
         [Header("Look")]
         [Tooltip("Diameter of the bright dot and of the soft glow around it, px.")]
@@ -244,6 +248,7 @@ namespace Incremental
             if (!(pullRadiusShare > 0)) r.Errors.Add(Where + " pullRadiusShare must be > 0.");
             if (pullShare < 0) r.Errors.Add(Where + " pullShare must be >= 0.");
             if (towRadiusShare < 0 || towRate < 0) r.Errors.Add(Where + " towRadiusShare and towRate must be >= 0 (24 §18.1); 0 is no tow.");
+            if (yieldRadiusShare < 0 || yieldRadiusShare > 1.5) r.Errors.Add(Where + " yieldRadiusShare must be within 0..1.5; 0 never lets go.");
             if (towRadiusShare > pullRadiusShare)
                 r.Warnings.Add(Where + " towRadiusShare is wider than pullRadiusShare: the core reaches past the pull, which 24 §18.1 did not intend.");
             if (!(dotPx > 0) || glowPx < 0) r.Errors.Add(Where + " dotPx must be > 0 and glowPx >= 0.");

@@ -109,14 +109,17 @@ namespace Incremental
             // last tick to where it is now. The first tick of a hold has no last tick and tows nothing.
             bool tow = d.Tows;
             float towRadius = tow ? (float)(s.gravityRadius * d.towRadiusShare) / ppu : 0f;
+            // 10차 회신: inside the gravity radius the gravity source owns the dust and the satellite lets go of it.
+            float yieldRadius = (float)(s.gravityRadius * System.Math.Max(0.0, d.yieldRadiusShare)) / ppu;
             if (lastPos.Length < count) System.Array.Resize(ref lastPos, count);
             for (int i = 0; i < count; i++)
             {
                 Vector2 pos = Position(i, 0f);
                 Vector2 vel = haveLast && dt > 0 ? (pos - lastPos[i]) / (float)dt : Vector2.zero;
                 lastPos[i] = pos;
-                if (tow && haveLast) system.AddForce(DustForce.PullTow(pos, reach, accel, towRadius, (float)d.towRate, vel));
-                else system.AddForce(DustForce.Pull(pos, reach, accel));
+                var force = tow && haveLast ? DustForce.PullTow(pos, reach, accel, towRadius, (float)d.towRate, vel) : DustForce.Pull(pos, reach, accel);
+                force.yieldRadius2 = yieldRadius * yieldRadius;
+                system.AddForce(force);
             }
             haveLast = true;
 

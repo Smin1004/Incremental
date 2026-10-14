@@ -63,6 +63,11 @@ namespace Incremental
         /// source, capped the same way by vortexTerminalPx. 0 = a straight pull.
         /// </summary>
         public float vortex;
+        /// <summary>
+        /// 10차 회신: while holding, a dust closer to the gravity source than this (squared, world) is left alone by this
+        /// force and held to the field's ordinary top speed: the gravity source owns it. 0 = the force acts everywhere.
+        /// </summary>
+        public float yieldRadius2;
 
         /// <summary>A pull toward a point, which also excites the dust: a satellite (24 §4, §16.2).</summary>
         public static DustForce Pull(Vector2 at, float radius, float accel) =>
@@ -421,6 +426,14 @@ namespace Incremental
                     Vector2 toForce = force.at - d.pos;
                     float reach2 = toForce.sqrMagnitude;
                     if (reach2 >= force.radius2) continue;
+                    if (holding && dist2 < force.yieldRadius2)
+                    {
+                        // 10차 회신: inside the gravity radius the satellite lets go of what it brought, and what it towed
+                        // loses the speed the tow gave it, so it falls in instead of being carried back out.
+                        float held2 = d.vel.sqrMagnitude;
+                        if (held2 > maxSpeed2) d.vel *= Mathf.Sqrt(maxSpeed2 / held2);
+                        continue;
+                    }
                     float reach = Mathf.Sqrt(reach2);
                     float share = (float)PullFactor(reach, force.radius, p.pullFullRatio, p.pullEdgeShare, p.pullOuterRatio);
                     float push = force.accel * KindAccel(d.kind) * share * fdt;

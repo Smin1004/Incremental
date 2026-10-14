@@ -198,7 +198,7 @@ namespace Incremental.Tests
             Assert.AreEqual(0.25, p.vortexShare, Eps, "22 §5: a quarter of the pull goes sideways");
             Assert.AreEqual(8, p.trailPoints, "positions kept per trail (22 §5 asked for 6; 8 shows the curve)");
             Assert.AreEqual(0.08, p.trailSampleSec, Eps, "fixed time between two of them, so a ribbon covers 0.64s");
-            Assert.AreEqual(0.45, p.trailWidthShare, Eps, "the head is 45% of the dust's drawn size (26 §11.3; 60% before)");
+            Assert.AreEqual(0.6, p.trailWidthShare, Eps, "the head is 60% of the dust's drawn size");
             Assert.AreEqual(300, p.trailBudget, "trails drawn at once");
         }
 

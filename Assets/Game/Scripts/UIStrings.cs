@@ -63,7 +63,7 @@ namespace Incremental
         public const string ExposureFixToast = "과노출 억제: {0}  (X)";
         /// <summary>26 §11: the dust look key. {0} = the look's name.</summary>
         public const string DustLookToast = "먼지 모양: {0}  (V)";
-        public const string DustLookNew = "새 머리·꼬리";
+        public const string DustLookNew = "머리·꼬리 이음";
         public const string DustLookOld = "지금 모양";
         /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>
         public const string UiDirectionToast = "UI 방향: {0}  (U)";
