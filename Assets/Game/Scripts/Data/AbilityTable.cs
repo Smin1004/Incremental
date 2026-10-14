@@ -393,6 +393,9 @@ namespace Incremental
         [Tooltip("24 §24.3: the glow (corona) of those bodies reaches this share of its own reach, on top of the body's " +
                  "shrink, so it does not lie round the disc as a thick ring. 1 = shrinks with the body only.")]
         public double blackHoleBodyGlowScale = 0.3;
+        [Tooltip("24 §24.3: a star that ignites while the bodies are shrunk gets its ignition flash and light ring at this " +
+                 "share (they are drawn over everything, so they washed the black disc grey). 1 = as before.")]
+        public double blackHoleIgnitionScale = 0;
 
         [Header("Lens (24 §24.2-2)")]
         [Tooltip("How far the background stars, the dust and the trails are pushed outward around the black hole, in black hole " +
@@ -435,6 +438,8 @@ namespace Incremental
             if (darkenAlpha < 0 || darkenAlpha > 1 || darkenReach < 0 || darkenReach > 1)
                 r.Errors.Add(Where + " darkenAlpha and darkenReach must be within 0..1.");
             if (flashAlpha < 0 || flashAlpha > 1 || flashRiseSec < 0) r.Errors.Add(Where + " flashAlpha must be within 0..1 and flashRiseSec >= 0.");
+            if (blackHoleIgnitionScale < 0 || blackHoleIgnitionScale > 1)
+                r.Errors.Add(Where + " blackHoleIgnitionScale must be within 0..1.");
             if (!(blackHoleBodyGlowScale > 0) || blackHoleBodyGlowScale > 1)
                 r.Errors.Add(Where + " blackHoleBodyGlowScale must be within 0..1 (0 excluded).");
             if (!(blackHoleBodyScale > 0) || blackHoleBodyScale > 1 || !(blackHoleBodyMaxShare > 0) || blackHoleBodyRestoreSec < 0)

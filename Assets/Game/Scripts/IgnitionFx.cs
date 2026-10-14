@@ -25,6 +25,8 @@ namespace Incremental
         float duration;
         float flashPeak;
         float ringFromPx, ringToPx;
+        /// <summary>24 §24.3: 1, or AbilityTable.blackHole.blackHoleIgnitionScale for a star made while the black hole is on.</summary>
+        float muted = 1f;
         Color ringColor;
         Vector3 center;
 
@@ -76,6 +78,9 @@ namespace Incremental
             center = new Vector3(root.CursorWorld.x, root.CursorWorld.y, 0f);
             ring.transform.position = center;
             age = 0f;
+            // 24 §24.3: a star made under the black hole lights up under it; its flash and ring are drawn over
+            // everything (orders 55 and 60) and would wash the black disc grey.
+            muted = root.GravityBodiesShrunk && root.abilityTable != null ? Mathf.Clamp01((float)root.abilityTable.blackHole.blackHoleIgnitionScale) : 1f;
             if (firstStar) root.Backdrop.BlendNextChange(duration);
         }
 
@@ -84,7 +89,7 @@ namespace Incremental
             if (age < 0f) return;
             age += Time.deltaTime;
             float k = age / duration;
-            float intensity = root.EffectIntensity;
+            float intensity = root.EffectIntensity * muted;
             if (k >= 1f || intensity <= 0f)
             {
                 Hide();
