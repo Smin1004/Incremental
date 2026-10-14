@@ -367,7 +367,7 @@ namespace Incremental
 
         [Header("Look")]
         [Tooltip("The gravity source wears GameParams.blackHoleLook (the ending's black hole, accretion disc and all) at this diameter (px) while it is open.")]
-        public double sizePx = 112;
+        public double sizePx = 138;
         [Tooltip("How dark the edges of the screen get (alpha), rising over the inhale, held while open, gone with the release; x effect intensity.")]
         public double darkenAlpha = 0.45;
         [Tooltip("How far in from the edge the darkness reaches, as a share of the half screen (1 = to the middle).")]
