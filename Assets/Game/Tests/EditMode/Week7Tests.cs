@@ -414,18 +414,16 @@ namespace Incremental.Tests
         // ---------------- §8 F. rebalance ----------------
 
         [Test]
-        public void RunLength_GoesFromAboutFortyFiveSecondsToAboutThreeMinutes()
+        public void RunLength_GoesFromThirtySecondsToAboutTwoMinutes()
         {
-            // 22 §8 target: 40-60s early, 120-180s late. This is the length the stamina axis allows, which the bot's
-            // measured runs (48s and 174s, Reports/Week7_Data/balance_round4.md) sit just under.
+            // 28 §2, §3 (provisional until the balance pass): 30 s at ring 1, +90 s once the run time nodes of rings 1-10
+            // are bought (ring 11 about 120 s). The run is exactly this long now, held or not.
             var p = ProjectParams();
             var t = ProjectNodes();
-            double first = p.staminaMax / (p.staminaHoldDrain + p.staminaIdleDrain);
-            Assert.That(first, Is.InRange(40.0, 60.0), "the first run, with nothing bought");
+            Assert.AreEqual(30.0, Stats.Compute(p, t, new MetaState()).runTimeSec, Eps, "the first run, with nothing bought");
             var m = AllNodes(t);
-            var s = Stats.Compute(p, t, m);
-            double last = s.staminaMax / (s.staminaHoldDrain + s.staminaIdleDrain);
-            Assert.That(last, Is.InRange(120.0, 200.0), "everything bought; the bot never buys quite everything");
+            double last = Stats.Compute(p, t, m).runTimeSec;
+            Assert.That(last, Is.InRange(118.0, 130.0), "everything bought (one level of the endless ring 11 node at most)");
         }
 
         [Test]
@@ -455,7 +453,7 @@ namespace Incremental.Tests
             Assert.AreEqual(bare.gravityRadius * (1 + radiusNodes * p.gravityGrowthScale), full.gravityRadius, 1e-6,
                 "the gravity radius grows by what the radius nodes add up to, x gravityGrowthScale (24 §23.2)");
             Assert.Greater(full.dustMassAvg, bare.dustMassAvg * 30, "the dust kinds carry most of the late throughput");
-            Assert.Less(full.staminaMax, bare.staminaMax * 2.5, "the stamina axis grows far less than the 6.5x of 20 §8");
+            Assert.Less(full.runTimeSec, bare.runTimeSec * 4.5, "28 §2: 30 s -> about 120 s");
             Assert.AreEqual(22, p.driftSpeed, Eps, "22 §8: 15 -> 22");
         }
 

@@ -6,7 +6,7 @@ namespace Incremental
     public static class ResultMath
     {
         /// <summary>
-        /// The run this one is compared with: the most recent stamina-ended run before it, the same run the ratio uses
+        /// The run this one is compared with: the most recent run that ran out of time before it, the same run the ratio uses
         /// (12 §10-3). Null when there is none (first full run).
         /// </summary>
         public static RunRecord ComparisonRun(List<RunRecord> history, RunRecord rec)

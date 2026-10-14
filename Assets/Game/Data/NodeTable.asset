@@ -57,8 +57,8 @@ MonoBehaviour:
     enabled: 1
   - id: r1_stamina
     kind: 0
-    statId: stamina_max
-    effectPerLevel: 6
+    statId: run_time
+    effectPerLevel: 9
     maxLevel: 1
     baseCost: 3.6
     growth: 1.5
@@ -160,8 +160,8 @@ MonoBehaviour:
     enabled: 1
   - id: r2_stamina
     kind: 0
-    statId: stamina_max
-    effectPerLevel: 6
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 8.4
     growth: 1.5
@@ -264,8 +264,8 @@ MonoBehaviour:
     enabled: 1
   - id: r3_drain
     kind: 0
-    statId: stamina_drain
-    effectPerLevel: 0.05
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 52
     growth: 1.5
@@ -414,8 +414,8 @@ MonoBehaviour:
     enabled: 1
   - id: r4_stamina
     kind: 0
-    statId: stamina_max
-    effectPerLevel: 6
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 290
     growth: 1.5
@@ -563,8 +563,8 @@ MonoBehaviour:
     enabled: 1
   - id: r5_drain
     kind: 0
-    statId: stamina_drain
-    effectPerLevel: 0.05
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 1600
     growth: 1.5
@@ -698,8 +698,8 @@ MonoBehaviour:
     enabled: 1
   - id: r6_stamina
     kind: 0
-    statId: stamina_max
-    effectPerLevel: 9
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 7900
     growth: 1.5
@@ -847,8 +847,8 @@ MonoBehaviour:
     enabled: 1
   - id: r7_drain
     kind: 0
-    statId: stamina_drain
-    effectPerLevel: 0.05
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 68000
     growth: 1.5
@@ -997,8 +997,8 @@ MonoBehaviour:
     enabled: 1
   - id: r8_stamina
     kind: 0
-    statId: stamina_max
-    effectPerLevel: 12
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 290000
     growth: 1.5
@@ -1132,8 +1132,8 @@ MonoBehaviour:
     enabled: 1
   - id: r9_drain
     kind: 0
-    statId: stamina_drain
-    effectPerLevel: 0.05
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 3000000
     growth: 1.5
@@ -1237,8 +1237,8 @@ MonoBehaviour:
     enabled: 1
   - id: r10_stamina
     kind: 0
-    statId: stamina_max
-    effectPerLevel: 15
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 2
     baseCost: 16000000
     growth: 1.5
@@ -1356,8 +1356,8 @@ MonoBehaviour:
     enabled: 1
   - id: r11_stamina
     kind: 0
-    statId: stamina_max
-    effectPerLevel: 9
+    statId: run_time
+    effectPerLevel: 4.5
     maxLevel: 0
     baseCost: 170000000
     growth: 1.6

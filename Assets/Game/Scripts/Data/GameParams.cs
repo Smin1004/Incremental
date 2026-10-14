@@ -28,20 +28,6 @@ namespace Incremental
     }
 
     /// <summary>
-    /// One stamina drain setting the debug key cycles through (18 §A1). The feel is a matter of taste, so the values are
-    /// picked in a playtest instead of being fixed here; <see cref="id"/> names the UIStrings key
-    /// <c>stamina.preset.&lt;id&gt;</c> shown in the toast.
-    /// </summary>
-    [Serializable]
-    public sealed class StaminaPreset
-    {
-        public string id = string.Empty;
-        [Tooltip("Per second while holding (additional) and per second always.")]
-        public double holdDrain = 1;
-        public double idleDrain = 0.2;
-    }
-
-    /// <summary>
     /// 24 §23.2: one gravity range setting the debug key K cycles through: how much of the radius nodes counts, and the
     /// amplifier crystal's radius multiplier at unlock and per ability_power. <see cref="id"/> names the UIStrings key
     /// <c>gravity.preset.&lt;id&gt;</c> shown in the toast.
@@ -220,23 +206,10 @@ namespace Incremental
         public double followLineWidthPx = 1.5;
         public Color followLineColor = new Color(1f, 1f, 1f, 0.35f);
 
-        [Header("Stamina (spec §6)")]
-        public double staminaMax = 86;        // upgrade target (22 §8: the first run is 48s at the base drain)
-        public double staminaHoldDrain = 1.5; // per second while holding (additional)
-        public double staminaIdleDrain = 0.3; // per second, always
-        [Tooltip("24 §23.3: the stamina_max nodes' sum is x this, so a late run is shorter (1 = as before 10/12). The base " +
-                 "staminaMax and the drain reduction nodes are untouched. The debug key L cycles staminaNodeScaleSteps.")]
-        public double staminaNodeScale = 0.5;
-        [Tooltip("24 §23.3: the values the debug key L cycles staminaNodeScale through. Runtime only; takes effect from the next run.")]
-        public double[] staminaNodeScaleSteps = { 1, 0.5, 0.25 };
-        [Tooltip("The stamina debug key (F10) cycles the runtime drain through these, in order (18 §A1); the asset values above " +
-                 "must be one of them. Runtime only: nothing is saved, and the next launch is back to the values above.")]
-        public StaminaPreset[] staminaPresets =
-        {
-            new StaminaPreset { id = "loose", holdDrain = 1.0, idleDrain = 0.2 },
-            new StaminaPreset { id = "proposed", holdDrain = 1.5, idleDrain = 0.3 },
-            new StaminaPreset { id = "fast", holdDrain = 2.0, idleDrain = 0.4 },
-        };
+        [Header("Run time (28 §2)")]
+        [Tooltip("28 §2 (D21): seconds a run lasts before any run_time node. The clock runs down 1 per second whether the " +
+                 "player holds or not, and the run ends at 0. The run_time nodes add seconds to it.")]
+        public double runTimeSec = 30;
 
         [Header("Dust kinds (20 §4)")]
         [Tooltip("Entry 0 is the base dust and is always in the field; the rest are unlocked in the tree and mixed in by " +
@@ -281,9 +254,8 @@ namespace Incremental
         [Header("Economy (spec §6)")]
         public double saleMult = 1.0;         // upgrade target
         public double thresholdMult = 1.0;    // upgrade target (required mass multiplier)
-        [Tooltip("The most the threshold_mult nodes can take off the required mass, and the stamina_drain nodes off the " +
-                 "stamina drain: 0.9 = down to a tenth. What the nodes add up to beyond this does nothing. " +
-                 "It has to stay below 1, or the required mass and the drain could reach 0.")]
+        [Tooltip("The most the threshold_mult nodes can take off the required mass: 0.9 = down to a tenth. What the nodes " +
+                 "add up to beyond this does nothing. It has to stay below 1, or the required mass could reach 0.")]
         public double maxReduction = 0.9;
 
         [Header("Presentation (not in the spec table)")]
@@ -729,29 +701,6 @@ namespace Incremental
             for (int i = 0; i < gravityRangePresets.Length; i++)
                 if (gravityRangePresets[i] != null && Math.Abs(gravityRangePresets[i].growthScale - growthScale) < 1e-9) return i;
             return -1;
-        }
-
-        /// <summary>Index of the stamina preset holding these two drains, or -1 when none does (18 §A1).</summary>
-        public int StaminaPresetIndex(double holdDrain, double idleDrain)
-        {
-            if (staminaPresets == null) return -1;
-            for (int i = 0; i < staminaPresets.Length; i++)
-            {
-                var s = staminaPresets[i];
-                if (s == null) continue;
-                if (Math.Abs(s.holdDrain - holdDrain) < 1e-9 && Math.Abs(s.idleDrain - idleDrain) < 1e-9) return i;
-            }
-            return -1;
-        }
-
-        /// <summary>
-        /// The stamina preset after the one holding these two drains, wrapping around; the first one when none matches
-        /// (so a hand-edited asset value lands on a known preset), and null when there are no presets.
-        /// </summary>
-        public StaminaPreset NextStaminaPreset(double holdDrain, double idleDrain)
-        {
-            if (staminaPresets == null || staminaPresets.Length == 0) return null;
-            return staminaPresets[(StaminaPresetIndex(holdDrain, idleDrain) + 1) % staminaPresets.Length];
         }
     }
 }

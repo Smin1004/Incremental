@@ -5,8 +5,9 @@ using UnityEngine;
 namespace Incremental.Tests
 {
     /// <summary>
-    /// Playtest round 1 quick fixes (18 §A): the stamina drain values and their debug preset cycle, the shortened planet
-    /// departure, and the comet tail shape. All three are data, so the tests check the project assets and the rules around them.
+    /// Playtest round 1 quick fixes (18 §A): the shortened planet departure and the comet tail shape. Both are data, so
+    /// the tests check the project assets and the rules around them. (The stamina drain presets of A1 went with the
+    /// stamina itself, 28 §2.)
     /// </summary>
     public class QuickFix1Tests
     {
@@ -14,105 +15,6 @@ namespace Incremental.Tests
 
         static GameParams ProjectParams() => AssetDatabase.LoadAssetAtPath<GameParams>("Assets/Game/Data/GameParams.asset");
         static CelestialTable ProjectTiers() => AssetDatabase.LoadAssetAtPath<CelestialTable>("Assets/Game/Data/CelestialTable.asset");
-
-        // ---------------- A1 stamina ----------------
-
-        [Test]
-        public void Stamina_ProjectDrains_AreTheProposedPreset()
-        {
-            var p = ProjectParams();
-            Assert.AreEqual(1.5, p.staminaHoldDrain, Eps, "hold drain (18 §A1)");
-            Assert.AreEqual(0.3, p.staminaIdleDrain, Eps, "idle drain (18 §A1)");
-            int i = p.StaminaPresetIndex(p.staminaHoldDrain, p.staminaIdleDrain);
-            Assert.GreaterOrEqual(i, 0, "the asset drains must be one of the presets");
-            Assert.AreEqual("proposed", p.staminaPresets[i].id);
-        }
-
-        [Test]
-        public void Stamina_ThreePresetsRiseTogether_AndEachHasAName()
-        {
-            var p = ProjectParams();
-            Assert.AreEqual(3, p.staminaPresets.Length, "loose / proposed / fast (18 §A1)");
-            for (int i = 0; i < p.staminaPresets.Length; i++)
-            {
-                var s = p.staminaPresets[i];
-                Assert.IsTrue(UIStrings.Has(UIStrings.StaminaPresetKey(s.id)), "name for preset '" + s.id + "'");
-                if (i == 0) continue;
-                Assert.Greater(s.holdDrain, p.staminaPresets[i - 1].holdDrain, "hold drain rises through the presets");
-                Assert.Greater(s.idleDrain, p.staminaPresets[i - 1].idleDrain, "idle drain rises through the presets");
-            }
-        }
-
-        [Test]
-        public void Stamina_PresetCycle_WrapsAround()
-        {
-            var p = ProjectParams();
-            var loose = p.staminaPresets[0];
-            var proposed = p.staminaPresets[1];
-            var fast = p.staminaPresets[2];
-
-            // From the asset value (the proposed preset) the key goes to fast, then wraps to loose.
-            Assert.AreSame(fast, p.NextStaminaPreset(p.staminaHoldDrain, p.staminaIdleDrain));
-            Assert.AreSame(loose, p.NextStaminaPreset(fast.holdDrain, fast.idleDrain));
-            Assert.AreSame(proposed, p.NextStaminaPreset(loose.holdDrain, loose.idleDrain));
-        }
-
-        [Test]
-        public void Stamina_PresetCycle_FromAnUnknownValue_StartsAtTheFirstPreset()
-        {
-            var p = ProjectParams();
-            Assert.AreEqual(-1, p.StaminaPresetIndex(1.234, 0.567));
-            Assert.AreSame(p.staminaPresets[0], p.NextStaminaPreset(1.234, 0.567));
-        }
-
-        [Test]
-        public void Stamina_PresetOverride_KeepsTheNodeReduction()
-        {
-            var p = TestData.Params();
-            var t = TestData.Nodes();
-            var m = new MetaState();
-            m.SetLevel("c_drain", 1); // stamina_drain −50%
-
-            var asset = Stats.Compute(p, t, m);
-            Assert.AreEqual(1.0 * 0.5, asset.staminaHoldDrain, Eps);
-            Assert.AreEqual(0.2 * 0.5, asset.staminaIdleDrain, Eps);
-
-            var preset = Stats.Compute(p, t, m, 2.0, 0.4);
-            Assert.AreEqual(2.0 * 0.5, preset.staminaHoldDrain, Eps, "the preset replaces the base, not the reduction");
-            Assert.AreEqual(0.4 * 0.5, preset.staminaIdleDrain, Eps);
-            Assert.AreEqual(asset.staminaMax, preset.staminaMax, Eps, "nothing else changes");
-            Assert.AreEqual(1.0, p.staminaHoldDrain, Eps, "the asset is untouched");
-        }
-
-        [Test]
-        public void Stamina_Validator_NeedsPresetsWithNamesAndPositiveDrains()
-        {
-            var p = TestData.Params();
-            p.staminaPresets = new StaminaPreset[0];
-            Assert.IsTrue(Has(DataValidator.ValidateParams(p), "staminaPresets is empty"));
-
-            p.staminaPresets = new[]
-            {
-                new StaminaPreset { id = "loose", holdDrain = 1.0, idleDrain = 0.2 },
-                new StaminaPreset { id = "loose", holdDrain = 1.5, idleDrain = 0.3 },
-            };
-            Assert.IsTrue(Has(DataValidator.ValidateParams(p), "appears twice"));
-
-            p.staminaPresets = new[] { new StaminaPreset { id = "nonesuch", holdDrain = 1.0, idleDrain = 0.2 } };
-            Assert.IsTrue(Has(DataValidator.ValidateParams(p), "stamina.preset.nonesuch"));
-
-            p.staminaPresets = new[] { new StaminaPreset { id = "loose", holdDrain = 0, idleDrain = 0.2 } };
-            Assert.IsTrue(Has(DataValidator.ValidateParams(p), "drains must be > 0"));
-        }
-
-        [Test]
-        public void Stamina_Validator_WarnsWhenTheAssetDrainsAreNoPreset()
-        {
-            var p = TestData.Params();
-            p.staminaHoldDrain = 1.23;
-            var r = DataValidator.ValidateParams(p);
-            Assert.IsTrue(r.Warnings.Exists(w => w.Contains("not one of staminaPresets")), string.Join("\n", r.Warnings));
-        }
 
         // ---------------- A2 planet departure ----------------
 

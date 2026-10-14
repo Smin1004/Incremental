@@ -294,10 +294,8 @@ namespace Incremental
                         r.Errors.Add($"UITheme.directions[{i}] ('{d.id}'): a shape style is missing");
                 }
             }
-            if (t.staminaMode < 0 || t.staminaMode > 1) r.Errors.Add($"UITheme.staminaMode: {t.staminaMode} (0 = bar, 1 = gravity ring)");
-            if (!(t.staminaLowAt >= 0 && t.staminaLowAt < t.staminaWarnAt && t.staminaWarnAt <= 1))
-                r.Errors.Add($"UITheme: need 0 <= staminaLowAt ({t.staminaLowAt}) < staminaWarnAt ({t.staminaWarnAt}) <= 1");
-            if (t.staminaRingSegments < 8) r.Errors.Add($"UITheme.staminaRingSegments: {t.staminaRingSegments} (at least 8)");
+            if (!(t.timeLowAt >= 0 && t.timeLowAt < t.timeWarnAt && t.timeWarnAt <= 1))
+                r.Errors.Add($"UITheme: need 0 <= timeLowAt ({t.timeLowAt}) < timeWarnAt ({t.timeWarnAt}) <= 1");
             if (t.incomeRollSec < 0 || t.rowStaggerSec < 0 || t.rowFadeSec < 0 || t.badgeFlashSec < 0 || t.buttonHoverSec < 0 || t.valuePopSec < 0)
                 r.Errors.Add("UITheme: animation times must not be negative");
             if (!(t.resultRowHeightPx > 0) || !(t.resultIconPx > 0)) r.Errors.Add("UITheme: resultRowHeightPx and resultIconPx must be above 0");
@@ -316,7 +314,7 @@ namespace Incremental
                 r.Errors.Add("GameParams is missing.");
                 return r;
             }
-            ValidateStamina(p, r);
+            ValidateRunTime(p, r);
             ValidateExposure(p, r);
             ValidatePull(p, r);
             ValidateDustKinds(p, r);
@@ -398,10 +396,6 @@ namespace Incremental
             return r;
         }
 
-        /// <summary>
-        /// Stamina (spec §6) and the debug key's drain presets (18 §A1): positive drains, a display name per preset id, and
-        /// the asset's own drains must be one of the presets so the key starts from a known one.
-        /// </summary>
         /// <summary>26 §5.5: the overexposure measures, the early dust look and the gate ring.</summary>
         static void ValidateExposure(GameParams p, ValidationReport r)
         {
@@ -415,39 +409,17 @@ namespace Incremental
             if (p.gateRingStrength < 0 || p.gateRingWidthPx <= 0 || p.gateRingStartShare < 0) r.Errors.Add("GameParams.gateRing*: strength >= 0, width > 0, start share >= 0.");
         }
 
-        static void ValidateStamina(GameParams p, ValidationReport r)
+        /// <summary>
+        /// 28 §2: the base run length is positive, and the K key's presets have display names (they used to be checked
+        /// with the stamina presets).
+        /// </summary>
+        static void ValidateRunTime(GameParams p, ValidationReport r)
         {
-            if (!(p.staminaMax > 0)) r.Errors.Add("GameParams: staminaMax must be > 0.");
-            if (!(p.staminaHoldDrain > 0) || !(p.staminaIdleDrain > 0))
-                r.Errors.Add("GameParams: staminaHoldDrain and staminaIdleDrain must be > 0.");
-            if (p.staminaPresets == null || p.staminaPresets.Length == 0)
-            {
-                r.Errors.Add("GameParams: staminaPresets is empty (the debug key has nothing to cycle, 18 §A1).");
-                return;
-            }
-            var ids = new HashSet<string>();
-            for (int i = 0; i < p.staminaPresets.Length; i++)
-            {
-                var s = p.staminaPresets[i];
-                if (s == null)
-                {
-                    r.Errors.Add($"GameParams: staminaPresets[{i}] is missing.");
-                    continue;
-                }
-                if (string.IsNullOrEmpty(s.id)) r.Errors.Add($"GameParams: staminaPresets[{i}] has no id.");
-                else if (!ids.Add(s.id)) r.Errors.Add($"GameParams: staminaPresets id '{s.id}' appears twice.");
-                else if (!UIStrings.Has(UIStrings.StaminaPresetKey(s.id)))
-                    r.Errors.Add($"UIStrings: missing key '{UIStrings.StaminaPresetKey(s.id)}' (stamina preset, 18 §A1).");
-                if (!(s.holdDrain > 0) || !(s.idleDrain > 0))
-                    r.Errors.Add($"GameParams: staminaPresets[{i}] drains must be > 0.");
-            }
+            if (!(p.runTimeSec > 0)) r.Errors.Add("GameParams: runTimeSec must be > 0 (28 §2).");
             if (p.gravityRangePresets != null)
                 foreach (var g in p.gravityRangePresets)
                     if (g != null && !UIStrings.Has(UIStrings.GravityPresetKey(g.id)))
                         r.Errors.Add($"UIStrings: missing key '{UIStrings.GravityPresetKey(g.id)}' (gravity range preset, 24 §23.2).");
-            if (p.StaminaPresetIndex(p.staminaHoldDrain, p.staminaIdleDrain) < 0)
-                r.Warnings.Add($"GameParams: the stamina drains ({p.staminaHoldDrain} / {p.staminaIdleDrain}) are not one of staminaPresets; " +
-                               "the debug key starts from the first preset (18 §A1).");
         }
 
         /// <summary>
@@ -571,7 +543,7 @@ namespace Incremental
                 r.Errors.Add("GameParams: dustStretchMax must be >= 1; it is the ceiling on the smear, in multiples of the dust's own size.");
             if (!(p.maxReduction >= 0) || !(p.maxReduction < 1))
                 r.Errors.Add("GameParams: maxReduction must be within 0..1 (1 excluded); at 1 the threshold_mult nodes could take " +
-                             "the required mass down to 0, and the stamina_drain nodes the drain (24 §17.2).");
+                             "the required mass down to 0 (24 §17.2).");
             if (!(p.dustCapCeiling > 0)) r.Errors.Add("GameParams: dustCapCeiling must be > 0 (22 §7).");
             if (p.bundleAt < 0) r.Errors.Add("GameParams: bundleAt must be >= 0 (24 §21.3); 0 switches bundles off.");
             if (p.bundleSizeGrowth < 0 || !(p.bundleSizeMax >= 1))

@@ -14,16 +14,18 @@ namespace Incremental.EditorTools
     /// 20 §5: the fragment nodes run along 140°, beside the threshold nodes of the planet axis, in rings 3 to 8.
     /// 22 §3: the gravity axis carries a follow speed node in rings 2, 4, 6, 8 and 10, beside that ring's pull or radius
     /// node; the five together bring the gravity source from 220 to 385 px/s.
-    /// 22 §8 set the growth axes once and then touched only <see cref="RingCostMult"/>: the stamina axis grows far less
+    /// 22 §8 set the growth axes once and then touched only <see cref="RingCostMult"/>: the stamina axis grew far less
     /// (390 -> 162, so the last run is 2.5 minutes instead of 6), the gravity radius grows more (x2.4 -> x2.9, and influx
     /// follows the circumference), and the planet axis reaches rings 6 and 7 so the required mass falls by 80% instead of
     /// 40%. That last one is what turns throughput into bodies, which is the 21 §4 problem.
-    /// 24 §6: the ability axis is a new one at 240°, the widest gap left (between the stamina and the sale axes).
+    /// 24 §6: the ability axis is a new one at 240°, the widest gap left (between the run time and the sale axes).
     /// Rings 4, 6 and 8 unlock an ability and the ring after each raises it. 24 §19.1: ring 10 unlocks the black hole
     /// and ring 11 lengthens it. 24 §20.2: ring 2 unlocks the amplifier crystal and ring 3 raises it.
     /// 24 §20.3: the radius nodes were cut (0.15 / 0.15 / 0.20 / 0.20 / 0.25 -> 0.10 / 0.10 / 0.14 / 0.14 / 0.17, x2.9 -> x2.3)
     /// with the base radius 180 -> 150, so the gravity ring is 28% of the screen height at ring 1 and 48% at ring 10;
     /// the crystal buff brings it back up for a while.
+    /// 28 §2: the stamina axis is the run time axis now. Its stamina_max and stamina_drain nodes keep their ids (save
+    /// keys) and all add seconds to the run (<see cref="RunTimePerRing"/>).
     /// </summary>
     public static class SkillTreeSeed
     {
@@ -36,16 +38,25 @@ namespace Incremental.EditorTools
         public const float PlanetAxis = 150f;
         /// <summary>The fragment nodes share the planet axis, offset so they never sit on a threshold node (20 §5).</summary>
         public const float FragmentAxis = PlanetAxis - Pair;
-        public const float StaminaAxis = 210f;
+        /// <summary>28 §2: the run time axis (it was the stamina axis; same angle, same node ids).</summary>
+        public const float TimeAxis = 210f;
         public const float SaleAxis = 270f;
         public const float GravityAxis = 330f;
         /// <summary>22 §3: the follow speed nodes share the gravity axis, offset so they never sit on its pull / radius node.</summary>
         public const float FollowAxis = GravityAxis - Pair;
-        /// <summary>24 §6: the ability axis, between the stamina (210°) and the sale (270°) axes.</summary>
+        /// <summary>24 §6: the ability axis, between the run time (210°) and the sale (270°) axes.</summary>
         public const float AbilityAxis = 240f;
 
         /// <summary>Rings 1..11; index 0 is unused.</summary>
         public const int RingCount = 11;
+
+        /// <summary>
+        /// 28 §2 (provisional, the balance pass sets the real values): seconds the run time nodes of one ring add, so a
+        /// run goes from GameParams.runTimeSec 30 s at ring 1 to 30 + 10 × 9 = 120 s once rings 1-10 are bought (28 §3:
+        /// ring 1 30 s, ring 11 120 s). Ring 1 has one level worth all of it, rings 2-10 two levels worth half each, and
+        /// the ring 11 endless node keeps adding half a ring per level.
+        /// </summary>
+        public const double RunTimePerRing = 9;
 
         /// <summary>
         /// Income of a run at the start of ring k, measured with the bot (20 §8.3 step 1; index = ring, 0 = not measured).
@@ -225,7 +236,7 @@ namespace Incremental.EditorTools
         /// An ability's unlock: one level, at the price of a dust kind unlock of that ring (24 §6). It has no prereq
         /// entry. 24 §6 lists the gate of its ring, and the ring being open already means exactly that; naming the
         /// gate as well would only draw a line from the gate axis (90°) across the whole tree to 240°, straight
-        /// through the stamina nodes of rings 1-3. Without it the line comes from the center, along the axis.
+        /// through the run time nodes of rings 1-3. Without it the line comes from the center, along the axis.
         /// </summary>
         static NodeDef AbilityUnlock(string ability, int ring) =>
             new NodeDef
@@ -323,16 +334,16 @@ namespace Incremental.EditorTools
 
         public static List<NodeDef> Nodes()
         {
-            const string spawn = StatIds.SpawnRate, pull = StatIds.PullAccel, sale = StatIds.SaleMult, stamina = StatIds.StaminaMax,
-                threshold = StatIds.ThresholdMult, cap = StatIds.DustCap, radius = StatIds.GravityRadius,
-                drain = StatIds.StaminaDrain, start = StatIds.StartBonus;
+            const string spawn = StatIds.SpawnRate, pull = StatIds.PullAccel, sale = StatIds.SaleMult, time = StatIds.RunTime,
+                threshold = StatIds.ThresholdMult, cap = StatIds.DustCap, radius = StatIds.GravityRadius, start = StatIds.StartBonus;
+            const double halfRing = RunTimePerRing / 2;
             var n = new List<NodeDef>();
 
             // Ring 1: two nodes after the first run, gate around run 3-4.
             n.Add(Ax("r1_spawn", 1, DustAxis, spawn, 1, 2));
             n.Add(Ax("r1_pull", 1, GravityAxis, pull, 0.2, 2));
             n.Add(Ax("r1_sale", 1, SaleAxis, sale, 0.25, 1));
-            n.Add(Ax("r1_stamina", 1, StaminaAxis, stamina, 6, 1));
+            n.Add(Ax("r1_stamina", 1, TimeAxis, time, RunTimePerRing, 1));
             n.Add(Gate(2));
 
             // Ring 2 (I = 96): dust cap and gravity radius arrive ("dust surge", 10 §4.3); the planet axis starts here.
@@ -341,16 +352,16 @@ namespace Incremental.EditorTools
             n.Add(Ax("r2_radius", 2, GravityAxis + Pair, radius, 0.10, 2, "r1_pull"));
             n.Add(FollowNode(2));
             n.Add(Ax("r2_sale", 2, SaleAxis, sale, 0.25, 2, "r1_sale"));
-            n.Add(Ax("r2_stamina", 2, StaminaAxis, stamina, 6, 2, "r1_stamina"));
+            n.Add(Ax("r2_stamina", 2, TimeAxis, time, halfRing, 2, "r1_stamina"));
             n.Add(Ax("r2_threshold", 2, PlanetAxis, threshold, 0.07, 2, "gate_t2"));
             n.Add(AbilityNode(2));   // 24 §20.2: the amplifier crystal, the first ability
             n.Add(Gate(3));
 
-            // Ring 3 (I = 768): start bonus, stamina drain and the first dust kind unlock (20 §4).
+            // Ring 3 (I = 768): start bonus, run time and the first dust kind unlock (20 §4).
             n.Add(Ax("r3_start", 3, DustAxis, start, 50, 2, "r2_cap"));
             n.Add(Ax("r3_pull", 3, GravityAxis, pull, 0.30, 2, "r2_radius"));
             n.Add(Ax("r3_sale", 3, SaleAxis, sale, 0.25, 2, "r2_sale"));
-            n.Add(Ax("r3_drain", 3, StaminaAxis, drain, 0.05, 2, "r2_stamina"));
+            n.Add(Ax("r3_drain", 3, TimeAxis, time, halfRing, 2, "r2_stamina"));
             n.Add(Ax("r3_threshold", 3, PlanetAxis, threshold, 0.07, 2, "r2_threshold"));
             n.Add(DustKindNode(3));
             n.Add(FragmentNode(3));
@@ -359,25 +370,25 @@ namespace Incremental.EditorTools
 
             // Rings 4-10: one node per axis (two levels each) + the dust kind axis node; prereq = the same axis in the ring before.
             Ring(n, 4, (spawn, 3, DustAxis, "r3_start"), (radius, 0.10, GravityAxis + Pair, "r3_pull"), (threshold, 0.12, PlanetAxis, "r3_threshold"),
-                (sale, 0.50, SaleAxis, "r3_sale"), (stamina, 6, StaminaAxis, "r3_drain"));
+                (sale, 0.50, SaleAxis, "r3_sale"), (time, halfRing, TimeAxis, "r3_drain"));
             Ring(n, 5, (cap, 300, DustAxis, "r4_spawn"), (pull, 0.40, GravityAxis, "r4_radius"), (threshold, 0.10, PlanetAxis, "r4_threshold"),
-                (sale, 0.50, SaleAxis, "r4_sale"), (drain, 0.05, StaminaAxis, "r4_stamina"));
+                (sale, 0.50, SaleAxis, "r4_sale"), (time, halfRing, TimeAxis, "r4_stamina"));
             Ring(n, 6, (spawn, 5, DustAxis, "r5_cap"), (radius, 0.14, GravityAxis + Pair, "r5_pull"),
-                (threshold, 0.06, PlanetAxis, "r5_threshold"), (sale, 1.00, SaleAxis, "r5_sale"), (stamina, 9, StaminaAxis, "r5_drain"));
+                (threshold, 0.06, PlanetAxis, "r5_threshold"), (sale, 1.00, SaleAxis, "r5_sale"), (time, halfRing, TimeAxis, "r5_drain"));
             Ring(n, 7, (cap, 500, DustAxis, "r6_spawn"), (pull, 0.50, GravityAxis, "r6_radius"),
-                (threshold, 0.04, PlanetAxis, "r6_threshold"), (sale, 1.00, SaleAxis, "r6_sale"), (drain, 0.05, StaminaAxis, "r6_stamina"));
+                (threshold, 0.04, PlanetAxis, "r6_threshold"), (sale, 1.00, SaleAxis, "r6_sale"), (time, halfRing, TimeAxis, "r6_stamina"));
             Ring(n, 8, (spawn, 8, DustAxis - Pair, "r7_cap"), (start, 200, DustAxis + Pair, "r7_cap"), (radius, 0.14, GravityAxis + Pair, "r7_pull"),
-                (sale, 2.00, SaleAxis, "r7_sale"), (stamina, 12, StaminaAxis, "r7_drain"));
+                (sale, 2.00, SaleAxis, "r7_sale"), (time, halfRing, TimeAxis, "r7_drain"));
             Ring(n, 9, (cap, 800, DustAxis, "r8_spawn|r8_start"), (pull, 0.60, GravityAxis, "r8_radius"),
-                (sale, 2.00, SaleAxis, "r8_sale"), (drain, 0.05, StaminaAxis, "r8_stamina"));
+                (sale, 2.00, SaleAxis, "r8_sale"), (time, halfRing, TimeAxis, "r8_stamina"));
             Ring(n, 10, (spawn, 12, DustAxis, "r9_cap"), (radius, 0.17, GravityAxis + Pair, "r9_pull"),
-                (sale, 4.00, SaleAxis, "r9_sale"), (stamina, 15, StaminaAxis, "r9_drain"));
+                (sale, 4.00, SaleAxis, "r9_sale"), (time, halfRing, TimeAxis, "r9_drain"));
 
             // Ring 11: endless nodes with unlimited levels. The dust kind axis ends at ring 10, so the third endless node
             // sits on the dust axis instead of the old compound mass node (20 §4).
             n.Add(Stat("r11_sale", 11, SaleAxis, sale, 1.00, 0, StatCost(11), EndlessGrowth, "r10_sale"));
             n.Add(Stat("r11_spawn", 11, DustAxis, spawn, 12, 0, StatCost(11), EndlessGrowth, "r10_spawn"));
-            n.Add(Stat("r11_stamina", 11, StaminaAxis, stamina, 9, 0, StatCost(11), EndlessGrowth, "r10_stamina"));
+            n.Add(Stat("r11_stamina", 11, TimeAxis, time, halfRing, 0, StatCost(11), EndlessGrowth, "r10_stamina"));
             // 24 §19.1: the black hole's duration node, the one capped node of ring 11. 24 §21.2: and its evolution.
             n.Add(AbilityNode(11));
             return n;
@@ -387,7 +398,7 @@ namespace Incremental.EditorTools
         static void Ring(List<NodeDef> n, int ring, params (string stat, double effect, float angle, string prereqs)[] axes)
         {
             foreach (var a in axes)
-                n.Add(Ax("r" + ring + "_" + ShortName(a.stat), ring, a.angle, a.stat, a.effect, 2, a.prereqs.Split('|')));
+                n.Add(Ax("r" + ring + "_" + ShortName(a.stat, ring), ring, a.angle, a.stat, a.effect, 2, a.prereqs.Split('|')));
             var dust = DustKindNode(ring);
             if (dust != null) n.Add(dust);
             var frag = FragmentNode(ring);
@@ -401,19 +412,22 @@ namespace Incremental.EditorTools
             if (ring + 1 <= RingCount) n.Add(Gate(ring + 1));
         }
 
-        static string ShortName(string stat)
+        /// <summary>
+        /// The id suffix of a template node. 28 §2: the run time nodes keep the ids of the stamina nodes they replaced
+        /// (save keys): stamina_max sat in the even rings and stamina_drain in the odd ones.
+        /// </summary>
+        static string ShortName(string stat, int ring)
         {
             switch (stat)
             {
+                case StatIds.RunTime: return ring % 2 == 0 ? "stamina" : "drain";
                 case StatIds.SpawnRate: return "spawn";
                 case StatIds.PullAccel: return "pull";
                 case StatIds.SaleMult: return "sale";
-                case StatIds.StaminaMax: return "stamina";
                 case StatIds.ThresholdMult: return "threshold";
                 case StatIds.DustCap: return "cap";
                 case StatIds.DustMass: return "mass";
                 case StatIds.GravityRadius: return "radius";
-                case StatIds.StaminaDrain: return "drain";
                 case StatIds.StartBonus: return "start";
                 case StatIds.FragUnlock: return "frag";
                 case StatIds.FragChance: return "fragchance";

@@ -25,13 +25,11 @@ namespace Incremental.Tests
             Assert.AreEqual(4, s.spawnRate, Eps);
             Assert.AreEqual(600, s.pullAccel, Eps);
             Assert.AreEqual(1, s.saleMult, Eps);
-            Assert.AreEqual(60, s.staminaMax, Eps);
+            Assert.AreEqual(60, s.runTimeSec, Eps);
             Assert.AreEqual(1, s.thresholdMult, Eps);
             Assert.AreEqual(300, s.dustCap, Eps);
             Assert.AreEqual(1, s.dustMass, Eps);
             Assert.AreEqual(180, s.gravityRadius, Eps);
-            Assert.AreEqual(0.2, s.staminaIdleDrain, Eps);
-            Assert.AreEqual(1.0, s.staminaHoldDrain, Eps);
             Assert.AreEqual(100, s.dustInitial, Eps);
         }
 
@@ -43,8 +41,8 @@ namespace Incremental.Tests
 
         [Test] public void SaleMult_SumsPercentAcrossNodes() => Assert.AreEqual(1 + 0.5 + 1.0, With(("e_sale", 2), ("d_sale", 1)).saleMult, Eps);
 
-        // 24 §23.3: the stamina_max nodes count for GameParams.staminaNodeScale of what they say.
-        [Test] public void StaminaMax_AddsPerLevel() => Assert.AreEqual(60 + 30 * p.staminaNodeScale, With(("e_stamina", 3)).staminaMax, Eps);
+        // 28 §2: run_time nodes add seconds to the run, one for one.
+        [Test] public void RunTime_AddsPerLevel() => Assert.AreEqual(60 + 30, With(("e_stamina", 3)).runTimeSec, Eps);
 
         [Test] public void ThresholdMult_SubtractsPercent() => Assert.AreEqual(0.8, With(("e_threshold", 5)).thresholdMult, Eps);
 
@@ -64,21 +62,9 @@ namespace Incremental.Tests
         // 24 §23.2: the radius nodes count for GameParams.gravityGrowthScale of what they say.
         [Test] public void GravityRadius_AddsPercent() => Assert.AreEqual(180 * (1 + 0.5 * p.gravityGrowthScale), With(("e_radius", 5)).gravityRadius, Eps);
 
+        // 28 §2: the old stamina_max and stamina_drain nodes both became run_time, and they add up with no cap.
         [Test]
-        public void StaminaDrain_ReducesIdleAndHoldDrain()
-        {
-            var s = With(("e_drain", 4));
-            Assert.AreEqual(0.2 * 0.8, s.staminaIdleDrain, Eps);
-            Assert.AreEqual(1.0 * 0.8, s.staminaHoldDrain, Eps);
-        }
-
-        [Test]
-        public void StaminaDrain_ReductionCappedAt90Percent()
-        {
-            var s = With(("c_drain", 3)); // -150%
-            Assert.AreEqual(0.2 * 0.1, s.staminaIdleDrain, Eps);
-            Assert.AreEqual(1.0 * 0.1, s.staminaHoldDrain, Eps);
-        }
+        public void RunTime_SumsAcrossNodes() => Assert.AreEqual(60 + 20 + 15, With(("e_stamina", 2), ("c_drain", 3)).runTimeSec, Eps);
 
         [Test] public void StartBonus_AddsInitialDust() => Assert.AreEqual(100 + 100, With(("e_start", 2)).dustInitial, Eps);
 
@@ -103,13 +89,12 @@ namespace Incremental.Tests
                 if (s.spawnRate != b.spawnRate) changed++;
                 if (s.pullAccel != b.pullAccel) changed++;
                 if (s.saleMult != b.saleMult) changed++;
-                if (s.staminaMax != b.staminaMax) changed++;
+                if (s.runTimeSec != b.runTimeSec) changed++;
                 if (s.thresholdMult != b.thresholdMult) changed++;
                 if (s.dustCap != b.dustCap) changed++;
                 if (s.dustMass != b.dustMass) changed++;
                 if (s.gravityRadius != b.gravityRadius) changed++;
                 if (s.followSpeedPx != b.followSpeedPx) changed++;
-                if (s.staminaIdleDrain != b.staminaIdleDrain || s.staminaHoldDrain != b.staminaHoldDrain) changed++;
                 if (s.dustInitial != b.dustInitial) changed++;
                 // dustMassAvg also moves with dust_mass, so the dust kind axis is checked on the shares themselves.
                 if (UnityEngine.JsonUtility.ToJson(new ChanceBag { c = s.dustKindChance }) !=

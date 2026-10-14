@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Incremental
 {
@@ -95,7 +96,7 @@ namespace Incremental
 
         [Header("Arms (26 §10.1)")]
         [Tooltip("The spiral arms: the seven axes of 12 §5 are regrouped into seven arms 360/7 degrees apart (gate; dust and dust " +
-                 "kinds; planets and fragments; stamina; sale; gravity and follow; abilities), and every arm turns with the " +
+                 "kinds; planets and fragments; run time; sale; gravity and follow; abilities), and every arm turns with the " +
                  "ring. Off = the radial layout of 12 §5, each node at its own angle.")]
         public bool arms = true;
         [Tooltip("Degrees an arm turns per ring: node angle = arm angle + this × ring. 0 = straight spokes; 16 turns ring 11 by 176° (the developer chose 16 from the build captures, 24 §20).")]
@@ -168,7 +169,7 @@ namespace Incremental
 
     /// <summary>
     /// The look of the UI in one asset (26 §4): fonts, the palette and shapes of each visual direction, the type scale,
-    /// animation times and the stamina display. The views hold no colors or numbers of their own; the field initializers
+    /// animation times and the time bar. The views hold no colors or numbers of their own; the field initializers
     /// here are the seed of the asset, as with GameParams.
     /// </summary>
     [CreateAssetMenu(menuName = "Incremental/UI Theme", fileName = "UITheme")]
@@ -240,30 +241,21 @@ namespace Incremental
         public float abilityArcFlashSec = 0.35f;
         public float abilityArcFlashWidth = 1.5f;
 
-        [Header("Stamina (26 §5.1)")]
-        [Tooltip("0 = (a) the bar at the top, 1 = (b) the gravity ring is the gauge. The debug key switches it at runtime.")]
-        public int staminaMode;
-        public Color staminaFull = new Color(0.72f, 0.88f, 1f, 1f);
-        public Color staminaMid = new Color(1f, 0.62f, 0.2f, 1f);
-        public Color staminaLow = new Color(1f, 0.27f, 0.22f, 1f);
-        [Tooltip("Share left where the color starts to turn (full → mid → low) and where it is fully the low color. " +
-                 "Below the second it also pulses.")]
-        public float staminaWarnAt = 0.5f;
-        public float staminaLowAt = 0.2f;
-        [Tooltip("Pulse below staminaLowAt: beats per second and how deep it dims (× effect intensity).")]
-        public float staminaPulseHz = 2.2f;
-        public float staminaPulseDepth = 0.55f;
-        public Vector2 staminaBarSize = new Vector2(600f, 22f);
+        [Header("Time bar (26 §5.1, 28 §2)")]
+        [FormerlySerializedAs("staminaFull")] public Color timeFull = new Color(0.72f, 0.88f, 1f, 1f);
+        [FormerlySerializedAs("staminaMid")] public Color timeMid = new Color(1f, 0.62f, 0.2f, 1f);
+        [FormerlySerializedAs("staminaLow")] public Color timeLow = new Color(1f, 0.27f, 0.22f, 1f);
+        [Tooltip("Share of the run's time left where the color starts to turn (full → mid → low) and where it is fully " +
+                 "the low color. Below the second it also pulses.")]
+        [FormerlySerializedAs("staminaWarnAt")] public float timeWarnAt = 0.5f;
+        [FormerlySerializedAs("staminaLowAt")] public float timeLowAt = 0.2f;
+        [Tooltip("Pulse below timeLowAt: beats per second and how deep it dims (× effect intensity).")]
+        [FormerlySerializedAs("staminaPulseHz")] public float timePulseHz = 2.2f;
+        [FormerlySerializedAs("staminaPulseDepth")] public float timePulseDepth = 0.55f;
+        [FormerlySerializedAs("staminaBarSize")] public Vector2 timeBarSize = new Vector2(600f, 22f);
         [Tooltip("Distance of the bar from the top of the screen, and of the numbers from the bar.")]
-        public float staminaBarTopPx = 18f;
-        public float staminaTextGapPx = 5f;
-        [Tooltip("(b): the bar that stays at the top while the ring is the gauge. Height 0 = no bar at all.")]
-        public Vector2 staminaBarSmallSize = new Vector2(260f, 6f);
-        [Tooltip("(b): the arc on the gravity ring, the faint full ring behind it (alpha 0 = none) and its smoothness.")]
-        public float staminaRingWidthPx = 4f;
-        public float staminaRingAlpha = 0.95f;
-        public float staminaRingTrackAlpha = 0.1f;
-        public int staminaRingSegments = 96;
+        [FormerlySerializedAs("staminaBarTopPx")] public float timeBarTopPx = 18f;
+        [FormerlySerializedAs("staminaTextGapPx")] public float timeTextGapPx = 5f;
 
         [Header("Result screen (26 §5.2)")]
         public Vector2 resultPanelSize = new Vector2(600f, 820f);
@@ -326,26 +318,26 @@ namespace Incremental
             directions != null && directions.Length > 0 ? directions[Mathf.Clamp(index, 0, directions.Length - 1)] : null;
 
         /// <summary>
-        /// Stamina color for the share left (26 §5.1): the full color down to staminaWarnAt, then through the mid color
-        /// to the low color at staminaLowAt. Below that it pulses; <paramref name="pulse01"/> is the pulse phase 0..1
-        /// already scaled by the effect intensity (0 = steady).
+        /// Time bar color for the share of the run's time left (26 §5.1, 28 §2): the full color down to timeWarnAt, then
+        /// through the mid color to the low color at timeLowAt. Below that it pulses; <paramref name="pulse01"/> is the
+        /// pulse phase 0..1 already scaled by the effect intensity (0 = steady).
         /// </summary>
-        public Color StaminaColor(float share, float pulse01)
+        public Color TimeColor(float share, float pulse01)
         {
-            float warn = Mathf.Max(staminaWarnAt, staminaLowAt + 1e-3f);
-            float half = (warn + staminaLowAt) * 0.5f;
+            float warn = Mathf.Max(timeWarnAt, timeLowAt + 1e-3f);
+            float half = (warn + timeLowAt) * 0.5f;
             Color c;
-            if (share >= warn) c = staminaFull;
-            else if (share >= half) c = Color.Lerp(staminaMid, staminaFull, (share - half) / (warn - half));
-            else if (share > staminaLowAt) c = Color.Lerp(staminaLow, staminaMid, (share - staminaLowAt) / (half - staminaLowAt));
-            else c = staminaLow;
-            if (share <= staminaLowAt) c.a *= 1f - staminaPulseDepth * Mathf.Clamp01(pulse01);
+            if (share >= warn) c = timeFull;
+            else if (share >= half) c = Color.Lerp(timeMid, timeFull, (share - half) / (warn - half));
+            else if (share > timeLowAt) c = Color.Lerp(timeLow, timeMid, (share - timeLowAt) / (half - timeLowAt));
+            else c = timeLow;
+            if (share <= timeLowAt) c.a *= 1f - timePulseDepth * Mathf.Clamp01(pulse01);
             return c;
         }
 
-        /// <summary>Pulse phase 0..1 at this time for <see cref="StaminaColor"/>, already × the effect intensity.</summary>
-        public float StaminaPulse(float time, float intensity) =>
-            (0.5f - 0.5f * Mathf.Cos(time * staminaPulseHz * Mathf.PI * 2f)) * Mathf.Clamp01(intensity);
+        /// <summary>Pulse phase 0..1 at this time for <see cref="TimeColor"/>, already × the effect intensity.</summary>
+        public float TimePulse(float time, float intensity) =>
+            (0.5f - 0.5f * Mathf.Cos(time * timePulseHz * Mathf.PI * 2f)) * Mathf.Clamp01(intensity);
 
         // ---------------- seed of the three directions (26 §3) ----------------
 

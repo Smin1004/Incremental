@@ -7,7 +7,8 @@ namespace Incremental
     public sealed class RunState
     {
         public double mass;
-        public double stamina;
+        /// <summary>28 §2: seconds left in the run. Starts at EffectiveStats.runTimeSec and the run ends at 0.</summary>
+        public double timeLeft;
         public double runIncome;
         /// <summary>Bodies made from the held mass. Index = tier - 1. Fragments are counted apart (20 §5).</summary>
         public int[] planetCounts;

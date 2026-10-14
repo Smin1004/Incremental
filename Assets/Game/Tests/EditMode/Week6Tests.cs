@@ -333,7 +333,7 @@ namespace Incremental.Tests
             var meta = new MetaState();
             var rec = new RunRecord
             {
-                run = 1, income = 10, endReason = EndReason.Stamina,
+                run = 1, income = 10, endReason = EndReason.TimeUp,
                 tierCounts = new[] { 3, 0, 0 }, fragmentCounts = new[] { 0, 0, 4 }, fragmentIncome = 2,
             };
             Session.ApplyRunEnd(meta, rec);
@@ -369,7 +369,7 @@ namespace Incremental.Tests
         public void W5_2_EndingShowsWhicheverSystemIsFuller()
         {
             var poor = new RunRecord { run = 9, tierCounts = new[] { 1 }, endReason = EndReason.Ending };
-            var rich = new RunRecord { run = 5, tierCounts = new[] { 4, 2 }, fragmentCounts = new[] { 3 }, endReason = EndReason.Stamina };
+            var rich = new RunRecord { run = 5, tierCounts = new[] { 4, 2 }, fragmentCounts = new[] { 3 }, endReason = EndReason.TimeUp };
             Assert.AreSame(rich, Session.RicherSystem(poor, rich), "a two-second ending run must not leave the sky empty");
             Assert.AreSame(rich, Session.RicherSystem(rich, poor));
             Assert.AreSame(rich, Session.RicherSystem(null, rich));
@@ -377,18 +377,18 @@ namespace Incremental.Tests
             Assert.IsNull(Session.RicherSystem(null, null));
             Assert.AreEqual(9, Session.TotalBodies(rich), "fragments count toward how full a system looks");
             // A tie keeps this run's own system.
-            var same = new RunRecord { run = 5, tierCounts = new[] { 1 }, endReason = EndReason.Stamina };
+            var same = new RunRecord { run = 5, tierCounts = new[] { 1 }, endReason = EndReason.TimeUp };
             Assert.AreSame(poor, Session.RicherSystem(poor, same));
         }
 
         [Test]
-        public void W5_2_BestRunIsTheStaminaRunWithTheHighestIncome()
+        public void W5_2_BestRunIsTheTimeUpRunWithTheHighestIncome()
         {
             var m = new MetaState();
-            Session.ApplyRunEnd(m, new RunRecord { run = 1, income = 100, endReason = EndReason.Stamina });
-            Session.ApplyRunEnd(m, new RunRecord { run = 2, income = 500, endReason = EndReason.Stamina });
+            Session.ApplyRunEnd(m, new RunRecord { run = 1, income = 100, endReason = EndReason.TimeUp });
+            Session.ApplyRunEnd(m, new RunRecord { run = 2, income = 500, endReason = EndReason.TimeUp });
             Session.ApplyRunEnd(m, new RunRecord { run = 3, income = 900, endReason = EndReason.Quit });
-            Session.ApplyRunEnd(m, new RunRecord { run = 4, income = 300, endReason = EndReason.Stamina });
+            Session.ApplyRunEnd(m, new RunRecord { run = 4, income = 300, endReason = EndReason.TimeUp });
             Assert.AreEqual(2, m.BestRun.run, "quit runs are not the best, however rich");
             Assert.AreEqual(500, m.bestRunIncome, Eps);
         }
@@ -397,16 +397,16 @@ namespace Incremental.Tests
         public void W5_3_EndingRunIsOutOfTheRatioAndTheBest()
         {
             var m = new MetaState();
-            Session.ApplyRunEnd(m, Session.MakeRecord(m, 1, 60, 100, new[] { 3 }, null, default(EffectiveStats), EndReason.Stamina));
+            Session.ApplyRunEnd(m, Session.MakeRecord(m, 1, 60, 100, new[] { 3 }, null, default(EffectiveStats), EndReason.TimeUp));
             var ending = Session.MakeRecord(m, 2, 2, 5000, new[] { 0, 0, 1 }, null, default(EffectiveStats), EndReason.Ending);
             Assert.AreEqual(-1, ending.ratioVsLast, Eps, "no ratio, like a quit run");
             Session.ApplyRunEnd(m, ending);
-            Assert.AreEqual(100, m.lastRunIncome, Eps, "the ratio base stays the last stamina run");
+            Assert.AreEqual(100, m.lastRunIncome, Eps, "the ratio base stays the last run that ran out of time");
             Assert.AreEqual(100, m.bestRunIncome, Eps, "and so does the best");
             Assert.AreEqual(5100, m.totalIncome, Eps, "the income and the statistics still count it");
             Assert.AreEqual(2, m.endingRun, "and it is still the ending run");
 
-            var after = Session.MakeRecord(m, 3, 60, 200, new[] { 4 }, null, default(EffectiveStats), EndReason.Stamina);
+            var after = Session.MakeRecord(m, 3, 60, 200, new[] { 4 }, null, default(EffectiveStats), EndReason.TimeUp);
             Assert.AreEqual(2.0, after.ratioVsLast, Eps, "the run after the ending is measured against run 1, not the ending");
         }
 
@@ -415,9 +415,9 @@ namespace Incremental.Tests
         {
             var history = new List<RunRecord>
             {
-                new RunRecord { run = 1, endReason = EndReason.Stamina, tierCounts = new[] { 2 } },
+                new RunRecord { run = 1, endReason = EndReason.TimeUp, tierCounts = new[] { 2 } },
                 new RunRecord { run = 2, endReason = EndReason.Ending, tierCounts = new[] { 0 } },
-                new RunRecord { run = 3, endReason = EndReason.Stamina, tierCounts = new[] { 5 } },
+                new RunRecord { run = 3, endReason = EndReason.TimeUp, tierCounts = new[] { 5 } },
             };
             Assert.AreEqual(1, ResultMath.ComparisonRun(history, history[2]).run);
         }

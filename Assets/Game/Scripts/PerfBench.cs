@@ -191,7 +191,7 @@ namespace Incremental
             root.Meta.endingSeen = true;
             root.Tools.StageRunScene(20260929, dust, new Vector2(0.5f, 0.5f), Vector2.zero, root.celestialTable.MaxTier, 0.5);
             // The run must not end in the middle of the sample.
-            root.Run.stamina = double.MaxValue / 4;
+            root.Run.timeLeft = double.MaxValue / 4;
             if (root.Abilities != null)
             {
                 // 24 §7: "all" forced and the level stepped up to the most any ability node has; forced abilities are
@@ -228,9 +228,9 @@ namespace Incremental
             root.Tools.EndStaging();
             root.Tree.Hide();
             // The result screen is only the result screen once the run has actually ended: the phase is what stops the
-            // dust simulation and hides the run's dust. Draining the stamina ends it the normal way on the next tick, and
+            // dust simulation and hides the run's dust. Setting the time left to 0 ends it the normal way on the next tick, and
             // the staged system goes up once that has happened (well inside the warmup).
-            root.DebugDrainStamina();
+            root.DebugTimeUp();
             root.Tools.After(0.5f, ShowStagedSystem);
         }
 
@@ -252,7 +252,7 @@ namespace Incremental
             var rec = new RunRecord
             {
                 run = root.Meta.runCount, durationSec = 120, income = 1, tierCounts = counts,
-                unlockedMaxTier = c.MaxTier, endReason = EndReason.Stamina,
+                unlockedMaxTier = c.MaxTier, endReason = EndReason.TimeUp,
             };
             root.Meta.highestTierCreated = c.MaxTier;
             root.Result.Show(rec, false);
@@ -266,7 +266,7 @@ namespace Incremental
         {
             stepName = "트리 화면, 노드 전부";
             root.Result.Hide();
-            if (stagedSystem == null) root.DebugDrainStamina();
+            if (stagedSystem == null) root.DebugTimeUp();
             IdleDust();
             while (Shop.UnlockNextFree(root.nodeTable, root.Meta) > 0) { }
             root.Tree.Show();

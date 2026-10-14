@@ -27,9 +27,9 @@ namespace Incremental
         /// <summary>Derived from the gate levels (Shop.RecomputeUnlockedMaxTier); stored for readability.</summary>
         public int unlockedMaxTier = 1;
         public int runCount;
-        /// <summary>Income of the most recent stamina-ended run (the base of the next ratio). quit / crash runs do not count.</summary>
+        /// <summary>Income of the most recent run that ran out of time (the base of the next ratio). quit / crash runs do not count.</summary>
         public double lastRunIncome;
-        /// <summary>Best income of a stamina-ended run. quit / crash runs do not count.</summary>
+        /// <summary>Best income of a run that ran out of time. quit / crash runs do not count.</summary>
         public double bestRunIncome;
 
         // Run statistics
@@ -98,7 +98,7 @@ namespace Incremental
         public RunRecord LastRun => runHistory != null && runHistory.Count > 0 ? runHistory[runHistory.Count - 1] : null;
 
         /// <summary>
-        /// The run behind <see cref="bestRunIncome"/>: the stamina-ended run with the highest income, latest one on a tie
+        /// The run behind <see cref="bestRunIncome"/>: the run that ran out of time with the highest income, latest one on a tie
         /// (20 §6 W5-2 needs its system). Null when there is none yet.
         /// </summary>
         public RunRecord BestRun

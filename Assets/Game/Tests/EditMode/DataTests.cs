@@ -153,21 +153,21 @@ namespace Incremental.Tests
                 var c = TestData.Tiers();
                 string header = RunLogger.Header(c);
                 Assert.AreEqual("run,duration_s,income,t1,t2,t3,t4,f1,f2,f3,f4,frag_income,ratio_vs_last,max_tier,node_levels," +
-                                "spawn_rate,pull_accel,sale_mult,stamina_max,threshold_mult,dust_cap,dust_mass,gravity_radius," +
-                                "follow_speed,world_scale,stamina_idle_drain,stamina_hold_drain,dust_initial,dust_mass_avg,end_reason", header);
+                                "spawn_rate,pull_accel,sale_mult,run_time,threshold_mult,dust_cap,dust_mass,gravity_radius," +
+                                "follow_speed,world_scale,dust_initial,dust_mass_avg,end_reason", header);
 
                 var stats = Stats.Compute(TestData.Params(), TestData.Nodes(), TestData.Meta(("a_spawn", 2)));
                 var rec = new RunRecord
                 {
                     run = 2, durationSec = 50, income = 13, tierCounts = new[] { 12, 1 }, ratioVsLast = 1.25, unlockedMaxTier = 2,
                     startLevels = new List<UpgradeLevel> { new UpgradeLevel("a_spawn", 2), new UpgradeLevel("gate_t2", 1) },
-                    startStats = stats, endReason = EndReason.Stamina,
+                    startStats = stats, endReason = EndReason.TimeUp,
                 };
                 Assert.IsNull(RunLogger.Append(dir, rec, c));
                 var lines = File.ReadAllLines(RunLogger.FilePath(dir));
                 Assert.AreEqual(2, lines.Length);
                 Assert.AreEqual(header.Split(',').Length, lines[1].Split(',').Length);
-                Assert.AreEqual("2,50.0,13,12,1,0,0,0,0,0,0,0,1.250,2,3,6,600,1,60,1,300,1,180,220,1,0.2,1,100,1,stamina", lines[1]);
+                Assert.AreEqual("2,50.0,13,12,1,0,0,0,0,0,0,0,1.250,2,3,6,600,1,60,1,300,1,180,220,1,100,1,time", lines[1]);
 
                 string rotated = RunLogger.Append(dir, rec, TestData.Tiers(5));
                 Assert.IsNotNull(rotated);

@@ -4,14 +4,13 @@ using UnityEngine;
 namespace Incremental
 {
     /// <summary>
-    /// Run HUD (26 §9.2): currency and run number top-left, run income top-right, the stamina bar top-center, all over a
+    /// Run HUD (26 §9.2): currency and run number top-left, run income top-right, the time bar top-center, all over a
     /// dark veil that fades down from the top edge so the numbers read on bright dust. Also a center message, the debug
     /// overlay lines and the "×N" label over a multi-planet creation. Built from code; render only. Fonts, sizes and
     /// colors come from the UI theme (26 §4).
     /// The run income counts up to each new value and bumps once when it changes (the result screen's device). The
-    /// stamina bar (26 §5.1) is a panel-shader bar whose color goes from the full color through the mid color to the low
-    /// color as the stamina runs out, and pulses near the end. With the stamina display on (b), where the gravity ring
-    /// is the gauge (CursorView), the bar shrinks to a thin strip without numbers.
+    /// time bar (26 §5.1, 28 §2) is a panel-shader bar whose color goes from the full color through the mid color to the
+    /// low color as the run's time runs out, and pulses near the end; under it "남은 시간 N초".
     /// </summary>
     public sealed class HudView : MonoBehaviour
     {
@@ -25,9 +24,9 @@ namespace Incremental
         GameRoot game;
         UIStyle ui;
         UITheme theme;
-        UIShape veil, staminaBar;
+        UIShape veil, timeBar;
         bool runHudVisible = true;
-        TMP_Text currencyLabel, currencyValue, runText, incomeLabel, incomeValue, staminaText, centerText, debugText, abilityText, toastText;
+        TMP_Text currencyLabel, currencyValue, runText, incomeLabel, incomeValue, timeText, centerText, debugText, abilityText, toastText;
         string currencyShown;
         double incomeTarget = double.NaN, incomeFrom, incomeShown;
         float incomeAge = float.MaxValue;
@@ -80,11 +79,11 @@ namespace Incremental
             incomeValue = UIBuilder.CreateText("Income", root, ui.FontBold, theme.sizeLarge, TextAnchor.MiddleRight, topRight, new Vector2(1f, 0.5f),
                 new Vector2(-edge, -top - labelH - valueH * 0.5f), new Vector2(600f, valueH));
 
-            staminaBar = UIBuilder.CreateShape("Stamina", root, ui, UIRole.Bar, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -theme.staminaBarTopPx), theme.staminaBarSize);
-            staminaText = UIBuilder.CreateText("StaminaText", staminaBar.transform, Font, theme.sizeTiny, TextAnchor.UpperCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0f, -theme.staminaTextGapPx),
-                new Vector2(theme.staminaBarSize.x, theme.sizeTiny * theme.lineHeight));
+            timeBar = UIBuilder.CreateShape("TimeBar", root, ui, UIRole.Bar, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -theme.timeBarTopPx), theme.timeBarSize);
+            timeText = UIBuilder.CreateText("TimeText", timeBar.transform, Font, theme.sizeTiny, TextAnchor.UpperCenter,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0f, -theme.timeTextGapPx),
+                new Vector2(theme.timeBarSize.x, theme.sizeTiny * theme.lineHeight));
 
             centerText = UIBuilder.CreateText("Center", root, Font, theme.sizeTitle, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200f, 200f));
@@ -113,24 +112,19 @@ namespace Incremental
             ApplyStyle();
         }
 
-        /// <summary>
-        /// Colors of the visual direction, and the bar for the stamina display in use (26 §5.1): the full bar with its
-        /// numbers for (a), a thin strip for (b), nothing when that strip's height is set to 0.
-        /// </summary>
+        /// <summary>Colors of the visual direction, and the time bar's size (26 §5.1).</summary>
         void ApplyStyle()
         {
             var d = ui.Direction;
-            bool ring = ui.StaminaMode == 1;
-            staminaBar.rectTransform.sizeDelta = ring ? theme.staminaBarSmallSize : theme.staminaBarSize;
-            staminaText.gameObject.SetActive(!ring);
-            staminaText.color = d.text;
+            timeBar.rectTransform.sizeDelta = theme.timeBarSize;
+            timeText.color = d.text;
             currencyLabel.color = incomeLabel.color = runText.color = d.textDim;
             currencyValue.color = centerText.color = d.text;
             incomeValue.color = d.accent;
-            staminaBar.gameObject.SetActive(runHudVisible && BarShown);
+            timeBar.gameObject.SetActive(runHudVisible && BarShown);
         }
 
-        bool BarShown => staminaBar.rectTransform.sizeDelta.y > 0f;
+        bool BarShown => timeBar.rectTransform.sizeDelta.y > 0f;
 
         /// <summary>How long a "×N" label stays (the planet's display time).</summary>
         public void SetCountLifetime(double seconds) => countLifetime = Mathf.Max(0.1f, (float)seconds);
@@ -238,7 +232,7 @@ namespace Incremental
             incomeValue.text = Fmt.Num(System.Math.Floor(incomeShown));
         }
 
-        /// <summary>Currency, run income and stamina bar: shown during a run only.</summary>
+        /// <summary>Currency, run income and time bar: shown during a run only.</summary>
         public void SetRunHudVisible(bool visible)
         {
             if (runHudVisible == visible) return;
@@ -249,7 +243,7 @@ namespace Incremental
             runText.gameObject.SetActive(visible);
             incomeLabel.gameObject.SetActive(visible);
             incomeValue.gameObject.SetActive(visible);
-            staminaBar.gameObject.SetActive(visible && BarShown);
+            timeBar.gameObject.SetActive(visible && BarShown);
         }
 
         public void SetCurrency(double currency, int run)
@@ -284,15 +278,23 @@ namespace Incremental
             TickIncome(0f);
         }
 
-        public void SetStamina(double current, double max)
+        /// <summary>28 §2: the time bar, <paramref name="left"/> of <paramref name="total"/> seconds, and "남은 시간 N초" under it.</summary>
+        public void SetTimeLeft(double left, double total)
         {
-            float share = max > 0 ? Mathf.Clamp01((float)(current / max)) : 0f;
-            float pulse = share <= theme.staminaLowAt ? theme.StaminaPulse(Time.time, game.EffectIntensity) : 0f;
-            staminaBar.Fill = share;
-            staminaBar.color = theme.StaminaColor(share, pulse);
-            staminaBar.State = pulse;
-            staminaText.text = string.Format(UIStrings.Stamina, Fmt.Int(System.Math.Ceiling(current)), Fmt.Int(max));
+            float share = total > 0 ? Mathf.Clamp01((float)(left / total)) : 0f;
+            float pulse = share <= theme.timeLowAt ? theme.TimePulse(Time.time, game.EffectIntensity) : 0f;
+            timeBar.Fill = share;
+            timeBar.color = theme.TimeColor(share, pulse);
+            timeBar.State = pulse;
+            int secs = (int)System.Math.Ceiling(System.Math.Max(0.0, left));
+            if (secs != timeShown)
+            {
+                timeShown = secs;
+                timeText.text = string.Format(UIStrings.TimeLeft, secs);
+            }
         }
+
+        int timeShown = -1;
 
         public void SetCenter(string text) => centerText.text = text ?? string.Empty;
         public void SetDebug(string text) => debugText.text = text ?? string.Empty;

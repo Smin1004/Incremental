@@ -12,7 +12,7 @@ namespace Incremental
     /// <summary>
     /// The UI look at runtime (26 §4), built once from <see cref="UITheme"/>: the two SDF font assets (dynamic atlas,
     /// made from the theme's font files), one panel-shader material per shape role, and the two things the debug keys
-    /// switch, the visual direction (A / B / C, 26 §3) and the stamina display (26 §5.1). Views read colors from
+    /// switch, the visual direction (A / B / C, 26 §3). Views read colors from
     /// <see cref="Direction"/> and re-read them on <see cref="Changed"/>. Nothing here is saved.
     /// </summary>
     public sealed class UIStyle
@@ -39,9 +39,7 @@ namespace Incremental
         public TMP_FontAsset FontBold { get; }
         public int DirectionIndex { get; private set; }
         public UIDirection Direction => Theme.Direction(DirectionIndex);
-        /// <summary>0 = (a) the bar at the top, 1 = (b) the gravity ring (26 §5.1).</summary>
-        public int StaminaMode { get; private set; }
-        /// <summary>The direction or the stamina display changed: re-read colors and layouts.</summary>
+        /// <summary>The direction changed: re-read colors and layouts.</summary>
         public event Action Changed;
 
         public UIStyle(UITheme theme)
@@ -62,7 +60,6 @@ namespace Incremental
                 if (theme.panelMaterial == null) continue;
                 materials[i] = new Material(theme.panelMaterial) { name = "UI " + roles[i], hideFlags = HideFlags.DontSave };
             }
-            StaminaMode = Mathf.Clamp(theme.staminaMode, 0, 1);
             DirectionIndex = Mathf.Clamp(theme.direction, 0, Mathf.Max(0, (theme.directions != null ? theme.directions.Length : 1) - 1));
             Apply();
 #if UNITY_EDITOR
@@ -110,12 +107,6 @@ namespace Incremental
             if (n == 0) return;
             DirectionIndex = ((index % n) + n) % n;
             Apply();
-            Changed?.Invoke();
-        }
-
-        public void SetStaminaMode(int mode)
-        {
-            StaminaMode = Mathf.Clamp(mode, 0, 1);
             Changed?.Invoke();
         }
 

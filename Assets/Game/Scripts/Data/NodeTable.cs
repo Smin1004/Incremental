@@ -13,12 +13,15 @@ namespace Incremental
         public const string SpawnRate = "spawn_rate";
         public const string PullAccel = "pull_accel";
         public const string SaleMult = "sale_mult";
-        public const string StaminaMax = "stamina_max";
         public const string ThresholdMult = "threshold_mult";
         public const string DustCap = "dust_cap";
         public const string DustMass = "dust_mass";
         public const string GravityRadius = "gravity_radius";
-        public const string StaminaDrain = "stamina_drain";
+        /// <summary>
+        /// 28 §2: seconds added to the run (D21, time-based runs). Replaced stamina_max and stamina_drain; the nodes kept
+        /// their ids (save keys), only the stat changed.
+        /// </summary>
+        public const string RunTime = "run_time";
         public const string StartBonus = "start_bonus";
         /// <summary>
         /// 20 §4: raises the share of one dust kind, named by <see cref="NodeDef.dustKindId"/>. Percentage points per level,
@@ -65,8 +68,8 @@ namespace Incremental
 
         public static readonly string[] All =
         {
-            SpawnRate, PullAccel, SaleMult, StaminaMax, ThresholdMult,
-            DustCap, DustMass, GravityRadius, StaminaDrain, StartBonus,
+            SpawnRate, PullAccel, SaleMult, RunTime, ThresholdMult,
+            DustCap, DustMass, GravityRadius, StartBonus,
             DustChance, FragUnlock, FragChance, FragOffset, FollowSpeed,
         };
 

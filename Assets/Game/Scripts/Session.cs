@@ -6,8 +6,8 @@ namespace Incremental
     /// <summary>
     /// Run bookkeeping as pure functions over MetaState: building the run record, applying a finished run
     /// (currency, best, totals, history) and closing a pending run left behind by a killed game.
-    /// Every way a run can end (stamina, ending, quit, crash) goes through <see cref="ApplyRunEnd"/>.
-    /// Stamina and ending runs are "full" runs (15 §4.2): quit and crash runs are recorded and paid, but they get no ratio
+    /// Every way a run can end (time, ending, quit, crash) goes through <see cref="ApplyRunEnd"/>.
+    /// Time and ending runs are "full" runs (15 §4.2): quit and crash runs are recorded and paid, but they get no ratio
     /// and do not move the ratio base (lastRunIncome) or the best income (12 §10-3).
     /// 20 §6 (W5-3): an ending run no longer counts for the ratio or the best either. It is cut short by the supernova,
     /// so measuring the next run against it would punish the player for reaching the ending. Its income and its numbers
@@ -15,14 +15,26 @@ namespace Incremental
     /// </summary>
     public static class Session
     {
-        /// <summary>A run the player played to the end: stamina or the ending (15 §4.2). Drives the comparison run.</summary>
-        public static bool IsFullRun(string endReason) => endReason == EndReason.Stamina || endReason == EndReason.Ending;
+        /// <summary>A run the player played to the end: the time ran out, or the ending (15 §4.2). Drives the comparison run.</summary>
+        public static bool IsFullRun(string endReason) => endReason == EndReason.TimeUp || endReason == EndReason.Ending;
 
         /// <summary>
-        /// A run that sets the ratio base and the best income: stamina only (20 §6 W5-3). Quit, crash and ending runs
+        /// A run that sets the ratio base and the best income: the time ran out (20 §6 W5-3). Quit, crash and ending runs
         /// are all left out.
         /// </summary>
-        public static bool CountsForBest(string endReason) => endReason == EndReason.Stamina;
+        public static bool CountsForBest(string endReason) => endReason == EndReason.TimeUp;
+
+        /// <summary>
+        /// 28 §2: runs the run's clock down by <paramref name="dt"/>, the same whether the player holds or not. True when
+        /// the time is up (it stops at 0), which ends the run.
+        /// </summary>
+        public static bool TickClock(RunState run, double dt)
+        {
+            run.timeLeft -= dt;
+            if (run.timeLeft > 0) return false;
+            run.timeLeft = 0;
+            return true;
+        }
 
         /// <summary>
         /// 20 §6 (W5-2): the system the ending sequence shows. An ending run can be over in two seconds, which would

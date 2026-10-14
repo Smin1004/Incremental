@@ -9,8 +9,11 @@ namespace Incremental
     /// </summary>
     public static class SaveMigration
     {
-        /// <summary>1: flat shop (week 2). 2: skill tree nodes (12 §3). 3: the dust kind axis (20 §4).</summary>
-        public const int CurrentVersion = 3;
+        /// <summary>
+        /// 1: flat shop (week 2). 2: skill tree nodes (12 §3). 3: the dust kind axis (20 §4). 4: time-based runs (28 §2):
+        /// the stamina fields are gone from the run stats and a run that ran out ends as "time" instead of "stamina".
+        /// </summary>
+        public const int CurrentVersion = 4;
 
         /// <summary>
         /// Versions below this are replaced by a new game instead of being converted: v1 levels were per stat, v2 levels
@@ -36,13 +39,37 @@ namespace Incremental
                 d = new SaveData { version = CurrentVersion };
             }
 
-            // Future steps: if (d.version == 3) { ...; d.version = 4; }
+            if (d.version == 3)
+            {
+                ToV4(d);
+                d.version = 4;
+            }
+            // Future steps: if (d.version == 4) { ...; d.version = 5; }
 
             if (d.version > CurrentVersion)
                 Debug.LogWarning($"[Save] save version {d.version} is newer than this build ({CurrentVersion}); loading what is known.");
 
             Normalize(d);
             return d;
+        }
+
+        /// <summary>
+        /// v3 → v4 (28 §2). The node levels stay as they are: the stamina_max and stamina_drain nodes kept their ids and
+        /// now add run time. Runs in the history that ended on stamina are renamed to the time ending, so they still count
+        /// as full runs (ratio base, best income). The stamina numbers in their run start stats are simply not read any
+        /// more. A run left pending is closed the usual way on load (a crash with its income kept), under the new rules.
+        /// </summary>
+        static void ToV4(SaveData d)
+        {
+            int renamed = 0;
+            if (d.meta != null && d.meta.runHistory != null)
+                foreach (var r in d.meta.runHistory)
+                    if (r != null && r.endReason == EndReason.LegacyStamina)
+                    {
+                        r.endReason = EndReason.TimeUp;
+                        renamed++;
+                    }
+            Debug.Log($"[Save] v3 -> v4 (time-based runs, 28 §2): {renamed} stamina-ended runs in the history renamed to \"{EndReason.TimeUp}\"");
         }
 
         /// <summary>Replaces missing collections with empty ones and clamps impossible values.</summary>

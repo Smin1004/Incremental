@@ -649,7 +649,7 @@ namespace Incremental
         {
             (90f, 0, 0f),                                       // gates
             (150f, 1, 0.5f), (140f, 1, -0.5f),                  // planet thresholds, fragments
-            (210f, 2, 0f),                                      // stamina
+            (210f, 2, 0f),                                      // run time (28 §2, was stamina)
             (240f, 3, 0f), (250f, 3, 1f),                       // abilities, their evolutions (24 §21.2)
             (270f, 4, 0f),                                      // sale
             (330f, 5, 0.5f), (340f, 5, 1f), (320f, 5, -0.5f),   // gravity pull, radius, follow

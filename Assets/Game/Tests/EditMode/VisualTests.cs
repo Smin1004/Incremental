@@ -215,12 +215,12 @@ namespace Incremental.Tests
             new RunRecord { run = run, endReason = reason, tierCounts = counts };
 
         [Test]
-        public void ComparisonRun_IsTheLastStaminaRunBefore()
+        public void ComparisonRun_IsTheLastTimeUpRunBefore()
         {
-            var r1 = Rec(1, EndReason.Stamina, 10);
-            var r2 = Rec(2, EndReason.Stamina, 14, 1);
+            var r1 = Rec(1, EndReason.TimeUp, 10);
+            var r2 = Rec(2, EndReason.TimeUp, 14, 1);
             var r3 = Rec(3, EndReason.Quit, 3);
-            var r4 = Rec(4, EndReason.Stamina, 12, 4);
+            var r4 = Rec(4, EndReason.TimeUp, 12, 4);
             var history = new List<RunRecord> { r1, r2, r3, r4 };
             Assert.AreSame(r2, ResultMath.ComparisonRun(history, r4), "quit runs are skipped, like the ratio");
             Assert.AreSame(r2, ResultMath.ComparisonRun(history, r3));
@@ -234,10 +234,10 @@ namespace Incremental.Tests
         public void NewTier_UsesTotalsBeforeAndAfterTheRun()
         {
             var meta = new MetaState();
-            var r1 = Rec(1, EndReason.Stamina, 10);
+            var r1 = Rec(1, EndReason.TimeUp, 10);
             Session.ApplyRunEnd(meta, r1);
             Assert.IsTrue(ResultMath.IsNewTier(meta, r1, 1), "first asteroid ever");
-            var r2 = Rec(2, EndReason.Stamina, 6, 2);
+            var r2 = Rec(2, EndReason.TimeUp, 6, 2);
             Session.ApplyRunEnd(meta, r2);
             Assert.IsFalse(ResultMath.IsNewTier(meta, r2, 1), "asteroids were made before");
             Assert.IsTrue(ResultMath.IsNewTier(meta, r2, 2), "first comet ever");

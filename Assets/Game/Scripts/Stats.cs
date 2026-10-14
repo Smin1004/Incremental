@@ -12,13 +12,12 @@ namespace Incremental
         public double spawnRate;
         public double pullAccel;
         public double saleMult;
-        public double staminaMax;
+        /// <summary>28 §2: length of the run in seconds. The clock runs down 1 per second, held or not, and 0 ends the run.</summary>
+        public double runTimeSec;
         public double thresholdMult;
         public double dustCap;
         public double dustMass;
         public double gravityRadius;
-        public double staminaIdleDrain;
-        public double staminaHoldDrain;
         public double dustInitial;
         /// <summary>
         /// 22 §3: top speed the gravity source follows the cursor at, px per second. The base is GameParams.followSpeedPx
@@ -50,30 +49,21 @@ namespace Incremental
     /// <summary>
     /// The single place where node levels turn into effective numbers (12 §3 "스탯 합산").
     /// Nodes with the same statId add up (effect × level); dust_mass multiplies (effect ^ level);
-    /// threshold_mult and stamina_drain reductions are capped at GameParams.maxReduction. Disabled nodes contribute nothing.
+    /// the threshold_mult reduction is capped at GameParams.maxReduction. Disabled nodes contribute nothing.
     /// The ability stats (24 §8) are summed here too, but per ability by <see cref="AbilityFromTree"/> and not into
     /// <see cref="EffectiveStats"/>: what they raise is a row of the AbilityTable, which the run history does not keep.
     /// </summary>
     public static class Stats
     {
         public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m) =>
-            Compute(p, t, m, p.staminaHoldDrain, p.staminaIdleDrain);
+            Compute(p, t, m, p.gravityGrowthScale);
 
         /// <summary>
-        /// Same, with the two stamina drains taken from somewhere else than the asset: the stamina debug key hands its
-        /// preset in (18 §A1) so the node reduction still applies to it. The asset is untouched.
+        /// Same, with the gravity_radius node scale of 24 §23.2 taken from somewhere else than the asset: the debug key K.
         /// </summary>
-        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase) =>
-            Compute(p, t, m, holdDrainBase, idleDrainBase, p.gravityGrowthScale, p.staminaNodeScale);
-
-        /// <summary>
-        /// Same, with the two node scales of 24 §23 (gravity_radius nodes x <paramref name="growthScale"/>, stamina_max
-        /// nodes x <paramref name="staminaScale"/>) taken from somewhere else than the asset: the debug keys K and L.
-        /// </summary>
-        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double holdDrainBase, double idleDrainBase,
-            double growthScale, double staminaScale)
+        public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double growthScale)
         {
-            double spawn = 0, pull = 0, sale = 0, stamina = 0, threshold = 0, cap = 0, radius = 0, drain = 0, start = 0, follow = 0;
+            double spawn = 0, pull = 0, sale = 0, runTime = 0, threshold = 0, cap = 0, radius = 0, start = 0, follow = 0;
             double mass = 1, frag = 0, fragRange = 0;
             // 20 §4: extra share per dust kind from its chance node; the kind only appears once its unlock node is owned.
             int kinds = p.DustKindCount;
@@ -98,13 +88,12 @@ namespace Incremental
                     case StatIds.SpawnRate: spawn += add; break;
                     case StatIds.PullAccel: pull += add; break;
                     case StatIds.SaleMult: sale += add; break;
-                    case StatIds.StaminaMax: stamina += add; break;
+                    case StatIds.RunTime: runTime += add; break;
                     case StatIds.ThresholdMult: threshold += add; break;
                     case StatIds.DustCap: cap += add; break;
                     case StatIds.DustMass: mass *= Math.Pow(n.effectPerLevel, level); break;
                     case StatIds.GravityRadius: radius += add; break;
                     case StatIds.FollowSpeed: follow += add; break;
-                    case StatIds.StaminaDrain: drain += add; break;
                     case StatIds.StartBonus: start += add; break;
                     case StatIds.FragUnlock:
                     case StatIds.FragChance: frag += add; break;
@@ -120,8 +109,8 @@ namespace Incremental
                 spawnRate = p.spawnRate + spawn,
                 pullAccel = p.pullAccel * (1.0 + pull),
                 saleMult = p.saleMult * (1.0 + sale),
-                // 24 §23.3: the stamina_max nodes count for staminaNodeScale of what they say, the base does not.
-                staminaMax = p.staminaMax + stamina * Math.Max(0.0, staminaScale),
+                // 28 §2: the base run length plus every run_time node, in seconds.
+                runTimeSec = p.runTimeSec + runTime,
                 thresholdMult = p.thresholdMult * (1.0 - Math.Min(threshold, p.maxReduction)),
                 // 22 §6: the cap follows the area, so a wider world holds the same density of dust.
                 dustCap = (p.dustCap + cap) * area,
@@ -130,9 +119,6 @@ namespace Incremental
                 gravityRadius = p.gravityRadius * (1.0 + radius * Math.Max(0.0, growthScale)),
                 followSpeedPx = p.followSpeedPx * (1.0 + follow),
             };
-            double drainMult = 1.0 - Math.Min(drain, p.maxReduction);
-            s.staminaIdleDrain = idleDrainBase * drainMult;
-            s.staminaHoldDrain = holdDrainBase * drainMult;
             // The starting dust follows the area for the same reason: without it a late run would open on an empty
             // world and take longer than the run itself to fill up.
             s.dustInitial = Math.Min((p.dustInitial + start) * area, s.dustCap);
@@ -297,7 +283,7 @@ namespace Incremental
         /// <summary>True for stats whose effectPerLevel is a fraction shown as a percent.</summary>
         public static bool IsPercentEffect(string statId) =>
             statId == StatIds.PullAccel || statId == StatIds.SaleMult || statId == StatIds.ThresholdMult ||
-            statId == StatIds.GravityRadius || statId == StatIds.StaminaDrain || statId == StatIds.FollowSpeed ||
+            statId == StatIds.GravityRadius || statId == StatIds.FollowSpeed ||
             statId == StatIds.DustChance || statId == StatIds.FragUnlock || statId == StatIds.FragChance ||
             statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown || statId == StatIds.AbilityAmount;
 

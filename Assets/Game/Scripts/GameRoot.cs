@@ -23,17 +23,6 @@ namespace Incremental
     }
 
     /// <summary>
-    /// Runtime stamina drain used by the debug tools (F10 preset cycle, 18 §A1). The two values replace the GameParams
-    /// bases; node reductions still apply. Nothing is saved, and it takes effect on the next tick of the running run.
-    /// </summary>
-    public struct StaminaOverride
-    {
-        public bool enabled;
-        public double holdDrain;
-        public double idleDrain;
-    }
-
-    /// <summary>
     /// 24 §23.2: the gravity range the debug key K picked (radius node scale and the crystal's radius multiplier).
     /// Not set = the GameParams and AbilityTable values. Nothing is saved.
     /// </summary>
@@ -199,18 +188,8 @@ namespace Incremental
             return v;
         }
         public StatsOverride Override;
-        /// <summary>Runtime stamina drain from the debug preset key (18 §A1); disabled = the GameParams values.</summary>
-        public StaminaOverride StaminaDrain;
         /// <summary>24 §23.2: the debug key K's gravity range; not set = the asset values.</summary>
         public GravityRangeOverride GravityRange;
-        /// <summary>
-        /// 24 §23.3: the stamina_max node scale the debug key L picked, NaN = GameParams.staminaNodeScale. A run keeps the
-        /// scale it started with (<see cref="runStaminaScale"/>), so a change shows from the next run.
-        /// </summary>
-        public double StaminaScaleDebug = double.NaN;
-        double runStaminaScale = double.NaN;
-        /// <summary>The stamina_max node scale the next run starts with.</summary>
-        public double StaminaScaleNext => double.IsNaN(StaminaScaleDebug) ? gameParams.staminaNodeScale : StaminaScaleDebug;
         /// <summary>The radius node scale in use: the debug key K's, else GameParams.gravityGrowthScale.</summary>
         public double GrowthScaleNow => GravityRange.set ? GravityRange.growthScale : gameParams.gravityGrowthScale;
         /// <summary>
@@ -425,7 +404,7 @@ namespace Incremental
         }
 
         /// <summary>
-        /// Opening on the shop from a save: the HUD and dust field look like a finished run (stamina 0, last run income,
+        /// Opening on the shop from a save: the HUD and dust field look like a finished run (no time left, last run income,
         /// the run-start dust as a still background), as they do after a run ends.
         /// </summary>
         void ShowIdleField()
@@ -433,7 +412,7 @@ namespace Incremental
             Effective = ComputeStats();
             var last = Meta.LastRun;
             Hud.SetIncome(last != null ? last.income : 0);
-            Hud.SetStamina(0, Effective.staminaMax);
+            Hud.SetTimeLeft(0, Effective.runTimeSec);
             var ps = ReadPointer();
             LastPointer = ps;
             CursorWorld = ToWorld(ps.screenPos);
@@ -443,7 +422,7 @@ namespace Incremental
 
         /// <summary>
         /// Quitting mid-run ends the run without the result screen (income kept). Held mass is released first, as when
-        /// stamina runs out (12 §10-4). Between runs it just saves.
+        /// the time runs out (12 §10-4). Between runs it just saves.
         /// </summary>
         void OnApplicationQuit()
         {
@@ -557,7 +536,7 @@ namespace Incremental
             if (Run != null)
             {
                 Hud.SetIncome(Run.runIncome);
-                Hud.SetStamina(Run.stamina, Effective.staminaMax);
+                Hud.SetTimeLeft(Run.timeLeft, runStartStats.runTimeSec);
             }
             bool paused = Paused;
             if (paused != shownPaused)
@@ -581,10 +560,9 @@ namespace Incremental
             runStartLevels = Meta.CopyLevels();
             EndingActive = false;
             EndingAge = 0;
-            runStaminaScale = StaminaScaleNext;
             Effective = ComputeStats();
             runStartStats = Effective;
-            Run = new RunState(celestialTable.MaxTier) { stamina = Effective.staminaMax };
+            Run = new RunState(celestialTable.MaxTier) { timeLeft = Effective.runTimeSec };
             bodyGapLeft = 0;
             LastBundleCount = 0;
             LastBundleAt = -1;
@@ -640,8 +618,8 @@ namespace Incremental
             bool holding = ps.pressed;
             Run.holding = holding;
             Run.elapsed += dt;
-            Run.stamina -= s.staminaIdleDrain * dt;
-            if (holding) Run.stamina -= s.staminaHoldDrain * dt;
+            // 28 §2: the clock runs down the same whether the player holds or not.
+            bool timeUp = Session.TickClock(Run, dt);
 
             dustWatch.Restart();
             // 24: the abilities go first, so what they do to the dust this tick is part of this same dust tick, and
@@ -666,15 +644,14 @@ namespace Incremental
 
             if (wasHolding && !holding) Release();
 
-            if (Run.stamina <= 0)
+            if (timeUp)
             {
-                Run.stamina = 0;
                 if (Run.holding)
                 {
                     Release();
                     Run.holding = false;
                 }
-                EndRun(EndReason.Stamina, true);
+                EndRun(EndReason.TimeUp, true);
                 return;
             }
 
@@ -704,9 +681,9 @@ namespace Incremental
         }
 
         /// <summary>
-        /// The ending on the run screen (15 §4.2): input is ignored, nothing spawns, stamina and the run clock stand still,
-        /// every dust falls into the blue giant for endingPullSec, the screen darkens for endingFadeSec, then the run ends as
-        /// an ending run (income, record, ratio and best as for stamina; the stamina left is dropped).
+        /// The ending on the run screen (15 §4.2): input is ignored, nothing spawns, the time left and the run clock stand
+        /// still, every dust falls into the blue giant for endingPullSec, the screen darkens for endingFadeSec, then the run
+        /// ends as an ending run (income and record as for a run that ran out of time; the time left is dropped).
         /// </summary>
         void TickEnding(double dt)
         {
@@ -986,19 +963,19 @@ namespace Incremental
         public void DebugBoostCurrency(double mult, double min) => Meta.currency = Math.Max(Meta.currency * mult, min);
 
         /// <summary>
-        /// Home key: drains the stamina at once, so the run ends on the next tick the normal way (held mass is released,
-        /// income and the result screen as usual). Ignored between runs and during the ending.
+        /// Home key: no time left, so the run ends on the next tick the normal way (held mass is released, income and the
+        /// result screen as usual). Ignored between runs and during the ending.
         /// </summary>
-        public bool DebugDrainStamina()
+        public bool DebugTimeUp()
         {
             if (Phase != GamePhase.Run || Run == null || EndingActive)
             {
                 Hud.ShowToast(UIStrings.DebugDuringRunOnly);
                 return false;
             }
-            Run.stamina = 0;
-            Hud.ShowToast(UIStrings.DebugStaminaDrained);
-            UnityEngine.Debug.Log("[Debug] stamina drained: the run ends now");
+            Run.timeLeft = 0;
+            Hud.ShowToast(UIStrings.DebugTimeUp);
+            UnityEngine.Debug.Log("[Debug] time left 0: the run ends now");
             return true;
         }
 
@@ -1116,10 +1093,7 @@ namespace Incremental
 
         EffectiveStats ComputeStats()
         {
-            double hold = StaminaDrain.enabled ? StaminaDrain.holdDrain : gameParams.staminaHoldDrain;
-            double idle = StaminaDrain.enabled ? StaminaDrain.idleDrain : gameParams.staminaIdleDrain;
-            double stamina = Phase == GamePhase.Run && !double.IsNaN(runStaminaScale) ? runStaminaScale : StaminaScaleNext;
-            var s = Stats.Compute(gameParams, nodeTable, Meta, hold, idle, GrowthScaleNow, stamina);
+            var s = Stats.Compute(gameParams, nodeTable, Meta, GrowthScaleNow);
             if (Override.enabled)
             {
                 s.dustCap = Override.dustCap;

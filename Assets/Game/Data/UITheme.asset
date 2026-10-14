@@ -463,22 +463,16 @@ MonoBehaviour:
   abilityArcSegments: 64
   abilityArcFlashSec: 0.35
   abilityArcFlashWidth: 1.5
-  staminaMode: 0
-  staminaFull: {r: 0.72, g: 0.88, b: 1, a: 1}
-  staminaMid: {r: 1, g: 0.62, b: 0.2, a: 1}
-  staminaLow: {r: 1, g: 0.27, b: 0.22, a: 1}
-  staminaWarnAt: 0.5
-  staminaLowAt: 0.2
-  staminaPulseHz: 2.2
-  staminaPulseDepth: 0.55
-  staminaBarSize: {x: 600, y: 22}
-  staminaBarTopPx: 18
-  staminaTextGapPx: 5
-  staminaBarSmallSize: {x: 260, y: 6}
-  staminaRingWidthPx: 4
-  staminaRingAlpha: 0.95
-  staminaRingTrackAlpha: 0.1
-  staminaRingSegments: 96
+  timeFull: {r: 0.72, g: 0.88, b: 1, a: 1}
+  timeMid: {r: 1, g: 0.62, b: 0.2, a: 1}
+  timeLow: {r: 1, g: 0.27, b: 0.22, a: 1}
+  timeWarnAt: 0.5
+  timeLowAt: 0.2
+  timePulseHz: 2.2
+  timePulseDepth: 0.55
+  timeBarSize: {x: 600, y: 22}
+  timeBarTopPx: 18
+  timeTextGapPx: 5
   resultPanelSize: {x: 600, y: 820}
   resultPanelMarginPx: 48
   resultPaddingPx: 40

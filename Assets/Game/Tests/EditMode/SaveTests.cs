@@ -45,7 +45,7 @@ namespace Incremental.Tests
             m.runHistory = new List<RunRecord>
             {
                 new RunRecord { run = 1, durationSec = 50.1, income = 120, tierCounts = new[] { 12, 0, 0, 0, 0 }, ratioVsLast = -1,
-                    startLevels = new List<UpgradeLevel>(), unlockedMaxTier = 1, endReason = EndReason.Stamina,
+                    startLevels = new List<UpgradeLevel>(), unlockedMaxTier = 1, endReason = EndReason.TimeUp,
                     startStats = new EffectiveStats { spawnRate = 4, saleMult = 1, dustMass = 1.5 } },
                 new RunRecord { run = 2, durationSec = 81.4, income = 300, tierCounts = new[] { 28, 7, 2, 0, 1 }, ratioVsLast = 2.5,
                     startLevels = new List<UpgradeLevel> { new UpgradeLevel("a_spawn", 3) }, unlockedMaxTier = 5, endReason = EndReason.Quit },
@@ -255,7 +255,7 @@ namespace Incremental.Tests
         [Test]
         public void FirstRun_HasNoRatio()
         {
-            var rec = Session.MakeRecord(new MetaState(), 1, 50, 12, new int[1], null, default, EndReason.Stamina);
+            var rec = Session.MakeRecord(new MetaState(), 1, 50, 12, new int[1], null, default, EndReason.TimeUp);
             Assert.IsFalse(rec.HasRatio);
             Assert.AreEqual(-1, rec.ratioVsLast);
         }
@@ -264,14 +264,14 @@ namespace Incremental.Tests
         public void Ratio_ComparesWithLastFullRun_QuitAndCrashExcluded()
         {
             var meta = new MetaState();
-            Run(meta, 1, 10, EndReason.Stamina);
+            Run(meta, 1, 10, EndReason.TimeUp);
             var quit = Run(meta, 2, 2, EndReason.Quit);
             Assert.IsFalse(quit.HasRatio, "quit runs get no ratio");
             Assert.AreEqual(10, meta.lastRunIncome, "quit does not move the base");
             var crash = Run(meta, 3, 50, EndReason.Crash);
             Assert.IsFalse(crash.HasRatio);
             Assert.AreEqual(10, meta.bestRunIncome, "crash does not set the best");
-            var full = Run(meta, 4, 15, EndReason.Stamina);
+            var full = Run(meta, 4, 15, EndReason.TimeUp);
             Assert.AreEqual(1.5, full.ratioVsLast, 1e-12, "compared with run 1, not the quit run");
             Assert.AreEqual(15, meta.bestRunIncome);
             Assert.AreEqual(10 + 2 + 50 + 15, meta.currency, "every run pays");
@@ -282,7 +282,7 @@ namespace Incremental.Tests
         public void RunRecord_RoundsTheRunIncomeUpOnce()
         {
             var meta = new MetaState { currency = 5, lastRunIncome = 10 };
-            var rec = Session.MakeRecord(meta, 2, 30, 23.75, new int[1], null, default, EndReason.Stamina);
+            var rec = Session.MakeRecord(meta, 2, 30, 23.75, new int[1], null, default, EndReason.TimeUp);
             Assert.AreEqual(24, rec.income, 1e-9);
             Assert.AreEqual(2.4, rec.ratioVsLast, 1e-9, "the ratio uses the rounded income");
             Session.ApplyRunEnd(meta, rec);

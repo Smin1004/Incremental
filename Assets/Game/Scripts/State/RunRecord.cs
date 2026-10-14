@@ -6,10 +6,13 @@ namespace Incremental
     /// <summary>Why a run ended. Stored as a string in the run history and run_log.csv.</summary>
     public static class EndReason
     {
-        public const string Stamina = "stamina";
+        /// <summary>28 §2: the run's time ran out. Saves before v4 wrote "stamina" for the same thing (SaveMigration).</summary>
+        public const string TimeUp = "time";
+        /// <summary>The v3 name of <see cref="TimeUp"/>, still in old run_log.csv rows.</summary>
+        public const string LegacyStamina = "stamina";
         public const string Quit = "quit";
         public const string Crash = "crash";
-        /// <summary>The first blue giant ended the run (15 §4.2). Counts as a full run, like stamina.</summary>
+        /// <summary>The first blue giant ended the run (15 §4.2). Counts as a full run, like the time running out.</summary>
         public const string Ending = "ending";
     }
 
@@ -31,7 +34,7 @@ namespace Incremental
         /// <summary>Part of <see cref="income"/> that came from fragments (20 §5: it has to stay under 5% of a run).</summary>
         public double fragmentIncome;
         /// <summary>
-        /// Income / income of the most recent stamina-ended run. -1 when there is no ratio: quit and crash runs, the first
+        /// Income / income of the most recent run that ran out of time. -1 when there is no ratio: quit and crash runs, the first
         /// full run, or a previous full run without income (12 §10-3).
         /// </summary>
         public double ratioVsLast = -1;
@@ -41,7 +44,7 @@ namespace Incremental
         public EffectiveStats startStats;
         /// <summary>Highest unlocked tier during the run.</summary>
         public int unlockedMaxTier;
-        public string endReason = EndReason.Stamina;
+        public string endReason = EndReason.TimeUp;
 
         public bool HasRatio => ratioVsLast >= 0 && !double.IsNaN(ratioVsLast) && !double.IsInfinity(ratioVsLast);
 

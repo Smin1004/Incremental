@@ -23,8 +23,8 @@ namespace Incremental
         /// <summary>Effective stat columns, in EffectiveStats field order.</summary>
         public static readonly string[] StatColumns =
         {
-            "spawn_rate", "pull_accel", "sale_mult", "stamina_max", "threshold_mult", "dust_cap", "dust_mass",
-            "gravity_radius", "follow_speed", "world_scale", "stamina_idle_drain", "stamina_hold_drain", "dust_initial", "dust_mass_avg",
+            "spawn_rate", "pull_accel", "sale_mult", "run_time", "threshold_mult", "dust_cap", "dust_mass",
+            "gravity_radius", "follow_speed", "world_scale", "dust_initial", "dust_mass_avg",
         };
 
         /// <summary>
@@ -56,8 +56,8 @@ namespace Incremental
             sb.Append(',').Append(r.HasRatio ? r.ratioVsLast.ToString("F3", CultureInfo.InvariantCulture) : string.Empty);
             sb.Append(',').Append(r.unlockedMaxTier).Append(',').Append(TotalLevels(r.startLevels));
             var s = r.startStats;
-            foreach (double v in new[] { s.spawnRate, s.pullAccel, s.saleMult, s.staminaMax, s.thresholdMult, s.dustCap, s.dustMass,
-                         s.gravityRadius, s.followSpeedPx, s.worldScale, s.staminaIdleDrain, s.staminaHoldDrain, s.dustInitial, s.dustMassAvg })
+            foreach (double v in new[] { s.spawnRate, s.pullAccel, s.saleMult, s.runTimeSec, s.thresholdMult, s.dustCap, s.dustMass,
+                         s.gravityRadius, s.followSpeedPx, s.worldScale, s.dustInitial, s.dustMassAvg })
                 sb.Append(',').Append(Fmt.Csv(v));
             if (p != null)
                 for (int k = 1; k < p.DustKindCount; k++) sb.Append(',').Append(Fmt.Csv(s.KindChance(k)));

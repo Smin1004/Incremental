@@ -50,8 +50,8 @@ namespace Incremental.Tests
         [Test]
         public void ResultPanel_ShowsIncreasesOnly()
         {
-            var before = new RunRecord { run = 1, endReason = EndReason.Stamina, tierCounts = new[] { 14, 1 } };
-            var now = new RunRecord { run = 2, endReason = EndReason.Stamina, tierCounts = new[] { 6, 4 } };
+            var before = new RunRecord { run = 1, endReason = EndReason.TimeUp, tierCounts = new[] { 14, 1 } };
+            var now = new RunRecord { run = 2, endReason = EndReason.TimeUp, tierCounts = new[] { 6, 4 } };
             Assert.AreEqual(-8, ResultMath.Delta(now, before, 1));
             Assert.AreEqual(0, ResultMath.ShownIncrease(now, before, 1), "a decrease is left blank");
             Assert.AreEqual(3, ResultMath.ShownIncrease(now, before, 2));
@@ -106,7 +106,7 @@ namespace Incremental.Tests
         public void EndingRun_IsAFullRun_AndRecordsTheEnding()
         {
             var m = new MetaState();
-            Session.ApplyRunEnd(m, Session.MakeRecord(m, 1, 60, 100, new[] { 3 }, null, default(EffectiveStats), EndReason.Stamina));
+            Session.ApplyRunEnd(m, Session.MakeRecord(m, 1, 60, 100, new[] { 3 }, null, default(EffectiveStats), EndReason.TimeUp));
             var rec = Session.MakeRecord(m, 2, 50, 250, new[] { 1 }, null, default(EffectiveStats), EndReason.Ending);
             // 20 §6 (W5-3): the ending run is left out of the ratio and the best, like a quit run.
             Assert.AreEqual(-1, rec.ratioVsLast, 1e-9, "the ending run gets no ratio");

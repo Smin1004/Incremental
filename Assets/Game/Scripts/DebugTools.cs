@@ -10,16 +10,16 @@ namespace Incremental
     /// (runtime override of dust_cap / spawn_rate, assets untouched). F3: currency = max(currency × 10, 1,000).
     /// F4: autoplay bot toggle. F5: save now. F6: unlock the next tier for free. F7: toggle number notation (settings.json).
     /// F8: tier gallery (14 §3). Shift+F9: delete the save and start again from run 1.
-    /// F10: next stamina drain preset, in effect at once, never saved (18 §A1). F11: effect intensity 1 → 0.5 → 0 (14 §6).
+    /// F11: effect intensity 1 → 0.5 → 0 (14 §6).
     /// F12: screenshot to persistentDataPath. End: replay the ending sequence between runs without touching the save (15 §4.6).
-    /// Home: drain the stamina, ending the run at once.
+    /// Home: no time left, ending the run at once (28 §2).
     /// Insert: the gravity source follow (22 §3), off → the effective speed × each GameParams.followDebugMults → off.
     /// Number row: force abilities on whatever the tree says (24 §7), 1..n = that ability alone, n + 1 = all, 0 = off.
     /// Minus / equals: the upgrade level of the forced abilities down / up. PageUp and PageDown cycle the same two
     /// things; the number row was added because those two never reached the game on the developer's keyboard. The
     /// state is shown in the corner of the screen; nothing is saved.
-    /// U: the visual direction of the UI, A → B → C (26 §3). G: the stamina display, (a) the bar at the top ↔ (b) the
-    /// gravity ring as the gauge (26 §5.1). Both work on every screen, are shown in the F1 overlay and are not saved.
+    /// U: the visual direction of the UI, A → B → C (26 §3). Works on every screen, is shown in the F1 overlay and is
+    /// not saved.
     /// X: the overexposure measures on / off (26 §5.5), to compare before and after; shown in the overlay, not saved.
     /// T: the twist of the skill tree's spiral arms, through UITheme.tree.armTwistChoices (26 §10.1); not saved.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
@@ -118,7 +118,7 @@ namespace Incremental
             var hi = root.celestialTable.Get(root.Meta.unlockedMaxTier);
             double thLo = Stats.Threshold(lo, s), thHi = Stats.Threshold(hi, s);
             root.Run.mass = thLo + (thHi - thLo) * massShare;
-            root.Run.stamina = s.staminaMax;
+            root.Run.timeLeft = Math.Max(s.runTimeSec, 600.0);
             root.Run.elapsed = 0;
         }
 
@@ -215,7 +215,7 @@ namespace Incremental
         /// 20 §3 acceptance: pins the pointer to the middle of the screen, holds, and after <paramref name="runSeconds"/>
         /// of run time logs how much dust was captured per second. The dust is reseeded and refilled to
         /// <paramref name="dust"/> (0 = the run's starting dust) so two measurements start from the same field, and the
-        /// stamina is topped up so the run cannot end mid-measurement. Run screen only; the pointer goes back to the mouse
+        /// time left is topped up so the run cannot end mid-measurement. Run screen only; the pointer goes back to the mouse
         /// afterwards.
         /// </summary>
         public void BeginStillHoldMeasure(string label, float runSeconds, int seed, int dust = 0)
@@ -230,7 +230,7 @@ namespace Incremental
             root.InputProvider = () => new PointerState { screenPos = screen, pressed = true };
             root.Dust.Reseed(seed);
             root.Dust.Reset(dust > 0 ? dust : (int)s.dustInitial, root.CameraArea(), root.ToWorld(screen), s);
-            root.Run.stamina = Math.Max(s.staminaMax, (s.staminaHoldDrain + s.staminaIdleDrain) * runSeconds * 1.2);
+            root.Run.timeLeft = Math.Max(root.Run.timeLeft, runSeconds * 1.2 + 1.0);
             measureLabel = label;
             measureFrom = root.Dust.CapturedCount;
             measureStart = root.Run.elapsed;
@@ -355,18 +355,15 @@ namespace Incremental
                 if (kb.f7Key.wasPressedThisFrame) ToggleNotation();
                 if (kb.f8Key.wasPressedThisFrame && root.Gallery != null) root.Gallery.Toggle();
                 if (kb.f9Key.wasPressedThisFrame && kb.shiftKey.isPressed) root.ResetProgress();
-                if (kb.f10Key.wasPressedThisFrame) CycleStaminaPreset();
                 if (kb.f11Key.wasPressedThisFrame) CycleEffectIntensity();
                 if (kb.f12Key.wasPressedThisFrame) Screenshot();
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
-                if (kb.homeKey.wasPressedThisFrame) root.DebugDrainStamina();
+                if (kb.homeKey.wasPressedThisFrame) root.DebugTimeUp();
                 if (kb.insertKey.wasPressedThisFrame) CycleFollow();
                 if (kb.uKey.wasPressedThisFrame) CycleUiDirection();
-                if (kb.gKey.wasPressedThisFrame) ToggleStaminaDisplay();
                 if (kb.xKey.wasPressedThisFrame) ToggleExposureFix();
                 if (kb.tKey.wasPressedThisFrame && root.Tree != null) root.Tree.CycleTwist();
                 if (kb.kKey.wasPressedThisFrame) CycleGravityRange();
-                if (kb.lKey.wasPressedThisFrame) CycleStaminaScale();
                 if (root.Abilities != null) AbilityKeys(kb);
                 if (overlay) LogKeys(kb);
             }
@@ -376,7 +373,7 @@ namespace Incremental
                 ? string.Format(UIStrings.DebugOverlay, fps, root.Dust.Count, root.LastTickMs, root.MaxTickMs,
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
                     root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
-                    root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRingShort : UIStrings.StaminaDisplayBarShort,
+                    string.Empty,
                     root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost)
                 : string.Empty);
             root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
@@ -413,22 +410,6 @@ namespace Incremental
             var keys = kb.allKeys;
             for (int i = 0; i < keys.Count; i++)
                 if (keys[i] != null && keys[i].wasPressedThisFrame) Debug.Log("[Debug] key pressed: " + keys[i].keyCode);
-        }
-
-        /// <summary>
-        /// F10: the next stamina drain preset (18 §A1). A run in progress feels it on its next tick, because the effective
-        /// stats are recomputed every tick. Runtime only: nothing is written to the asset or the save.
-        /// </summary>
-        public void CycleStaminaPreset()
-        {
-            var p = root.gameParams;
-            double hold = root.StaminaDrain.enabled ? root.StaminaDrain.holdDrain : p.staminaHoldDrain;
-            double idle = root.StaminaDrain.enabled ? root.StaminaDrain.idleDrain : p.staminaIdleDrain;
-            var next = p.NextStaminaPreset(hold, idle);
-            if (next == null) return;
-            root.StaminaDrain = new StaminaOverride { enabled = true, holdDrain = next.holdDrain, idleDrain = next.idleDrain };
-            root.Hud.ShowToast(string.Format(UIStrings.StaminaPreset, UIStrings.StaminaPresetName(next.id), next.holdDrain, next.idleDrain));
-            Debug.Log($"[Debug] stamina preset: {next.id} hold={next.holdDrain} idle={next.idleDrain}");
         }
 
         /// <summary>
@@ -482,29 +463,6 @@ namespace Incremental
         }
 
         /// <summary>
-        /// L (24 §23.3): the next stamina_max node scale. A run keeps the scale it started with, so it shows from the next
-        /// run. The toast says how long the next run lasts held throughout, with the save's nodes. Runtime only.
-        /// </summary>
-        public void CycleStaminaScale()
-        {
-            var p = root.gameParams;
-            var steps = p.staminaNodeScaleSteps;
-            if (steps == null || steps.Length == 0) return;
-            double now = root.StaminaScaleNext;
-            int at = -1;
-            for (int i = 0; i < steps.Length; i++) if (Math.Abs(steps[i] - now) < 1e-9) { at = i; break; }
-            double next = steps[(at + 1) % steps.Length];
-            root.StaminaScaleDebug = next;
-            double hold = root.StaminaDrain.enabled ? root.StaminaDrain.holdDrain : p.staminaHoldDrain;
-            double idle = root.StaminaDrain.enabled ? root.StaminaDrain.idleDrain : p.staminaIdleDrain;
-            var s = Stats.Compute(p, root.nodeTable, root.Meta, hold, idle, root.GrowthScaleNow, next);
-            double longest = s.staminaMax / Math.Max(1e-9, s.staminaHoldDrain + s.staminaIdleDrain);
-            root.Hud.ShowToast(string.Format(UIStrings.StaminaScaleToast, next, s.staminaMax, longest));
-            Debug.Log($"[Debug] stamina node scale: x{next} from the next run; stamina {s.staminaMax:0.#}, drain {s.staminaHoldDrain:0.###} + {s.staminaIdleDrain:0.###}/s, " +
-                $"a run held throughout {longest:0} s");
-        }
-
-        /// <summary>
         /// U (26 §3): the next visual direction of the UI, A → B → C → A. Every screen redraws in it at once. Runtime
         /// only: the direction a fresh launch starts in is UITheme.direction.
         /// </summary>
@@ -514,18 +472,6 @@ namespace Incremental
             string name = UIStrings.UiDirectionName(root.Ui.Direction.id);
             root.Hud.ShowToast(string.Format(UIStrings.UiDirectionToast, name));
             Debug.Log("[UI] direction: " + name);
-        }
-
-        /// <summary>
-        /// G (26 §5.1): the stamina display, (a) the bar at the top ↔ (b) the gravity ring as the gauge. Runtime only:
-        /// a fresh launch starts with UITheme.staminaMode.
-        /// </summary>
-        public void ToggleStaminaDisplay()
-        {
-            root.Ui.SetStaminaMode(root.Ui.StaminaMode == 1 ? 0 : 1);
-            string name = root.Ui.StaminaMode == 1 ? UIStrings.StaminaDisplayRing : UIStrings.StaminaDisplayBar;
-            root.Hud.ShowToast(string.Format(UIStrings.StaminaDisplayToast, name));
-            Debug.Log("[UI] stamina display: " + name);
         }
 
         /// <summary>

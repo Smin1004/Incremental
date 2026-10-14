@@ -8,9 +8,7 @@ namespace Incremental
     /// now (a dark clump below tier 1) and grows from that tier's display size toward the next one with the mass; crossing a
     /// threshold pops it into the next look. On creation the body is handed to the planet pool (same surface, same size)
     /// and a new clump starts. All of it sits on the gravity source, which is the cursor unless the follow experiment is
-    /// on (20 §7); then a thin line joins the two. With the stamina display on (b) the gravity ring is also the
-    /// stamina gauge (26 §5.1): it is drawn only as far round as there is stamina left. Just outside the ring, one thin
-    /// arc per ability with a cooldown shows its charge toward the next trigger and lights up the moment it fires
+    /// on (20 §7); then a thin line joins the two. Just outside the ring, one thin arc per ability with a cooldown shows its charge toward the next trigger and lights up the moment it fires
     /// (26 §9.2); the abilities are only read. Render only.
     /// </summary>
     public sealed class CursorView : MonoBehaviour
@@ -22,10 +20,7 @@ namespace Incremental
         GameRoot root;
         GameParams p;
         LineRenderer ring;
-        /// <summary>26 §5.1 (b): the faint full circle behind the stamina arc, so the gravity radius still reads.</summary>
-        LineRenderer track;
         Vector3[] arc;
-        bool gauge;
 
         /// <summary>26 §9.2: the charge arc of one ability with a cooldown, and the faint full circle behind it.</summary>
         sealed class ChargeArc
@@ -88,8 +83,6 @@ namespace Incremental
             UIBuilder.UseWhiteTexture(ring);
             ring.positionCount = RingSegments;
 
-            track = MakeLine("StaminaTrack", lineMaterial, true, 4);
-            track.positionCount = RingSegments;
             SetRingRadius(p.gravityRadius);
 
             var th = root.Ui.Theme;
@@ -199,12 +192,11 @@ namespace Incremental
             }
 
             if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
-            UpdateRing();
             TintRing();
             UpdateChargeArcs();
             // 22 §6: the lines are drawn in world units, so a zoomed-out camera would thin them to nothing. Their
             // width follows the scale, which keeps them the same thickness on screen.
-            SetLineWidths((float)root.WorldScale, gauge ? root.Ui.Theme.staminaRingWidthPx : RingWidthPx);
+            SetLineWidths((float)root.WorldScale, RingWidthPx);
             var ps = root.ReadPointer();
             // 20 §7: everything about the hold sits on the gravity source, which is the cursor unless it is trailing it.
             Vector2 w = root.GravityWorld;
@@ -306,50 +298,6 @@ namespace Incremental
         }
 
         /// <summary>
-        /// 26 §5.1: the gravity ring as it is drawn now. (a): the plain full circle. (b): the ring is the stamina gauge,
-        /// an arc from the top, clockwise, as long as the share of stamina left, in the stamina color (pulsing near the
-        /// end), over a faint full circle.
-        /// </summary>
-        void UpdateRing()
-        {
-            var th = root.Ui.Theme;
-            bool want = root.Ui.StaminaMode == 1;
-            if (!want)
-            {
-                if (!gauge) return;
-                gauge = false;
-                ring.loop = true;
-                ring.startColor = ring.endColor = RingColor;
-                track.enabled = false;
-                SetRingRadius(ringRadiusPx);
-                return;
-            }
-            gauge = true;
-            float max = (float)root.Effective.staminaMax;
-            float share = max > 0f ? Mathf.Clamp01((float)root.Run.stamina / max) : 0f;
-            int segs = Mathf.Max(8, th.staminaRingSegments);
-            int n = Mathf.Max(1, Mathf.CeilToInt(segs * share));
-            if (arc == null || arc.Length < segs + 1) arc = new Vector3[segs + 1];
-            float r = (float)(ringRadiusPx / p.pixelsPerUnit);
-            float sweep = Mathf.PI * 2f * share;
-            for (int i = 0; i <= n; i++)
-            {
-                float a = Mathf.PI * 0.5f - sweep * i / n;
-                arc[i] = new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f);
-            }
-            ring.loop = false;
-            ring.positionCount = n + 1;
-            ring.SetPositions(arc);
-            float pulse = share <= th.staminaLowAt ? th.StaminaPulse(Time.time, root.EffectIntensity) : 0f;
-            Color c = th.StaminaColor(share, pulse);
-            c.a *= th.staminaRingAlpha;
-            ring.startColor = ring.endColor = c;
-            bool trackOn = th.staminaRingTrackAlpha > 0f;
-            if (track.enabled != trackOn) track.enabled = trackOn;
-            if (trackOn) track.startColor = track.endColor = new Color(th.staminaFull.r, th.staminaFull.g, th.staminaFull.b, th.staminaRingTrackAlpha);
-        }
-
-        /// <summary>
         /// 26 §9.2: one arc per listed ability that is unlocked and has a cooldown, concentric just outside the gravity
         /// ring: from the top, clockwise, as full as the charge toward the next trigger, in the ability's color over a
         /// faint full circle. The moment the ability fires the whole circle lights up and widens, then the gauge starts
@@ -434,14 +382,13 @@ namespace Incremental
             Color tint = root.Abilities != null ? root.Abilities.RingTint(out amount) : Color.white;
             if (amount > 0f)
             {
-                Color baseColor = gauge ? ring.startColor : RingColor;
-                ring.startColor = ring.endColor = Color.Lerp(baseColor, tint, Mathf.Clamp01(amount));
+                ring.startColor = ring.endColor = Color.Lerp(RingColor, tint, Mathf.Clamp01(amount));
                 tinted = true;
             }
             else if (tinted)
             {
                 tinted = false;
-                if (!gauge) ring.startColor = ring.endColor = RingColor;
+                ring.startColor = ring.endColor = RingColor;
             }
         }
 
@@ -452,7 +399,6 @@ namespace Incremental
             lineScale = worldScale;
             lineRingPx = ringWidthPx;
             ring.widthMultiplier = (float)(ringWidthPx * worldScale / p.pixelsPerUnit);
-            track.widthMultiplier = (float)(RingWidthPx * worldScale / p.pixelsPerUnit);
             leash.widthMultiplier = (float)(p.followLineWidthPx * worldScale / p.pixelsPerUnit);
         }
 
@@ -464,21 +410,17 @@ namespace Incremental
         {
             ringRadiusPx = radiusPx;
             float r = (float)(radiusPx / p.pixelsPerUnit);
-            // As the stamina gauge the ring's points are an arc, rewritten every frame (UpdateRing).
-            if (!gauge) ring.positionCount = RingSegments;
+            ring.positionCount = RingSegments;
             for (int i = 0; i < RingSegments; i++)
             {
                 float a = i / (float)RingSegments * Mathf.PI * 2f;
-                var point = new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f);
-                if (!gauge) ring.SetPosition(i, point);
-                track.SetPosition(i, point);
+                ring.SetPosition(i, new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f));
             }
         }
 
         void SetVisible(bool v)
         {
             if (ring.enabled != v) ring.enabled = v;
-            if (!v && track.enabled) track.enabled = false;
             if (!v)
                 foreach (var a in arcs)
                 {
