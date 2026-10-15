@@ -497,4 +497,6 @@ MonoBehaviour:
   perfBenchWarmupSec: 2
   perfBenchSampleSec: 6
   perfBenchSettleSec: 4
+  dustMeshJobs: 1
+  dustMeshJobBatch: 256
   pendingSaveIntervalSec: 5

@@ -194,6 +194,17 @@ namespace Incremental
             dustTickMsAcc = 0;
             return v;
         }
+
+        /// <summary>
+        /// 11th pass F: milliseconds of the abilities (the amplifier's buff on the stats and every ability's tick) since
+        /// the last call. The tick part is also inside <see cref="TakeDustTickMs"/>; this splits it out.
+        /// </summary>
+        public double TakeAbilityTickMs()
+        {
+            double v = abilityTickMsAcc;
+            abilityTickMsAcc = 0;
+            return v;
+        }
         public StatsOverride Override;
         /// <summary>24 §23.2: the debug key K's gravity range; not set = the asset values.</summary>
         public GravityRangeOverride GravityRange;
@@ -230,6 +241,8 @@ namespace Incremental
         /// <summary>22 §4: the dust simulation tick alone, so the measurement can split it out of the frame.</summary>
         readonly Stopwatch dustWatch = new Stopwatch();
         double dustTickMsAcc;
+        readonly Stopwatch abilityWatch = new Stopwatch();
+        double abilityTickMsAcc;
         List<UpgradeLevel> runStartLevels = new List<UpgradeLevel>();
         EffectiveStats runStartStats;
         bool pendingStart;
@@ -651,7 +664,10 @@ namespace Incremental
             var s = ComputeStats();
             // 24 §20.2: the amplifier's buff goes on the stats of this tick before anything reads them, the abilities,
             // the dust and the gravity ring alike.
+            abilityWatch.Restart();
             Abilities.Amplify(ref s);
+            abilityWatch.Stop();
+            abilityTickMsAcc += abilityWatch.Elapsed.TotalMilliseconds;
             Effective = s;
             if (EndingActive)
             {
@@ -674,7 +690,10 @@ namespace Incremental
             dustWatch.Restart();
             // 24: the abilities go first, so what they do to the dust this tick is part of this same dust tick, and
             // their cost is counted with it.
+            abilityWatch.Restart();
             Abilities.Tick(dt, holding, s);
+            abilityWatch.Stop();
+            abilityTickMsAcc += abilityWatch.Elapsed.TotalMilliseconds;
             double captured = Dust.Tick(dt, CameraArea(), GravityWorld, holding, s, Abilities.Forces, Abilities.ForceCount);
             dustWatch.Stop();
             dustTickMsAcc += dustWatch.Elapsed.TotalMilliseconds;

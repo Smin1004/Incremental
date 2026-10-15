@@ -38,7 +38,20 @@ namespace Incremental
             public double trailMs;
             public double restMs;
             public int trails;
+            /// <summary>11th pass F: the split of the frame (ms per frame), see <see cref="DetailNames"/>.</summary>
+            public double[] detail;
         }
+
+        /// <summary>
+        /// 11th pass F: what the second table splits the frame into: our own stopwatches (the abilities, and the trail
+        /// history inside the dust tick), then FrameTimingManager's three (the main thread's CPU time, the render thread's,
+        /// and the GPU's), which a build reports when PlayerSettings.enableFrameTimingStats is on. A frame is as long as
+        /// the slowest of those three, so the column that comes close to the frame time is the one that limits it.
+        /// </summary>
+        public static readonly string[] DetailNames = { "능력 틱", "궤적 이력", "메인 스레드 CPU", "렌더 스레드 CPU", "GPU" };
+        readonly FrameTiming[] timing = new FrameTiming[1];
+        int timingFrames;
+        double[] detailAcc = new double[0];
 
         GameRoot root;
         GameParams p;
@@ -87,6 +100,17 @@ namespace Incremental
         public static double? TrailsArg => Number("-perftrails");
         /// <summary>22 §6: <c>-perfworld &lt;perRing&gt;</c> so the same build measures before and after the widening world.</summary>
         public static double? WorldArg => Number("-perfworld");
+        /// <summary>11th pass F: <c>-perfrefill &lt;boost&gt;</c> puts GameParams.dustRefillBoost somewhere else (0 = before 10/8).</summary>
+        public static double? RefillArg => Number("-perfrefill");
+        /// <summary>
+        /// 11th pass F: <c>-perfoldradius</c> gives the gravity ring its pre-6th-pass size at ring 11 (base 180 px, the radius
+        /// nodes then added +95%): base 180 and the node scale that turns today's nodes into +95%.
+        /// </summary>
+        public static bool OldRadiusArg => HasArg("-perfoldradius");
+        /// <summary>11th pass F: <c>-perfquick</c> runs only the 8,000 dust scene and the two ability scenes.</summary>
+        public static bool QuickArg => HasArg("-perfquick");
+        /// <summary>11th pass F: <c>-perfnojobs</c> builds the dust mesh on the main thread as before (GameParams.dustMeshJobs off).</summary>
+        public static bool NoJobsArg => HasArg("-perfnojobs");
 
         static double? Number(string name)
         {
@@ -125,7 +149,12 @@ namespace Incremental
             if (trails.HasValue) p.trailBudget = (int)trails.Value;
             var world = WorldArg;
             if (world.HasValue) p.worldScalePerRing = world.Value;
+            var refill = RefillArg;
+            if (refill.HasValue) p.dustRefillBoost = refill.Value;
+            if (OldRadiusArg) UseOldRadius();
+            if (NoJobsArg) p.dustMeshJobs = false;
             marginPx = p.dustMarginPx;
+            OpenRecorders();
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
             // A windowed player is held to the monitor's refresh rate by the desktop compositor whatever vSyncCount says,
@@ -136,14 +165,18 @@ namespace Incremental
             results.Clear();
             steps.Clear();
             var counts = p.perfBenchDustCounts;
-            if (counts != null)
-                foreach (double c in counts)
-                {
-                    int dust = (int)c;
-                    steps.Enqueue(() => StageRun(dust, Abilities.None, false));
-                }
-            steps.Enqueue(StageResult);
-            steps.Enqueue(StageTree);
+            if (QuickArg) steps.Enqueue(() => StageRun(8000, Abilities.None, false));
+            else
+            {
+                if (counts != null)
+                    foreach (double c in counts)
+                    {
+                        int dust = (int)c;
+                        steps.Enqueue(() => StageRun(dust, Abilities.None, false));
+                    }
+                steps.Enqueue(StageResult);
+                steps.Enqueue(StageTree);
+            }
             // The heaviest scenes the game can be asked for now: the dust ceiling (22 §7) with the band outside the
             // screen, which is part of the cap (so 15% of the dust sits out of sight), and every ability as the ring 11
             // tree gives them, first without the black hole and then with it open through the sample (24 §19.1). An
@@ -156,6 +189,22 @@ namespace Incremental
             // compile and the first save is written, and any of those is a one-off stall that would poison scene 1.
             settleLeft = (float)p.perfBenchSettleSec;
             if (steps.Count > 0) steps.Peek()();
+        }
+
+        /// <summary>See <see cref="OldRadiusArg"/>.</summary>
+        void UseOldRadius()
+        {
+            double nodes = 0;
+            foreach (var n in root.nodeTable.nodes)
+                if (n != null && n.enabled && n.statId == StatIds.GravityRadius && n.maxLevel > 0) nodes += n.effectPerLevel * n.maxLevel;
+            p.gravityRadius = 180;
+            if (nodes > 0) p.gravityGrowthScale = 0.95 / nodes;
+            Debug.Log($"[Perf] old gravity radius: base 180, node scale {p.gravityGrowthScale:0.###} (+95% at ring 11)");
+        }
+
+        void OpenRecorders()
+        {
+            detailAcc = new double[DetailNames.Length];
         }
 
         /// <summary>Which abilities a run scene has (24): none, what the ring 11 tree gives minus the black hole, or everything forced to its top level.</summary>
@@ -291,6 +340,8 @@ namespace Incremental
             meshAcc = 0;
             trailAcc = 0;
             trailsSeen = 0;
+            Array.Clear(detailAcc, 0, detailAcc.Length);
+            timingFrames = 0;
             if (steps.Count == 0)
             {
                 Finish();
@@ -321,6 +372,20 @@ namespace Incremental
                 trailAcc += root.TrailRenderer.TakeRebuildMs();
                 if (root.TrailRenderer.DrawnTrails > trailsSeen) trailsSeen = root.TrailRenderer.DrawnTrails;
             }
+            if (detailAcc.Length == DetailNames.Length)
+            {
+                detailAcc[0] += root.TakeAbilityTickMs();
+                detailAcc[1] += root.Dust.TakeTrailTickMs();
+                FrameTimingManager.CaptureFrameTimings();
+                // A timing now and then comes back as garbage (seconds of GPU time); those frames are left out.
+                if (FrameTimingManager.GetLatestTimings(1, timing) > 0 && timing[0].gpuFrameTime < 1000 && timing[0].cpuMainThreadFrameTime < 1000)
+                {
+                    detailAcc[2] += timing[0].cpuMainThreadFrameTime;
+                    detailAcc[3] += timing[0].cpuRenderThreadFrameTime;
+                    detailAcc[4] += timing[0].gpuFrameTime;
+                    timingFrames++;
+                }
+            }
             if (warmupLeft > 0f)
             {
                 warmupLeft -= Time.unscaledDeltaTime;
@@ -328,6 +393,8 @@ namespace Incremental
                 meshAcc = 0;
                 trailAcc = 0;
                 trailsSeen = 0;
+                Array.Clear(detailAcc, 0, detailAcc.Length);
+                timingFrames = 0;
                 return;
             }
             frames.Add(Time.unscaledDeltaTime);
@@ -358,7 +425,17 @@ namespace Incremental
                 trailMs = trailMs,
                 trails = trailsSeen,
                 restMs = Math.Max(0, sum / sorted.Count * 1000.0 - sim - mesh - trailMs),
+                detail = Detail(frames.Count),
             });
+        }
+
+        /// <summary>Per frame: the stopwatches over every sampled frame, the frame timings over the frames that had one (−1 when none did).</summary>
+        double[] Detail(int frameCount)
+        {
+            var d = new double[detailAcc.Length];
+            for (int i = 0; i < detailAcc.Length; i++)
+                d[i] = i < 2 ? detailAcc[i] / Math.Max(1, frameCount) : timingFrames > 0 ? detailAcc[i] / timingFrames : -1;
+            return d;
         }
 
         void Finish()
@@ -391,6 +468,23 @@ namespace Incremental
             foreach (var s in results)
                 sb.AppendFormat(CultureInfo.InvariantCulture, "| {0} | {1} | {2:F1} | {3:F1} | {4:F1} | {5:F2} | {6:F2} | {7:F2} | {8:F2} | {9} |\n",
                     s.name, s.frames, s.avgFps, s.p99Fps, s.maxMs, s.simMs, s.meshMs, s.trailMs, s.restMs, s.trails);
+            // 11th pass F: the split of the frame. The frame timings read −1 where the build has them off.
+            sb.Append("\n| 장면 |");
+            foreach (var n in DetailNames) sb.Append(' ').Append(n).Append(" |");
+            sb.Append("\n|---|");
+            foreach (var n in DetailNames) sb.Append("---|");
+            sb.Append('\n');
+            foreach (var s in results)
+            {
+                sb.Append("| ").Append(s.name).Append(" |");
+                if (s.detail != null) foreach (var v in s.detail) sb.Append(' ').Append(v.ToString("F2", CultureInfo.InvariantCulture)).Append(" |");
+                sb.Append('\n');
+            }
+            sb.Append("프레임 타이밍: ").Append(FrameTimingManager.IsFeatureEnabled() ? "켜짐" : "꺼짐 (−1)").Append('\n');
+            sb.Append("dustRefillBoost ").Append(p.dustRefillBoost.ToString(CultureInfo.InvariantCulture))
+              .Append(", gravityRadius ").Append(p.gravityRadius.ToString(CultureInfo.InvariantCulture))
+              .Append(", gravityGrowthScale ").Append(p.gravityGrowthScale.ToString("0.###", CultureInfo.InvariantCulture))
+              .Append(", dustMeshJobs ").Append(p.dustMeshJobs ? "켬" : "끔").Append('\n');
             sb.Append('\n').Append(Screen.width).Append('×').Append(Screen.height)
               .Append(Application.isEditor ? ", 에디터" : ", 빌드")
               .Append(", vSync ").Append(QualitySettings.vSyncCount)

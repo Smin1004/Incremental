@@ -202,7 +202,8 @@ namespace Incremental.Tests
         [Test]
         public void SaveVersion_IsBumped_AndOlderSavesStartOver()
         {
-            Assert.AreEqual(3, SaveMigration.CurrentVersion, "the dust kind axis changed node ids (20 §4)");
+            // 20 §4 made v3 (the dust kind axis changed node ids); 28 §2 made v4, which migrates v3 instead of resetting it.
+            Assert.GreaterOrEqual(SaveMigration.CurrentVersion, 3, "the dust kind axis changed node ids (20 §4)");
             Assert.IsTrue(SaveMigration.ResetsProgress(2));
             Assert.IsFalse(SaveMigration.ResetsProgress(3));
         }

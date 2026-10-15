@@ -673,6 +673,11 @@ namespace Incremental
         [Tooltip("Seconds before the very first scene is measured: the window opening and the first shader variants are " +
                  "one-off stalls that would otherwise land in scene 1.")]
         public double perfBenchSettleSec = 4;
+        [Tooltip("11th pass F: the dust mesh is built by a Burst job over the worker threads (same arithmetic, same picture). " +
+                 "Off = the same code on the main thread, one dust after another, for comparison (-perfnojobs in a build).")]
+        public bool dustMeshJobs = true;
+        [Tooltip("Dust per job batch of the mesh job.")]
+        public int dustMeshJobBatch = 256;
 
         [Header("Save (02 §6)")]
         [Tooltip("While a run is going, its progress is saved this often (seconds) so a killed game keeps the run's income.")]

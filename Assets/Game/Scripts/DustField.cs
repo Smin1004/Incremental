@@ -239,6 +239,17 @@ namespace Incremental
         float BornStep(float fdt) => p.dustSpawnFadeSec > 0 ? (float)(fdt / p.dustSpawnFadeSec) : 1f;
 
         /// <summary>22 §5: pushes the current position of every trailed dust, once every trailSampleSec of game time.</summary>
+        readonly System.Diagnostics.Stopwatch trailWatch = new System.Diagnostics.Stopwatch();
+        double trailTickMsAcc;
+
+        /// <summary>11th pass F: milliseconds of the trail history update inside the tick since the last call (perf bench).</summary>
+        public double TakeTrailTickMs()
+        {
+            double v = trailTickMsAcc;
+            trailTickMsAcc = 0;
+            return v;
+        }
+
         void TickTrails(double dt)
         {
             if (trailLen <= 0) return;
@@ -551,7 +562,10 @@ namespace Incremental
             }
             OutsideCount = outside;
 
+            trailWatch.Restart();
             TickTrails(dt);
+            trailWatch.Stop();
+            trailTickMsAcc += trailWatch.Elapsed.TotalMilliseconds;
             CapturedMass += captured;
             return captured;
         }

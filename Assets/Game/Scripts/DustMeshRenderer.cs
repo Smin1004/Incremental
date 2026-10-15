@@ -1,3 +1,6 @@
+using Unity.Burst;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -21,6 +24,10 @@ namespace Incremental
     /// 22 §7: the per-dust loop writes one interleaved vertex array that goes to the GPU in a single copy
     /// (<see cref="DynamicMesh"/>), the per-kind data is read into flat arrays once a frame instead of once a dust, and
     /// nothing is built at all while the mesh is not being drawn.
+    ///
+    /// 11th pass F: the per-dust loop is one Burst job (<see cref="QuadJob"/>) spread over the worker threads; the
+    /// arithmetic is the same, so the picture is the same. GameParams.dustMeshJobs off runs the same Execute on the
+    /// main thread, one dust after another, for comparison.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class DustMeshRenderer : MonoBehaviour
@@ -177,8 +184,75 @@ namespace Incremental
             float earlySize = EarlyMult(p.earlyDustSizeMult, ring);
             float earlyBright = EarlyMult(p.earlyDustBrightMult, ring) * density;
 
-            var items = field.Items;
-            for (int i = 0; i < n; i++)
+            var job = new QuadJob
+            {
+                kinds = kinds, halo = halo, drift = drift, full = full, stretchMax = stretchMax, exposure = exposure,
+                trailsOn = trailsOn, brighten = brighten, dim = dim, widthAtFull = widthAtFull, holdGlow = holdGlow,
+                endingPull = endingPull, remnant = remnant, cursor = cursor, gravR = gravR, edgeR = edgeR, edgeR2 = edgeR2,
+                colA = colA, colB = colB, remnantBright = remnantBright, exciteBright = exciteBright, centerR = centerR,
+                centerR2 = centerR2, centerDim = centerDim, exciteFalloff = exciteFalloff, cap = cap, earlySize = earlySize,
+                earlyBright = earlyBright,
+            };
+            unsafe
+            {
+                fixed (Dust* items = field.Items)
+                fixed (DustVertex* vp = verts)
+                fixed (float* ks = kindSize, kb = kindBright, kh = kindShape)
+                {
+                    job.items = items;
+                    job.verts = vp;
+                    job.kindSize = ks;
+                    job.kindBright = kb;
+                    job.kindShape = kh;
+                    if (p.dustMeshJobs) job.Schedule(n, Mathf.Max(16, p.dustMeshJobBatch)).Complete();
+                    else for (int i = 0; i < n; i++) job.Execute(i);
+                }
+            }
+
+            Rect a = field.Area;
+            var bounds = new Bounds(new Vector3(a.center.x, a.center.y, 0f), new Vector3(a.width + 1f, a.height + 1f, 1f));
+            mesh.Upload(verts, n * 4, n * 6, bounds);
+        }
+
+        /// <summary>
+        /// 26 §5.5: how much every dust dims for the amount of dust on screen: 1 up to dustDensityRef, then sqrt(ref / count),
+        /// never below dustDensityFloor. A pure function so the trail renderer shares it.
+        /// </summary>
+        public static float DensityDim(GameParams p, int count)
+        {
+            if (p.dustDensityRef <= 0 || count <= p.dustDensityRef) return 1f;
+            return Mathf.Max((float)p.dustDensityFloor, Mathf.Sqrt((float)(p.dustDensityRef / count)));
+        }
+
+        /// <summary>26 §5.5: the early-ring multiplier for the highest unlocked ring; 1 past the end of the array.</summary>
+        public static float EarlyMult(double[] mults, int ring) =>
+            mults != null && ring >= 1 && ring <= mults.Length ? (float)mults[ring - 1] : 1f;
+
+        /// <summary>0..1 to a colour byte, saturating. Color32's own conversion does the same, through a Color first.</summary>
+        static byte Byte01(float v) => (byte)(Mathf.Clamp01(v) * 255f + 0.5f);
+
+        /// <summary>
+        /// 11th pass F: one dust's quad (four vertices), exactly what the old loop wrote. The frame's values are copied in
+        /// as fields; the dust, the vertices and the per-kind tables are pinned arrays, read and written through pointers
+        /// (each index touches only its own dust and its own four vertices).
+        /// </summary>
+        [BurstCompile]
+        unsafe struct QuadJob : IJobParallelFor
+        {
+            [NativeDisableUnsafePtrRestriction] public Dust* items;
+            [NativeDisableUnsafePtrRestriction] public DustVertex* verts;
+            [NativeDisableUnsafePtrRestriction] public float* kindSize;
+            [NativeDisableUnsafePtrRestriction] public float* kindBright;
+            [NativeDisableUnsafePtrRestriction] public float* kindShape;
+            public int kinds;
+            public float halo, drift, full, stretchMax, exposure, brighten, dim, widthAtFull, holdGlow;
+            public bool trailsOn, endingPull, remnant;
+            public Vector2 cursor;
+            public float gravR, edgeR, edgeR2;
+            public Color colA, colB;
+            public float remnantBright, exciteBright, centerR, centerR2, centerDim, exciteFalloff, cap, earlySize, earlyBright;
+
+            public void Execute(int i)
             {
                 ref Dust d = ref items[i];
                 int kind = d.kind >= 0 && d.kind < kinds ? d.kind : 0;
@@ -193,7 +267,6 @@ namespace Incremental
                 float s = ribboned ? 1f : Mathf.Min(1f + speed * exposure / Mathf.Max(h, 1e-6f), stretchMax);
                 // The streak also narrows, but by how much it actually stretched, not by the raw speed.
                 float narrow = stretchMax > 1f ? (s - 1f) / (stretchMax - 1f) : 0f;
-                float stretch = Mathf.Clamp01((speed - drift) / (full - drift));
                 Vector2 along = axis * (h * s);
                 Vector2 across = new Vector2(-axis.y, axis.x) * (h * Mathf.Lerp(1f, widthAtFull, narrow));
 
@@ -247,28 +320,7 @@ namespace Incremental
                 verts[v + 3].uv = new Vector3(s, -1f, s);
                 verts[v + 3].col = c32;
             }
-
-            Rect a = field.Area;
-            var bounds = new Bounds(new Vector3(a.center.x, a.center.y, 0f), new Vector3(a.width + 1f, a.height + 1f, 1f));
-            mesh.Upload(verts, n * 4, n * 6, bounds);
         }
-
-        /// <summary>
-        /// 26 §5.5: how much every dust dims for the amount of dust on screen: 1 up to dustDensityRef, then sqrt(ref / count),
-        /// never below dustDensityFloor. A pure function so the trail renderer shares it.
-        /// </summary>
-        public static float DensityDim(GameParams p, int count)
-        {
-            if (p.dustDensityRef <= 0 || count <= p.dustDensityRef) return 1f;
-            return Mathf.Max((float)p.dustDensityFloor, Mathf.Sqrt((float)(p.dustDensityRef / count)));
-        }
-
-        /// <summary>26 §5.5: the early-ring multiplier for the highest unlocked ring; 1 past the end of the array.</summary>
-        public static float EarlyMult(double[] mults, int ring) =>
-            mults != null && ring >= 1 && ring <= mults.Length ? (float)mults[ring - 1] : 1f;
-
-        /// <summary>0..1 to a colour byte, saturating. Color32's own conversion does the same, through a Color first.</summary>
-        static byte Byte01(float v) => (byte)(Mathf.Clamp01(v) * 255f + 0.5f);
 
         void EnsureCapacity(int n)
         {
