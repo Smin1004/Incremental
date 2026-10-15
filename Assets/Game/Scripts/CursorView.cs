@@ -184,15 +184,19 @@ namespace Incremental
         {
             bool show = root.Phase == GamePhase.Run && root.Run != null && root.Run.holding && !root.Paused;
             SetVisible(show);
+            TickReleasePulse(show);
             if (!show)
             {
                 shown = false;
                 overrideShown = false;
                 return;
             }
+            // 26 §12.3 E4: the hold starts.
+            if (!shown) pressAge = 0f;
 
             if (root.Effective.gravityRadius != ringRadiusPx) SetRingRadius(root.Effective.gravityRadius);
             TintRing();
+            PressPulse();
             UpdateChargeArcs();
             // 22 §6: the lines are drawn in world units, so a zoomed-out camera would thin them to nothing. Their
             // width follows the scale, which keeps them the same thickness on screen.
@@ -374,6 +378,85 @@ namespace Incremental
 
         bool tinted;
 
+        /// <summary>26 §12.3 E4: seconds since the hold started; the ring grows in and brightens over holdPulseInSec.</summary>
+        float pressAge = float.MaxValue;
+        /// <summary>E4: seconds since the release (the copy of the ring spreading out), and where it was let go.</summary>
+        float releaseAge = float.MaxValue;
+        Vector2 releaseAt;
+        float releaseRadius;
+        LineRenderer releaseRing;
+        Vector3[] releasePoints;
+        bool wasShown;
+        Color ringColorNow = RingColor;
+
+        /// <summary>
+        /// E4: the ring grows from holdPulseFrom to its size and is brightened, both easing out over holdPulseInSec. The
+        /// growth and the light follow the effect intensity.
+        /// </summary>
+        void PressPulse()
+        {
+            float scale = 1f;
+            float flash = 0f;
+            float sec = Mathf.Max(0.01f, (float)p.holdPulseInSec);
+            if (root.Visual.holdPulse && pressAge < sec)
+            {
+                float k = pressAge / sec;
+                float e = (1f - k) * (1f - k);
+                scale = 1f + ((float)p.holdPulseFrom - 1f) * e * root.EffectIntensity;
+                flash = (float)p.holdPulseFlash * e * root.EffectIntensity;
+                pressAge += Time.deltaTime;
+            }
+            transform.localScale = new Vector3(scale, scale, 1f);
+            Color c = ringColorNow;
+            c.a = Mathf.Clamp01(c.a * (1f + flash * 2f));
+            ring.startColor = ring.endColor = c;
+        }
+
+        /// <summary>
+        /// E4: when the hold ends, a copy of the ring spreads to holdPulseOut of its size and fades out over holdPulseOutSec.
+        /// </summary>
+        void TickReleasePulse(bool show)
+        {
+            if (show)
+            {
+                wasShown = true;
+                releaseAt = root.GravityWorld;
+                releaseRadius = (float)(ringRadiusPx / p.pixelsPerUnit);
+                releaseAge = float.MaxValue;
+            }
+            else if (wasShown)
+            {
+                wasShown = false;
+                if (root.Visual.holdPulse && root.EffectIntensity > 0f && root.Phase == GamePhase.Run) releaseAge = 0f;
+            }
+            float sec = Mathf.Max(0.01f, (float)p.holdPulseOutSec);
+            bool on = releaseAge < sec;
+            if (releaseRing == null)
+            {
+                if (!on) return;
+                releaseRing = MakeLine("ReleasePulse", ring.sharedMaterial, true, 5);
+                releaseRing.transform.SetParent(transform.parent, false);
+                releaseRing.useWorldSpace = true;
+                releasePoints = new Vector3[RingSegments];
+            }
+            if (releaseRing.enabled != on) releaseRing.enabled = on;
+            if (!on) return;
+            float k = releaseAge / sec;
+            float r = releaseRadius * (1f + ((float)p.holdPulseOut - 1f) * (1f - (1f - k) * (1f - k)));
+            for (int i = 0; i < RingSegments; i++)
+            {
+                float a = i / (float)RingSegments * Mathf.PI * 2f;
+                releasePoints[i] = new Vector3(releaseAt.x + Mathf.Cos(a) * r, releaseAt.y + Mathf.Sin(a) * r, 0f);
+            }
+            releaseRing.positionCount = RingSegments;
+            releaseRing.SetPositions(releasePoints);
+            releaseRing.widthMultiplier = (float)(RingWidthPx * root.WorldScale / p.pixelsPerUnit);
+            Color c = ringColorNow;
+            c.a *= (1f - k) * root.EffectIntensity;
+            releaseRing.startColor = releaseRing.endColor = c;
+            releaseAge += Time.deltaTime;
+        }
+
         /// <summary>
         /// 24 §20.2: the gravity ring takes the abilities' tint (the amplifier's gold while its buff is on, brighter at
         /// the flash of the moment a crystal is taken), blended over whatever color the ring has this frame.
@@ -384,14 +467,15 @@ namespace Incremental
             Color tint = root.Abilities != null ? root.Abilities.RingTint(out amount) : Color.white;
             if (amount > 0f)
             {
-                ring.startColor = ring.endColor = Color.Lerp(RingColor, tint, Mathf.Clamp01(amount));
+                ringColorNow = Color.Lerp(RingColor, tint, Mathf.Clamp01(amount));
                 tinted = true;
             }
             else if (tinted)
             {
                 tinted = false;
-                ring.startColor = ring.endColor = RingColor;
+                ringColorNow = RingColor;
             }
+            ring.startColor = ring.endColor = ringColorNow;
         }
 
         /// <summary>22 §6: keeps the ring and the leash the same thickness on screen however far the camera has pulled back.</summary>

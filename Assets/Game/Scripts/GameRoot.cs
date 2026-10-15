@@ -495,7 +495,8 @@ namespace Incremental
                 pendingStart = false;
                 StartRun();
             }
-            if (Phase == GamePhase.Run && !Paused) TickRun(Time.fixedDeltaTime);
+            // 26 §12.3 E1: a hit stop holds the run still for a few ticks (nothing it counts changes, only when).
+            if (Phase == GamePhase.Run && !Paused && !(Fx != null && Fx.TakeHitStop(Time.fixedDeltaTime))) TickRun(Time.fixedDeltaTime);
             tickWatch.Stop();
 
             LastTickMs = tickWatch.Elapsed.TotalMilliseconds;

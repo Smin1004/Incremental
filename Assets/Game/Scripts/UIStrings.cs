@@ -64,6 +64,15 @@ namespace Incremental
         public const string HoldToggleToast = "홀드 토글: {0}  (H, 클릭 한 번 = 누르기, 다시 클릭 = 놓기)";
         /// <summary>26 §5.5: the toast of the overexposure key. {0} = on / off.</summary>
         public const string ExposureFixToast = "과노출 억제: {0}  (X)";
+        // 26 §12.4 visual pass debug keys
+        public const string VisualBackdropToast = "배경 보강: {0}  (B: 옅은 성운, 시차, 먼 천체, 성운 소용돌이)";
+        public const string VisualLensToast = "왜곡: {0}  (N)";
+        public const string VisualLensNow = "지금 (중력원 렌즈, 블랙홀 소용돌이)";
+        public const string VisualLensAll = "지금 + 수축 일렁임, 묶음 일렁임";
+        public const string VisualFxToast = "이펙트: {0}  (J)";
+        public const string VisualFxNow = "지금 (숫자 팝, 홀드 고리, 버프 테두리)";
+        public const string VisualFxAll = "지금 + 히트스톱·흔들림";
+        public const string VisualAllOff = "전부 끔";
         /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>
         public const string UiDirectionToast = "UI 방향: {0}  (U)";
         /// <summary>26 §10.1: the T key, the spiral twist of the tree's arms. {0} = degrees per ring.</summary>

@@ -159,6 +159,8 @@ namespace Incremental
             {
                 phase = Phase.Release;
                 root.Cursor.ClearLookOverride();
+                // 26 §12.3 E1.
+                root.Fx.OnBlackHoleRelease();
                 Log("closed at " + RunClock + ": " + (root.Dust.CapturedCount - capturedFrom) + " dust captured since it fired, " +
                     (root.Dust.Count - root.Dust.OutsideCount) + " on screen and " + root.Dust.OutsideCount + " outside it now");
             }

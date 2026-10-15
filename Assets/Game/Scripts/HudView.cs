@@ -41,6 +41,17 @@ namespace Incremental
         readonly float[] countEnds = new float[CountLabelPool];
         readonly float[] countFades = new float[CountLabelPool];
         float countYield = 0.15f;
+        /// <summary>
+        /// 26 §12.3 E2: per label, its scale before the pop, its total, the number it rolls up from, how long it has been
+        /// rolling, and whether it pops (a bundle label is one).
+        /// </summary>
+        readonly float[] countBase = new float[CountLabelPool];
+        readonly double[] countTotal = new double[CountLabelPool];
+        readonly double[] countFrom = new double[CountLabelPool];
+        readonly float[] countRoll = new float[CountLabelPool];
+        readonly float[] countPop = new float[CountLabelPool];
+        readonly bool[] countPops = new bool[CountLabelPool];
+        int lastCountLabel = -1;
         int nextCountLabel;
         float countLifetime = 1.5f;
 
@@ -139,6 +150,25 @@ namespace Incremental
         public void ShowPlanetCount(Vector3 screenPos, double sizePx, double count, double scale)
         {
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(CanvasRect, screenPos, null, out var local)) return;
+            var gp = game.gameParams;
+            bool pop = game.Visual.bundlePop;
+            // 26 §12.3 E2: a bundle soon after the last one adds to its label, the number rolling up, instead of a new label.
+            if (pop && lastCountLabel >= 0 && countPops[lastCountLabel] && countLabels[lastCountLabel].gameObject.activeSelf &&
+                countAges[lastCountLabel] < gp.bundleRollSec)
+            {
+                int j = lastCountLabel;
+                countFrom[j] = Shown(j);
+                countTotal[j] += count;
+                countRoll[j] = 0f;
+                countPop[j] = 0f;
+                countAges[j] = 0f;
+                countEnds[j] = countLifetime;
+                countFades[j] = countLifetime * 0.6f;
+                countBase[j] = BundleScale(scale, countTotal[j]);
+                ((RectTransform)countLabels[j].transform).anchoredPosition = local + new Vector2(0f, (float)sizePx * 0.5f + 8f);
+                Debug.Log("[Visual] bundle label rolls up: x" + countFrom[j].ToString("0") + " -> x" + countTotal[j].ToString("0"));
+                return;
+            }
             int i = nextCountLabel;
             nextCountLabel = (nextCountLabel + 1) % CountLabelPool;
             // 24 §23.6: back-to-back bundles put their labels on the same spot; the older ones make way within countYield,
@@ -156,13 +186,65 @@ namespace Incremental
             }
             var t = countLabels[i];
             t.text = string.Format(UIStrings.PlanetMulti, Fmt.Num(count));
-            t.transform.localScale = Vector3.one * Mathf.Max(0.1f, (float)scale);
+            countPops[i] = pop;
+            countTotal[i] = countFrom[i] = count;
+            countRoll[i] = float.MaxValue;
+            countPop[i] = 0f;
+            countBase[i] = pop ? BundleScale(scale, count) : Mathf.Max(0.1f, (float)scale);
+            t.transform.localScale = Vector3.one * countBase[i];
             ((RectTransform)t.transform).anchoredPosition = local + new Vector2(0f, (float)sizePx * 0.5f + 8f);
-            t.color = ui.Direction.text;
+            t.color = pop ? BundleColor(count) : ui.Direction.text;
+            lastCountLabel = i;
             countAges[i] = 0f;
             countEnds[i] = countLifetime;
             countFades[i] = countLifetime * 0.6f;
             t.gameObject.SetActive(true);
+        }
+
+        /// <summary>26 §12.3 E2: the label's size grows with log N.</summary>
+        float BundleScale(double scale, double count) =>
+            Mathf.Max(0.1f, (float)(scale * (1.0 + game.gameParams.bundlePopLogScale * System.Math.Log10(System.Math.Max(1.0, count)))));
+
+        /// <summary>26 §12.3 E2: white below x3, to gold at x10, to orange at x30.</summary>
+        Color BundleColor(double count)
+        {
+            var gp = game.gameParams;
+            Color white = ui.Direction.text;
+            if (count < 3) return white;
+            if (count < 10) return Color.Lerp(white, gp.bundleColorGold, (float)((count - 3) / 7.0));
+            if (count < 30) return Color.Lerp(gp.bundleColorGold, gp.bundleColorOrange, (float)((count - 10) / 20.0));
+            return gp.bundleColorOrange;
+        }
+
+        /// <summary>The number label <paramref name="i"/> shows now, rolling from its last total to its new one.</summary>
+        double Shown(int i)
+        {
+            float sec = (float)game.gameParams.bundleRollCountSec * Mathf.Clamp01(game.EffectIntensity);
+            if (sec <= 0f || countRoll[i] >= sec) return countTotal[i];
+            float k = countRoll[i] / sec;
+            return countFrom[i] + (countTotal[i] - countFrom[i]) * (1f - (1f - k) * (1f - k));
+        }
+
+        /// <summary>26 §12.3 E2: the pop (from bundlePopFrom to 1, eased out) and the rolling number of a bundle label.</summary>
+        void TickBundleLabel(int i, TMP_Text t, float dt)
+        {
+            var gp = game.gameParams;
+            float fx = Mathf.Clamp01(game.EffectIntensity);
+            countPop[i] += dt;
+            float popSec = Mathf.Max(0.01f, (float)gp.bundlePopSec);
+            float k = Mathf.Clamp01(countPop[i] / popSec);
+            float pop = 1f + ((float)gp.bundlePopFrom - 1f) * (1f - k) * (1f - k) * fx;
+            t.transform.localScale = Vector3.one * countBase[i] * pop;
+            if (countRoll[i] < float.MaxValue)
+            {
+                countRoll[i] += dt;
+                double shown = System.Math.Round(Shown(i));
+                t.text = string.Format(UIStrings.PlanetMulti, Fmt.Num(shown));
+                var c = BundleColor(shown);
+                c.a = t.color.a;
+                t.color = c;
+                if (countRoll[i] >= gp.bundleRollCountSec) countRoll[i] = float.MaxValue;
+            }
         }
 
         float CountAlpha(int i)
@@ -203,6 +285,7 @@ namespace Incremental
                     t.gameObject.SetActive(false);
                     continue;
                 }
+                if (countPops[i]) TickBundleLabel(i, t, dt);
                 var c = t.color;
                 c.a = CountAlpha(i);
                 t.color = c;
