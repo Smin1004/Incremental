@@ -281,6 +281,63 @@ MonoBehaviour:
   bgStarLayerB: {x: 110, y: 0.4, z: 0.9, w: 0.34}
   bgTwinkleSpeed: 0.7
   bgTwinkleDepth: 0.5
+  backdropNebula: 1
+  backdropNebulaStrength: 0.25
+  backdropNebulaGlowMix: 1
+  backdropNebulaBgMix: 0.55
+  parallax: 1
+  parallaxFar: 0.005
+  parallaxNear: 0.015
+  parallaxNebula: 0.003
+  parallaxSmoothSec: 0.3
+  farObject: 1
+  farObjectAlpha: 0.06
+  farObjectSizeShare: 0.55
+  farObjectSpinDegPerSec: 1.2
+  farObjectFadeSec: 2
+  nebulaSwirl: 1
+  nebulaSwirlRad: 0.4
+  nebulaSwirlReach: 3
+  nebulaSwirlInSec: 0.5
+  gravityLens: 1
+  gravityLensReach: 0.8
+  gravityLensStrength: 0.2
+  gravityLensRingBonus: 0.05
+  gravityLensReleaseSec: 0.3
+  implodeRipple: 0
+  implodeRippleWidth: 0.15
+  implodeRippleStrength: 0.15
+  bundleRipple: 0
+  bundleRippleSec: 0.4
+  bundleRippleRadiusPx: 420
+  bundleRippleWidth: 0.25
+  bundleRippleStrength: 0.2
+  bundlePop: 1
+  bundlePopFrom: 1.6
+  bundlePopSec: 0.25
+  bundlePopLogScale: 0.35
+  bundleRollSec: 1
+  bundleRollCountSec: 0.3
+  bundleColorGold: {r: 1, g: 0.84, b: 0.35, a: 1}
+  bundleColorOrange: {r: 1, g: 0.55, b: 0.2, a: 1}
+  holdPulse: 1
+  holdPulseFrom: 0.85
+  holdPulseInSec: 0.2
+  holdPulseFlash: 0.5
+  holdPulseOut: 1.15
+  holdPulseOutSec: 0.25
+  buffVignette: 1
+  buffVignetteAlpha: 0.08
+  buffVignetteEdge: 0.12
+  buffVignettePulseSec: 2.4
+  buffVignettePulseDepth: 0.3
+  buffVignetteStackMult: 1.5
+  buffVignetteColor: {r: 1, g: 0.8, b: 0.35, a: 1}
+  hitStopShake: 0
+  hitStopSec: 0.05
+  hitStopMinBundle: 5
+  shakePx: 6
+  shakeSec: 0.15
   flashAlphaCap: 0.35
   flashMinRiseSec: 0.1
   flashEdgeShare: 0.15

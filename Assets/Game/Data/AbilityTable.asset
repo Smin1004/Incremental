@@ -124,6 +124,7 @@ MonoBehaviour:
     lensRingAlpha: 0.05
     lensRingWidth: 0.08
     lensClearDisc: 1
+    lensTwistDeg: 40
   exciteSec: 0.4
   exciteBrightness: 2
   exciteDriftRelaxMult: 0.3

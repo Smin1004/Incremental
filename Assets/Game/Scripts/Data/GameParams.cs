@@ -424,6 +424,96 @@ namespace Incremental
         public double bgTwinkleSpeed = 0.7;
         public double bgTwinkleDepth = 0.5;
 
+        [Header("Visual pass: background (26 §12.1)")]
+        [Tooltip("B1a: the nebula, which used to come on only after the ending, is on all the time and faint: this share of the " +
+                 "ending's nebula strength, in colors taken from the palette of the stage now. Must stay below the dust.")]
+        public bool backdropNebula = true;
+        public double backdropNebulaStrength = 0.25;
+        [Tooltip("B1a: share of the palette's light bleed color (A) and background color brightened to full (B) the faint nebula is made of.")]
+        public double backdropNebulaGlowMix = 1.0;
+        public double backdropNebulaBgMix = 0.55;
+        [Tooltip("B2: the background moves against the gravity source's offset from the middle of the screen, as a share of the " +
+                 "screen size when the gravity source is at the edge: far stars, near stars, nebula. Run screen only.")]
+        public bool parallax = true;
+        public double parallaxFar = 0.005;
+        public double parallaxNear = 0.015;
+        public double parallaxNebula = 0.003;
+        [Tooltip("B2: seconds the background takes to catch up (exponential, about 63% in this time).")]
+        public double parallaxSmoothSec = 0.3;
+        [Tooltip("B3: one very dim, large far body in a corner of the screen, drawn by the Starfield shader: 0 spiral galaxy, " +
+                 "1 the edge of a ringed giant planet, 2 a galaxy seen edge-on. It changes to the next one with every gate bought.")]
+        public bool farObject = true;
+        public double farObjectAlpha = 0.06;
+        [Tooltip("B3: its size as a share of the screen height, and how fast it turns, degrees per second.")]
+        public double farObjectSizeShare = 0.55;
+        public double farObjectSpinDegPerSec = 1.2;
+        [Tooltip("B3: seconds the old body fades out and the new one in after a gate.")]
+        public double farObjectFadeSec = 2.0;
+        [Tooltip("B4: while holding, the nebula is wound round the gravity source by up to this many radians (counter-clockwise, " +
+                 "like the vortex), within nebulaSwirlReach gravity radii. It comes in over nebulaSwirlInSec and lets go the same way.")]
+        public bool nebulaSwirl = true;
+        public double nebulaSwirlRad = 0.4;
+        public double nebulaSwirlReach = 3.0;
+        public double nebulaSwirlInSec = 0.5;
+
+        [Header("Visual pass: lenses (26 §12.2)")]
+        [Tooltip("D1: while holding, the stars and the dust round the gravity source are drawn pushed gently outward: reach = the " +
+                 "gravity radius x gravityLensReach, push = gravityLensStrength x (held mass / threshold) x (1 + ring x " +
+                 "gravityLensRingBonus) of the reach at most. Lets go over gravityLensReleaseSec. No disc is cleared.")]
+        public bool gravityLens = true;
+        public double gravityLensReach = 0.8;
+        public double gravityLensStrength = 0.2;
+        public double gravityLensRingBonus = 0.05;
+        public double gravityLensReleaseSec = 0.3;
+        [Tooltip("D2 (off by default): where the implode ring passes, a band implodeRippleWidth x its radius wide pushes the stars " +
+                 "and dust out a little and lets go again; implodeRippleStrength of the band width at most.")]
+        public bool implodeRipple = false;
+        public double implodeRippleWidth = 0.15;
+        public double implodeRippleStrength = 0.15;
+        [Tooltip("D4 (off by default): a bundle sends one ripple band out from where it was made, to bundleRippleRadiusPx in " +
+                 "bundleRippleSec; push = bundleRippleStrength x ln N of the band width, fading as it goes.")]
+        public bool bundleRipple = false;
+        public double bundleRippleSec = 0.4;
+        public double bundleRippleRadiusPx = 420;
+        public double bundleRippleWidth = 0.25;
+        public double bundleRippleStrength = 0.2;
+
+        [Header("Visual pass: effects (26 §12.3)")]
+        [Tooltip("E2: the x N label pops from bundlePopFrom to 1 in bundlePopSec, is bundlePopLogScale x log10 N larger, goes white " +
+                 "-> gold -> orange at x3, x10, x30, and a bundle within bundleRollSec of the last one adds to that label, its number rolling up.")]
+        public bool bundlePop = true;
+        public double bundlePopFrom = 1.6;
+        public double bundlePopSec = 0.25;
+        public double bundlePopLogScale = 0.35;
+        public double bundleRollSec = 1.0;
+        public double bundleRollCountSec = 0.3;
+        public Color bundleColorGold = new Color(1f, 0.84f, 0.35f);
+        public Color bundleColorOrange = new Color(1f, 0.55f, 0.2f);
+        [Tooltip("E4: at the press the gravity ring grows from holdPulseFrom to 1 in holdPulseInSec, brightened by holdPulseFlash; " +
+                 "at the release a copy spreads to holdPulseOut and fades in holdPulseOutSec.")]
+        public bool holdPulse = true;
+        public double holdPulseFrom = 0.85;
+        public double holdPulseInSec = 0.2;
+        public double holdPulseFlash = 0.5;
+        public double holdPulseOut = 1.15;
+        public double holdPulseOutSec = 0.25;
+        [Tooltip("E5: while the amplifier crystal's buff is on, a faint gold frame on the outer buffVignetteEdge of the screen, " +
+                 "alpha buffVignetteAlpha, pulsing slowly, fading with the buff time left; x buffVignetteStackMult with 2 stacks.")]
+        public bool buffVignette = true;
+        public double buffVignetteAlpha = 0.08;
+        public double buffVignetteEdge = 0.12;
+        public double buffVignettePulseSec = 2.4;
+        public double buffVignettePulseDepth = 0.3;
+        public double buffVignetteStackMult = 1.5;
+        public Color buffVignetteColor = new Color(1f, 0.8f, 0.35f);
+        [Tooltip("E1 (off by default): a bundle of hitStopMinBundle or more, a new tier made for the first time, and the black hole's " +
+                 "release stop the simulation for hitStopSec (input and drawing go on) and shake the view shakePx for shakeSec.")]
+        public bool hitStopShake = false;
+        public double hitStopSec = 0.05;
+        public int hitStopMinBundle = 5;
+        public double shakePx = 6;
+        public double shakeSec = 0.15;
+
         [Header("Flash rule (15 §3)")]
         [Tooltip("Every flash (star ignition, result ignition, supernova): peak alpha at most flashAlphaCap (then × effectIntensity), " +
                  "rise at least flashMinRiseSec, and a radial falloff from its source: flashEdgeShare of the center brightness at flashRadiusPx " +

@@ -22,10 +22,6 @@ namespace Incremental
         /// <summary>The release flash, just over the ending's (60).</summary>
         const int FlashSortingOrder = 61;
 
-        /// <summary>24 §24.2-2: the lens the Starfield, Dust and DustTrail shaders read (Lens.hlsl).</summary>
-        static readonly int IdLens = Shader.PropertyToID("_BHLens");
-        static readonly int IdLensShape = Shader.PropertyToID("_BHLensShape");
-
         enum Phase { Off, Inhale, Hole, Release }
 
         Phase phase;
@@ -240,17 +236,19 @@ namespace Incremental
             {
                 if (!lensSet) return;
                 lensSet = false;
-                Shader.SetGlobalVector(IdLens, Vector4.zero);
-                Shader.SetGlobalVector(IdLensShape, Vector4.zero);
+                LensSlots.Clear(LensSlots.BlackHole);
+                LensSlots.SetHoleShape(Vector4.zero);
                 return;
             }
             lensSet = true;
             Vector2 g = root.GravityWorld;
             float radius = (float)(root.RunBodyPx(d.sizePx) * 0.5 / p.pixelsPerUnit);
-            Shader.SetGlobalVector(IdLens, new Vector4(g.x, g.y, radius, strength));
+            // 26 §12.2 D3: the swirl comes and goes with the push.
+            float twist = root.Visual.blackHoleSwirl ? (float)(d.lensTwistDeg * Mathf.Deg2Rad) * amount : 0f;
+            LensSlots.Set(LensSlots.BlackHole, g, radius, strength, (float)d.lensReachRadii, twist, 0f, LensSlots.KindHole);
             // 24 §24.3: the dust inside the disc is cleared out with the same ramp as the push.
             float clear = d.lensClearDisc ? Mathf.Clamp01(amount) : 0f;
-            Shader.SetGlobalVector(IdLensShape, new Vector4((float)d.lensReachRadii, (float)d.lensRingAlpha * amount, (float)d.lensRingWidth, clear));
+            LensSlots.SetHoleShape(new Vector4(0f, (float)d.lensRingAlpha * amount, (float)d.lensRingWidth, clear));
         }
 
         /// <summary>The frame over the camera view: black at the edge, clear <paramref name="reach"/> of the half screen in.</summary>

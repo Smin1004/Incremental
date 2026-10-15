@@ -113,6 +113,10 @@ namespace Incremental
         public SolarSystemView Solar { get; private set; }
         public TreeView Tree { get; private set; }
         public DebugTools Tools { get; private set; }
+        /// <summary>26 §12: the visual pass items that are on now (debug keys B, N, J change it at runtime).</summary>
+        public VisualToggles Visual { get; } = new VisualToggles();
+        /// <summary>26 §12: lenses, background motion, hit stop, shake and the buff frame.</summary>
+        public VisualFx Fx { get; private set; }
         public GalleryView Gallery { get; private set; }
         public SupernovaRunFx SupernovaRun { get; private set; }
         public EndingView Ending { get; private set; }
@@ -265,6 +269,7 @@ namespace Incremental
             Fmt.Mode = Settings.notation;
             hasFocus = Application.isFocused;
             EffectIntensity = Mathf.Clamp01((float)gameParams.effectIntensity);
+            Visual.FromData(gameParams, abilityTable);
             ExposureFix = gameParams.exposureFix;
             PlanetVisual.ApplyGlobals(gameParams);
 
@@ -335,6 +340,11 @@ namespace Incremental
             toolsGo.transform.SetParent(transform, false);
             Tools = toolsGo.AddComponent<DebugTools>();
             Tools.Init(this);
+
+            var fxGo = new GameObject("VisualFx");
+            fxGo.transform.SetParent(transform, false);
+            Fx = fxGo.AddComponent<VisualFx>();
+            Fx.Init(this);
 
             var ignitionGo = new GameObject("Ignition");
             ignitionGo.transform.SetParent(transform, false);
@@ -891,6 +901,7 @@ namespace Incremental
                 Planets.Show(GravityWorld, tier, bodySeed, bodyPx, scale, gameParams.bundlePopMult);
                 Hud.ShowPlanetCount(Cam.WorldToScreenPoint(GravityWorld), tier.sizePx * scale, count, gameParams.bundleLabelScale);
                 LastBundleCount = (int)count;
+                Fx.OnBundle(GravityWorld, count);
                 LastBundleAt = Run.elapsed;
                 if (abilityTable == null || abilityTable.logEvents)
                     UnityEngine.Debug.Log($"[Bundle] x{count:0} of tier {tier.tier} at {Run.elapsed:F1}s: {count:0} thresholds of {th:F0} held, drawn x{scale:0.##}, {keep:F0} mass kept");

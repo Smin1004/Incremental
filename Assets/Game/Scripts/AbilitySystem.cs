@@ -25,6 +25,8 @@ namespace Incremental
         DustForce[] forces = new DustForce[8];
         int forceCount;
         float lastTickAt;
+        /// <summary>Seconds since the last fixed tick as of this frame's drawing (26 §12.2: the lenses that follow an ability).</summary>
+        public float Lead { get; private set; }
         readonly StringBuilder label = new StringBuilder();
 
         /// <summary>
@@ -161,6 +163,7 @@ namespace Incremental
             // The abilities move on the fixed tick; drawing them a fraction of a tick ahead is what makes a fast ring or a
             // meteor glide instead of stepping. While paused no tick comes, so there is nothing to run ahead of.
             float lead = run && !root.Paused ? Mathf.Clamp(Time.time - lastTickAt, 0f, Time.fixedDeltaTime) : 0f;
+            Lead = lead;
             for (int i = 0; i < abilities.Length; i++)
             {
                 var a = abilities[i];

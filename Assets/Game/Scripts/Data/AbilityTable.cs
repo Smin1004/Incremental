@@ -417,6 +417,9 @@ namespace Incremental
         [Tooltip("24 §24.3: dust and trails inside the disc are drawn pushed out past its edge (radius x (1 + lensRingWidth) " +
                  "and on), so the disc stays black and the dust gathers into a bright ring round it. Off = the 10th pass lens.")]
         public bool lensClearDisc = true;
+        [Tooltip("26 §12.2 D3: the lens also turns what it draws round the black hole, counter-clockwise like the dust vortex: " +
+                 "this many degrees at the edge, nothing at lensReachRadii. Comes and goes with the push. 0 = no swirl.")]
+        public double lensTwistDeg = 40;
 
         public BlackHoleDef()
         {

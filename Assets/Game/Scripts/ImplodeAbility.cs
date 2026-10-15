@@ -96,6 +96,18 @@ namespace Incremental
             if (age >= d.ringSec + Math.Max(0.0, d.ringFadeSec)) active = false;
         }
 
+        /// <summary>26 §12.2 D2: true while a ring is out (spreading or fading where it stopped).</summary>
+        public bool WaveOn => active;
+        public Vector2 WaveOrigin => origin;
+        /// <summary>The ring's radius (world) <paramref name="lead"/> seconds after the last tick.</summary>
+        public float WaveRadius(float lead) => RadiusAt(age + lead);
+        /// <summary>1 while it spreads, down to 0 as it fades where it stopped.</summary>
+        public float WaveAlpha(float lead)
+        {
+            var d = D;
+            return d.ringFadeSec > 0 ? 1f - Mathf.Clamp01((float)((age + lead - d.ringSec) / d.ringFadeSec)) : (age + lead < d.ringSec ? 1f : 0f);
+        }
+
         float RadiusAt(double seconds) => reach * Mathf.Clamp01((float)(seconds / Math.Max(1e-3, D.ringSec)));
 
         protected override void OnClear()
