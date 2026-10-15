@@ -76,6 +76,8 @@ MonoBehaviour:
     glowAlpha: 0.45
     trailSec: 0.8
     trailWidthPx: 5
+    trailInOrbitFrame: 1
+    trailSegments: 48
   meteor:
     id: meteor
     unlockRing: 8

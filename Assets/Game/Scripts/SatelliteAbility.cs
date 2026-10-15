@@ -37,8 +37,15 @@ namespace Incremental
             public SpriteRenderer core;
             public SpriteRenderer glow;
             public TrailRenderer trail;
+            /// <summary>24 §24.5: the ribbon as the arc of the orbit behind it, in the gravity source's frame.</summary>
+            public LineRenderer arc;
             public bool shown;
         }
+
+        Vector3[] arcPoints = new Vector3[0];
+        bool loggedInFrame = true;
+        /// <summary>Seconds the satellites have been drawn in this hold: the arc grows to trailSec as the old trail did.</summary>
+        float shownSec;
 
         Transform holder;
         Visual[] visuals = new Visual[0];
@@ -143,13 +150,45 @@ namespace Incremental
         }
 
         /// <summary>Where satellite <paramref name="i"/> is, <paramref name="lead"/> seconds after the last tick.</summary>
-        Vector2 Position(int i, float lead)
+        Vector2 Position(int i, float lead) => Position(i, lead, center);
+
+        /// <summary>The same, around <paramref name="at"/> instead of where the gravity source was at the last tick.</summary>
+        Vector2 Position(int i, float lead, Vector2 at)
         {
             double angle = theta + AngularSpeed(theta) * lead;
+            return OrbitPoint(i, angle, precession + precessionRate * lead, at);
+        }
+
+        /// <summary>The point at <paramref name="angle"/> of satellite <paramref name="i"/>'s ellipse, the figure turned by <paramref name="turned"/>.</summary>
+        Vector2 OrbitPoint(int i, double angle, double turned, Vector2 at)
+        {
             // The long axis of this satellite's ellipse: its share of the full turn, plus how far the figure has turned.
-            double axis = precession + precessionRate * lead + TwoPi * i / Math.Max(1, count);
+            double axis = turned + TwoPi * i / Math.Max(1, count);
             float r = (float)Radius(angle) * unit;
-            return center + new Vector2((float)Math.Cos(axis + angle), (float)Math.Sin(axis + angle)) * r;
+            return at + new Vector2((float)Math.Cos(axis + angle), (float)Math.Sin(axis + angle)) * r;
+        }
+
+        /// <summary>
+        /// 24 §24.5: the ribbon as the stretch of the orbit satellite <paramref name="i"/> went along in the last
+        /// <paramref name="seconds"/>, around <paramref name="at"/>, newest point first. Walked back in time with the same
+        /// equal-areas speed the satellite moves at, so it is as long as the world-space trail was while standing still.
+        /// </summary>
+        int OrbitArc(int i, float lead, Vector2 at, double seconds, int segments)
+        {
+            int n = Math.Max(2, segments) + 1;
+            if (arcPoints.Length < n) arcPoints = new Vector3[n];
+            double angle = theta + AngularSpeed(theta) * lead;
+            double turned = precession + precessionRate * lead;
+            double step = seconds / (n - 1);
+            for (int k = 0; k < n; k++)
+            {
+                Vector2 pt = OrbitPoint(i, angle, turned, at);
+                arcPoints[k] = new Vector3(pt.x, pt.y, 0f);
+                double mid = angle - AngularSpeed(angle) * step * 0.5;
+                angle -= AngularSpeed(mid) * step;
+                turned -= precessionRate * step;
+            }
+            return n;
         }
 
         protected override void OnClear()
@@ -166,6 +205,7 @@ namespace Incremental
         {
             // Hidden while paused, like the gravity ring they circle.
             int n = show && !root.Paused ? count : 0;
+            shownSec = n > 0 ? shownSec + Time.deltaTime : 0f;
             if (n > visuals.Length) Grow(n);
             if (visuals.Length == 0) return;
 
@@ -183,6 +223,14 @@ namespace Incremental
             Color ribbon = new Color(core.r, core.g, core.b, core.a * intensity);
             Color ribbonEnd = new Color(core.r, core.g, core.b, 0f);
             bool ribboned = d.trailSec > 0 && d.trailWidthPx > 0 && intensity > 0f;
+            // 24 §24.5: in the orbit's frame the whole figure is drawn round where the gravity ring is drawn now.
+            bool inFrame = d.trailInOrbitFrame;
+            Vector2 at = inFrame ? root.GravityWorld : center;
+            if (inFrame != loggedInFrame)
+            {
+                loggedInFrame = inFrame;
+                Debug.Log("[Visual] orbit stone ribbon: " + (inFrame ? "the arc of the orbit, round the gravity source (24 §24.5)" : "world-space trail (before 24 §24.5)"));
+            }
 
             for (int i = 0; i < visuals.Length; i++)
             {
@@ -196,7 +244,7 @@ namespace Incremental
                     }
                     continue;
                 }
-                Vector2 pos = Position(i, lead);
+                Vector2 pos = Position(i, lead, at);
                 v.root.position = new Vector3(pos.x, pos.y, 0f);
                 v.core.transform.localScale = Vector3.one * (dot / coreSpriteSize);
                 v.core.color = core;
@@ -206,7 +254,23 @@ namespace Incremental
                 v.trail.widthMultiplier = trailWidth;
                 v.trail.startColor = ribbon;
                 v.trail.endColor = ribbonEnd;
-                v.trail.emitting = ribboned;
+                bool trailOn = ribboned && !inFrame;
+                if (v.trail.emitting != trailOn)
+                {
+                    v.trail.emitting = trailOn;
+                    if (!trailOn) v.trail.Clear();
+                }
+                bool arcOn = ribboned && inFrame;
+                if (v.arc.enabled != arcOn) v.arc.enabled = arcOn;
+                if (arcOn)
+                {
+                    int pts = OrbitArc(i, lead, at, Math.Min(d.trailSec, shownSec), d.trailSegments);
+                    v.arc.positionCount = pts;
+                    v.arc.SetPositions(arcPoints);
+                    v.arc.widthMultiplier = trailWidth;
+                    v.arc.startColor = ribbon;
+                    v.arc.endColor = ribbonEnd;
+                }
                 if (!v.shown)
                 {
                     v.shown = true;
@@ -243,8 +307,23 @@ namespace Incremental
             trail.autodestruct = false;
             UIBuilder.UseWhiteTexture(trail);
 
+            // 24 §24.5: a renderer of its own, since one object holds one renderer; the same look as the trail.
+            var arc = new GameObject("OrbitArc").AddComponent<LineRenderer>();
+            arc.transform.SetParent(go.transform, false);
+            if (root.unlitMaterial != null) arc.sharedMaterial = root.unlitMaterial;
+            arc.useWorldSpace = true;
+            arc.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            arc.receiveShadows = false;
+            arc.alignment = LineAlignment.TransformZ;
+            arc.textureMode = LineTextureMode.Stretch;
+            arc.widthCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
+            arc.sortingOrder = SortingOrder;
+            arc.positionCount = 0;
+            arc.enabled = false;
+            UIBuilder.UseWhiteTexture(arc);
+
             go.SetActive(false);
-            return new Visual { root = go.transform, core = core, glow = glow, trail = trail, shown = false };
+            return new Visual { root = go.transform, core = core, glow = glow, trail = trail, arc = arc, shown = false };
         }
 
         SpriteRenderer MakeSprite(string name, Transform parent, Sprite sprite, int order)

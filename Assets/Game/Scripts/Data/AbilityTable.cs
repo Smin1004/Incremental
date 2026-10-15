@@ -214,6 +214,12 @@ namespace Incremental
                  "and its width at the head, px.")]
         public double trailSec = 0.8;
         public double trailWidthPx = 5;
+        [Tooltip("24 §24.5: the ribbon is the arc of the orbit behind the satellite, worked out every frame around where the " +
+                 "gravity source is drawn now, so moving the gravity source does not drag it. Off = the world-space trail of " +
+                 "before, which stretches and bends while the gravity source moves.")]
+        public bool trailInOrbitFrame = true;
+        [Tooltip("Points along that arc. More is smoother where the satellite whips round its nearest point.")]
+        public int trailSegments = 48;
 
         public SatelliteDef()
         {
