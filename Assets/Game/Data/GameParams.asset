@@ -285,6 +285,18 @@ MonoBehaviour:
   backdropNebulaStrength: 0.25
   backdropNebulaGlowMix: 1
   backdropNebulaBgMix: 0.55
+  ringNebula: 1
+  ringNebulaStyle: 0
+  ringNebulaStrength: 0.045
+  ringNebulaA:
+  - {r: 0.1, g: 0.45, b: 0.5, a: 1}
+  - {r: 0.35, g: 0.12, b: 0.55, a: 1}
+  - {r: 0.8, g: 0.58, b: 0.15, a: 1}
+  ringNebulaB:
+  - {r: 0.12, g: 0.25, b: 0.55, a: 1}
+  - {r: 0.2, g: 0.15, b: 0.6, a: 1}
+  - {r: 0.7, g: 0.12, b: 0.5, a: 1}
+  ringNebulaBlendSec: 2
   parallax: 1
   parallaxFar: 0.005
   parallaxNear: 0.015
@@ -300,22 +312,24 @@ MonoBehaviour:
   nebulaSwirlReach: 3
   nebulaSwirlInSec: 0.5
   gravityLens: 1
-  gravityLensReach: 0.8
+  gravityLensReach: 0.65
   gravityLensStrength: 0.2
   gravityLensRingBonus: 0.05
   gravityLensReleaseSec: 0.3
-  implodeRipple: 0
+  implodeRipple: 1
   implodeRippleWidth: 0.15
   implodeRippleStrength: 0.15
-  bundleRipple: 0
+  bundleRipple: 1
   bundleRippleSec: 0.4
   bundleRippleRadiusPx: 420
   bundleRippleWidth: 0.25
-  bundleRippleStrength: 0.2
+  bundleRippleStrength: 0.35
   bundlePop: 1
-  bundlePopFrom: 1.6
+  bundlePopFrom: 2.2
   bundlePopSec: 0.25
-  bundlePopLogScale: 0.35
+  bundlePopLogScale: 0.6
+  bundleGlowAlpha: 0.55
+  bundleGlowSpread: 0.6
   bundleRollSec: 1
   bundleRollCountSec: 0.3
   bundleColorGold: {r: 1, g: 0.84, b: 0.35, a: 1}

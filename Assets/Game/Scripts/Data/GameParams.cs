@@ -432,6 +432,17 @@ namespace Incremental
         [Tooltip("B1a: share of the palette's light bleed color (A) and background color brightened to full (B) the faint nebula is made of.")]
         public double backdropNebulaGlowMix = 1.0;
         public double backdropNebulaBgMix = 0.55;
+        [Tooltip("B1b (12차 회신): the faint nebula takes a color of its own for every ring instead of the stage's, at " +
+                 "ringNebulaStrength. Style 0 = (가) the ring's place between the anchors below (rings 1, 6, 11: teal, purple, " +
+                 "gold-magenta), 1 = (나) one hue drifting a little per ring, 2 = (다) the stage's light bleed color, strong. " +
+                 "Off = B1a only. Until the ending; after it the remnant nebula is stronger and stays.")]
+        public bool ringNebula = true;
+        public int ringNebulaStyle = 0;
+        public double ringNebulaStrength = 0.045;
+        public Color[] ringNebulaA = { new Color(0.10f, 0.45f, 0.50f), new Color(0.35f, 0.12f, 0.55f), new Color(0.80f, 0.58f, 0.15f) };
+        public Color[] ringNebulaB = { new Color(0.12f, 0.25f, 0.55f), new Color(0.20f, 0.15f, 0.60f), new Color(0.70f, 0.12f, 0.50f) };
+        [Tooltip("B1b: seconds the nebula takes to change to the next ring's color after a gate.")]
+        public double ringNebulaBlendSec = 2.0;
         [Tooltip("B2: the background moves against the gravity source's offset from the middle of the screen, as a share of the " +
                  "screen size when the gravity source is at the edge: far stars, near stars, nebula. Run screen only.")]
         public bool parallax = true;
@@ -461,30 +472,34 @@ namespace Incremental
                  "gravity radius x gravityLensReach, push = gravityLensStrength x (held mass / threshold) x (1 + ring x " +
                  "gravityLensRingBonus) of the reach at most. Lets go over gravityLensReleaseSec. No disc is cleared.")]
         public bool gravityLens = true;
-        public double gravityLensReach = 0.8;
+        public double gravityLensReach = 0.65;
         public double gravityLensStrength = 0.2;
         public double gravityLensRingBonus = 0.05;
         public double gravityLensReleaseSec = 0.3;
         [Tooltip("D2 (off by default): where the implode ring passes, a band implodeRippleWidth x its radius wide pushes the stars " +
                  "and dust out a little and lets go again; implodeRippleStrength of the band width at most.")]
-        public bool implodeRipple = false;
+        public bool implodeRipple = true;
         public double implodeRippleWidth = 0.15;
         public double implodeRippleStrength = 0.15;
         [Tooltip("D4 (off by default): a bundle sends one ripple band out from where it was made, to bundleRippleRadiusPx in " +
                  "bundleRippleSec; push = bundleRippleStrength x ln N of the band width, fading as it goes.")]
-        public bool bundleRipple = false;
+        public bool bundleRipple = true;
         public double bundleRippleSec = 0.4;
         public double bundleRippleRadiusPx = 420;
         public double bundleRippleWidth = 0.25;
-        public double bundleRippleStrength = 0.2;
+        public double bundleRippleStrength = 0.35;
 
         [Header("Visual pass: effects (26 §12.3)")]
         [Tooltip("E2: the x N label pops from bundlePopFrom to 1 in bundlePopSec, is bundlePopLogScale x log10 N larger, goes white " +
                  "-> gold -> orange at x3, x10, x30, and a bundle within bundleRollSec of the last one adds to that label, its number rolling up.")]
         public bool bundlePop = true;
-        public double bundlePopFrom = 1.6;
+        public double bundlePopFrom = 2.2;
         public double bundlePopSec = 0.25;
-        public double bundlePopLogScale = 0.35;
+        public double bundlePopLogScale = 0.6;
+        [Tooltip("E2 (12차 회신): a soft glow behind the x N label in its own color, alpha (0 = none) and how far it spreads " +
+                 "(TextMeshPro underlay, no texture). Follows the effect intensity.")]
+        public double bundleGlowAlpha = 0.55;
+        public double bundleGlowSpread = 0.6;
         public double bundleRollSec = 1.0;
         public double bundleRollCountSec = 0.3;
         public Color bundleColorGold = new Color(1f, 0.84f, 0.35f);

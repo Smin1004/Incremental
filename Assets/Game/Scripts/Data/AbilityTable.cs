@@ -409,7 +409,7 @@ namespace Incremental
                  "rises over the inhale, gone over the release.")]
         public double lensStrength = 1.0;
         [Tooltip("The push reaches out to this many black hole radii from its centre, fading to nothing there.")]
-        public double lensReachRadii = 4;
+        public double lensReachRadii = 3.2;
         [Tooltip("The thin ring of light (Einstein ring) just outside the edge, drawn into the background: brightness (linear, " +
                  "additive; 0 = none) and width as a share of the black hole radius.")]
         public double lensRingAlpha = 0.05;

@@ -188,20 +188,34 @@ namespace Incremental
             {
                 var remnant = Palette(RemnantStage(root.celestialTable.MaxTier, p.orbitMaxTier));
                 float faint = (float)p.backdropNebulaStrength * (remnant != null ? remnant.nebulaStrength : 0f);
+                Color wantA = cur.glowColor * (float)p.backdropNebulaGlowMix;
+                Color bg = cur.background;
+                float top = Mathf.Max(1e-3f, Mathf.Max(bg.r, Mathf.Max(bg.g, bg.b)));
+                Color wantB = new Color(bg.r / top, bg.g / top, bg.b / top) * (float)p.backdropNebulaBgMix;
+                // B1b: the ring's own color, stronger.
+                if (p.ringNebula)
+                {
+                    RingNebula(root.Meta.unlockedMaxTier, cur, out wantA, out wantB);
+                    faint = Mathf.Max(faint, (float)p.ringNebulaStrength);
+                }
                 if (faint > nebula)
                 {
+                    // A gate changes the ring's color; it blends over ringNebulaBlendSec instead of jumping.
+                    float k = ringNebulaSet ? 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.01f, (float)p.ringNebulaBlendSec * 0.4f)) : 1f;
+                    ringNebA = Color.Lerp(ringNebA, wantA, k);
+                    ringNebB = Color.Lerp(ringNebB, wantB, k);
+                    ringNebulaSet = true;
                     nebula = faint;
-                    nebA = cur.glowColor * (float)p.backdropNebulaGlowMix;
-                    Color bg = cur.background;
-                    float top = Mathf.Max(1e-3f, Mathf.Max(bg.r, Mathf.Max(bg.g, bg.b)));
-                    nebB = new Color(bg.r / top, bg.g / top, bg.b / top) * (float)p.backdropNebulaBgMix;
+                    nebA = ringNebA;
+                    nebB = ringNebB;
                 }
             }
             if (!loggedNebula || vis.nebula != loggedNebulaOn)
             {
                 loggedNebula = true;
                 loggedNebulaOn = vis.nebula;
-                Debug.Log("[Visual] faint nebula (B1a): " + (vis.nebula ? "on, strength " + nebula.ToString("0.###") : "off"));
+                Debug.Log("[Visual] faint nebula (B1a" + (p.ringNebula ? " + B1b ring colors, style " + p.ringNebulaStyle : "") + "): " +
+                          (vis.nebula ? "on, strength " + nebula.ToString("0.###") : "off"));
             }
             mpb.SetColor(IdNebulaA, nebA);
             mpb.SetColor(IdNebulaB, nebB);
@@ -213,6 +227,44 @@ namespace Incremental
         }
 
         bool loggedNebulaOn;
+        Color ringNebA, ringNebB;
+        bool ringNebulaSet;
+
+        /// <summary>
+        /// 26 §12.1 B1b: the nebula colors of ring <paramref name="ring"/>. (가) between the anchors of rings 1, 6 and 11,
+        /// (나) one hue drifting by ring, (다) the stage's light bleed color.
+        /// </summary>
+        void RingNebula(int ring, BackdropPalette cur, out Color a, out Color b)
+        {
+            int style = p.ringNebulaStyle;
+            if (style == 1)
+            {
+                float h = 0.60f - (Mathf.Max(1, ring) - 1) * 0.012f;
+                a = Color.HSVToRGB(h, 0.65f, 0.55f);
+                b = Color.HSVToRGB(h + 0.05f, 0.55f, 0.45f);
+                return;
+            }
+            if (style == 2)
+            {
+                Color g = cur.glowColor;
+                float m = Mathf.Max(1e-3f, Mathf.Max(g.r, Mathf.Max(g.g, g.b)));
+                a = new Color(g.r / m, g.g / m, g.b / m) * 0.9f;
+                b = a * 0.4f + cur.starTint * 0.35f;
+                return;
+            }
+            a = Anchor(p.ringNebulaA, ring);
+            b = Anchor(p.ringNebulaB, ring);
+        }
+
+        /// <summary>The anchors spread evenly over rings 1..11, the ring's color between its two neighbours.</summary>
+        static Color Anchor(Color[] stops, int ring)
+        {
+            if (stops == null || stops.Length == 0) return Color.black;
+            if (stops.Length == 1) return stops[0];
+            float t = Mathf.Clamp01((ring - 1) / 10f) * (stops.Length - 1);
+            int i = Mathf.Min(stops.Length - 2, Mathf.FloorToInt(t));
+            return Color.Lerp(stops[i], stops[i + 1], t - i);
+        }
 
         /// <summary>
         /// 26 §12.1 B2 and B4: on the run screen the star layers and the nebula move against the gravity source's offset

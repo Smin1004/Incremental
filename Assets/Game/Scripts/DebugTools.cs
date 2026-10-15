@@ -23,8 +23,8 @@ namespace Incremental
     /// H: the hold toggle on / off (28 §2.1), written to settings.json.
     /// X: the overexposure measures on / off (26 §5.5), to compare before and after; shown in the overlay, not saved.
     /// T: the twist of the skill tree's spiral arms, through UITheme.tree.armTwistChoices (26 §10.1); not saved.
-    /// B, N, J (26 §12.4): the visual pass. B the background items on / off, N the lenses (now → + ripples → off),
-    /// J the effects (now → + hit stop and shake → off). Runtime only; the data flags set where a launch starts.
+    /// B, N, J (26 §12.4): the visual pass. B the background items on / off, N the lenses on / off, J the effects
+    /// on / off. Runtime only; the data flags set where a launch starts.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
     /// what a keyboard really sends.
     /// </summary>
@@ -482,26 +482,25 @@ namespace Incremental
             Debug.Log("[Visual] background (B1a, B2, B3, B4): " + state);
         }
 
-        /// <summary>N (26 §12.4): the lenses, now (D1, D3) → with D2 and D4 → all off.</summary>
+        /// <summary>N (26 §12.4, 12차 회신): the lenses, all of them (D1, D2, D3, D4) ↔ all off.</summary>
         public void CycleLenses()
         {
-            lensStep = (lensStep + 1) % 3;
+            lensStep = (lensStep + 1) % 2;
             var v = root.Visual;
-            v.gravityLens = v.blackHoleSwirl = lensStep < 2;
-            v.implodeRipple = v.bundleRipple = lensStep == 1;
-            string name = lensStep == 0 ? UIStrings.VisualLensNow : lensStep == 1 ? UIStrings.VisualLensAll : UIStrings.VisualAllOff;
+            v.gravityLens = v.blackHoleSwirl = v.implodeRipple = v.bundleRipple = lensStep == 0;
+            string name = lensStep == 0 ? UIStrings.VisualLensNow : UIStrings.VisualAllOff;
             root.Hud.ShowToast(string.Format(UIStrings.VisualLensToast, name));
             Debug.Log("[Visual] lenses: D1 " + v.gravityLens + ", D3 " + v.blackHoleSwirl + ", D2 " + v.implodeRipple + ", D4 " + v.bundleRipple);
         }
 
-        /// <summary>J (26 §12.4): the effects, now (E2, E4, E5) → with E1 → all off.</summary>
+        /// <summary>J (26 §12.4, 12차 회신): the effects (E2, E4, E5) ↔ all off. E1 was rejected and is left to its flag.</summary>
         public void CycleEffects()
         {
-            effectStep = (effectStep + 1) % 3;
+            effectStep = (effectStep + 1) % 2;
             var v = root.Visual;
-            v.bundlePop = v.holdPulse = v.buffVignette = effectStep < 2;
-            v.hitStopShake = effectStep == 1;
-            string name = effectStep == 0 ? UIStrings.VisualFxNow : effectStep == 1 ? UIStrings.VisualFxAll : UIStrings.VisualAllOff;
+            v.bundlePop = v.holdPulse = v.buffVignette = effectStep == 0;
+            v.hitStopShake = false;
+            string name = effectStep == 0 ? UIStrings.VisualFxNow : UIStrings.VisualAllOff;
             root.Hud.ShowToast(string.Format(UIStrings.VisualFxToast, name));
             Debug.Log("[Visual] effects: E2 " + v.bundlePop + ", E4 " + v.holdPulse + ", E5 " + v.buffVignette + ", E1 " + v.hitStopShake);
         }

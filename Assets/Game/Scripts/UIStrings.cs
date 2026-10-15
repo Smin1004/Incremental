@@ -67,11 +67,9 @@ namespace Incremental
         // 26 §12.4 visual pass debug keys
         public const string VisualBackdropToast = "배경 보강: {0}  (B: 옅은 성운, 시차, 먼 천체, 성운 소용돌이)";
         public const string VisualLensToast = "왜곡: {0}  (N)";
-        public const string VisualLensNow = "지금 (중력원 렌즈, 블랙홀 소용돌이)";
-        public const string VisualLensAll = "지금 + 수축 일렁임, 묶음 일렁임";
+        public const string VisualLensNow = "켬 (중력원 렌즈, 블랙홀 소용돌이, 수축·묶음 일렁임)";
         public const string VisualFxToast = "이펙트: {0}  (J)";
-        public const string VisualFxNow = "지금 (숫자 팝, 홀드 고리, 버프 테두리)";
-        public const string VisualFxAll = "지금 + 히트스톱·흔들림";
+        public const string VisualFxNow = "켬 (숫자 팝, 홀드 고리, 버프 테두리)";
         public const string VisualAllOff = "전부 끔";
         /// <summary>26 §6: toasts of the two UI debug keys. {0} = the direction name / the display name.</summary>
         public const string UiDirectionToast = "UI 방향: {0}  (U)";

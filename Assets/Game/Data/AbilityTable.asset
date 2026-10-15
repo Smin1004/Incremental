@@ -120,7 +120,7 @@ MonoBehaviour:
     blackHoleBodyGlowScale: 0.3
     blackHoleIgnitionScale: 0
     lensStrength: 1
-    lensReachRadii: 4
+    lensReachRadii: 3.2
     lensRingAlpha: 0.05
     lensRingWidth: 0.08
     lensClearDisc: 1

@@ -194,6 +194,7 @@ namespace Incremental
             t.transform.localScale = Vector3.one * countBase[i];
             ((RectTransform)t.transform).anchoredPosition = local + new Vector2(0f, (float)sizePx * 0.5f + 8f);
             t.color = pop ? BundleColor(count) : ui.Direction.text;
+            if (!pop) SetGlow(t, Color.clear);
             lastCountLabel = i;
             countAges[i] = 0f;
             countEnds[i] = countLifetime;
@@ -247,6 +248,29 @@ namespace Incremental
             }
         }
 
+        /// <summary>
+        /// 26 §12.3 E2 (12차 회신): a soft glow behind a bundle label, the TextMeshPro underlay of the label's own material
+        /// (its own copy, so the other texts keep theirs). A clear color turns it off.
+        /// </summary>
+        void SetGlow(TMP_Text t, Color color)
+        {
+            var m = t.fontMaterial;
+            if (m == null) return;
+            bool on = color.a > 0.002f;
+            if (on != m.IsKeywordEnabled(ShaderUtilities.Keyword_Underlay))
+            {
+                if (on) m.EnableKeyword(ShaderUtilities.Keyword_Underlay);
+                else m.DisableKeyword(ShaderUtilities.Keyword_Underlay);
+            }
+            if (!on) return;
+            float spread = Mathf.Clamp01((float)game.gameParams.bundleGlowSpread);
+            m.SetColor(ShaderUtilities.ID_UnderlayColor, color);
+            m.SetFloat(ShaderUtilities.ID_UnderlaySoftness, spread);
+            m.SetFloat(ShaderUtilities.ID_UnderlayDilate, spread * 0.6f);
+            m.SetFloat(ShaderUtilities.ID_UnderlayOffsetX, 0f);
+            m.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, 0f);
+        }
+
         float CountAlpha(int i)
         {
             float age = countAges[i], fade = countFades[i], end = countEnds[i];
@@ -289,6 +313,12 @@ namespace Incremental
                 var c = t.color;
                 c.a = CountAlpha(i);
                 t.color = c;
+                if (countPops[i])
+                {
+                    var g = c;
+                    g.a = (float)game.gameParams.bundleGlowAlpha * c.a * Mathf.Clamp01(game.EffectIntensity);
+                    SetGlow(t, g);
+                }
             }
         }
 
