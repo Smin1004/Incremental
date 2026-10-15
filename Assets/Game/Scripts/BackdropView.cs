@@ -25,6 +25,12 @@ namespace Incremental
         static readonly int IdNebulaA = Shader.PropertyToID("_NebulaA");
         static readonly int IdNebulaB = Shader.PropertyToID("_NebulaB");
         static readonly int IdNebula = Shader.PropertyToID("_Nebula");
+        static readonly int IdParallax = Shader.PropertyToID("_Parallax");
+        static readonly int IdNebulaShift = Shader.PropertyToID("_NebulaShift");
+        static readonly int IdSwirlAt = Shader.PropertyToID("_SwirlAt");
+        static readonly int IdFarObj = Shader.PropertyToID("_FarObj");
+        static readonly int IdFarObj2 = Shader.PropertyToID("_FarObj2");
+        const int FarKinds = 3;
 
         GameRoot root;
         GameParams p;
@@ -36,6 +42,21 @@ namespace Incremental
         float nextBlendSec = -1f;
         int stageOverride = -1;
         Vector3? glowCenter;
+        /// <summary>26 §12.1 B2: the gravity source's smoothed offset from the middle of the screen, −1..1 on each axis.</summary>
+        Vector2 parallax;
+        /// <summary>B4: how far the nebula swirl is in, 0..1.</summary>
+        float swirl;
+        /// <summary>B3: the far body shown now, the one wanted, and its fade (1 = fully there).</summary>
+        int farShown = -1, farWanted = -1;
+        float farFade;
+        float farSpin;
+        bool loggedNebula, loggedFar;
+
+        /// <summary>B3: which far body ring <paramref name="maxTier"/> shows: the next one with every gate.</summary>
+        public static int FarKindFor(int maxTier) => ((Mathf.Max(1, maxTier) - 1) % FarKinds + FarKinds) % FarKinds;
+
+        /// <summary>The far body shown now (captures and checks).</summary>
+        public int FarKind => farShown;
 
         public int Stage => stage;
         public Color DustColorA { get; private set; } = Color.white;
@@ -159,9 +180,129 @@ namespace Incremental
             mpb.SetColor(IdStarTint, cur.starTint);
             mpb.SetColor(IdNebulaA, cur.nebulaA);
             mpb.SetColor(IdNebulaB, cur.nebulaB);
-            mpb.SetVector(IdNebula, new Vector4(cur.nebulaStrength, Mathf.Max(1f, cur.nebulaScalePx), 0f, 0f));
+            // 26 §12.1 B1a: the faint nebula of every stage, in that stage's colors, unless the palette has its own.
+            Color nebA = cur.nebulaA, nebB = cur.nebulaB;
+            float nebula = cur.nebulaStrength;
+            var vis = root.Visual;
+            if (vis.nebula)
+            {
+                var remnant = Palette(RemnantStage(root.celestialTable.MaxTier, p.orbitMaxTier));
+                float faint = (float)p.backdropNebulaStrength * (remnant != null ? remnant.nebulaStrength : 0f);
+                if (faint > nebula)
+                {
+                    nebula = faint;
+                    nebA = cur.glowColor * (float)p.backdropNebulaGlowMix;
+                    Color bg = cur.background;
+                    float top = Mathf.Max(1e-3f, Mathf.Max(bg.r, Mathf.Max(bg.g, bg.b)));
+                    nebB = new Color(bg.r / top, bg.g / top, bg.b / top) * (float)p.backdropNebulaBgMix;
+                }
+            }
+            if (!loggedNebula || vis.nebula != loggedNebulaOn)
+            {
+                loggedNebula = true;
+                loggedNebulaOn = vis.nebula;
+                Debug.Log("[Visual] faint nebula (B1a): " + (vis.nebula ? "on, strength " + nebula.ToString("0.###") : "off"));
+            }
+            mpb.SetColor(IdNebulaA, nebA);
+            mpb.SetColor(IdNebulaB, nebB);
+            mpb.SetVector(IdNebula, new Vector4(nebula, Mathf.Max(1f, cur.nebulaScalePx), 0f, 0f));
+
+            ApplyMotion(w, h, c, ppu);
+            ApplyFarBody(w, h, c, ppu);
             mr.SetPropertyBlock(mpb);
         }
+
+        bool loggedNebulaOn;
+
+        /// <summary>
+        /// 26 §12.1 B2 and B4: on the run screen the star layers and the nebula move against the gravity source's offset
+        /// from the middle of the screen, and the nebula winds round it while holding. Both ease in and out and follow
+        /// the effect intensity.
+        /// </summary>
+        void ApplyMotion(float w, float h, Vector3 c, float ppu)
+        {
+            var vis = root.Visual;
+            float dt = Time.deltaTime;
+            float intensity = root.EffectIntensity;
+            bool run = root.Phase == GamePhase.Run && root.Run != null;
+            Vector2 target = Vector2.zero;
+            if (run && vis.parallax)
+            {
+                Vector2 g = root.GravityWorld;
+                target = new Vector2(Mathf.Clamp((g.x - c.x) / (w * 0.5f), -1f, 1f), Mathf.Clamp((g.y - c.y) / (h * 0.5f), -1f, 1f));
+            }
+            float smooth = Mathf.Max(0.01f, (float)p.parallaxSmoothSec);
+            parallax += (target - parallax) * (1f - Mathf.Exp(-dt / smooth));
+            // Screen size in background px (world px), so the shift is the same share of the screen at any world scale.
+            Vector2 screen = new Vector2(w * ppu, h * ppu);
+            Vector2 far = -Vector2.Scale(parallax, screen) * (float)p.parallaxFar * intensity;
+            Vector2 near = -Vector2.Scale(parallax, screen) * (float)p.parallaxNear * intensity;
+            Vector2 neb = -Vector2.Scale(parallax, screen) * (float)p.parallaxNebula * intensity;
+            // The shader looks the layers up at px + shift, so a shift against the offset is added the other way round.
+            mpb.SetVector(IdParallax, new Vector4(-far.x, -far.y, -near.x, -near.y));
+            farOffsetPx = far;
+
+            bool holding = run && root.Run.holding && !root.Paused && vis.nebulaSwirl;
+            float inSec = Mathf.Max(0.01f, (float)p.nebulaSwirlInSec);
+            swirl = Mathf.MoveTowards(swirl, holding ? 1f : 0f, dt / inSec);
+            float ease = swirl * swirl * (3f - 2f * swirl);
+            Vector2 at = root.GravityWorld * ppu;
+            float radiusPx = (float)(root.Effective.gravityRadius * p.nebulaSwirlReach);
+            mpb.SetVector(IdNebulaShift, new Vector4(-neb.x, -neb.y, (float)p.nebulaSwirlRad * ease * intensity, Mathf.Max(1f, radiusPx)));
+            mpb.SetVector(IdSwirlAt, new Vector4(at.x, at.y, 0f, 0f));
+        }
+
+        Vector2 farOffsetPx;
+
+        /// <summary>
+        /// 26 §12.1 B3: one large, very dim far body in a corner of the screen; with every gate it fades out and the next
+        /// kind fades in. It stays in its corner whatever the world scale and moves with the far stars.
+        /// </summary>
+        void ApplyFarBody(float w, float h, Vector3 c, float ppu)
+        {
+            var vis = root.Visual;
+            float dt = Time.deltaTime;
+            farWanted = vis.farObject ? FarKindFor(root.Meta.unlockedMaxTier) : -1;
+            float fadeSec = Mathf.Max(0.01f, (float)p.farObjectFadeSec * 0.5f);
+            if (farShown != farWanted)
+            {
+                // Out first, then the next one in.
+                farFade = Mathf.MoveTowards(farFade, 0f, dt / fadeSec);
+                if (farFade <= 0f || farShown < 0)
+                {
+                    farShown = farWanted;
+                    farFade = 0f;
+                    if (!loggedFar || farShown >= 0)
+                    {
+                        loggedFar = true;
+                        Debug.Log("[Visual] far body (B3): " + (farShown < 0 ? "off" : FarName(farShown) + " (ring " + root.Meta.unlockedMaxTier + ")"));
+                    }
+                }
+            }
+            else if (farShown >= 0) farFade = Mathf.MoveTowards(farFade, 1f, dt / fadeSec);
+            farSpin += dt * (float)p.farObjectSpinDegPerSec * Mathf.Deg2Rad;
+            if (farShown < 0 || farFade <= 0f)
+            {
+                mpb.SetVector(IdFarObj, new Vector4(0f, 0f, 1f, 0f));
+                return;
+            }
+            // Each kind has its corner and its own way of turning.
+            float radius = (float)p.farObjectSizeShare * h;
+            Vector2 at;
+            float turn;
+            switch (farShown)
+            {
+                case 0: at = new Vector2(0.36f * w, 0.26f * h); turn = 0.5f + farSpin; radius *= 0.55f; break;
+                case 1: at = new Vector2(-0.62f * w, -0.62f * h); turn = 0.35f + 0.08f * Mathf.Sin(farSpin * 0.3f); radius *= 1.1f; break;
+                default: at = new Vector2(-0.33f * w, 0.3f * h); turn = -0.42f + 0.06f * Mathf.Sin(farSpin * 0.5f); radius *= 0.6f; break;
+            }
+            Vector2 centre = (new Vector2(c.x, c.y) + at) * ppu + farOffsetPx;
+            float alpha = (float)p.farObjectAlpha * farFade * farFade * (3f - 2f * farFade);
+            mpb.SetVector(IdFarObj, new Vector4(centre.x, centre.y, radius * ppu, alpha));
+            mpb.SetVector(IdFarObj2, new Vector4(farShown, turn, 0f, 0f));
+        }
+
+        static string FarName(int kind) => kind == 0 ? "spiral galaxy" : kind == 1 ? "edge of a ringed giant planet" : "edge-on galaxy";
 
         BackdropPalette Current()
         {
