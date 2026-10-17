@@ -17,6 +17,11 @@ namespace Incremental
         public const string HudIncome = "이번 런 수입";
         /// <summary>28 §2: the bar at the top of the run screen. {0} = whole seconds left.</summary>
         public const string TimeLeft = "남은 시간 {0}초";
+        /// <summary>29 §5 T1, T3: the line under the time bar while the clock is held, and in the last seconds.</summary>
+        public const string TimeLeftGrace = "남은 시간 {0}초 · 유예";
+        public const string TimeLeftRush = "남은 시간 {0}초 · 수입 ×2";
+        /// <summary>29 §5 C1: {0} = completions in a row, {1} = income bonus in percent.</summary>
+        public const string ChainLabel = "연쇄 {0}  +{1}%";
         public const string Paused = "일시정지";
 
         // Result (11 §4, 13 §3)
@@ -146,7 +151,7 @@ namespace Incremental
             { "stat.spawn_rate.effect", "+{0}/초" },
             { "stat.pull_accel.name", "모으는 힘" },
             { "stat.pull_accel.effect", "+{0}%" },
-            { "stat.sale_mult.name", "판매 비용" },
+            { "stat.sale_mult.name", "판매 가격" },
             { "stat.sale_mult.effect", "+{0}%" },
             { "stat.run_time.name", "판 시간" },
             { "stat.run_time.effect", "+{0}초" },
@@ -177,7 +182,7 @@ namespace Incremental
             { "dust.base", "기본 먼지" },
             { "dust.medium", "중형 먼지" },
             { "dust.large", "대형 먼지" },
-            { "dust.crystal", "결정 먼지" },
+            { "dust.crystal", "광석 먼지" },
             { "dust.interstellar", "성간 먼지" },
 
             // Abilities (24): the name of each AbilityTable row and the one line its unlock node shows. Validate Data

@@ -183,6 +183,9 @@ namespace Incremental
             int ring = root.Meta.unlockedMaxTier;
             float earlySize = EarlyMult(p.earlyDustSizeMult, ring);
             float earlyBright = EarlyMult(p.earlyDustBrightMult, ring) * density;
+            // 29 §5 D4: golden dust, gold and bigger, twinkling (the twinkle follows the effect intensity).
+            var rp = p.rules;
+            Color goldCol = rp != null ? rp.goldColor.linear : Color.yellow;
 
             var job = new QuadJob
             {
@@ -192,6 +195,8 @@ namespace Incremental
                 colA = colA, colB = colB, remnantBright = remnantBright, exciteBright = exciteBright, centerR = centerR,
                 centerR2 = centerR2, centerDim = centerDim, exciteFalloff = exciteFalloff, cap = cap, earlySize = earlySize,
                 earlyBright = earlyBright,
+                goldCol = goldCol, goldBright = rp != null ? (float)rp.goldBright : 1f, goldSize = rp != null ? (float)rp.goldSizeMult : 1f,
+                goldPhase = rp != null ? (float)(Time.time * rp.goldTwinkleHz * Mathf.PI * 2.0) : 0f, goldTwinkle = 0.4f * root.EffectIntensity,
             };
             unsafe
             {
@@ -251,6 +256,8 @@ namespace Incremental
             public float gravR, edgeR, edgeR2;
             public Color colA, colB;
             public float remnantBright, exciteBright, centerR, centerR2, centerDim, exciteFalloff, cap, earlySize, earlyBright;
+            public Color goldCol;
+            public float goldBright, goldSize, goldPhase, goldTwinkle;
 
             public void Execute(int i)
             {
@@ -259,7 +266,8 @@ namespace Incremental
                 Vector2 c = d.pos;
                 float speed = d.vel.magnitude;
                 Vector2 axis = speed > 1e-5f ? d.vel / speed : new Vector2(1f, 0f);
-                float h = halo * d.size * kindSize[kind] * earlySize;
+                bool gold = d.gold > 0f;
+                float h = halo * d.size * kindSize[kind] * earlySize * (gold ? goldSize : 1f);
                 // The smear is how far the dust travels in one "shutter", which is the same distance for every kind.
                 // Multiplying the dust's own size by the speed (14 §5) drew the heavy kinds, up to 8.5x wider than base
                 // dust, as long bars. A kind that has a ribbon does not smear at all: its quad stays the round dust.
@@ -296,15 +304,18 @@ namespace Incremental
                 }
                 // A dust that was just created fades in (GameParams.dustSpawnFadeSec).
                 if (d.born < 1f) b *= d.born;
+                if (gold) b *= goldBright * (1f + goldTwinkle * Mathf.Sin(goldPhase + i * 1.7f));
                 // Brightness 0..2 is stored halved in the 8-bit vertex color; the shader doubles it back.
                 // The alpha channel carries the dust kind's shape id (20 §4), which the shader reads back as 0..255.
                 float k = Mathf.Min(b, cap) * 0.5f;
                 float t = d.tint;
-                var c32 = new Color32(
-                    Byte01(Mathf.LerpUnclamped(colA.r, colB.r, t) * k),
-                    Byte01(Mathf.LerpUnclamped(colA.g, colB.g, t) * k),
-                    Byte01(Mathf.LerpUnclamped(colA.b, colB.b, t) * k),
-                    (byte)kindShape[kind]);
+                var c32 = gold
+                    ? new Color32(Byte01(goldCol.r * k), Byte01(goldCol.g * k), Byte01(goldCol.b * k), (byte)kindShape[kind])
+                    : new Color32(
+                        Byte01(Mathf.LerpUnclamped(colA.r, colB.r, t) * k),
+                        Byte01(Mathf.LerpUnclamped(colA.g, colB.g, t) * k),
+                        Byte01(Mathf.LerpUnclamped(colA.b, colB.b, t) * k),
+                        (byte)kindShape[kind]);
 
                 int v = i * 4;
                 verts[v].pos = new Vector3(c.x - along.x - across.x, c.y - along.y - across.y, 0f);

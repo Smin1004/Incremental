@@ -18,6 +18,8 @@ namespace Incremental.EditorTools
         {
             var celestial = LoadAll<CelestialTable>();
             var nodes = LoadAll<NodeTable>();
+            // 29 Q9: Data/NodeTable_v1.asset is the old tree, kept only to price the save refund; the tree is the other one.
+            nodes.RemoveAll(t => AssetDatabase.GetAssetPath(t).EndsWith("_v1.asset"));
             if (celestial.Count != 1 || nodes.Count != 1)
             {
                 Debug.LogError($"[Validate] expected exactly one CelestialTable and one NodeTable, found {celestial.Count} and {nodes.Count}.");
@@ -42,6 +44,10 @@ namespace Incremental.EditorTools
             var a = abilities[0];
 
             var report = DataValidator.Validate(c, n, gameParams[0], a);
+            // 13th pass B5: the project tree's size, and its line sums beside the v1 tree (29 §3).
+            DataValidator.ValidateTreeSize(n, report);
+            var v1 = AssetDatabase.LoadAssetAtPath<NodeTable>("Assets/Game/Data/NodeTable_v1.asset");
+            Debug.Log("[Validate] line totals, tree v2 against v1 (29 §3):\n" + DataValidator.LineTotals(n, v1));
             foreach (var e in report.Errors)
                 Debug.LogError("[Validate] " + e, e.StartsWith("CelestialTable") ? (Object)c : e.StartsWith("AbilityTable") ? (Object)a : n);
             foreach (var w in report.Warnings) Debug.LogWarning("[Validate] " + w, n);

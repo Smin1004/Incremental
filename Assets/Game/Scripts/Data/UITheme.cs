@@ -268,6 +268,9 @@ namespace Incremental
         [FormerlySerializedAs("staminaFull")] public Color timeFull = new Color(0.72f, 0.88f, 1f, 1f);
         [FormerlySerializedAs("staminaMid")] public Color timeMid = new Color(1f, 0.62f, 0.2f, 1f);
         [FormerlySerializedAs("staminaLow")] public Color timeLow = new Color(1f, 0.27f, 0.22f, 1f);
+        [Tooltip("29 §5: the bar while the clock is held (T1 유예) and in the last seconds that pay double (T3 막판 러시).")]
+        public Color timeGrace = new Color(0.55f, 1f, 0.92f, 1f);
+        public Color timeRush = new Color(1f, 0.82f, 0.32f, 1f);
         [Tooltip("Share of the run's time left where the color starts to turn (full → mid → low) and where it is fully " +
                  "the low color. Below the second it also pulses.")]
         [FormerlySerializedAs("staminaWarnAt")] public float timeWarnAt = 0.5f;

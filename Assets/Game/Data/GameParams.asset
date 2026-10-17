@@ -20,18 +20,18 @@ MonoBehaviour:
   dustRefillBoost: 3
   initialDustClearShare: 0
   gravityRadius: 150
-  gravityGrowthScale: 0.7
+  gravityGrowthScale: 1
   gravityRangePresets:
   - id: now
-    growthScale: 1
+    growthScale: 1.4285714285714286
     crystalRadiusMult: 1.35
     crystalRadiusPerPower: 1
   - id: plan1
-    growthScale: 0.7
+    growthScale: 1
     crystalRadiusMult: 1.2
     crystalRadiusPerPower: 0.5
   - id: plan2
-    growthScale: 0.5
+    growthScale: 0.7142857142857143
     crystalRadiusMult: 1.15
     crystalRadiusPerPower: 0.5
   pullAccel: 600
@@ -47,6 +47,42 @@ MonoBehaviour:
   bodyMinScreenPx: 8
   bodyMinIntervalSec: 0.4
   bundleAt: 3
+  rules:
+    enabled: 1
+    log: 1
+    graceSecPerLevel: 2
+    completeTimeSec: 0.5
+    completeTimeMaxSec: 15
+    rushLastSec: 10
+    rushIncomeMult: 2
+    crystalTimeSec: 2
+    crystalTimeMaxSec: 15
+    fullStartShare:
+    - 0.3
+    - 0.6
+    - 1
+    refillBoostPerLevel: 1
+    goldChancePerLevel: 0.005
+    goldMassMult: 10
+    goldColor: {r: 1, g: 0.8, b: 0.3, a: 1}
+    goldBright: 2.2
+    goldSizeMult: 1.5
+    goldTwinkleHz: 2.5
+    deepHoldStartSec: 2
+    deepHoldRampSec: 4
+    deepHoldMax: 0.2
+    lingerSec: 0.5
+    stillSpeedPx: 40
+    stillPullMult: 1.3
+    chainWindowSec: 1
+    chainStep: 0.05
+    chainMax: 0.5
+    everyNth: 140000000f0000000a000000
+    nthMult: 2
+    firstBodyMult: 5
+    bundleAtCutPerLevel: 0.5
+    resonanceChargeShare: 0.1
+    buffChargeMult: 2
   bundleSizeGrowth: 0.12
   bundleSizeMax: 2
   bundlePopMult: 1.6

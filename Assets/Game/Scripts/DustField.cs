@@ -9,6 +9,8 @@ namespace Incremental
         public Vector2 vel;
         /// <summary>0..1 position between the two dust colors of the palette (render only).</summary>
         public float tint;
+        /// <summary>29 §5 D4: 1 for a golden dust (mass x GameParams.rules.goldMassMult, drawn gold), else 0.</summary>
+        public float gold;
         /// <summary>Size and brightness multipliers, 1 ± dustSizeJitter / dustBrightJitter (render only, 14 §5).</summary>
         public float size;
         public float bright;
@@ -181,6 +183,16 @@ namespace Incremental
         /// system hands it over every tick; 1 changes nothing.
         /// </summary>
         public double MaxSpeedMult { get; set; } = 1.0;
+
+        /// <summary>29 §5 D3: added to GameParams.dustRefillBoost (set at run start).</summary>
+        public double RefillBoostAdd { get; set; }
+
+        /// <summary>29 §5 D4: chance that a new dust is golden, and how many times its mass it weighs (set at run start).</summary>
+        public double GoldChance { get; set; }
+        public double GoldMassMult { get; set; } = 1.0;
+
+        /// <summary>Golden dust captured so far (D4, for logs and checks).</summary>
+        public int GoldCaptured { get; set; }
 
         /// <summary>
         /// 24 §19.1 the inhale: every dust's velocity is multiplied by this once per tick while it is below 1 (the
@@ -493,7 +505,12 @@ namespace Incremental
                 // Capture on the swept segment, not on the end point: a fast dust cannot jump over the capture circle.
                 if (holding && SegmentHitsCircle(from, to, gravity, capR))
                 {
-                    captured += KindMass(d.kind);
+                    if (d.gold > 0f)
+                    {
+                        captured += KindMass(d.kind) * GoldMassMult;
+                        GoldCaptured++;
+                    }
+                    else captured += KindMass(d.kind);
                     CapturedCount++;
                     SwapRemove(i);
                     i--;
@@ -537,7 +554,7 @@ namespace Incremental
             // ability that sweeps the screen clean does not leave it bare for most of the run.
             int cap = (int)s.dustCap;
             float fill = cap > 0 ? Mathf.Clamp01(count / (float)cap) : 1f;
-            SpawnBoost = 1.0 + Math.Max(0.0, p.dustRefillBoost) * (1f - fill);
+            SpawnBoost = 1.0 + Math.Max(0.0, p.dustRefillBoost + RefillBoostAdd) * (1f - fill);
             spawnAcc += s.spawnRate * SpawnBoost * dt;
             while (spawnAcc >= 1.0)
             {
@@ -849,6 +866,8 @@ namespace Incremental
                 tint = (float)rng.NextDouble(),
                 size = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustSizeJitter),
                 bright = 1f + (float)((visualRng.NextDouble() * 2.0 - 1.0) * p.dustBrightJitter),
+                // 29 §5 D4: only rolled while the rule is owned, so the dust RNG runs as before without it.
+                gold = GoldChance > 0 && rng.NextDouble() < GoldChance ? 1f : 0f,
             };
             ClearTrail(index, pos);
         }

@@ -57,6 +57,8 @@ namespace Incremental
         public GameParams gameParams;
         public CelestialTable celestialTable;
         public NodeTable nodeTable;
+        [Tooltip("29 Q9: the v1 skill tree (92 nodes), kept only to price the refund when a v4 save is moved to tree v2.")]
+        public NodeTable nodeTableV1;
         [Tooltip("Special abilities (24). Without it the game runs with none.")]
         public AbilityTable abilityTable;
         [Tooltip("The look of the UI: fonts, palette, shapes, animation times (26 §4).")]
@@ -106,6 +108,8 @@ namespace Incremental
         /// <summary>26 §4: fonts, shape materials and the visual direction the UI is drawn in.</summary>
         public UIStyle Ui { get; private set; }
         public HudView Hud { get; private set; }
+        /// <summary>29 §5: the rule nodes owned this run.</summary>
+        public Rules Rules { get; private set; }
         /// <summary>26 §5.4: the fade between the run, the result and the tree.</summary>
         public ScreenTransition Transition { get; private set; }
         public CursorView Cursor { get; private set; }
@@ -264,7 +268,8 @@ namespace Incremental
             // loop stalls as soon as another window is in front, which breaks unattended bot runs.
             Application.runInBackground = true;
             DataDir = Application.persistentDataPath;
-            Store = new SaveStore(DataDir);
+            Store = new SaveStore(DataDir) { TreeV1 = nodeTableV1 };
+            Rules = new Rules(this);
             Settings = Store.LoadSettings();
             Fmt.Mode = Settings.notation;
             hasFocus = Application.isFocused;
@@ -571,7 +576,7 @@ namespace Incremental
             if (Run != null)
             {
                 Hud.SetIncome(Run.runIncome);
-                Hud.SetTimeLeft(Run.timeLeft, runStartStats.runTimeSec);
+                Hud.SetTimeLeft(Run.timeLeft, runStartStats.runTimeSec, Phase == GamePhase.Run ? Rules.TimeBarMode(Run) : 0);
             }
             bool paused = Paused;
             if (paused != shownPaused)
@@ -640,6 +645,12 @@ namespace Incremental
             bodyGapLeft = 0;
             LastBundleCount = 0;
             LastBundleAt = -1;
+            // 29 §5: the rule nodes owned for this run, and what they do to the dust from the start.
+            Rules.BeginRun(Meta, nodeTable);
+            Dust.RefillBoostAdd = Rules.RefillBoostAdd;
+            Dust.GoldChance = Rules.GoldChance;
+            Dust.GoldMassMult = gameParams.rules.goldMassMult;
+            Dust.GoldCaptured = 0;
 
             // 22 §6: the run is drawn at the world scale, and coming from the result screen the camera is not there
             // yet. It goes on before anything is placed, so the pointer is read and the dust laid out for the area the
@@ -663,7 +674,7 @@ namespace Incremental
             GravityWorld = middle;
             UnityEngine.Debug.Log("[Run] start: gravity source in the middle of the screen" + (warp ? ", pointer moved there" : ", pointer left where it is") +
                 "; starting dust " + (int)Effective.dustInitial + ", clear of " + gameParams.initialDustClearShare.ToString("0.##") + " gravity radius");
-            Dust.Reset((int)Effective.dustInitial, CameraArea(), GravityWorld, Effective);
+            Dust.Reset((int)Rules.StartDust(Effective.dustInitial, Effective.dustCap), CameraArea(), GravityWorld, Effective);
             Planets.Clear();
             pendingSaveTimer = 0;
             Save();
@@ -679,6 +690,8 @@ namespace Incremental
             Abilities.Amplify(ref s);
             abilityWatch.Stop();
             abilityTickMsAcc += abilityWatch.Elapsed.TotalMilliseconds;
+            // 29 §5 G1, G3: the rules' share on top of the buffs.
+            Rules.Amplify(ref s);
             Effective = s;
             if (EndingActive)
             {
@@ -695,8 +708,11 @@ namespace Incremental
             bool holding = ps.pressed;
             Run.holding = holding;
             Run.elapsed += dt;
-            // 28 §2: the clock runs down the same whether the player holds or not.
-            bool timeUp = Session.TickClock(Run, dt);
+            Rules.Track(dt, holding, GravityWorld);
+            // 28 §2: the clock runs down the same whether the player holds or not; 29 §5 T1 holds it at the start.
+            bool timeUp = !Rules.InGrace(Run) && Session.TickClock(Run, dt);
+            // 29 §5 G2: the gravity keeps pulling for a moment after a release.
+            bool dustHolding = Rules.DustHolding(dt, wasHolding, holding);
 
             dustWatch.Restart();
             // 24: the abilities go first, so what they do to the dust this tick is part of this same dust tick, and
@@ -705,7 +721,7 @@ namespace Incremental
             Abilities.Tick(dt, holding, s);
             abilityWatch.Stop();
             abilityTickMsAcc += abilityWatch.Elapsed.TotalMilliseconds;
-            double captured = Dust.Tick(dt, CameraArea(), GravityWorld, holding, s, Abilities.Forces, Abilities.ForceCount);
+            double captured = Dust.Tick(dt, CameraArea(), GravityWorld, dustHolding, s, Abilities.Forces, Abilities.ForceCount);
             dustWatch.Stop();
             dustTickMsAcc += dustWatch.Elapsed.TotalMilliseconds;
             if (captured > 0) Run.mass += captured * s.dustMass;
@@ -832,7 +848,7 @@ namespace Incremental
 
         void DropFragment(CelestialTier tier, in EffectiveStats s)
         {
-            double income = Stats.FragmentIncome(gameParams, tier, s);
+            double income = Stats.FragmentIncome(gameParams, tier, s) * Rules.RushMult(Run);
             Run.runIncome += income;
             Run.fragmentIncome += income;
             int idx = tier.tier - 1;
@@ -869,7 +885,8 @@ namespace Incremental
             if (th > 0 && oneAtATime)
             {
                 // 24 §21.3 묶음 완성: mass that has piled up to bundleAt thresholds becomes one body worth all of them.
-                if (gameParams.bundleAt > 0 && Run.mass >= th * gameParams.bundleAt)
+                double bundleAt = Rules.BundleAt(gameParams.bundleAt);
+                if (gameParams.bundleAt > 0 && Run.mass >= th * bundleAt)
                 {
                     count = Math.Max(1.0, Math.Floor(Run.mass / th));
                     bundle = count > 1;
@@ -878,7 +895,10 @@ namespace Incremental
                 bodyGapLeft = gameParams.bodyMinIntervalSec;
             }
             else if (th > 0) count = Math.Max(1.0, Math.Floor(Run.mass / th));
-            Run.runIncome += count * Stats.SaleIncome(tier, Effective);
+            // 29 §5: C1 chain, C2 every n-th (count x2, shown as a bundle), C3 first body, T2 time, T3 rush.
+            double ruleMult = Rules.OnComplete(Run, tier.tier, ref count, out bool nth);
+            if (nth) bundle = true;
+            Run.runIncome += count * Stats.SaleIncome(tier, Effective) * ruleMult;
             int idx = tier.tier - 1;
             if (idx >= 0 && idx < Run.planetCounts.Length)
                 Run.planetCounts[idx] = (int)Math.Min((double)int.MaxValue, Run.planetCounts[idx] + count);
@@ -928,6 +948,7 @@ namespace Incremental
         /// </summary>
         void EndRun(string reason, bool showResult)
         {
+            Rules.EndRun(Dust.GoldCaptured);
             var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels,
                 runStartStats, reason, Run.fragmentCounts, Run.fragmentIncome);
             Session.ApplyRunEnd(Meta, rec);

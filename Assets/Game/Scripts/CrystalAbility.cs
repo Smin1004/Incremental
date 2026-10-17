@@ -348,17 +348,22 @@ namespace Incremental
             // 24 §21.2: evolved, a crystal taken while the buff is on adds the multipliers once more.
             int most = Level.evolved ? Math.Max(1, d.resonanceMaxStacks) : 1;
             stacks = again ? Math.Min(most, stacks + 1) : 1;
-            buffLeft = Math.Max(0.0, d.buffSec);
+            buffLeft = Math.Max(0.0, d.BuffSec(Level));
+            // 29 §5 T5: eating a crystal can add run time.
+            root.Rules.OnCrystalTaken(root.Run);
             flashAge = 0;
             // 25 §3: the moment it is taken, the whole field answers.
             root.Dust.ExciteAll();
             double radiusMult = 1.0 + (RadiusMult() - 1.0) * stacks;
             double pullMult = 1.0 + (d.PullMult(Level) - 1.0) * stacks;
             double speedMult = 1.0 + (d.speedMult - 1.0) * stacks;
-            Log("absorbed at " + RunClock + ": amplified for " + d.buffSec.ToString("0.##") + "s" + (stacks > 1 ? " at " + stacks + " stacks" : "") +
+            Log("absorbed at " + RunClock + ": amplified for " + d.BuffSec(Level).ToString("0.##") + "s" + (stacks > 1 ? " at " + stacks + " stacks" : "") +
                 ", gravity radius x" + radiusMult.ToString("0.##") + " (" + (before * radiusMult).ToString("F0") + " px), pull x" +
                 pullMult.ToString("0.##") + ", dust speed x" + speedMult.ToString("0.##") + (again ? " (the clock started over)" : ""));
         }
+
+        /// <summary>29 §5 A2: the buff is on.</summary>
+        public bool Buffed => buffLeft > 0;
 
         /// <summary>The radius multiplier at this level: the row's, or the debug key K's (24 §23.2).</summary>
         double RadiusMult()
@@ -383,7 +388,7 @@ namespace Incremental
 
         /// <summary>While amplified the charge arc runs down with the buff instead of up with the charge.</summary>
         public override float ArcShare(double cooldown) =>
-            buffLeft > 0 ? Mathf.Clamp01((float)(buffLeft / Math.Max(1e-3, D.buffSec))) : base.ArcShare(cooldown);
+            buffLeft > 0 ? Mathf.Clamp01((float)(buffLeft / Math.Max(1e-3, D.BuffSec(Level)))) : base.ArcShare(cooldown);
 
         /// <summary>
         /// The gravity ring: gold while amplified, deeper with every stack, and a gold flash the moment a crystal is

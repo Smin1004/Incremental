@@ -96,6 +96,12 @@ namespace Incremental
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0f, -theme.timeTextGapPx),
                 new Vector2(theme.timeBarSize.x, theme.sizeTiny * theme.lineHeight));
 
+            // 29 §5 C1: the chain count, under the time bar's line.
+            chainText = UIBuilder.CreateText("Chain", timeBar.transform, ui.FontBold, theme.sizeBody, TextAnchor.UpperCenter,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0f, -theme.timeTextGapPx - theme.sizeTiny * theme.lineHeight - 4f),
+                new Vector2(theme.timeBarSize.x, theme.sizeBody * theme.lineHeight));
+            chainText.gameObject.SetActive(false);
+
             centerText = UIBuilder.CreateText("Center", root, Font, theme.sizeTitle, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200f, 200f));
             debugText = UIBuilder.CreateText("Debug", root, Font, theme.sizeSmall, TextAnchor.LowerLeft,
@@ -291,6 +297,7 @@ namespace Incremental
         {
             float dt = Time.deltaTime;
             TickIncome(dt);
+            TickChain(dt);
             if (toastAge < ToastSec)
             {
                 toastAge += Time.unscaledDeltaTime;
@@ -392,22 +399,58 @@ namespace Incremental
         }
 
         /// <summary>28 §2: the time bar, <paramref name="left"/> of <paramref name="total"/> seconds, and "남은 시간 N초" under it.</summary>
-        public void SetTimeLeft(double left, double total)
+        public void SetTimeLeft(double left, double total) => SetTimeLeft(left, total, 0);
+
+        /// <summary>
+        /// 29 §5: <paramref name="mode"/> 1 = the clock is held (T1 유예), 2 = the last seconds pay double (T3 막판 러시):
+        /// the bar takes that color and the line under it says so.
+        /// </summary>
+        public void SetTimeLeft(double left, double total, int mode)
         {
             float share = total > 0 ? Mathf.Clamp01((float)(left / total)) : 0f;
-            float pulse = share <= theme.timeLowAt ? theme.TimePulse(Time.time, game.EffectIntensity) : 0f;
+            float pulse = share <= theme.timeLowAt && mode == 0 ? theme.TimePulse(Time.time, game.EffectIntensity) : 0f;
             timeBar.Fill = share;
-            timeBar.color = theme.TimeColor(share, pulse);
-            timeBar.State = pulse;
+            timeBar.color = mode == 1 ? theme.timeGrace : mode == 2 ? theme.timeRush : theme.TimeColor(share, pulse);
+            timeBar.State = mode == 2 ? 0.5f + 0.5f * Mathf.Sin(Time.time * Mathf.PI * 2f * 2f) * game.EffectIntensity : pulse;
             int secs = (int)System.Math.Ceiling(System.Math.Max(0.0, left));
-            if (secs != timeShown)
+            if (secs != timeShown || mode != timeMode)
             {
                 timeShown = secs;
-                timeText.text = string.Format(UIStrings.TimeLeft, secs);
+                timeMode = mode;
+                string fmt = mode == 1 ? UIStrings.TimeLeftGrace : mode == 2 ? UIStrings.TimeLeftRush : UIStrings.TimeLeft;
+                timeText.text = string.Format(fmt, secs);
             }
         }
 
         int timeShown = -1;
+        int timeMode;
+
+        /// <summary>29 §5 C1: the chain count under the time bar, fading out a moment after the last completion.</summary>
+        public void ShowChain(int chain, double bonus)
+        {
+            if (chainText == null) return;
+            chainText.text = string.Format(UIStrings.ChainLabel, chain, (bonus * 100).ToString("0"));
+            chainText.color = Color.Lerp(ui.Direction.text, game.gameParams.bundleColorGold, Mathf.Clamp01(chain / 10f));
+            chainAge = 0f;
+            chainText.transform.localScale = Vector3.one * (1f + 0.35f * game.EffectIntensity);
+            chainText.gameObject.SetActive(true);
+        }
+
+        TMP_Text chainText;
+        float chainAge = float.MaxValue;
+
+        void TickChain(float dt)
+        {
+            if (chainText == null || !chainText.gameObject.activeSelf) return;
+            chainAge += dt;
+            float life = (float)(game.gameParams.rules.chainWindowSec + 0.6);
+            float k = Mathf.Clamp01(chainAge / 0.2f);
+            chainText.transform.localScale = Vector3.one * Mathf.Lerp(1f + 0.35f * game.EffectIntensity, 1f, k);
+            var c = chainText.color;
+            c.a = Mathf.Clamp01((life - chainAge) / 0.4f);
+            chainText.color = c;
+            if (chainAge >= life) chainText.gameObject.SetActive(false);
+        }
 
         public void SetCenter(string text) => centerText.text = text ?? string.Empty;
         public void SetDebug(string text) => debugText.text = text ?? string.Empty;

@@ -12,8 +12,15 @@ namespace Incremental
         /// <summary>
         /// 1: flat shop (week 2). 2: skill tree nodes (12 §3). 3: the dust kind axis (20 §4). 4: time-based runs (28 §2):
         /// the stamina fields are gone from the run stats and a run that ran out ends as "time" instead of "stamina".
+        /// 5: skill tree v2 (29, Q9): the tree is reset and what was spent on it is given back.
         /// </summary>
-        public const int CurrentVersion = 4;
+        public const int CurrentVersion = 5;
+
+        /// <summary>29 Q9: saves below this hold tree v1 levels, which v5 resets (and refunds).</summary>
+        public const int FirstTreeV2Version = 5;
+
+        /// <summary>True when migrating this version resets the skill tree (SaveStore keeps a copy of the file first).</summary>
+        public static bool ResetsTree(int version) => version >= FirstKeptVersion && version < FirstTreeV2Version;
 
         /// <summary>
         /// Versions below this are replaced by a new game instead of being converted: v1 levels were per stat, v2 levels
@@ -25,7 +32,11 @@ namespace Incremental
 
         public static bool ResetsProgress(int version) => version < FirstKeptVersion;
 
-        public static SaveData Migrate(SaveData d)
+        /// <param name="treeV1">
+        /// The v1 skill tree (Data/NodeTable_v1.asset): what the v4 node levels cost, for the v5 refund. Without it the
+        /// tree is still reset, and nothing is given back.
+        /// </param>
+        public static SaveData Migrate(SaveData d, NodeTable treeV1 = null)
         {
             if (d == null) return null;
             if (d.version < 1) d.version = 1;
@@ -44,7 +55,12 @@ namespace Incremental
                 ToV4(d);
                 d.version = 4;
             }
-            // Future steps: if (d.version == 4) { ...; d.version = 5; }
+            if (d.version == 4)
+            {
+                ToV5(d, treeV1);
+                d.version = 5;
+            }
+            // Future steps: if (d.version == 5) { ...; d.version = 6; }
 
             if (d.version > CurrentVersion)
                 Debug.LogWarning($"[Save] save version {d.version} is newer than this build ({CurrentVersion}); loading what is known.");
@@ -72,6 +88,46 @@ namespace Incremental
             // 28 §4: the play clock did not exist; the run time is the closest thing the save has.
             if (d.meta != null && d.meta.playClockSec <= 0) d.meta.playClockSec = d.meta.totalPlayTimeSec;
             Debug.Log($"[Save] v3 -> v4 (time-based runs, 28 §2): {renamed} stamina-ended runs in the history renamed to \"{EndReason.TimeUp}\"");
+        }
+
+        /// <summary>
+        /// v4 → v5 (29 Q9): skill tree v2. Every node level of the v1 tree is given back at what it cost, gates included,
+        /// priced with the v1 table (its ring cost multipliers too), and the tree starts empty: the tiers unlocked
+        /// follow the gate levels, so the player is back to ring 1 with the money to buy the new tree up again. Records,
+        /// history, totals and the ending stay. Ids the v1 table does not know (none in a real save) refund nothing.
+        /// </summary>
+        public static double RefundV1(MetaState m, NodeTable treeV1, out int levels)
+        {
+            levels = 0;
+            double refund = 0;
+            if (m == null || m.upgradeLevels == null || treeV1 == null) return 0;
+            foreach (var l in m.upgradeLevels)
+            {
+                if (l == null || l.level <= 0) continue;
+                var n = treeV1.Get(l.id);
+                if (n == null) continue;
+                int owned = n.maxLevel > 0 ? System.Math.Min(l.level, n.maxLevel) : l.level;
+                for (int k = 0; k < owned; k++) refund += Stats.CostCeil(treeV1, n, k);
+                levels += owned;
+            }
+            return refund;
+        }
+
+        static void ToV5(SaveData d, NodeTable treeV1)
+        {
+            var m = d.meta;
+            if (m == null) return;
+            double before = m.currency;
+            double refund = RefundV1(m, treeV1, out int levels);
+            int nodes = m.upgradeLevels != null ? m.upgradeLevels.Count : 0;
+            m.currency += refund;
+            if (m.upgradeLevels != null) m.upgradeLevels.Clear();
+            m.unlockedMaxTier = 1;
+            // A run left pending started under the old tree; its start levels name v1 nodes and are only a record.
+            if (treeV1 == null)
+                Debug.LogWarning("[Save] v4 -> v5 (skill tree v2, 29): no v1 tree table to price the refund with; the tree is reset and nothing is given back.");
+            Debug.Log($"[Save] v4 -> v5 (skill tree v2, 29 Q9): tree reset, {nodes} nodes / {levels} levels refunded for " +
+                      $"{refund:F0} ({Fmt.Num(refund)}); currency {Fmt.Num(before)} -> {Fmt.Num(m.currency)}");
         }
 
         /// <summary>Replaces missing collections with empty ones and clamps impossible values.</summary>

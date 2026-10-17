@@ -40,6 +40,8 @@ namespace Incremental
         public double fragChance;
         /// <summary>20 §5: fragments only come from tiers up to unlockedMaxTier − this (never below tier 1).</summary>
         public int fragOffset;
+        /// <summary>29 §3.3: the dust's top speed is GameParams.dustMaxSpeed × this (1 + the dust_max_speed nodes).</summary>
+        public double dustMaxSpeedMult;
 
         /// <summary>Share of spawned dust of that kind index, 0 when it is out of range (a save written before 20 §4).</summary>
         public double KindChance(int index) =>
@@ -64,7 +66,7 @@ namespace Incremental
         public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double growthScale)
         {
             double spawn = 0, pull = 0, sale = 0, runTime = 0, threshold = 0, cap = 0, radius = 0, start = 0, follow = 0;
-            double mass = 1, frag = 0, fragRange = 0;
+            double mass = 1, frag = 0, fragRange = 0, dustSpeed = 0;
             // 20 §4: extra share per dust kind from its chance node; the kind only appears once its unlock node is owned.
             int kinds = p.DustKindCount;
             var kindAdd = kinds > 0 ? new double[kinds] : System.Array.Empty<double>();
@@ -98,6 +100,7 @@ namespace Incremental
                     case StatIds.FragUnlock:
                     case StatIds.FragChance: frag += add; break;
                     case StatIds.FragOffset: fragRange += add; break;
+                    case StatIds.DustMaxSpeed: dustSpeed += add; break;
                 }
             }
 
@@ -118,6 +121,7 @@ namespace Incremental
                 // 24 §23.2: the radius nodes count for gravityGrowthScale of what they say, so ring 1 stays where it was.
                 gravityRadius = p.gravityRadius * (1.0 + radius * Math.Max(0.0, growthScale)),
                 followSpeedPx = p.followSpeedPx * (1.0 + follow),
+                dustMaxSpeedMult = 1.0 + dustSpeed,
             };
             // The starting dust follows the area for the same reason: without it a late run would open on an empty
             // world and take longer than the run itself to fill up.
@@ -285,7 +289,8 @@ namespace Incremental
             statId == StatIds.PullAccel || statId == StatIds.SaleMult || statId == StatIds.ThresholdMult ||
             statId == StatIds.GravityRadius || statId == StatIds.FollowSpeed ||
             statId == StatIds.DustChance || statId == StatIds.FragUnlock || statId == StatIds.FragChance ||
-            statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown || statId == StatIds.AbilityAmount;
+            statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown || statId == StatIds.AbilityAmount ||
+            statId == StatIds.DustMaxSpeed;
 
         /// <summary>Number substituted into the stat.&lt;id&gt;.effect string: percent for fraction effects, raw otherwise.</summary>
         public static double EffectDisplayNumber(NodeDef n) =>

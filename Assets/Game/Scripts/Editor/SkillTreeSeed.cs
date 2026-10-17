@@ -251,9 +251,8 @@ namespace Incremental.EditorTools
             double[] pull = { 0, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6 };
             Line(n, c, "pull", StatIds.PullAccel, 0f, 1, 10, 5, r => pull[r], r => r == 1 ? null : "pull_r" + (r - 1));
 
-            // v1 radius 0.2/0.2/0.28/0.28/0.34 in the even rings (1.3). Step 1 keeps the v1 sum; B1 puts × 0.7 here and
-            // sets gravityGrowthScale to 1.
-            double[] radius = { 0, 0, 0.14, 0.10, 0.10, 0.13, 0.14, 0.14, 0.16, 0.18, 0.21 };
+            // v1 radius 0.2/0.2/0.28/0.28/0.34 in the even rings (1.3) x 0.7 (24 §23.2, gravityGrowthScale is 1 now) = 0.91.
+            double[] radius = { 0, 0, 0.098, 0.07, 0.07, 0.091, 0.098, 0.098, 0.112, 0.126, 0.147 };
             Line(n, c, "radius", StatIds.GravityRadius, +Side, 2, 10, 5, r => radius[r], r => r == 2 ? "pull_r1" : "radius_r" + (r - 1));
 
             // 22 §3 follow: +15%p per v1 node, now ×3.

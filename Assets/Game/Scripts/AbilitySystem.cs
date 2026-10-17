@@ -82,6 +82,29 @@ namespace Incremental
             }
         }
 
+        /// <summary>29 §5 A2: how fast <paramref name="a"/> charges this tick.</summary>
+        public double ChargeRate(Ability a)
+        {
+            var crystal = Get("crystal") as CrystalAbility;
+            return root.Rules != null ? root.Rules.ChargeRate(a, crystal != null && crystal.Buffed) : 1.0;
+        }
+
+        /// <summary>29 §5 A1: one ability fired; the others gain a share of their cooldown.</summary>
+        public void OnTriggered(Ability from)
+        {
+            double share = root.Rules != null ? root.Rules.ResonanceShare : 0;
+            if (share <= 0) return;
+            int others = 0;
+            for (int i = 0; i < abilities.Length; i++)
+            {
+                var a = abilities[i];
+                if (a == null || a == from || !a.Level.unlocked) continue;
+                a.AddChargeShare(share);
+                others++;
+            }
+            root.Rules.LogResonance(from, others);
+        }
+
         /// <summary>The ability of the table row with this id, or null (captures and checks).</summary>
         public Ability Get(string id)
         {
@@ -96,7 +119,8 @@ namespace Incremental
         /// </summary>
         public void Amplify(ref EffectiveStats s)
         {
-            double speed = 1.0;
+            // 29 §3.3: the dust_max_speed nodes, then the abilities' buffs on top.
+            double speed = s.dustMaxSpeedMult > 0 ? s.dustMaxSpeedMult : 1.0;
             for (int i = 0; i < abilities.Length; i++)
             {
                 var a = abilities[i];

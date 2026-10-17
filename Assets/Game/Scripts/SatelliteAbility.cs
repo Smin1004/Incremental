@@ -91,8 +91,10 @@ namespace Incremental
             if (count == 0) return;
 
             // The ellipse from its nearest and farthest points (24 §16.2), in gravity radii.
-            double near = Math.Max(1e-3, d.periapsisShare);
-            double far = Math.Max(near, d.apoapsisShare);
+            // 29 §3.5: the orbit size nodes scale the whole ellipse.
+            double orbit = d.OrbitScale(Level);
+            double near = Math.Max(1e-3, d.periapsisShare * orbit);
+            double far = Math.Max(near, d.apoapsisShare * orbit);
             eccentricity = (far - near) / (far + near);
             semiLatus = near * (1.0 + eccentricity);
             double a = (near + far) * 0.5;

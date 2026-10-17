@@ -179,6 +179,8 @@ namespace Incremental
         [Tooltip("Its farthest point, as a share of the gravity radius: outside the ring, where the gravity source does not " +
                  "reach and the satellite lingers. Equal to periapsisShare = a circle.")]
         public double apoapsisShare = 2.2;
+        [Tooltip("29 §3.5 궤도 크기: each ability_range level makes the orbit (both its nearest and farthest points) this share larger.")]
+        public double orbitPerRange = 0.1;
         [Tooltip("Seconds per orbit. Counter-clockwise, like the vortex. The satellite sweeps equal areas in equal times, " +
                  "so most of these seconds are spent far out.")]
         public double orbitPeriodSec = 5;
@@ -234,12 +236,16 @@ namespace Incremental
         /// <summary>The pull share after the ability_power nodes.</summary>
         public double PullShare(in AbilityLevel lv) => pullShare * (1.0 + lv.power);
 
+        /// <summary>29 §3.5: how much larger the ability_range nodes make the orbit (1 = as unlocked).</summary>
+        public double OrbitScale(in AbilityLevel lv) => 1.0 + Math.Max(0.0, lv.range) * orbitPerRange;
+
         /// <summary>24 §18.1: true when the core tows at all.</summary>
         public bool Tows => towRadiusShare > 0 && towRate > 0;
 
         public override Ability CreateRuntime() => new SatelliteAbility();
 
-        public override bool Uses(string statId) => statId == StatIds.AbilityCount || statId == StatIds.AbilityPower;
+        public override bool Uses(string statId) =>
+            statId == StatIds.AbilityCount || statId == StatIds.AbilityPower || statId == StatIds.AbilityRange;
 
         public override void Check(in AbilityLevel full, CelestialTable c, ValidationReport r)
         {
@@ -250,6 +256,7 @@ namespace Incremental
                              "Either raise the ceiling after measuring, or lower the count nodes.");
             if (!(periapsisShare > 0) || apoapsisShare < periapsisShare)
                 r.Errors.Add(Where + " needs 0 < periapsisShare <= apoapsisShare (24 §16.2); at 0 the orbit goes through the gravity source.");
+            if (orbitPerRange < 0) r.Errors.Add(Where + " orbitPerRange must be >= 0.");
             if (!(orbitPeriodSec > 0)) r.Errors.Add(Where + " orbitPeriodSec must be > 0.");
             if (!(pullRadiusShare > 0)) r.Errors.Add(Where + " pullRadiusShare must be > 0.");
             if (pullShare < 0) r.Errors.Add(Where + " pullShare must be >= 0.");
@@ -542,12 +549,16 @@ namespace Incremental
         /// <summary>The pull multiplier after the ability_power nodes.</summary>
         public double PullMult(in AbilityLevel lv) => pullMult + Math.Max(0.0, lv.power) * pullPerPower;
 
+        /// <summary>29 §3.5: the buff's length after the ability_duration nodes (버프 지속).</summary>
+        public double BuffSec(in AbilityLevel lv) => buffSec + Math.Max(0.0, lv.duration);
+
         /// <summary>24 §21.2 (10/8): evolved, a crystal comes every resonanceCooldownSec of holding instead of cooldownSec.</summary>
         public override double BaseCooldown(in AbilityLevel lv) => lv.evolved ? resonanceCooldownSec : cooldownSec;
 
         public override Ability CreateRuntime() => new CrystalAbility();
 
-        public override bool Uses(string statId) => statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown;
+        public override bool Uses(string statId) =>
+            statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown || statId == StatIds.AbilityDuration;
 
         public override void Check(in AbilityLevel full, CelestialTable c, ValidationReport r)
         {

@@ -20,6 +20,76 @@ namespace Incremental
         /// <summary>Two nodes of the same ring closer than this (degrees) overlap in the tree view.</summary>
         public const float MinAngleGapDeg = 5f;
 
+        /// <summary>29 Q3: the number of nodes tree v2 aims for.</summary>
+        public const int TreeMinNodes = 140, TreeMaxNodes = 160;
+
+        /// <summary>
+        /// 29 Q3, 13th pass B5: the project tree has 140~160 nodes. Only for the project's table (the small test tables
+        /// of the EditMode tests are not trees of that size).
+        /// </summary>
+        public static void ValidateTreeSize(NodeTable t, ValidationReport r)
+        {
+            int count = 0;
+            foreach (var n in t.nodes) if (n != null && n.enabled) count++;
+            if (count < TreeMinNodes || count > TreeMaxNodes)
+                r.Errors.Add($"NodeTable: {count} nodes, outside the {TreeMinNodes}~{TreeMaxNodes} of 29 Q3.");
+        }
+
+        /// <summary>
+        /// 13th pass B5: what each line of the tree adds up to with every node at its last level, beside the same line of
+        /// the v1 tree (29 §3: the sums stay the same, except run time and radius). One markdown table. A line is a stat,
+        /// per dust kind or ability where the stat names one; dust_mass multiplies. Endless nodes are listed per level.
+        /// </summary>
+        public static string LineTotals(NodeTable now, NodeTable v1)
+        {
+            var keys = new List<string>();
+            var a = Totals(now, keys);
+            var b = v1 != null ? Totals(v1, keys) : new Dictionary<string, double[]>();
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("| 줄 | v1 합 | v2 합 | v2/v1 | v2 노드·레벨 | 끝없음 (레벨당) v1 / v2 |");
+            sb.AppendLine("|---|---|---|---|---|---|");
+            foreach (var k in keys)
+            {
+                a.TryGetValue(k, out var x);
+                b.TryGetValue(k, out var y);
+                double xs = x != null ? x[0] : 0, ys = y != null ? y[0] : 0;
+                string ratio = ys != 0 && xs != 0 ? (k.StartsWith(StatIds.DustMass) ? (Math.Log(xs) / Math.Log(Math.Max(1.000001, ys))).ToString("0.00") : (xs / ys).ToString("0.00")) : "-";
+                sb.Append("| ").Append(k).Append(" | ").Append(y != null ? Num(ys) : "-").Append(" | ").Append(x != null ? Num(xs) : "-")
+                  .Append(" | ").Append(ratio).Append(" | ").Append(x != null ? x[1] + "·" + x[2] : "-")
+                  .Append(" | ").Append(y != null && y[3] > 0 ? Num(y[3]) : "-").Append(" / ").Append(x != null && x[3] > 0 ? Num(x[3]) : "-").AppendLine(" |");
+            }
+            return sb.ToString();
+        }
+
+        static string Num(double v) => Math.Abs(v) >= 100 ? v.ToString("0") : v.ToString("0.###");
+
+        /// <summary>Per line: [0] capped sum (product for dust_mass), [1] nodes, [2] levels, [3] endless per level.</summary>
+        static Dictionary<string, double[]> Totals(NodeTable t, List<string> keys)
+        {
+            var d = new Dictionary<string, double[]>();
+            foreach (var n in t.nodes)
+            {
+                if (n == null || !n.enabled || n.kind != NodeKind.Stat) continue;
+                string k = n.statId + (StatIds.NeedsAbility(n.statId) ? " " + n.abilityId : StatIds.NeedsDustKind(n.statId) ? " " + n.dustKindId : string.Empty);
+                if (!d.TryGetValue(k, out var v))
+                {
+                    v = new double[] { n.statId == StatIds.DustMass ? 1 : 0, 0, 0, 0 };
+                    d[k] = v;
+                    if (!keys.Contains(k)) keys.Add(k);
+                }
+                if (n.maxLevel <= 0)
+                {
+                    v[3] += n.effectPerLevel;
+                    continue;
+                }
+                if (n.statId == StatIds.DustMass) v[0] *= Math.Pow(n.effectPerLevel, n.maxLevel);
+                else v[0] += n.effectPerLevel * n.maxLevel;
+                v[1] += 1;
+                v[2] += n.maxLevel;
+            }
+            return d;
+        }
+
         /// <summary>
         /// With <paramref name="p"/> the dust kind nodes are checked against GameParams.dustKinds too (20 §4); without it
         /// (the small test tables) that part is skipped. The same goes for <paramref name="a"/> and the ability nodes
@@ -316,6 +386,7 @@ namespace Incremental
                 return r;
             }
             ValidateRunTime(p, r);
+            ValidateRuleParams(p, r);
             ValidateExposure(p, r);
             ValidatePull(p, r);
             ValidateDustKinds(p, r);
@@ -720,6 +791,33 @@ namespace Incremental
             }
         }
 
+        /// <summary>29 §5: the rule numbers. Only what would break a rule is an error; the values are the balance pass's.</summary>
+        static void ValidateRuleParams(GameParams p, ValidationReport r)
+        {
+            var q = p.rules;
+            if (q == null)
+            {
+                r.Errors.Add("GameParams.rules is missing (29 §5).");
+                return;
+            }
+            if (q.graceSecPerLevel < 0 || q.completeTimeSec < 0 || q.completeTimeMaxSec < 0 || q.crystalTimeSec < 0 || q.crystalTimeMaxSec < 0 || q.lingerSec < 0)
+                r.Errors.Add("GameParams.rules: seconds must be >= 0.");
+            if (q.rushLastSec < 0 || q.rushIncomeMult < 1) r.Errors.Add("GameParams.rules: rushLastSec >= 0 and rushIncomeMult >= 1 (T3).");
+            if (q.fullStartShare == null || q.fullStartShare.Length == 0) r.Errors.Add("GameParams.rules.fullStartShare: needs one share per D1 level.");
+            else foreach (var s in q.fullStartShare) if (s < 0 || s > 1) r.Errors.Add("GameParams.rules.fullStartShare: shares are 0..1 of the dust cap (D1).");
+            if (q.goldChancePerLevel < 0 || q.goldChancePerLevel > 0.2 || q.goldMassMult < 1)
+                r.Errors.Add("GameParams.rules: goldChancePerLevel within 0..0.2 and goldMassMult >= 1 (D4).");
+            if (q.deepHoldStartSec < 0 || q.deepHoldRampSec < 0 || q.deepHoldMax < 0) r.Errors.Add("GameParams.rules: G1 values must be >= 0.");
+            if (q.stillSpeedPx < 0 || q.stillPullMult < 1) r.Errors.Add("GameParams.rules: stillSpeedPx >= 0 and stillPullMult >= 1 (G3).");
+            if (q.chainWindowSec <= 0 || q.chainStep < 0 || q.chainMax < 0) r.Errors.Add("GameParams.rules: chainWindowSec > 0, chainStep and chainMax >= 0 (C1).");
+            if (q.everyNth == null || q.everyNth.Length == 0) r.Errors.Add("GameParams.rules.everyNth: needs one n per C2 level.");
+            else foreach (var n in q.everyNth) if (n < 2) r.Errors.Add("GameParams.rules.everyNth: every n must be >= 2 (C2).");
+            if (q.nthMult < 1 || q.firstBodyMult < 1) r.Errors.Add("GameParams.rules: nthMult and firstBodyMult must be >= 1 (C2, C3).");
+            if (q.bundleAtCutPerLevel < 0) r.Errors.Add("GameParams.rules.bundleAtCutPerLevel must be >= 0 (C4).");
+            if (q.resonanceChargeShare < 0 || q.resonanceChargeShare > 1 || q.buffChargeMult < 1)
+                r.Errors.Add("GameParams.rules: resonanceChargeShare within 0..1 and buffChargeMult >= 1 (A1, A2).");
+        }
+
         // 29 §5: a rule node names its rule, which has a name and a line in UIStrings, and has a level cap.
         static void ValidateRules(NodeTable t, ValidationReport r)
         {
@@ -768,6 +866,8 @@ namespace Incremental
                 {
                     if (!ids.Contains(p)) r.Errors.Add($"NodeTable: '{n.id}' has prereq '{p}', which does not exist.");
                     else if (p == n.id) r.Errors.Add($"NodeTable: '{n.id}' lists itself as a prereq.");
+                    else if (t.Get(p) != null && t.Get(p).minTier > n.minTier)
+                        r.Errors.Add($"NodeTable: '{n.id}' (ring {n.minTier}) needs '{p}' of a later ring ({t.Get(p).minTier}).");
                 }
             }
 

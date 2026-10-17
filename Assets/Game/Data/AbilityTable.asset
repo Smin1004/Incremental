@@ -63,6 +63,7 @@ MonoBehaviour:
     maxCount: 4
     periapsisShare: 0.5
     apoapsisShare: 2.2
+    orbitPerRange: 0.1
     orbitPeriodSec: 5
     precessionDegPerSec: 15
     pullRadiusShare: 0.45

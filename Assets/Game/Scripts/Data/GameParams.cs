@@ -41,6 +41,77 @@ namespace Incremental
         public double crystalRadiusPerPower = 1;
     }
 
+    /// <summary>
+    /// 29 §5: the numbers of the rule nodes (temporary, the balance pass sets them). A rule node's level picks a step of
+    /// these; the node itself holds no value but its level.
+    /// </summary>
+    [Serializable]
+    public sealed class RuleParams
+    {
+        [Tooltip("Off: the rule nodes can still be bought but do nothing (prototype switch).")]
+        public bool enabled = true;
+        [Tooltip("A console line \"[Rule] …\" whenever a rule acts.")]
+        public bool log = true;
+
+        [Header("T1 유예, T2 완성의 시간, T3 막판 러시, T5 결정의 시간")]
+        [Tooltip("T1: seconds at the start of a run the clock does not run, per level (2 / 4 / 6).")]
+        public double graceSecPerLevel = 2;
+        [Tooltip("T2: seconds added per completed body, and at most this many per run.")]
+        public double completeTimeSec = 0.5;
+        public double completeTimeMaxSec = 15;
+        [Tooltip("T3: the last this many seconds of a run pay x rushIncomeMult (bodies and fragments).")]
+        public double rushLastSec = 10;
+        public double rushIncomeMult = 2;
+        [Tooltip("T5: seconds added when an amplifier crystal is eaten, and at most this many per run (13th pass: without a " +
+                 "cap the evolved crystal stretched a ring-11 run from 141 s to 271 s).")]
+        public double crystalTimeSec = 2;
+        public double crystalTimeMaxSec = 15;
+
+        [Header("D1 가득 찬 시작, D3 빈 화면 보충, D4 황금 먼지")]
+        [Tooltip("D1: by level, the share of the dust cap a run starts with (if more than the usual starting dust).")]
+        public double[] fullStartShare = { 0.3, 0.6, 1.0 };
+        [Tooltip("D3: added to dustRefillBoost per level.")]
+        public double refillBoostPerLevel = 1;
+        [Tooltip("D4: chance per level that a new dust is golden, and how many times its mass a golden dust weighs.")]
+        public double goldChancePerLevel = 0.005;
+        public double goldMassMult = 10;
+        [Tooltip("D4 look: color, brightness and size x, and how fast it twinkles (x effect intensity).")]
+        public Color goldColor = new Color(1f, 0.8f, 0.3f, 1f);
+        public double goldBright = 2.2;
+        public double goldSizeMult = 1.5;
+        public double goldTwinkleHz = 2.5;
+
+        [Header("G1 깊어지는 중력, G2 잔류 중력, G3 고요한 중심")]
+        [Tooltip("G1: after this many seconds of one hold the gravity radius grows, over deepHoldRampSec, up to +deepHoldMax.")]
+        public double deepHoldStartSec = 2;
+        public double deepHoldRampSec = 4;
+        public double deepHoldMax = 0.2;
+        [Tooltip("G2: seconds the gravity keeps pulling after a release.")]
+        public double lingerSec = 0.5;
+        [Tooltip("G3: below this speed (px/s) while holding the gravity source counts as still, and its pull is x stillPullMult.")]
+        public double stillSpeedPx = 40;
+        public double stillPullMult = 1.3;
+
+        [Header("C1 연쇄 완성, C2 열 번째, C3 첫 천체, C4 쉬운 묶음")]
+        [Tooltip("C1: a completion within chainWindowSec of the last one adds chainStep to the income, up to chainMax.")]
+        public double chainWindowSec = 1;
+        public double chainStep = 0.05;
+        public double chainMax = 0.5;
+        [Tooltip("C2: by level, every n-th completion of a run is a x nthMult bundle (20 / 15 / 10).")]
+        public int[] everyNth = { 20, 15, 10 };
+        public double nthMult = 2;
+        [Tooltip("C3: the first body of a run pays x this.")]
+        public double firstBodyMult = 5;
+        [Tooltip("C4: bundleAt goes down this much per level (3 -> 2.5 -> 2), never below 1.5.")]
+        public double bundleAtCutPerLevel = 0.5;
+
+        [Header("A1 공명하는 능력, A2 버프 가속")]
+        [Tooltip("A1: when one ability fires, every other one gains this share of its cooldown as charge.")]
+        public double resonanceChargeShare = 0.1;
+        [Tooltip("A2: while the amplifier buff is on, the other abilities charge x this.")]
+        public double buffChargeMult = 2;
+    }
+
     /// <summary>Silhouette the dust shader draws for a dust kind (20 §4). Only the shape branches; the hue is the palette's.</summary>
     public enum DustShape
     {
@@ -113,16 +184,17 @@ namespace Incremental
 
         [Header("Gravity (spec §6)")]
         public double gravityRadius = 150;    // px (24 §20.3: 180 -> 150; the amplifier crystal buff makes up for it for a while)
-        [Tooltip("24 §23.2: the gravity_radius nodes' sum is x this, so the ring grows less per ring (1 = as before 10/12). " +
-                 "Ring 1 is untouched. The debug key K cycles gravityRangePresets at runtime.")]
-        public double gravityGrowthScale = 0.7;
+        [Tooltip("24 §23.2: the gravity_radius nodes' sum is x this. 13th pass B1: the 0.7 of 10/12 is in the node values now " +
+                 "(29 §3.3), so this is 1. Ring 1 is untouched. The debug key K cycles gravityRangePresets at runtime.")]
+        public double gravityGrowthScale = 1.0;
         [Tooltip("24 §23.2: the debug key K cycles these (radius node scale, crystal radius x at unlock, crystal radius per " +
                  "ability_power). Runtime only; a fresh launch uses gravityGrowthScale and the AbilityTable crystal row.")]
         public GravityRangePreset[] gravityRangePresets =
         {
-            new GravityRangePreset { id = "now", growthScale = 1.0, crystalRadiusMult = 1.35, crystalRadiusPerPower = 1.0 },
-            new GravityRangePreset { id = "plan1", growthScale = 0.7, crystalRadiusMult = 1.20, crystalRadiusPerPower = 0.5 },
-            new GravityRangePreset { id = "plan2", growthScale = 0.5, crystalRadiusMult = 1.15, crystalRadiusPerPower = 0.5 },
+            // 13th pass B1: the radius nodes already hold x0.7, so the scales here are relative to that (the 10/12 values / 0.7).
+            new GravityRangePreset { id = "now", growthScale = 1.0 / 0.7, crystalRadiusMult = 1.35, crystalRadiusPerPower = 1.0 },
+            new GravityRangePreset { id = "plan1", growthScale = 1.0, crystalRadiusMult = 1.20, crystalRadiusPerPower = 0.5 },
+            new GravityRangePreset { id = "plan2", growthScale = 0.5 / 0.7, crystalRadiusMult = 1.15, crystalRadiusPerPower = 0.5 },
         };
         public double pullAccel = 600;        // px/s^2, upgrade target
         public double dustMaxSpeed = 400;     // px/s
@@ -163,6 +235,8 @@ namespace Incremental
                  "of its size per body past the first, up to x bundleSizeMax) with a bigger pop (planetPopScale x bundlePopMult) and " +
                  "its x N label x bundleLabelScale. 0 = off: one body per interval, the rest of the mass waits.")]
         public int bundleAt = 3;
+        [Tooltip("29 §5: the rule nodes' numbers (temporary).")]
+        public RuleParams rules = new RuleParams();
         public double bundleSizeGrowth = 0.12;
         public double bundleSizeMax = 2.0;
         public double bundlePopMult = 1.6;

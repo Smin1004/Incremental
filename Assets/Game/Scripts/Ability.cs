@@ -48,11 +48,13 @@ namespace Incremental
             double cooldown = Def.Cooldown(level, root.abilityTable.maxCooldownReduction);
             if (cooldown > 0)
             {
-                if (holding) Charge += dt;
+                // 29 §5 A2: the amplifier's buff can speed the charge of the others.
+                if (holding) Charge += dt * system.ChargeRate(this);
                 if (Charge >= cooldown && Ready)
                 {
                     Charge = 0;
                     Trigger(s);
+                    system.OnTriggered(this);
                 }
             }
             Step(dt, holding, s);
@@ -64,6 +66,14 @@ namespace Incremental
             Level = default;
             Charge = 0;
             OnClear();
+        }
+
+        /// <summary>29 §5 A1: charge from another ability firing, as a share of this one's cooldown.</summary>
+        public void AddChargeShare(double share)
+        {
+            if (!Level.unlocked || share <= 0) return;
+            double cooldown = Def.Cooldown(Level, root.abilityTable.maxCooldownReduction);
+            if (cooldown > 0) Charge = Math.Min(cooldown, Charge + cooldown * share);
         }
 
         /// <summary>The debug key (24 §7): the next held tick fires it, so there is no waiting out a cooldown to see it.</summary>
