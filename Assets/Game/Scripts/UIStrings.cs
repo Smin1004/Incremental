@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Incremental
@@ -225,37 +226,37 @@ namespace Incremental
 
             // Rule nodes (29 §5): name and one line, by rule id. 13th pass step 1 bought them without an effect yet.
             { "rule.T1.name", "유예" },
-            { "rule.T1.effect", "판의 처음 몇 초 동안 시간이 줄지 않는다" },
+            { "rule.T1.effect", "판의 처음 {0}초 동안 시간이 줄지 않는다" },
             { "rule.T2.name", "완성의 시간" },
-            { "rule.T2.effect", "천체를 완성할 때마다 시간 +0.5초 (판당 최대 +15초)" },
+            { "rule.T2.effect", "천체를 완성할 때마다 시간 +{0}초 (판당 최대 +{1}초)" },
             { "rule.T3.name", "막판 러시" },
-            { "rule.T3.effect", "마지막 10초 동안 수입 ×2" },
+            { "rule.T3.effect", "마지막 {0}초 동안 수입 ×{1}" },
             { "rule.T5.name", "결정의 시간" },
-            { "rule.T5.effect", "증폭 결정을 먹으면 시간 +2초" },
+            { "rule.T5.effect", "증폭 결정을 먹으면 시간 +{0}초 (판당 최대 +{1}초)" },
             { "rule.D1.name", "가득 찬 시작" },
-            { "rule.D1.effect", "판 시작 때 화면이 상한의 일부까지 차 있다" },
+            { "rule.D1.effect", "판 시작 때 화면이 상한의 {0}%까지 차 있다" },
             { "rule.D3.name", "빈 화면 보충" },
-            { "rule.D3.effect", "빈 화면의 먼지 보충이 빨라진다" },
+            { "rule.D3.effect", "빈 화면의 먼지 보충 가속 +{0}" },
             { "rule.D4.name", "황금 먼지" },
-            { "rule.D4.effect", "드물게 질량 ×10의 금빛 먼지가 나온다" },
+            { "rule.D4.effect", "새 먼지의 {0}%가 질량 ×{1}의 금빛 먼지" },
             { "rule.G1.name", "깊어지는 중력" },
-            { "rule.G1.effect", "오래 홀드할수록 범위가 점점 커진다 (최대 +20%)" },
+            { "rule.G1.effect", "{0}초 넘게 홀드하면 범위가 점점 커진다 (최대 +{1}%)" },
             { "rule.G2.name", "잔류 중력" },
-            { "rule.G2.effect", "놓은 뒤 0.5초 동안 범위가 남아 끌어당긴다" },
+            { "rule.G2.effect", "놓은 뒤 {0}초 동안 범위가 남아 끌어당긴다" },
             { "rule.G3.name", "고요한 중심" },
-            { "rule.G3.effect", "중력원이 멈춰 있는 동안 인력 +30%" },
+            { "rule.G3.effect", "중력원이 멈춰 있는 동안 인력 +{0}%" },
             { "rule.C1.name", "연쇄 완성" },
-            { "rule.C1.effect", "1초 안에 이어진 완성마다 수입 +5% (최대 +50%)" },
+            { "rule.C1.effect", "{0}초 안에 이어진 완성마다 수입 +{1}% (최대 +{2}%)" },
             { "rule.C2.name", "열 번째" },
-            { "rule.C2.effect", "판에서 n번째 완성마다 ×2 묶음" },
+            { "rule.C2.effect", "판에서 {0}번째 완성마다 ×{1} 묶음" },
             { "rule.C3.name", "첫 천체" },
-            { "rule.C3.effect", "판의 첫 천체 수입 ×5" },
+            { "rule.C3.effect", "판의 첫 천체 수입 ×{0}" },
             { "rule.C4.name", "쉬운 묶음" },
-            { "rule.C4.effect", "묶음이 되는 기준이 낮아진다" },
+            { "rule.C4.effect", "묶음이 되는 기준 {0}배 (기본 {1}배)" },
             { "rule.A1.name", "공명하는 능력" },
-            { "rule.A1.effect", "능력 하나가 발동하면 다른 능력의 충전 +10%" },
+            { "rule.A1.effect", "능력 하나가 발동하면 다른 능력의 충전 +{0}%" },
             { "rule.A2.name", "버프 가속" },
-            { "rule.A2.effect", "증폭 결정 버프 중 능력 충전 ×2" },
+            { "rule.A2.effect", "증폭 결정 버프 중 다른 능력 충전 ×{0}" },
 
             // Visual directions of the UI (26 §3), by UITheme direction id; Validate Data checks that every id has a key.
             { "ui.direction.A", "A 관측 기기" },
@@ -297,6 +298,46 @@ namespace Incremental
         public static string AbilityName(string id) => Get(AbilityKey(id));
         public static string UiDirectionKey(string id) => "ui.direction." + id;
         public static string UiDirectionName(string id) => Get(UiDirectionKey(id));
+        /// <summary>
+        /// 29 §5: a rule node's line with its numbers from GameParams.rules; a value that changes by level lists every
+        /// level ("2 / 4 / 6"). Without the params the line keeps its placeholders.
+        /// </summary>
+        public static string RuleEffect(NodeDef n, GameParams p)
+        {
+            string f = Get(RuleEffectKey(n.ruleId));
+            if (p == null || p.rules == null) return f;
+            var r = p.rules;
+            int max = Math.Max(1, n.maxLevel);
+            switch (n.ruleId)
+            {
+                case "T1": return string.Format(f, Levels(max, l => r.graceSecPerLevel * l));
+                case "T2": return string.Format(f, Fmt.Short(r.completeTimeSec), Fmt.Short(r.completeTimeMaxSec));
+                case "T3": return string.Format(f, Fmt.Short(r.rushLastSec), Fmt.Short(r.rushIncomeMult));
+                case "T5": return string.Format(f, Fmt.Short(r.crystalTimeSec), Fmt.Short(r.crystalTimeMaxSec));
+                case "D1": return string.Format(f, Levels(max, l => r.fullStartShare != null && r.fullStartShare.Length > 0 ? r.fullStartShare[Math.Min(l, r.fullStartShare.Length) - 1] * 100 : 0));
+                case "D3": return string.Format(f, Levels(max, l => r.refillBoostPerLevel * l));
+                case "D4": return string.Format(f, Levels(max, l => r.goldChancePerLevel * l * 100), Fmt.Short(r.goldMassMult));
+                case "G1": return string.Format(f, Fmt.Short(r.deepHoldStartSec), Fmt.Short(r.deepHoldMax * 100));
+                case "G2": return string.Format(f, Fmt.Short(r.lingerSec));
+                case "G3": return string.Format(f, Fmt.Short((r.stillPullMult - 1) * 100));
+                case "C1": return string.Format(f, Fmt.Short(r.chainWindowSec), Fmt.Short(r.chainStep * 100), Fmt.Short(r.chainMax * 100));
+                case "C2": return string.Format(f, Levels(max, l => r.everyNth != null && r.everyNth.Length > 0 ? r.everyNth[Math.Min(l, r.everyNth.Length) - 1] : 0), Fmt.Short(r.nthMult));
+                case "C3": return string.Format(f, Fmt.Short(r.firstBodyMult));
+                case "C4": return string.Format(f, Levels(max, l => Math.Max(1.5, p.bundleAt - r.bundleAtCutPerLevel * l)), p.bundleAt);
+                case "A1": return string.Format(f, Fmt.Short(r.resonanceChargeShare * 100));
+                case "A2": return string.Format(f, Fmt.Short(r.buffChargeMult));
+                default: return f;
+            }
+        }
+
+        /// <summary>"a / b / c": a value at levels 1..max.</summary>
+        static string Levels(int max, Func<int, double> at)
+        {
+            var parts = new string[max];
+            for (int l = 1; l <= max; l++) parts[l - 1] = Fmt.Short(at(l));
+            return string.Join(" / ", parts);
+        }
+
         public static string RuleNameKey(string ruleId) => "rule." + ruleId + ".name";
         public static string RuleEffectKey(string ruleId) => "rule." + ruleId + ".effect";
         public static string StatNameKey(string statId) => "stat." + statId + ".name";
@@ -316,7 +357,7 @@ namespace Incremental
             if (n.IsGate) return string.Empty;
             if (n.IsAbilityUnlock) return Get(AbilityEffectKey(n.abilityId));
             if (n.IsAbilityEvolve) return Get(AbilityEvolveEffectKey(n.abilityId));
-            if (n.IsRule) return Get(RuleEffectKey(n.ruleId));
+            if (n.IsRule) return RuleEffect(n, p);
             if (n.IsDustUnlock)
             {
                 var kind = p != null ? p.DustKind(p.DustKindIndex(n.dustKindId)) : null;

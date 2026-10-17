@@ -556,7 +556,7 @@ MonoBehaviour:
     barPaddingPx: 32
     viewMargin: 90
     nextRunButtonSize: {x: 360, y: 76}
-    tooltipSize: {x: 380, y: 160}
+    tooltipSize: {x: 460, y: 160}
     tooltipPaddingPx: 16
   transitionSec: 0.3
   transitionColor: {r: 0, g: 0.005, b: 0.02, a: 0.9}

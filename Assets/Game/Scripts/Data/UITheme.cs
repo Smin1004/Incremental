@@ -155,7 +155,7 @@ namespace Incremental
         public float barPaddingPx = 32f;
         public float viewMargin = 90f;
         public Vector2 nextRunButtonSize = new Vector2(360f, 76f);
-        public Vector2 tooltipSize = new Vector2(380f, 160f);
+        public Vector2 tooltipSize = new Vector2(460f, 160f);
         public float tooltipPaddingPx = 16f;
     }
 
