@@ -45,6 +45,11 @@ namespace Incremental
         /// unlockedMaxTier − (GameParams.fragmentBaseOffset − this), never below tier 1.
         /// </summary>
         public const string FragOffset = "frag_offset";
+        /// <summary>
+        /// 29 §3.3: raises the top speed of the dust the gravity pulls in (GameParams dustMaxSpeed), as a share
+        /// (0.05 = +5%). 13th pass step 1: the nodes exist, the effect comes in step 2.
+        /// </summary>
+        public const string DustMaxSpeed = "dust_max_speed";
 
         /// <summary>
         /// 24 §8: the stats of the ability axis. Each acts on the ability named by <see cref="NodeDef.abilityId"/>, the
@@ -70,7 +75,7 @@ namespace Incremental
         {
             SpawnRate, PullAccel, SaleMult, RunTime, ThresholdMult,
             DustCap, DustMass, GravityRadius, StartBonus,
-            DustChance, FragUnlock, FragChance, FragOffset, FollowSpeed,
+            DustChance, FragUnlock, FragChance, FragOffset, FollowSpeed, DustMaxSpeed,
         };
 
         /// <summary>
@@ -109,6 +114,24 @@ namespace Incremental
         /// evolved form (유성우, 연쇄 붕괴, 공명, 번개 사슬, 특이점). One level; at most one per ability, in the late rings.
         /// </summary>
         AbilityEvolve = 4,
+        /// <summary>
+        /// 29 §5: a rule node. It raises no stat; it changes a rule of the game, named by <see cref="NodeDef.ruleId"/>
+        /// (T1 유예, C2 열 번째 …). 13th pass step 1: the nodes exist and can be bought but do nothing yet.
+        /// </summary>
+        Rule = 5,
+    }
+
+    /// <summary>
+    /// 29 §2: the five categories of tree v2. Each owns a 72° sector of the tree, colored by UITheme.tree.categoryColors
+    /// (index = this value).
+    /// </summary>
+    public enum NodeCategory
+    {
+        Celestial = 0,
+        Dust = 1,
+        Gravity = 2,
+        Ability = 3,
+        Time = 4,
     }
 
     /// <summary>One node of the skill tree (12 §3). Ring = minTier.</summary>
@@ -136,8 +159,14 @@ namespace Incremental
         public int minTier = 1;
         [Tooltip("Any-of. Empty = next to the center, always met.")]
         public List<string> prereqs = new List<string>();
-        [Tooltip("Placement angle on the ring (tree view). Radius comes from minTier.")]
+        [Tooltip("Placement angle on the ring (tree view), before the per-ring twist. Radius comes from minTier.")]
         public float angleDeg;
+        [Tooltip("29 §3.5: moves the node in or out from its ring circle, in ring steps (0.4 = 40% of the way to the next ring).")]
+        public float radiusOffset;
+        [Tooltip("29 §2: the category whose sector and color the node takes.")]
+        public NodeCategory category;
+        [Tooltip("Rule nodes: the 29 §5 id (T1, D3, G2, C1, A2 …).")]
+        public string ruleId;
         [Tooltip("Off: treated as if the node did not exist (not purchasable, owned levels have no effect).")]
         public bool enabled = true;
 
@@ -148,6 +177,8 @@ namespace Incremental
         public bool IsAbilityUnlock => kind == NodeKind.AbilityUnlock;
         /// <summary>24 §21.2: this node evolves an ability.</summary>
         public bool IsAbilityEvolve => kind == NodeKind.AbilityEvolve;
+        /// <summary>29 §5: this node changes a game rule.</summary>
+        public bool IsRule => kind == NodeKind.Rule;
     }
 
     /// <summary>Skill tree nodes (12 §3) and the per-ring cost multiplier, the pacing lever of the balance pass (12 §7).</summary>

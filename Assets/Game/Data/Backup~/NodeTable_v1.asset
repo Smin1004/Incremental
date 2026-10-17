@@ -1,0 +1,1399 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cb7a031150509444b8206391f5ebe9d, type: 3}
+  m_Name: NodeTable
+  m_EditorClassIdentifier: 
+  nodes:
+  - id: r1_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 1
+    maxLevel: 2
+    baseCost: 3.6
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 30
+    enabled: 1
+  - id: r1_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.2
+    maxLevel: 2
+    baseCost: 3.6
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 330
+    enabled: 1
+  - id: r1_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.25
+    maxLevel: 1
+    baseCost: 3.6
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 270
+    enabled: 1
+  - id: r1_stamina
+    kind: 0
+    statId: run_time
+    effectPerLevel: 9
+    maxLevel: 1
+    baseCost: 3.6
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 210
+    enabled: 1
+  - id: gate_t2
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 27
+    growth: 1
+    tier: 2
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 90
+    enabled: 1
+  - id: r2_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 2
+    maxLevel: 2
+    baseCost: 8.4
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - r1_spawn
+    angleDeg: 20
+    enabled: 1
+  - id: r2_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 100
+    maxLevel: 2
+    baseCost: 8.4
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - r1_spawn
+    angleDeg: 40
+    enabled: 1
+  - id: r2_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.1
+    maxLevel: 2
+    baseCost: 8.4
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - r1_pull
+    angleDeg: 340
+    enabled: 1
+  - id: r2_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 8.4
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - r1_pull
+    angleDeg: 320
+    enabled: 1
+  - id: r2_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.25
+    maxLevel: 2
+    baseCost: 8.4
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - r1_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r2_stamina
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 8.4
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - r1_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r2_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.07
+    maxLevel: 2
+    baseCost: 8.4
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - gate_t2
+    angleDeg: 150
+    enabled: 1
+  - id: ability_crystal
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 8.4
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 2
+    prereqs: []
+    angleDeg: 240
+    enabled: 1
+  - id: gate_t3
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 63
+    growth: 1
+    tier: 3
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - gate_t2
+    angleDeg: 90
+    enabled: 1
+  - id: r3_start
+    kind: 0
+    statId: start_bonus
+    effectPerLevel: 50
+    maxLevel: 2
+    baseCost: 52
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - r2_cap
+    angleDeg: 30
+    enabled: 1
+  - id: r3_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.3
+    maxLevel: 2
+    baseCost: 52
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - r2_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r3_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.25
+    maxLevel: 2
+    baseCost: 52
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - r2_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r3_drain
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 52
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - r2_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r3_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.07
+    maxLevel: 2
+    baseCost: 52
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - r2_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: dust_medium
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 52
+    growth: 1
+    tier: 0
+    dustKindId: medium
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 60
+    enabled: 1
+  - id: frag_unlock
+    kind: 0
+    statId: frag_unlock
+    effectPerLevel: 0.3
+    maxLevel: 1
+    baseCost: 52
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 140
+    enabled: 1
+  - id: r3_crystal_power
+    kind: 0
+    statId: ability_power
+    effectPerLevel: 0.1
+    maxLevel: 3
+    baseCost: 52
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 3
+    prereqs:
+    - ability_crystal
+    angleDeg: 240
+    enabled: 1
+  - id: gate_t4
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 390
+    growth: 1
+    tier: 4
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 90
+    enabled: 1
+  - id: r4_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 3
+    maxLevel: 2
+    baseCost: 290
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - r3_start
+    angleDeg: 30
+    enabled: 1
+  - id: r4_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.1
+    maxLevel: 2
+    baseCost: 290
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - r3_pull
+    angleDeg: 340
+    enabled: 1
+  - id: r4_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.12
+    maxLevel: 2
+    baseCost: 290
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - r3_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: r4_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.5
+    maxLevel: 2
+    baseCost: 290
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - r3_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r4_stamina
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 290
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - r3_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r4_chance_medium
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.03
+    maxLevel: 4
+    baseCost: 290
+    growth: 1.5
+    tier: 0
+    dustKindId: medium
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - dust_medium
+    angleDeg: 60
+    enabled: 1
+  - id: r4_frag_chance
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 290
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - frag_unlock
+    angleDeg: 140
+    enabled: 1
+  - id: r4_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 290
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - r2_follow
+    angleDeg: 320
+    enabled: 1
+  - id: ability_implode
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 290
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 4
+    prereqs: []
+    angleDeg: 240
+    enabled: 1
+  - id: gate_t5
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2100
+    growth: 1
+    tier: 5
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - gate_t4
+    angleDeg: 90
+    enabled: 1
+  - id: r5_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 300
+    maxLevel: 2
+    baseCost: 1600
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - r4_spawn
+    angleDeg: 30
+    enabled: 1
+  - id: r5_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.4
+    maxLevel: 2
+    baseCost: 1600
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - r4_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r5_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.1
+    maxLevel: 2
+    baseCost: 1600
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - r4_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: r5_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.5
+    maxLevel: 2
+    baseCost: 1600
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - r4_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r5_drain
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 1600
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - r4_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: dust_large
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 1600
+    growth: 1
+    tier: 0
+    dustKindId: large
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - r4_chance_medium
+    angleDeg: 60
+    enabled: 1
+  - id: r5_frag_range
+    kind: 0
+    statId: frag_offset
+    effectPerLevel: 1
+    maxLevel: 1
+    baseCost: 1600
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - r4_frag_chance
+    angleDeg: 140
+    enabled: 1
+  - id: r5_implode_power
+    kind: 0
+    statId: ability_range
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 1600
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 5
+    prereqs:
+    - ability_implode
+    angleDeg: 240
+    enabled: 1
+  - id: gate_t6
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 12000
+    growth: 1
+    tier: 6
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - gate_t5
+    angleDeg: 90
+    enabled: 1
+  - id: r6_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 5
+    maxLevel: 2
+    baseCost: 7900
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - r5_cap
+    angleDeg: 30
+    enabled: 1
+  - id: r6_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.14
+    maxLevel: 2
+    baseCost: 7900
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - r5_pull
+    angleDeg: 340
+    enabled: 1
+  - id: r6_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.06
+    maxLevel: 2
+    baseCost: 7900
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - r5_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: r6_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1
+    maxLevel: 2
+    baseCost: 7900
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - r5_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r6_stamina
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 7900
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - r5_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r6_chance_large
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.015
+    maxLevel: 4
+    baseCost: 7900
+    growth: 1.5
+    tier: 0
+    dustKindId: large
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - dust_large
+    angleDeg: 60
+    enabled: 1
+  - id: r6_frag_chance
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 7900
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - r5_frag_range
+    angleDeg: 140
+    enabled: 1
+  - id: r6_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 7900
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - r4_follow
+    angleDeg: 320
+    enabled: 1
+  - id: ability_satellite
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 7900
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 6
+    prereqs: []
+    angleDeg: 240
+    enabled: 1
+  - id: gate_t7
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 60000
+    growth: 1
+    tier: 7
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - gate_t6
+    angleDeg: 90
+    enabled: 1
+  - id: r7_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 500
+    maxLevel: 2
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - r6_spawn
+    angleDeg: 30
+    enabled: 1
+  - id: r7_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.5
+    maxLevel: 2
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - r6_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r7_threshold
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.04
+    maxLevel: 2
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - r6_threshold
+    angleDeg: 150
+    enabled: 1
+  - id: r7_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1
+    maxLevel: 2
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - r6_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r7_drain
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - r6_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: dust_crystal
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 68000
+    growth: 1
+    tier: 0
+    dustKindId: crystal
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - r6_chance_large
+    angleDeg: 60
+    enabled: 1
+  - id: r7_frag_range
+    kind: 0
+    statId: frag_offset
+    effectPerLevel: 1
+    maxLevel: 1
+    baseCost: 68000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - r6_frag_chance
+    angleDeg: 140
+    enabled: 1
+  - id: r7_satellite_count
+    kind: 0
+    statId: ability_count
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 68000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 7
+    prereqs:
+    - ability_satellite
+    angleDeg: 240
+    enabled: 1
+  - id: evolve_crystal
+    kind: 4
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 140000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 7
+    prereqs:
+    - r3_crystal_power
+    angleDeg: 250
+    enabled: 1
+  - id: gate_t8
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 510000
+    growth: 1
+    tier: 8
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - gate_t7
+    angleDeg: 90
+    enabled: 1
+  - id: r8_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 8
+    maxLevel: 2
+    baseCost: 290000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - r7_cap
+    angleDeg: 20
+    enabled: 1
+  - id: r8_start
+    kind: 0
+    statId: start_bonus
+    effectPerLevel: 200
+    maxLevel: 2
+    baseCost: 290000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - r7_cap
+    angleDeg: 40
+    enabled: 1
+  - id: r8_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.14
+    maxLevel: 2
+    baseCost: 290000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - r7_pull
+    angleDeg: 340
+    enabled: 1
+  - id: r8_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 2
+    maxLevel: 2
+    baseCost: 290000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - r7_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r8_stamina
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 290000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - r7_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r8_chance_crystal
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.01
+    maxLevel: 4
+    baseCost: 290000
+    growth: 1.5
+    tier: 0
+    dustKindId: crystal
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - dust_crystal
+    angleDeg: 60
+    enabled: 1
+  - id: r8_frag_chance
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 290000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - r7_frag_range
+    angleDeg: 140
+    enabled: 1
+  - id: r8_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 290000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - r6_follow
+    angleDeg: 320
+    enabled: 1
+  - id: ability_meteor
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 290000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 8
+    prereqs: []
+    angleDeg: 240
+    enabled: 1
+  - id: gate_t9
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2200000
+    growth: 1
+    tier: 9
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - gate_t8
+    angleDeg: 90
+    enabled: 1
+  - id: r9_cap
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 800
+    maxLevel: 2
+    baseCost: 3000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - r8_spawn
+    - r8_start
+    angleDeg: 30
+    enabled: 1
+  - id: r9_pull
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.6
+    maxLevel: 2
+    baseCost: 3000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - r8_radius
+    angleDeg: 330
+    enabled: 1
+  - id: r9_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 2
+    maxLevel: 2
+    baseCost: 3000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - r8_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r9_drain
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 3000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - r8_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: dust_interstellar
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 3000000
+    growth: 1
+    tier: 0
+    dustKindId: interstellar
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - r8_chance_crystal
+    angleDeg: 60
+    enabled: 1
+  - id: r9_meteor_amount
+    kind: 0
+    statId: ability_amount
+    effectPerLevel: 0.03
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 9
+    prereqs:
+    - ability_meteor
+    angleDeg: 240
+    enabled: 1
+  - id: gate_t10
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 23000000
+    growth: 1
+    tier: 10
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - gate_t9
+    angleDeg: 90
+    enabled: 1
+  - id: r10_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 12
+    maxLevel: 2
+    baseCost: 16000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - r9_cap
+    angleDeg: 30
+    enabled: 1
+  - id: r10_radius
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.17
+    maxLevel: 2
+    baseCost: 16000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - r9_pull
+    angleDeg: 340
+    enabled: 1
+  - id: r10_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 4
+    maxLevel: 2
+    baseCost: 16000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - r9_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r10_stamina
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 2
+    baseCost: 16000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - r9_drain
+    angleDeg: 210
+    enabled: 1
+  - id: r10_chance_interstellar
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.01
+    maxLevel: 4
+    baseCost: 16000000
+    growth: 1.5
+    tier: 0
+    dustKindId: interstellar
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - dust_interstellar
+    angleDeg: 60
+    enabled: 1
+  - id: r10_follow
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.15
+    maxLevel: 1
+    baseCost: 16000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - r8_follow
+    angleDeg: 320
+    enabled: 1
+  - id: ability_blackhole
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 16000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: blackhole
+    minTier: 10
+    prereqs: []
+    angleDeg: 240
+    enabled: 1
+  - id: evolve_meteor
+    kind: 4
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 32000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 10
+    prereqs:
+    - r9_meteor_amount
+    angleDeg: 250
+    enabled: 1
+  - id: gate_t11
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 120000000
+    growth: 1
+    tier: 11
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - gate_t10
+    angleDeg: 90
+    enabled: 1
+  - id: r11_sale
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1
+    maxLevel: 0
+    baseCost: 170000000
+    growth: 1.6
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 11
+    prereqs:
+    - r10_sale
+    angleDeg: 270
+    enabled: 1
+  - id: r11_spawn
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 12
+    maxLevel: 0
+    baseCost: 170000000
+    growth: 1.6
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 11
+    prereqs:
+    - r10_spawn
+    angleDeg: 30
+    enabled: 1
+  - id: r11_stamina
+    kind: 0
+    statId: run_time
+    effectPerLevel: 4.5
+    maxLevel: 0
+    baseCost: 170000000
+    growth: 1.6
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 11
+    prereqs:
+    - r10_stamina
+    angleDeg: 210
+    enabled: 1
+  - id: r11_blackhole_duration
+    kind: 0
+    statId: ability_duration
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 170000000
+    growth: 1.5
+    tier: 0
+    dustKindId: 
+    abilityId: blackhole
+    minTier: 11
+    prereqs:
+    - ability_blackhole
+    angleDeg: 240
+    enabled: 1
+  ringCostMult:
+  - 1
+  - 2.5
+  - 3.1
+  - 2.1
+  - 1.2
+  - 1.9
+  - 3.9
+  - 3.7
+  - 11.5
+  - 3.8
+  - 8.4
+  - 1

@@ -7,10 +7,11 @@ using UnityEngine.UI;
 namespace Incremental
 {
     /// <summary>
-    /// Skill tree screen (12 §9, 26 §9.2), between runs after the result screen. Constellation style: nodes are glowing
-    /// points on rings (radius = treeRingR0Px + minTier × treeRingStepPx, angle = angleDeg, 12 §5; or, 26 §10.1, by arm:
-    /// seven arms 360/7° apart that turn with the ring, so the tree is a spiral), edges are thin lines along the arms,
-    /// owned paths are bright, unlock nodes (gates, dust kinds, abilities) are drawn larger. Node states follow 12 §4;
+    /// Skill tree screen (12 §9, 26 §9.2), between runs after the result screen. Constellation style: nodes sit on rings
+    /// (radius = treeRingR0Px + minTier × treeRingStepPx, angle = angleDeg + the twist × ring, 29 §2: five categories of
+    /// 72° each, side lines beside their stem), edges are thin curves, owned paths are bright. A node is a TreeIcon
+    /// (29 §6): a disc in its category color, a symbol, a double border for a rule node; the ring after the open ones
+    /// shows as outlines only and the rest is hidden. Unlock nodes (gates, dust kinds, abilities) are drawn larger. Node states follow 12 §4;
     /// a purchasable node breathes slowly. Click buys one level, holding repeats, drag pans, the wheel zooms, hovering
     /// shows a tooltip. A purchase lights the node, runs a light along the connections from its owned prerequisites,
     /// throws a few sparks and, for a gate, brightens that ring's circle. Opening moves the view to the frontier (the
@@ -163,7 +164,17 @@ namespace Incremental
         }
 
         /// <summary>26 §5.3: gates and unlock nodes (dust kinds, abilities) are drawn larger than stat nodes.</summary>
-        float NodeSize(NodeDef n) => n.IsGate ? st.gateSize : (n.IsDustUnlock || n.IsAbilityUnlock || n.IsAbilityEvolve ? st.unlockSize : st.statSize);
+        float NodeSize(NodeDef n) => n.IsGate ? st.gateSize : n.IsRule ? st.ruleSize
+            : (n.IsDustUnlock || n.IsAbilityUnlock || n.IsAbilityEvolve ? st.unlockSize : st.statSize);
+
+        /// <summary>29 §2: the disc color of a node: its category's; a gate keeps its tier's.</summary>
+        Color CategoryColor(NodeDef n)
+        {
+            if (n.IsGate) return TierColor(n.tier);
+            var cc = st.categoryColors;
+            int i = (int)n.category;
+            return cc != null && i >= 0 && i < cc.Length ? cc[i] : Color.white;
+        }
 
         /// <summary>Colors of the visual direction for the header, the help line and the tooltip.</summary>
         void ApplyStyle()
@@ -268,27 +279,42 @@ namespace Incremental
                 bool purchasable = state == NodeState.Available || state == NodeState.Owned;
                 double cost = maxed ? 0 : Shop.Cost(t, m, n);
                 bool affordable = purchasable && m.currency >= cost;
-                Color tint = n.IsGate ? TierColor(n.tier) : Color.white;
+                Color tint = CategoryColor(n);
 
-                Color core;
+                // 29 §6 (Q4): a node of the ring after the open ones is an outline and its symbol, nothing more.
+                bool preview = n.minTier > m.unlockedMaxTier;
+                w.icon.Preview = preview;
+                if (preview)
+                {
+                    w.icon.color = Color.clear;
+                    w.icon.Ink = st.previewInk;
+                    w.glow.color = Color.clear;
+                    w.core.transform.localScale = Vector3.one;
+                    w.label.text = string.Empty;
+                    continue;
+                }
+
+                float bright;
                 float glowA;
                 switch (state)
                 {
-                    case NodeState.Maxed: core = n.IsGate ? tint : st.maxed; glowA = 0.8f; break;
-                    case NodeState.Owned: core = n.IsGate ? tint : st.owned; glowA = 0.35f; break;
-                    case NodeState.Available: core = affordable ? Color.Lerp(tint, Color.white, 0.4f) : st.shortOfCurrency * tint; glowA = affordable ? 0.3f : 0.12f; break;
-                    default: core = st.locked * new Color(tint.r, tint.g, tint.b, 1f); glowA = 0f; break;
+                    case NodeState.Maxed: bright = st.discBright.x; glowA = 0.6f; break;
+                    case NodeState.Owned: bright = st.discBright.y; glowA = 0.3f; break;
+                    case NodeState.Available: bright = affordable ? st.discBright.z : st.discBright.w; glowA = affordable ? 0.25f : 0.08f; break;
+                    default: bright = st.discLockedBright; glowA = 0f; break;
                 }
                 float breath = affordable ? pulse : 0f;
-                w.core.color = core;
-                w.glow.color = new Color(core.r, core.g, core.b, Mathf.Clamp01(glowA + st.pulseGlow * breath));
+                w.icon.color = new Color(tint.r * bright, tint.g * bright, tint.b * bright, 1f);
+                var ink = level > 0 ? st.iconInk : st.iconInkDim;
+                if (state == NodeState.Locked) ink.a *= 0.6f;
+                w.icon.Ink = ink;
+                w.glow.color = new Color(tint.r, tint.g, tint.b, Mathf.Clamp01(glowA + st.pulseGlow * breath));
                 float s = 1f + st.pulseScale * breath;
                 w.core.transform.localScale = new Vector3(s, s, 1f);
 
-                string levelText = n.maxLevel > 0 ? string.Format(UIStrings.LevelShort, level, n.maxLevel) : string.Format(UIStrings.Level, level);
-                if (maxed) w.label.text = levelText;
-                else if (level > 0) w.label.text = levelText + "\n" + Fmt.Num(cost, Rounding.Up);
-                else w.label.text = Fmt.Num(cost, Rounding.Up);
+                // 29 §6: "Lv x/y" under the node, and the price of the next level under that.
+                string levelText = n.maxLevel > 0 ? string.Format(UIStrings.LevelOf, level, n.maxLevel) : string.Format(UIStrings.Level, level);
+                w.label.text = maxed ? levelText : levelText + "\n" + Fmt.Num(cost, Rounding.Up);
                 w.label.color = state == NodeState.Locked ? st.labelDim : (maxed || affordable ? st.labelOk : st.labelShort);
             }
 
@@ -576,7 +602,7 @@ namespace Incremental
                     double mass = tier != null ? Stats.Threshold(tier, s) : 0;
                     sb.Append(string.Format(UIStrings.GateEffect, n.tier, Fmt.Price(price), Fmt.Num(mass, Rounding.Up)));
                 }
-                else if (n.IsDustUnlock || n.IsAbilityUnlock || n.IsAbilityEvolve)
+                else if (n.IsDustUnlock || n.IsAbilityUnlock || n.IsAbilityEvolve || n.IsRule)
                 {
                     // 20 §4, 24 §6, 24 §21.2: an unlock or an evolution has one level, so "per level" would read oddly.
                     sb.Append(UIStrings.NodeEffect(n, p));
@@ -640,45 +666,17 @@ namespace Incremental
         float twist;
 
         /// <summary>
-        /// 26 §10.1: the seven arms, in the cyclic order the 12 §5 axes have, each gathering the seed angles of its axes:
-        /// where a node's angleDeg lands here says which arm it is on and how far beside it (in armSubOffsetDeg units).
-        /// The pairs of one axis (±10° in the seed) keep a small offset of their own. A node at an angle not listed
-        /// keeps its own angle, turned with the ring like the rest.
+        /// 29 §2: the seed angle (category stem + the node's place beside it), turned by the twist once per ring so the
+        /// five categories wind outward as a spiral (26 §10.1). arms off = no twist.
         /// </summary>
-        static readonly (float angle, int arm, float sub)[] ArmMap =
-        {
-            (90f, 0, 0f),                                       // gates
-            (150f, 1, 0.5f), (140f, 1, -0.5f),                  // planet thresholds, fragments
-            (210f, 2, 0f),                                      // run time (28 §2, was stamina)
-            (240f, 3, 0f), (250f, 3, 1f),                       // abilities, their evolutions (24 §21.2)
-            (270f, 4, 0f),                                      // sale
-            (330f, 5, 0.5f), (340f, 5, 1f), (320f, 5, -0.5f),   // gravity pull, radius, follow
-            (30f, 6, -0.5f), (20f, 6, -1f), (40f, 6, 0f), (60f, 6, 1f),   // dust, its pairs, dust kinds
-        };
-        const int ArmCount = 7;
+        float NodeAngle(NodeDef n) => n.angleDeg + (st.arms ? twist * n.minTier : 0f);
 
-        /// <summary>Angle of arm <paramref name="arm"/> at ring 0: the gates stay at the top, the rest follow counter-clockwise.</summary>
-        static float ArmAngle(int arm) => 90f + arm * 360f / ArmCount;
-
-        float NodeAngle(NodeDef n)
-        {
-            if (!st.arms) return n.angleDeg;
-            float best = 6f;
-            float angle = n.angleDeg;
-            foreach (var m in ArmMap)
-            {
-                float d = Mathf.Abs(Mathf.DeltaAngle(n.angleDeg, m.angle));
-                if (d >= best) continue;
-                best = d;
-                angle = ArmAngle(m.arm) + m.sub * st.armSubOffsetDeg;
-            }
-            return angle + twist * n.minTier;
-        }
-
+        /// <summary>29 §3.5: the radius comes from the ring, moved in or out by radiusOffset ring steps.</summary>
         Vector2 NodePosition(NodeDef n)
         {
             float a = NodeAngle(n) * Mathf.Deg2Rad;
-            return new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * RingRadius(n.minTier);
+            float r = RingRadius(n.minTier) + n.radiusOffset * (float)p.treeRingStepPx;
+            return new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
         }
 
         /// <summary>26 §10.1: the T key. Lays the nodes and their connections out again at the next twist of the list.</summary>
@@ -734,7 +732,18 @@ namespace Incremental
             w.rt = rt;
             w.size = size;
             w.glow = UIBuilder.CreateImage("Glow", rt, Color.clear, c, c, Vector2.zero, Vector2.one * size * st.glowScale, UIBuilder.SoftDotSprite());
-            w.core = UIBuilder.CreateImage("Core", rt, Color.white, c, c, Vector2.zero, Vector2.one * size, root.circleSprite);
+            if (n == null)
+                w.core = UIBuilder.CreateImage("Core", rt, Color.white, c, c, Vector2.zero, Vector2.one * size, root.circleSprite);
+            else
+            {
+                // 29 §6: the disc, its border and its symbol, drawn by the TreeIcon shader.
+                var irt = UIBuilder.CreateRect("Icon", rt, c, c, Vector2.zero, Vector2.one * size);
+                w.icon = irt.gameObject.AddComponent<TreeIcon>();
+                w.icon.material = theme.treeIconMaterial;
+                w.icon.Glyph = TreeIcon.SymbolFor(n);
+                w.icon.Rule = n.IsRule;
+                w.core = w.icon;
+            }
             w.core.raycastTarget = true;
             w.label = UIBuilder.CreateText("Label", rt, font, st.labelSize, TextAnchor.UpperCenter, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -st.labelGapPx), new Vector2(160f, st.labelSize * theme.lineHeight * 2f));

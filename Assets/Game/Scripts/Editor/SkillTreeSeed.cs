@@ -4,58 +4,35 @@ using System.Collections.Generic;
 namespace Incremental.EditorTools
 {
     /// <summary>
-    /// Seed data of the skill tree (12 §6). PrototypeSetup adds the entries the NodeTable asset lacks, and Validate Data
-    /// warns where the asset and this code differ, so the two stay equal.
-    /// Rings 1-3 are the §6 draft. Rings 4-11 follow the §6 template with formula costs: a stat node costs 0.4 × I_k
-    /// (growth 1.5), a dust kind unlock 1.1 × I_k, with I_1 = 12 and I_(k+1) = 8 × I_k, rounded to two
-    /// significant digits like the draft. Gate costs keep the week-2 unlock costs (tier 2: 30, tier 3: 300).
-    /// 20 §4: the 60° axis is the dust kind axis. The compound dust_mass nodes are gone; rings 3, 5, 7 and 9 unlock a
-    /// dust kind and rings 4, 6, 8 and 10 raise its share.
-    /// 20 §5: the fragment nodes run along 140°, beside the threshold nodes of the planet axis, in rings 3 to 8.
-    /// 22 §3: the gravity axis carries a follow speed node in rings 2, 4, 6, 8 and 10, beside that ring's pull or radius
-    /// node; the five together bring the gravity source from 220 to 385 px/s.
-    /// 22 §8 set the growth axes once and then touched only <see cref="RingCostMult"/>: the stamina axis grew far less
-    /// (390 -> 162, so the last run is 2.5 minutes instead of 6), the gravity radius grows more (x2.4 -> x2.9, and influx
-    /// follows the circumference), and the planet axis reaches rings 6 and 7 so the required mass falls by 80% instead of
-    /// 40%. That last one is what turns throughput into bodies, which is the 21 §4 problem.
-    /// 24 §6: the ability axis is a new one at 240°, the widest gap left (between the run time and the sale axes).
-    /// Rings 4, 6 and 8 unlock an ability and the ring after each raises it. 24 §19.1: ring 10 unlocks the black hole
-    /// and ring 11 lengthens it. 24 §20.2: ring 2 unlocks the amplifier crystal and ring 3 raises it.
-    /// 24 §20.3: the radius nodes were cut (0.15 / 0.15 / 0.20 / 0.20 / 0.25 -> 0.10 / 0.10 / 0.14 / 0.14 / 0.17, x2.9 -> x2.3)
-    /// with the base radius 180 -> 150, so the gravity ring is 28% of the screen height at ring 1 and 48% at ring 10;
-    /// the crystal buff brings it back up for a while.
-    /// 28 §2: the stamina axis is the run time axis now. Its stamina_max and stamina_drain nodes keep their ids (save
-    /// keys) and all add seconds to the run (<see cref="RunTimePerRing"/>).
+    /// Seed data of the skill tree, v2 (29). PrototypeSetup builds the NodeTable asset from it, and Validate Data warns
+    /// where the asset and this code differ, so the two stay equal. The v1 seed (12 §6, seven axes, 92 nodes) and its
+    /// asset are kept in Data/Backup~ (Unity does not import that folder).
+    ///
+    /// 29 §2: five categories, each owning 72° of the tree. The stem of a category runs out through the middle of its
+    /// sector, one node per ring; side lines branch off it within ±30°, further out the higher the ring. Rule nodes
+    /// (29 §5) sit on their own line beside the stem.
+    /// 29 §3: the stat lines of v1 are split into nodes of more levels (×5 for most), each line summing to what the v1
+    /// line summed to. 13th pass step 1: the split is rough and the rule nodes have no effect yet; step 2 (B1) settles
+    /// the numbers (run time +9 s per ring, radius × 0.7 with gravityGrowthScale 1, and so on).
+    /// 29 §3.5: the ability unlocks stand on the ability stem in rings 2, 4, 6, 8 and 10; each ability's branch splits
+    /// off to the left and to the right in turn.
     /// </summary>
     public static class SkillTreeSeed
     {
-        // Axis angles (12 §5). Two nodes of one axis in one ring sit at ±10°.
-        const float Pair = 10f;
-        public const float GateAxis = 90f;
-        public const float DustAxis = 30f;
-        /// <summary>60°: the dust kind axis since 20 §4 (it used to carry the compound dust mass nodes).</summary>
-        public const float MassAxis = 60f;
-        public const float PlanetAxis = 150f;
-        /// <summary>The fragment nodes share the planet axis, offset so they never sit on a threshold node (20 §5).</summary>
-        public const float FragmentAxis = PlanetAxis - Pair;
-        /// <summary>28 §2: the run time axis (it was the stamina axis; same angle, same node ids).</summary>
-        public const float TimeAxis = 210f;
-        public const float SaleAxis = 270f;
-        public const float GravityAxis = 330f;
-        /// <summary>22 §3: the follow speed nodes share the gravity axis, offset so they never sit on its pull / radius node.</summary>
-        public const float FollowAxis = GravityAxis - Pair;
-        /// <summary>24 §6: the ability axis, between the run time (210°) and the sale (270°) axes.</summary>
-        public const float AbilityAxis = 240f;
+        // 29 §2: stem angles (Unity angles, 90° = up), 72° apart.
+        public const float CelestialStem = 90f;
+        public const float DustStem = 18f;
+        public const float GravityStem = 306f;
+        public const float AbilityStem = 234f;
+        public const float TimeStem = 162f;
+
+        /// <summary>Side lines sit this far and twice this far beside their stem (29 §2: within ±30°).</summary>
+        const float Side = 12f;
 
         /// <summary>Rings 1..11; index 0 is unused.</summary>
         public const int RingCount = 11;
 
-        /// <summary>
-        /// 28 §2 (provisional, the balance pass sets the real values): seconds the run time nodes of one ring add, so a
-        /// run goes from GameParams.runTimeSec 30 s at ring 1 to 30 + 10 × 9 = 120 s once rings 1-10 are bought (28 §3:
-        /// ring 1 30 s, ring 11 120 s). Ring 1 has one level worth all of it, rings 2-10 two levels worth half each, and
-        /// the ring 11 endless node keeps adding half a ring per level.
-        /// </summary>
+        /// <summary>28 §2: seconds of run time per ring (rings 1-10, +90 s in all). The ring 11 endless node is gone (29 §3.4).</summary>
         public const double RunTimePerRing = 9;
 
         /// <summary>
@@ -81,8 +58,8 @@ namespace Incremental.EditorTools
 
         /// <summary>
         /// The balance pass (20 §8.3) measures I_k ring by ring and feeds the numbers back in here before rebuilding the
-        /// node table, instead of editing this file once per ring. The values that survive are written into
-        /// <see cref="MeasuredIncome"/> and <see cref="RingCostMult"/> at the end of the pass, so the seed stays the truth.
+        /// node table. The values that survive are written into <see cref="MeasuredIncome"/> and
+        /// <see cref="RingCostMult"/> at the end of the pass, so the seed stays the truth.
         /// </summary>
         public static void SetMeasuredIncome(int ring, double income)
         {
@@ -99,10 +76,7 @@ namespace Incremental.EditorTools
             if (ring >= 0 && ring < ringMultOverride.Length) ringMultOverride[ring] = mult;
         }
 
-        /// <summary>
-        /// Entry income of ring k. The measurement when there is one, else the 12 §6 draft
-        /// (I_1 = 12, I_(k+1) = 8 × I_k), which is what the first pass of the balance run uses.
-        /// </summary>
+        /// <summary>Entry income of ring k: the measurement when there is one, else the 12 §6 draft (I_1 = 12, ×8 per ring).</summary>
         public static double EntryIncome(int ring)
         {
             if (ring >= 0 && ring < MeasuredIncome.Length && MeasuredIncome[ring] > 0) return MeasuredIncome[ring];
@@ -118,207 +92,31 @@ namespace Incremental.EditorTools
         }
 
         /// <summary>
-        /// 20 §8.2: every node of ring k costs 0.4 × I_k at level 1 and grows ×1.5, and a gate costs 3 × I_k. Rounded to
-        /// two significant digits so the shop reads well. This is the only place node costs come from; the balance pass
-        /// turns <see cref="RingCostMult"/>, never a single node.
+        /// 20 §8.2: a node of ring k costs 0.4 × I_k at level 1, a gate 3 × I_k. 29 §3: levels grow ×1.35 (v1: ×1.5)
+        /// since a line has more of them now. Rounded to two significant digits.
         /// </summary>
         public const double StatCostShare = 0.4;
-        public const double StatCostGrowth = 1.5;
+        public const double StatCostGrowth = 1.35;
         public const double GateCostShare = 3.0;
         /// <summary>Ring 11 endless nodes climb faster than the capped ones, so they stay a money sink (12 §6).</summary>
         public const double EndlessGrowth = 1.6;
+        /// <summary>13th pass B1: a rule node costs this many times a stat node of its ring until the balance pass prices it.</summary>
+        public const double RuleCostMult = 1.5;
+        /// <summary>24 §21.2: an evolve node costs this many times an unlock of its ring.</summary>
+        const double EvolveCostMult = 2;
 
         static double StatCost(int ring) => Nice(StatCostShare * EntryIncome(ring));
         static double GateCost(int ring) => Nice(GateCostShare * EntryIncome(ring));
-        static double KindCost(int ring) => StatCost(ring);
 
         /// <summary>
-        /// The fragment axis (20 §5), by ring: 3 unlocks fragments at 30% with the base offset, 4, 6 and 8 add 15%p each,
-        /// and 5 and 7 move the tier cap one tier up. They sit beside the threshold nodes on the planet axis.
-        /// </summary>
-        static NodeDef FragmentNode(int ring)
-        {
-            switch (ring)
-            {
-                case 3: return Frag("frag_unlock", 3, StatIds.FragUnlock, 0.30, "gate_t3");
-                case 4: return Frag("r4_frag_chance", 4, StatIds.FragChance, 0.15, "frag_unlock");
-                case 5: return Frag("r5_frag_range", 5, StatIds.FragOffset, 1, "r4_frag_chance");
-                case 6: return Frag("r6_frag_chance", 6, StatIds.FragChance, 0.15, "r5_frag_range");
-                case 7: return Frag("r7_frag_range", 7, StatIds.FragOffset, 1, "r6_frag_chance");
-                case 8: return Frag("r8_frag_chance", 8, StatIds.FragChance, 0.15, "r7_frag_range");
-                default: return null;
-            }
-        }
-
-        static NodeDef Frag(string id, int ring, string stat, double effect, params string[] prereqs) =>
-            Stat(id, ring, FragmentAxis, stat, effect, 1, StatCost(ring), 1, prereqs);
-
-        /// <summary>
-        /// The follow speed axis (22 §3): one node in every even ring up to 10, +15%p of the base speed each, one level.
-        /// They chain along the gravity axis, so the first one needs the ring 1 pull node.
-        /// </summary>
-        static NodeDef FollowNode(int ring)
-        {
-            switch (ring)
-            {
-                case 2: return Follow("r2_follow", 2, "r1_pull");
-                case 4: return Follow("r4_follow", 4, "r2_follow");
-                case 6: return Follow("r6_follow", 6, "r4_follow");
-                case 8: return Follow("r8_follow", 8, "r6_follow");
-                case 10: return Follow("r10_follow", 10, "r8_follow");
-                default: return null;
-            }
-        }
-
-        /// <summary>22 §3: +15 percentage points of GameParams.followSpeedPx, one level, on the follow axis.</summary>
-        static NodeDef Follow(string id, int ring, params string[] prereqs) =>
-            Stat(id, ring, FollowAxis, StatIds.FollowSpeed, 0.15, 1, StatCost(ring), 1, prereqs);
-
-        /// <summary>
-        /// The ability axis (24 §6), by ring: 2 (24 §20.2, the amplifier crystal), 4, 6 and 8 unlock an ability, the ring after each raises it by three
-        /// levels; 24 §19.1 put the black hole in ring 10 and its duration in ring 11. A new ability is two more lines
-        /// here and a row in the AbilityTable. To make the 수축 node shorten the
-        /// cooldown instead of widening the range, only its stat changes (StatIds.AbilityCooldown).
-        ///
-        /// 24 §16.1, §17.1: the 수축 node raises the range, and its last level is the whole screen. The levels before
-        /// it share the span from the unlock's reach to the whole screen in equal steps, and both rules read the
-        /// node's maxLevel: giving it more levels here is all it takes (checked with 5: 40, 52, 64, 76, 88%, whole).
-        /// The id still says "power" (the stat it had in the first prototype): it is the key the saves hold its
-        /// level under.
-        /// </summary>
-        static NodeDef AbilityNode(int ring)
-        {
-            switch (ring)
-            {
-                case 2: return AbilityUnlock("crystal", 2);
-                case 3: return AbilityStat("r3_crystal_power", "crystal", 3, StatIds.AbilityPower, 0.1, 3, "ability_crystal");
-                case 4: return AbilityUnlock("implode", 4);
-                case 5: return AbilityStat("r5_implode_power", "implode", 5, StatIds.AbilityRange, 1, 3, "ability_implode");
-                case 6: return AbilityUnlock("satellite", 6);
-                case 7: return AbilityStat("r7_satellite_count", "satellite", 7, StatIds.AbilityCount, 1, 3, "ability_satellite");
-                case 8: return AbilityUnlock("meteor", 8);
-                case 9: return AbilityStat("r9_meteor_amount", "meteor", 9, StatIds.AbilityAmount, 0.03, 3, "ability_meteor");
-                case 10: return AbilityUnlock("blackhole", 10);
-                case 11: return AbilityStat("r11_blackhole_duration", "blackhole", 11, StatIds.AbilityDuration, 1, 3, "ability_blackhole");
-                default: return null;
-            }
-        }
-
-        /// <summary>24 §21.2: the evolve nodes cost this many times an unlock of their ring, until the balance pass prices them.</summary>
-        const double EvolveCostMult = 2;
-
-        /// <summary>
-        /// 24 §21.2: the evolutions, one per ability, rings 7 to 11 (공명, 연쇄 붕괴, 번개 사슬, 유성우, 특이점), each the
-        /// second node of its ring on the ability arm, beside the arm (Pair), after the ability's upgrade node.
-        /// </summary>
-        static NodeDef EvolveNode(int ring)
-        {
-            switch (ring)
-            {
-                // 10/8: the implode (ring 8), satellite (ring 9) and black hole (ring 11) evolutions of the 7th pass were
-                // rejected; those rings have no evolve node until a new design comes.
-                case 7: return AbilityEvolve("crystal", 7, "r3_crystal_power");
-                case 10: return AbilityEvolve("meteor", 10, "r9_meteor_amount");
-                default: return null;
-            }
-        }
-
-        /// <summary>An ability's evolution (24 §21.2): one level, drawn like an unlock, after the ability's upgrade node.</summary>
-        static NodeDef AbilityEvolve(string ability, int ring, string prereq) =>
-            new NodeDef
-            {
-                id = "evolve_" + ability, kind = NodeKind.AbilityEvolve, abilityId = ability, maxLevel = 1,
-                baseCost = Nice(KindCost(ring) * EvolveCostMult), growth = 1, minTier = ring, prereqs = new List<string> { prereq },
-                angleDeg = AbilityAxis + Pair, enabled = true,
-            };
-
-        /// <summary>
-        /// An ability's unlock: one level, at the price of a dust kind unlock of that ring (24 §6). It has no prereq
-        /// entry. 24 §6 lists the gate of its ring, and the ring being open already means exactly that; naming the
-        /// gate as well would only draw a line from the gate axis (90°) across the whole tree to 240°, straight
-        /// through the run time nodes of rings 1-3. Without it the line comes from the center, along the axis.
-        /// </summary>
-        static NodeDef AbilityUnlock(string ability, int ring) =>
-            new NodeDef
-            {
-                id = "ability_" + ability, kind = NodeKind.AbilityUnlock, abilityId = ability, maxLevel = 1,
-                baseCost = KindCost(ring), growth = 1, minTier = ring, prereqs = new List<string>(),
-                angleDeg = AbilityAxis, enabled = true,
-            };
-
-        /// <summary>An ability's stat node: an ordinary axis node (0.4 × I_k, growth 1.5) that also names its ability.</summary>
-        static NodeDef AbilityStat(string id, string ability, int ring, string stat, double perLevel, int maxLevel, params string[] prereqs)
-        {
-            var n = Stat(id, ring, AbilityAxis, stat, perLevel, maxLevel, StatCost(ring), StatCostGrowth, prereqs);
-            n.abilityId = ability;
-            return n;
-        }
-
-        /// <summary>An axis node of ring k: the 20 §8.2 cost formula, so only the effect and the level count are written down.</summary>
-        static NodeDef Ax(string id, int ring, float angle, string stat, double effect, int maxLevel, params string[] prereqs) =>
-            Stat(id, ring, angle, stat, effect, maxLevel, StatCost(ring), StatCostGrowth, prereqs);
-
-        /// <summary>
-        /// The dust kind axis (20 §4), by ring: 3, 5, 7 and 9 unlock a kind, the ring after it raises that kind's share
-        /// by four levels. Ring 11 has nothing on this axis. Ids are stable keys, so the unlocks read like the gates.
-        /// </summary>
-        static NodeDef DustKindNode(int ring)
-        {
-            switch (ring)
-            {
-                case 3: return DustUnlock("medium", 3, "gate_t3");
-                case 4: return DustChance("medium", 4, 0.03, "dust_medium");
-                case 5: return DustUnlock("large", 5, "r4_chance_medium");
-                case 6: return DustChance("large", 6, 0.015, "dust_large");
-                case 7: return DustUnlock("crystal", 7, "r6_chance_large");
-                case 8: return DustChance("crystal", 8, 0.01, "dust_crystal");
-                case 9: return DustUnlock("interstellar", 9, "r8_chance_crystal");
-                case 10: return DustChance("interstellar", 10, 0.01, "dust_interstellar");
-                default: return null;
-            }
-        }
-
-        static NodeDef DustUnlock(string kind, int ring, params string[] prereqs) =>
-            new NodeDef
-            {
-                id = "dust_" + kind, kind = NodeKind.DustKindUnlock, dustKindId = kind, maxLevel = 1,
-                baseCost = KindCost(ring), growth = 1, minTier = ring, prereqs = new List<string>(prereqs),
-                angleDeg = MassAxis, enabled = true,
-            };
-
-        static NodeDef DustChance(string kind, int ring, double perLevel, params string[] prereqs)
-        {
-            var n = Stat("r" + ring + "_chance_" + kind, ring, MassAxis, StatIds.DustChance, perLevel, 4, StatCost(ring), 1.5, prereqs);
-            n.dustKindId = kind;
-            return n;
-        }
-
-        /// <summary>
-        /// Per-ring cost multiplier (index = ring), the only knob turned to pace rings (12 §7, 20 §8.3 step 4). The
-        /// costs themselves come from the measured I_k; a ring that still takes too many or too few runs is nudged here
-        /// and nowhere else. 22 §8 changed the growth axes, so the 20 §8 multipliers were cleared and measured again:
-        /// the bot runs behind these are in Docs/Reports/Week7.md.
+        /// Per-ring cost multiplier (index = ring), the only knob turned to pace rings (12 §7). Carried over from v1
+        /// (Reports/Week7.md); the balance pass (28) measures it again for v2.
         /// </summary>
         public static double[] RingCostMult()
         {
             if (ringMultOverride != null) return (double[])ringMultOverride.Clone();
             var m = new double[RingCount + 1];
             for (int i = 0; i < m.Length; i++) m[i] = 1;
-            // 22 §8. Four full playthroughs were measured; runs per ring, pass by pass
-            // (Reports/Week7_Data/balance_round2..6.md):
-            //   pass 2, all 1.0   3/3/6/5/5/4/6/1/5/4/2   44 runs, 52 min
-            //   pass 3            8/6/5/8/5/6/6/16/6/2/2  70 runs, 86 min
-            //   pass 4 (these)    7/8/5/6/8/8/5/8/9/8/2   74 runs, 112 min   <- the run that passes
-            //   pass 5            7/6/10/5/8/5/12/7/6/5/2 73 runs, 102 min
-            //   pass 6            7/6/6/6/7/8/4/6/4/10/2  66 runs, 96 min
-            //   pass 8            6/7/8/7/8/5/3/4/4/7/2   61 runs, 83 min   <- the 22 §5 vortex ceiling raised throughput
-            //   pass 9            7/7/6/8/8/5/5/4/5/6/2   63 runs, 85 min
-            //   pass 10 (these)                                             <- rings 7-10 lifted hard: they clear in
-            //                                                                  4-6 runs and that is where the time is
-            // Passes 5 and 6 nudged each ring toward 7 runs and both came out worse: the run count answers the
-            // multiplier faster than linearly (raising rings 3 and 7 by x1.4 doubled their runs), so aiming straight at
-            // the target overshoots. Pass 9 therefore moves each ring by the square root of the ratio it needs.
-            // Nothing but this table was tuned after the growth axes were fixed (20 §8.3 step 4).
             m[1] = 2.5;
             m[2] = 3.1;
             m[3] = 2.1;
@@ -326,132 +124,308 @@ namespace Incremental.EditorTools
             m[5] = 1.9;
             m[6] = 3.9;
             m[7] = 3.7;
-            m[8] = 11.5;   // rings 8-10 need multipliers this far from 1 because the 20 §8 I_k is measured on an economy
-            m[9] = 3.8;    // that no longer exists; re-measuring I_k is the real fix (Week7.md §9-4)
+            m[8] = 11.5;
+            m[9] = 3.8;
             m[10] = 8.4;
             return m;
         }
 
         public static List<NodeDef> Nodes()
         {
-            const string spawn = StatIds.SpawnRate, pull = StatIds.PullAccel, sale = StatIds.SaleMult, time = StatIds.RunTime,
-                threshold = StatIds.ThresholdMult, cap = StatIds.DustCap, radius = StatIds.GravityRadius, start = StatIds.StartBonus;
-            const double halfRing = RunTimePerRing / 2;
             var n = new List<NodeDef>();
-
-            // Ring 1: two nodes after the first run, gate around run 3-4.
-            n.Add(Ax("r1_spawn", 1, DustAxis, spawn, 1, 2));
-            n.Add(Ax("r1_pull", 1, GravityAxis, pull, 0.2, 2));
-            n.Add(Ax("r1_sale", 1, SaleAxis, sale, 0.25, 1));
-            n.Add(Ax("r1_stamina", 1, TimeAxis, time, RunTimePerRing, 1));
-            n.Add(Gate(2));
-
-            // Ring 2 (I = 96): dust cap and gravity radius arrive ("dust surge", 10 §4.3); the planet axis starts here.
-            n.Add(Ax("r2_spawn", 2, DustAxis - Pair, spawn, 2, 2, "r1_spawn"));
-            n.Add(Ax("r2_cap", 2, DustAxis + Pair, cap, 100, 2, "r1_spawn"));
-            n.Add(Ax("r2_radius", 2, GravityAxis + Pair, radius, 0.10, 2, "r1_pull"));
-            n.Add(FollowNode(2));
-            n.Add(Ax("r2_sale", 2, SaleAxis, sale, 0.25, 2, "r1_sale"));
-            n.Add(Ax("r2_stamina", 2, TimeAxis, time, halfRing, 2, "r1_stamina"));
-            n.Add(Ax("r2_threshold", 2, PlanetAxis, threshold, 0.07, 2, "gate_t2"));
-            n.Add(AbilityNode(2));   // 24 §20.2: the amplifier crystal, the first ability
-            n.Add(Gate(3));
-
-            // Ring 3 (I = 768): start bonus, run time and the first dust kind unlock (20 §4).
-            n.Add(Ax("r3_start", 3, DustAxis, start, 50, 2, "r2_cap"));
-            n.Add(Ax("r3_pull", 3, GravityAxis, pull, 0.30, 2, "r2_radius"));
-            n.Add(Ax("r3_sale", 3, SaleAxis, sale, 0.25, 2, "r2_sale"));
-            n.Add(Ax("r3_drain", 3, TimeAxis, time, halfRing, 2, "r2_stamina"));
-            n.Add(Ax("r3_threshold", 3, PlanetAxis, threshold, 0.07, 2, "r2_threshold"));
-            n.Add(DustKindNode(3));
-            n.Add(FragmentNode(3));
-            n.Add(AbilityNode(3));   // 24 §20.2: its upgrade
-            n.Add(Gate(4));
-
-            // Rings 4-10: one node per axis (two levels each) + the dust kind axis node; prereq = the same axis in the ring before.
-            Ring(n, 4, (spawn, 3, DustAxis, "r3_start"), (radius, 0.10, GravityAxis + Pair, "r3_pull"), (threshold, 0.12, PlanetAxis, "r3_threshold"),
-                (sale, 0.50, SaleAxis, "r3_sale"), (time, halfRing, TimeAxis, "r3_drain"));
-            Ring(n, 5, (cap, 300, DustAxis, "r4_spawn"), (pull, 0.40, GravityAxis, "r4_radius"), (threshold, 0.10, PlanetAxis, "r4_threshold"),
-                (sale, 0.50, SaleAxis, "r4_sale"), (time, halfRing, TimeAxis, "r4_stamina"));
-            Ring(n, 6, (spawn, 5, DustAxis, "r5_cap"), (radius, 0.14, GravityAxis + Pair, "r5_pull"),
-                (threshold, 0.06, PlanetAxis, "r5_threshold"), (sale, 1.00, SaleAxis, "r5_sale"), (time, halfRing, TimeAxis, "r5_drain"));
-            Ring(n, 7, (cap, 500, DustAxis, "r6_spawn"), (pull, 0.50, GravityAxis, "r6_radius"),
-                (threshold, 0.04, PlanetAxis, "r6_threshold"), (sale, 1.00, SaleAxis, "r6_sale"), (time, halfRing, TimeAxis, "r6_stamina"));
-            Ring(n, 8, (spawn, 8, DustAxis - Pair, "r7_cap"), (start, 200, DustAxis + Pair, "r7_cap"), (radius, 0.14, GravityAxis + Pair, "r7_pull"),
-                (sale, 2.00, SaleAxis, "r7_sale"), (time, halfRing, TimeAxis, "r7_drain"));
-            Ring(n, 9, (cap, 800, DustAxis, "r8_spawn|r8_start"), (pull, 0.60, GravityAxis, "r8_radius"),
-                (sale, 2.00, SaleAxis, "r8_sale"), (time, halfRing, TimeAxis, "r8_stamina"));
-            Ring(n, 10, (spawn, 12, DustAxis, "r9_cap"), (radius, 0.17, GravityAxis + Pair, "r9_pull"),
-                (sale, 4.00, SaleAxis, "r9_sale"), (time, halfRing, TimeAxis, "r9_drain"));
-
-            // Ring 11: endless nodes with unlimited levels. The dust kind axis ends at ring 10, so the third endless node
-            // sits on the dust axis instead of the old compound mass node (20 §4).
-            n.Add(Stat("r11_sale", 11, SaleAxis, sale, 1.00, 0, StatCost(11), EndlessGrowth, "r10_sale"));
-            n.Add(Stat("r11_spawn", 11, DustAxis, spawn, 12, 0, StatCost(11), EndlessGrowth, "r10_spawn"));
-            n.Add(Stat("r11_stamina", 11, TimeAxis, time, halfRing, 0, StatCost(11), EndlessGrowth, "r10_stamina"));
-            // 24 §19.1: the black hole's duration node, the one capped node of ring 11. 24 §21.2: and its evolution.
-            n.Add(AbilityNode(11));
+            Celestial(n);
+            Dust(n);
+            Gravity(n);
+            Time(n);
+            Ability(n);
             return n;
         }
 
-        /// <summary>Ring k of the template: the given axis nodes (2 levels, 0.4 × I_k, growth 1.5), the dust kind axis, next gate.</summary>
-        static void Ring(List<NodeDef> n, int ring, params (string stat, double effect, float angle, string prereqs)[] axes)
-        {
-            foreach (var a in axes)
-                n.Add(Ax("r" + ring + "_" + ShortName(a.stat, ring), ring, a.angle, a.stat, a.effect, 2, a.prereqs.Split('|')));
-            var dust = DustKindNode(ring);
-            if (dust != null) n.Add(dust);
-            var frag = FragmentNode(ring);
-            if (frag != null) n.Add(frag);
-            var follow = FollowNode(ring);
-            if (follow != null) n.Add(follow);
-            var ability = AbilityNode(ring);
-            if (ability != null) n.Add(ability);
-            var evolve = EvolveNode(ring);
-            if (evolve != null) n.Add(evolve);
-            if (ring + 1 <= RingCount) n.Add(Gate(ring + 1));
-        }
+        // ---------------- 29 §3.1 천체 (90°) ----------------
 
         /// <summary>
-        /// The id suffix of a template node. 28 §2: the run time nodes keep the ids of the stamina nodes they replaced
-        /// (save keys): stamina_max sat in the even rings and stamina_drain in the odd ones.
+        /// Stem: the gates (gate_t2 in ring 1 … gate_t11 in ring 10). Left: sale (rings 1-10 ×5, ring 11 endless) and
+        /// the rule line. Right: required mass (rings 2-10 ×5) and fragments (rings 3-9).
         /// </summary>
-        static string ShortName(string stat, int ring)
+        static void Celestial(List<NodeDef> n)
         {
-            switch (stat)
+            const NodeCategory c = NodeCategory.Celestial;
+            for (int tier = 2; tier <= RingCount; tier++) n.Add(Gate(tier));
+
+            // v1 sale per ring (sums to 23.25), now spread over 5 levels.
+            double[] sale = { 0, 0.25, 0.5, 0.5, 1, 1, 2, 2, 4, 4, 8 };
+            Line(n, c, "sale", StatIds.SaleMult, +Side, 1, 10, 5, r => sale[r], r => r == 1 ? null : "sale_r" + (r - 1));
+            n.Add(Endless("sale_r11", c, +Side, StatIds.SaleMult, 1.0, "sale_r10"));
+
+            // v1 required mass ended in ring 7 at 0.92 (capped at maxReduction 0.9); v2 runs it to ring 10 with the same sum.
+            double[] thr = { 0, 0, 0.14, 0.14, 0.14, 0.12, 0.10, 0.10, 0.08, 0.06, 0.04 };
+            Line(n, c, "thr", StatIds.ThresholdMult, -Side, 2, 10, 5, r => thr[r], r => r == 2 ? "gate_t2" : "thr_r" + (r - 1));
+
+            // 20 §5 fragments: unlock 3, chance 4·6·8 (×3), range 5·7·9 (×1, ring 9 new).
+            n.Add(Stat("frag_unlock", c, 3, -2 * Side, StatIds.FragUnlock, 0.30, 1, "gate_t3"));
+            n.Add(Stat("frag_chance_r4", c, 4, -2 * Side, StatIds.FragChance, 0.05, 3, "frag_unlock"));
+            n.Add(Stat("frag_range_r5", c, 5, -2 * Side, StatIds.FragOffset, 1, 1, "frag_chance_r4"));
+            n.Add(Stat("frag_chance_r6", c, 6, -2 * Side, StatIds.FragChance, 0.05, 3, "frag_range_r5"));
+            n.Add(Stat("frag_range_r7", c, 7, -2 * Side, StatIds.FragOffset, 1, 1, "frag_chance_r6"));
+            n.Add(Stat("frag_chance_r8", c, 8, -2 * Side, StatIds.FragChance, 0.05, 3, "frag_range_r7"));
+            n.Add(Stat("frag_range_r9", c, 9, -2 * Side, StatIds.FragOffset, 1, 1, "frag_chance_r8"));
+
+            // 29 §5.4 rules: C3 ring 2, C1 ring 3, C2 ring 5 (×3), C4 ring 7 (×2).
+            n.Add(Rule("C3", c, 2, +2 * Side, 1, "gate_t2"));
+            n.Add(Rule("C1", c, 3, +2 * Side, 1, "rule_C3"));
+            n.Add(Rule("C2", c, 5, +2 * Side, 3, "rule_C1"));
+            n.Add(Rule("C4", c, 7, +2 * Side, 2, "rule_C2"));
+        }
+
+        // ---------------- 29 §3.2 먼지 (18°) ----------------
+
+        /// <summary>
+        /// Stem: spawn rate (rings 1-10 ×5, ring 11 endless). Left: dust cap (even rings), start bonus (3·6·9) and the
+        /// rule line (4·5·7). Right: dust kinds (unlock 3·5·7·9, chance 4·6·8·10) and dust mass (5·7·9·11).
+        /// </summary>
+        static void Dust(List<NodeDef> n)
+        {
+            const NodeCategory c = NodeCategory.Dust;
+            // v1 spawn per ring 2/4/-/6/-/10/-/16/-/24 (62), spread so every ring has its share.
+            double[] spawn = { 0, 2, 4, 3, 3, 5, 5, 8, 8, 12, 12 };
+            Line(n, c, "spawn", StatIds.SpawnRate, 0f, 1, 10, 5, r => spawn[r], r => r == 1 ? null : "spawn_r" + (r - 1));
+            n.Add(Endless("spawn_r11", c, 0f, StatIds.SpawnRate, 12, "spawn_r10"));
+
+            // v1 cap 200/600/1000/1600 in rings 2·5·7·9 (3400); same sum over 2·4·6·8·10.
+            double[] cap = { 0, 0, 200, 0, 300, 0, 600, 0, 1000, 0, 1300 };
+            Line(n, c, "cap", StatIds.DustCap, +Side, 2, 10, 5, r => cap[r], r => r == 2 ? "spawn_r1" : "cap_r" + (r - 2), 2);
+
+            // v1 start 100 (ring 3) + 400 (ring 8) = 500.
+            n.Add(Stat("start_r3", c, 3, +2 * Side, StatIds.StartBonus, 100 / 3.0, 3, "spawn_r2"));
+            n.Add(Stat("start_r6", c, 6, +2 * Side, StatIds.StartBonus, 50, 3, "start_r3"));
+            n.Add(Stat("start_r9", c, 9, +2 * Side, StatIds.StartBonus, 250 / 3.0, 3, "start_r6"));
+
+            // 20 §4 dust kinds, one line: unlock in odd rings, its chance in the ring after: the v1 sum (4 levels) over
+            // 5 levels. Per level it has to equal GameParams.dustKinds[].chancePerLevel (Validate Data checks).
+            n.Add(Kind("medium", 3, "spawn_r2"));
+            n.Add(Chance("medium", 4, 0.024, "dust_medium"));
+            n.Add(Kind("large", 5, "chance_medium_r4"));
+            n.Add(Chance("large", 6, 0.012, "dust_large"));
+            n.Add(Kind("crystal", 7, "chance_large_r6"));
+            n.Add(Chance("crystal", 8, 0.008, "dust_crystal"));
+            n.Add(Kind("interstellar", 9, "chance_crystal_r8"));
+            n.Add(Chance("interstellar", 10, 0.008, "dust_interstellar"));
+
+            // 29 §3.2 dust mass (new): ×1.1 per level, compound, ×3.
+            n.Add(Stat("mass_r5", c, 5, -2 * Side, StatIds.DustMass, 1.1, 3, "spawn_r4"));
+            n.Add(Stat("mass_r7", c, 7, -2 * Side, StatIds.DustMass, 1.1, 3, "mass_r5"));
+            n.Add(Stat("mass_r9", c, 9, -2 * Side, StatIds.DustMass, 1.1, 3, "mass_r7"));
+            n.Add(Stat("mass_r11", c, 11, -2 * Side, StatIds.DustMass, 1.1, 3, "mass_r9"));
+
+            // 29 §5.2 rules: D1 ring 4 (×3), D3 ring 5 (×3), D4 ring 7 (×3).
+            n.Add(Rule("D1", c, 4, +2 * Side, 3, "spawn_r3"));
+            n.Add(Rule("D3", c, 5, +2 * Side, 3, "rule_D1"));
+            n.Add(Rule("D4", c, 7, +2 * Side, 3, "rule_D3"));
+        }
+
+        static NodeDef Kind(string kind, int ring, string prereq) =>
+            new NodeDef
             {
-                case StatIds.RunTime: return ring % 2 == 0 ? "stamina" : "drain";
-                case StatIds.SpawnRate: return "spawn";
-                case StatIds.PullAccel: return "pull";
-                case StatIds.SaleMult: return "sale";
-                case StatIds.ThresholdMult: return "threshold";
-                case StatIds.DustCap: return "cap";
-                case StatIds.DustMass: return "mass";
-                case StatIds.GravityRadius: return "radius";
-                case StatIds.StartBonus: return "start";
-                case StatIds.FragUnlock: return "frag";
-                case StatIds.FragChance: return "fragchance";
-                case StatIds.FragOffset: return "fragrange";
-                case StatIds.FollowSpeed: return "follow";
-                default: return stat;
+                id = "dust_" + kind, kind = NodeKind.DustKindUnlock, dustKindId = kind, maxLevel = 1, baseCost = StatCost(ring), growth = 1,
+                minTier = ring, prereqs = new List<string> { prereq }, angleDeg = Angle(NodeCategory.Dust, -Side),
+                category = NodeCategory.Dust, enabled = true,
+            };
+
+        static NodeDef Chance(string kind, int ring, double perLevel, string prereq)
+        {
+            var d = Stat("chance_" + kind + "_r" + ring, NodeCategory.Dust, ring, -Side, StatIds.DustChance, perLevel, 5, prereq);
+            d.dustKindId = kind;
+            return d;
+        }
+
+        // ---------------- 29 §3.3 중력 (306°) ----------------
+
+        /// <summary>
+        /// Stem: pull (rings 1-10 ×5). Left: radius (2-10 ×5) and the rule line. Right: follow speed (even rings ×3)
+        /// and the dust top speed (3·6·9 ×3, new).
+        /// </summary>
+        static void Gravity(List<NodeDef> n)
+        {
+            const NodeCategory c = NodeCategory.Gravity;
+            // v1 pull 0.4/0.6/0.8/1.0/1.2 in the odd rings (4.0), split between each odd ring and the one after.
+            double[] pull = { 0, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.5, 0.5, 0.6, 0.6 };
+            Line(n, c, "pull", StatIds.PullAccel, 0f, 1, 10, 5, r => pull[r], r => r == 1 ? null : "pull_r" + (r - 1));
+
+            // v1 radius 0.2/0.2/0.28/0.28/0.34 in the even rings (1.3). Step 1 keeps the v1 sum; B1 puts × 0.7 here and
+            // sets gravityGrowthScale to 1.
+            double[] radius = { 0, 0, 0.14, 0.10, 0.10, 0.13, 0.14, 0.14, 0.16, 0.18, 0.21 };
+            Line(n, c, "radius", StatIds.GravityRadius, +Side, 2, 10, 5, r => radius[r], r => r == 2 ? "pull_r1" : "radius_r" + (r - 1));
+
+            // 22 §3 follow: +15%p per v1 node, now ×3.
+            for (int r = 2; r <= 10; r += 2)
+                n.Add(Stat("follow_r" + r, c, r, -Side, StatIds.FollowSpeed, 0.05, 3, r == 2 ? "pull_r1" : "follow_r" + (r - 2)));
+
+            // 29 §3.3 dust top speed (new): +5% per level, ×3.
+            for (int r = 3; r <= 9; r += 3)
+                n.Add(Stat("speed_r" + r, c, r, -2 * Side, StatIds.DustMaxSpeed, 0.05, 3, r == 3 ? "pull_r2" : "speed_r" + (r - 3)));
+
+            // 29 §5.3 rules: G1 ring 3, G2 ring 5, G3 ring 7.
+            n.Add(Rule("G1", c, 3, +2 * Side, 1, "pull_r2"));
+            n.Add(Rule("G2", c, 5, +2 * Side, 1, "rule_G1"));
+            n.Add(Rule("G3", c, 7, +2 * Side, 1, "rule_G2"));
+        }
+
+        // ---------------- 29 §3.4 시간 (162°) ----------------
+
+        /// <summary>Stem: run time (rings 1-10 ×5, +9 s per ring). The rule nodes branch off left and right in turn.</summary>
+        static void Time(List<NodeDef> n)
+        {
+            const NodeCategory c = NodeCategory.Time;
+            Line(n, c, "time", StatIds.RunTime, 0f, 1, 10, 5, r => RunTimePerRing, r => r == 1 ? null : "time_r" + (r - 1));
+
+            // 29 §5.1 rules: T1 ring 2 (×3), T2 ring 4, T5 ring 5, T3 ring 6.
+            n.Add(Rule("T1", c, 2, +Side, 3, "time_r1"));
+            n.Add(Rule("T2", c, 4, -Side, 1, "time_r3"));
+            n.Add(Rule("T5", c, 5, +Side, 1, "time_r4"));
+            n.Add(Rule("T3", c, 6, -Side, 1, "time_r5"));
+        }
+
+        // ---------------- 29 §3.5 능력 (234°) ----------------
+
+        /// <summary>
+        /// Stem: the five unlocks in rings 2, 4, 6, 8, 10, each needing the one before. Branches alternate left (+) and
+        /// right (−) and lean further out the further they run: 결정 left, 수축 right, 궤도석 left, 유성 right,
+        /// 블랙홀 left. The two rule nodes sit at the outer edge of the right side.
+        /// </summary>
+        static void Ability(List<NodeDef> n)
+        {
+            n.Add(AbilityUnlock("crystal", 2, null));
+            n.Add(AbilityUnlock("implode", 4, "ability_crystal"));
+            n.Add(AbilityUnlock("satellite", 6, "ability_implode"));
+            n.Add(AbilityUnlock("meteor", 8, "ability_satellite"));
+            n.Add(AbilityUnlock("blackhole", 10, "ability_meteor"));
+
+            // 증폭 결정 (left): power 3 ×5, buff duration 4 ×3, spawn interval 5 ×3, evolve 7.
+            n.Add(AbilityStat("crystal_power_r3", "crystal", 3, +8, StatIds.AbilityPower, 0.06, 5, "ability_crystal"));
+            n.Add(AbilityStat("crystal_duration_r4", "crystal", 4, +14, StatIds.AbilityDuration, 0.5, 3, "crystal_power_r3"));
+            n.Add(AbilityStat("crystal_interval_r5", "crystal", 5, +20, StatIds.AbilityCooldown, 0.05, 3, "crystal_duration_r4"));
+            n.Add(AbilityEvolve("crystal", 7, +20, "crystal_interval_r5"));
+
+            // 수축 (right): range 5 ×3 (last level the whole screen), power 6 ×3, cooldown 7 ×3.
+            n.Add(AbilityStat("implode_range_r5", "implode", 5, -8, StatIds.AbilityRange, 1, 3, "ability_implode"));
+            n.Add(AbilityStat("implode_power_r6", "implode", 6, -14, StatIds.AbilityPower, 0.1, 3, "implode_range_r5"));
+            n.Add(AbilityStat("implode_cooldown_r7", "implode", 7, -20, StatIds.AbilityCooldown, 0.05, 3, "implode_power_r6"));
+
+            // 궤도석 (left): count 7 ×3, tow 8 ×3, orbit size 9 ×3.
+            n.Add(AbilityStat("satellite_count_r7", "satellite", 7, +8, StatIds.AbilityCount, 1, 3, "ability_satellite"));
+            n.Add(AbilityStat("satellite_tow_r8", "satellite", 8, +14, StatIds.AbilityPower, 0.1, 3, "satellite_count_r7"));
+            n.Add(AbilityStat("satellite_orbit_r9", "satellite", 9, +20, StatIds.AbilityRange, 1, 3, "satellite_tow_r8"));
+
+            // 유성 (right): amount 9 ×3, interval 9 ×3, evolve 10.
+            n.Add(AbilityStat("meteor_amount_r9", "meteor", 9, -8, StatIds.AbilityAmount, 0.03, 3, "ability_meteor"));
+            n.Add(AbilityStat("meteor_interval_r9", "meteor", 9, -18, StatIds.AbilityCooldown, 0.05, 3, "meteor_amount_r9"));
+            n.Add(AbilityEvolve("meteor", 10, -14, "meteor_interval_r9"));
+
+            // 블랙홀 (left): duration 11 ×3, cooldown 11 ×3.
+            n.Add(AbilityStat("blackhole_duration_r11", "blackhole", 11, +8, StatIds.AbilityDuration, 1, 3, "ability_blackhole"));
+            n.Add(AbilityStat("blackhole_cooldown_r11", "blackhole", 11, +16, StatIds.AbilityCooldown, 0.05, 3, "blackhole_duration_r11"));
+
+            // 29 §5.5 rules: A2 ring 5, A1 ring 7.
+            n.Add(Rule("A2", NodeCategory.Ability, 5, -22, 1, "ability_crystal"));
+            n.Add(Rule("A1", NodeCategory.Ability, 7, -28, 1, "rule_A2"));
+        }
+
+        static NodeDef AbilityUnlock(string ability, int ring, string prereq) =>
+            new NodeDef
+            {
+                id = "ability_" + ability, kind = NodeKind.AbilityUnlock, abilityId = ability, maxLevel = 1, baseCost = StatCost(ring),
+                growth = 1, minTier = ring, prereqs = prereq != null ? new List<string> { prereq } : new List<string>(),
+                angleDeg = Angle(NodeCategory.Ability, 0f), category = NodeCategory.Ability, enabled = true,
+            };
+
+        static NodeDef AbilityStat(string id, string ability, int ring, float offset, string stat, double perLevel, int maxLevel, string prereq)
+        {
+            var s = Stat(id, NodeCategory.Ability, ring, offset, stat, perLevel, maxLevel, prereq);
+            s.abilityId = ability;
+            return s;
+        }
+
+        static NodeDef AbilityEvolve(string ability, int ring, float offset, string prereq) =>
+            new NodeDef
+            {
+                id = "evolve_" + ability, kind = NodeKind.AbilityEvolve, abilityId = ability, maxLevel = 1,
+                baseCost = Nice(StatCost(ring) * EvolveCostMult), growth = 1, minTier = ring, prereqs = new List<string> { prereq },
+                angleDeg = Angle(NodeCategory.Ability, offset), category = NodeCategory.Ability, enabled = true,
+            };
+
+        // ---------------- building blocks ----------------
+
+        static float Stem(NodeCategory c)
+        {
+            switch (c)
+            {
+                case NodeCategory.Celestial: return CelestialStem;
+                case NodeCategory.Dust: return DustStem;
+                case NodeCategory.Gravity: return GravityStem;
+                case NodeCategory.Ability: return AbilityStem;
+                default: return TimeStem;
             }
         }
 
-        static NodeDef Stat(string id, int ring, float angle, string stat, double effect, int maxLevel, double baseCost, double growth,
-            params string[] prereqs) =>
+        /// <summary>The seed angle of a node: its stem plus the offset, kept in 0..360.</summary>
+        static float Angle(NodeCategory c, float offset)
+        {
+            float a = (Stem(c) + offset) % 360f;
+            return a < 0f ? a + 360f : a;
+        }
+
+        /// <summary>
+        /// The inner rings are short: a side line sits this much further from its stem there, so its node clears the
+        /// stem node (ring 1: 12° is about 50 px, less than a gate and a stat node side by side). Still within ±30°.
+        /// </summary>
+        static float Spread(int ring) => ring <= 1 ? 1.6f : ring == 2 ? 1.25f : 1f;
+
+        /// <summary>
+        /// One stat line: a node in every <paramref name="step"/>-th ring from <paramref name="first"/> to
+        /// <paramref name="last"/>, worth <paramref name="ringTotal"/>(ring) over <paramref name="levels"/> levels.
+        /// </summary>
+        static void Line(List<NodeDef> n, NodeCategory c, string name, string stat, float offset, int first, int last, int levels,
+            Func<int, double> ringTotal, Func<int, string> prereq, int step = 1)
+        {
+            for (int r = first; r <= last; r += step)
+            {
+                var pre = prereq(r);
+                n.Add(Stat(name + "_r" + r, c, r, offset, stat, ringTotal(r) / levels, levels, pre != null ? new[] { pre } : new string[0]));
+            }
+        }
+
+        static NodeDef Stat(string id, NodeCategory c, int ring, float offset, string stat, double effect, int maxLevel, params string[] prereqs) =>
             new NodeDef
             {
                 id = id, kind = NodeKind.Stat, statId = stat, effectPerLevel = effect, maxLevel = maxLevel,
-                baseCost = baseCost, growth = growth, minTier = ring, prereqs = new List<string>(prereqs), angleDeg = angle, enabled = true,
+                baseCost = StatCost(ring), growth = StatCostGrowth, minTier = ring, prereqs = new List<string>(prereqs),
+                angleDeg = Angle(c, offset * Spread(ring)), category = c, enabled = true,
             };
 
-        /// <summary>Gate to tier t: in ring t - 1, after the previous gate. 3 × the entry income of its ring (20 §8.2).</summary>
+        /// <summary>A ring 11 node with unlimited levels (12 §6), climbing faster than the capped ones.</summary>
+        static NodeDef Endless(string id, NodeCategory c, float offset, string stat, double effect, string prereq)
+        {
+            var e = Stat(id, c, 11, offset, stat, effect, 0, prereq);
+            e.growth = EndlessGrowth;
+            return e;
+        }
+
+        /// <summary>29 §5: a rule node. Costs <see cref="RuleCostMult"/> × a stat node of its ring; no effect value yet.</summary>
+        static NodeDef Rule(string ruleId, NodeCategory c, int ring, float offset, int maxLevel, string prereq) =>
+            new NodeDef
+            {
+                id = "rule_" + ruleId, kind = NodeKind.Rule, ruleId = ruleId, maxLevel = maxLevel,
+                baseCost = Nice(StatCost(ring) * RuleCostMult), growth = StatCostGrowth, minTier = ring,
+                prereqs = new List<string> { prereq }, angleDeg = Angle(c, offset * Spread(ring)), category = c, enabled = true,
+            };
+
+        /// <summary>Gate to tier t: the celestial stem in ring t − 1, after the previous gate. 3 × I of its ring (20 §8.2).</summary>
         static NodeDef Gate(int tier) =>
             new NodeDef
             {
                 id = "gate_t" + tier, kind = NodeKind.TierUnlock, tier = tier, maxLevel = 1, baseCost = GateCost(tier - 1), growth = 1,
                 minTier = tier - 1, prereqs = tier > 2 ? new List<string> { "gate_t" + (tier - 1) } : new List<string>(),
-                angleDeg = GateAxis, enabled = true,
+                angleDeg = CelestialStem, category = NodeCategory.Celestial, enabled = true,
             };
     }
 }

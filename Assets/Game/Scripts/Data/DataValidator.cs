@@ -37,6 +37,7 @@ namespace Incremental
                 if (!UIStrings.Has(key)) r.Errors.Add($"UIStrings: missing key '{key}' (credits, 15 §4.4).");
             ValidateNodes(c, t, r);
             ValidateGates(c, t, r);
+            ValidateRules(t, r);
             ValidateGraph(t, r);
             ValidateAngles(t, r);
             ValidateRingCostMult(c, t, r);
@@ -140,8 +141,6 @@ namespace Incremental
             foreach (var n in t.nodes)
             {
                 if (n == null) continue;
-                if (n.statId == StatIds.DustMass && n.kind == NodeKind.Stat && n.enabled)
-                    r.Errors.Add($"NodeTable: '{n.id}' raises dust_mass; the compound dust mass nodes were replaced by the dust kind axis (20 §4).");
                 bool needsKind = n.IsDustUnlock || (n.kind == NodeKind.Stat && StatIds.NeedsDustKind(n.statId));
                 if (!needsKind)
                 {
@@ -270,6 +269,8 @@ namespace Incremental
             if (t.fontBold == null) r.Warnings.Add("UITheme.fontBold: no font file; the regular one is used for titles and values");
             if (t.textShader == null) r.Errors.Add("UITheme.textShader: not set (a build would not include the TextMeshPro shader)");
             if (t.panelMaterial == null) r.Errors.Add("UITheme.panelMaterial: not set (panels, buttons and bars would not be drawn)");
+            if (t.treeIconMaterial == null) r.Errors.Add("UITheme.treeIconMaterial: not set (skill tree nodes would not be drawn)");
+            if (t.tree.categoryColors == null || t.tree.categoryColors.Length < 5) r.Errors.Add("UITheme.tree.categoryColors: need one color per NodeCategory (5)");
             if (t.fontSamplingSize < 16 || t.fontPaddingPx < 1 || t.fontAtlasSize < 256)
                 r.Errors.Add($"UITheme: font atlas settings too small (sampling {t.fontSamplingSize}, padding {t.fontPaddingPx}, atlas {t.fontAtlasSize})");
             foreach (var size in new[] { t.sizeDisplay, t.sizeTitle, t.sizeLarge, t.sizeBody, t.sizeSmall, t.sizeTiny })
@@ -719,6 +720,21 @@ namespace Incremental
             }
         }
 
+        // 29 §5: a rule node names its rule, which has a name and a line in UIStrings, and has a level cap.
+        static void ValidateRules(NodeTable t, ValidationReport r)
+        {
+            var seen = new HashSet<string>();
+            foreach (var n in t.nodes)
+            {
+                if (n == null || !n.IsRule) continue;
+                if (string.IsNullOrEmpty(n.ruleId)) { r.Errors.Add($"NodeTable: rule node '{n.id}' has no ruleId."); continue; }
+                if (!seen.Add(n.ruleId)) r.Errors.Add($"NodeTable: rule '{n.ruleId}' has more than one node.");
+                if (!UIStrings.Has(UIStrings.RuleNameKey(n.ruleId))) r.Errors.Add($"UIStrings: missing key '{UIStrings.RuleNameKey(n.ruleId)}'.");
+                if (!UIStrings.Has(UIStrings.RuleEffectKey(n.ruleId))) r.Errors.Add($"UIStrings: missing key '{UIStrings.RuleEffectKey(n.ruleId)}'.");
+                if (n.maxLevel < 1) r.Errors.Add($"NodeTable: rule node '{n.id}' needs a level cap (29 §5: ×1 to ×3).");
+            }
+        }
+
         // Gates: exactly one per tier 2..N, tier exists, one level.
         static void ValidateGates(CelestialTable c, NodeTable t, ValidationReport r)
         {
@@ -831,6 +847,8 @@ namespace Incremental
                 var a = t.nodes[i];
                 var b = t.nodes[j];
                 if (a == null || b == null || a.minTier != b.minTier) continue;
+                // 29 §3.5: two nodes of one ring set apart in radius do not overlap.
+                if (Math.Abs(a.radiusOffset - b.radiusOffset) >= 0.3f) continue;
                 float d = Math.Abs(a.angleDeg - b.angleDeg) % 360f;
                 if (d > 180f) d = 360f - d;
                 if (d < MinAngleGapDeg)

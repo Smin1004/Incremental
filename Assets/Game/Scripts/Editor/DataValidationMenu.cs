@@ -285,7 +285,9 @@ namespace Incremental.EditorTools
             // Unity serializes a null string as "".
             if (a.kind != s.kind || (a.statId ?? "") != (s.statId ?? "") || a.effectPerLevel != s.effectPerLevel || a.maxLevel != s.maxLevel ||
                 a.baseCost != s.baseCost || a.growth != s.growth || a.tier != s.tier || a.minTier != s.minTier ||
-                a.angleDeg != s.angleDeg || a.enabled != s.enabled || (a.abilityId ?? "") != (s.abilityId ?? ""))
+                a.angleDeg != s.angleDeg || a.enabled != s.enabled || (a.abilityId ?? "") != (s.abilityId ?? "") ||
+                a.radiusOffset != s.radiusOffset || a.category != s.category || (a.ruleId ?? "") != (s.ruleId ?? "") ||
+                (a.dustKindId ?? "") != (s.dustKindId ?? ""))
                 return false;
             var ap = a.prereqs ?? new List<string>();
             var sp = s.prereqs ?? new List<string>();

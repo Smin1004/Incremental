@@ -214,6 +214,44 @@ namespace Incremental
             { "stat.ability_duration.name", "지속" },
             { "stat.ability_duration.effect", "+{0}초" },
 
+            // 29 §3.3: the new gravity line.
+            { "stat.dust_max_speed.name", "먼지 최고 속도" },
+            { "stat.dust_max_speed.effect", "+{0}%" },
+
+            // Rule nodes (29 §5): name and one line, by rule id. 13th pass step 1 bought them without an effect yet.
+            { "rule.T1.name", "유예" },
+            { "rule.T1.effect", "판의 처음 몇 초 동안 시간이 줄지 않는다" },
+            { "rule.T2.name", "완성의 시간" },
+            { "rule.T2.effect", "천체를 완성할 때마다 시간 +0.5초 (판당 최대 +15초)" },
+            { "rule.T3.name", "막판 러시" },
+            { "rule.T3.effect", "마지막 10초 동안 수입 ×2" },
+            { "rule.T5.name", "결정의 시간" },
+            { "rule.T5.effect", "증폭 결정을 먹으면 시간 +2초" },
+            { "rule.D1.name", "가득 찬 시작" },
+            { "rule.D1.effect", "판 시작 때 화면이 상한의 일부까지 차 있다" },
+            { "rule.D3.name", "빈 화면 보충" },
+            { "rule.D3.effect", "빈 화면의 먼지 보충이 빨라진다" },
+            { "rule.D4.name", "황금 먼지" },
+            { "rule.D4.effect", "드물게 질량 ×10의 금빛 먼지가 나온다" },
+            { "rule.G1.name", "깊어지는 중력" },
+            { "rule.G1.effect", "오래 홀드할수록 범위가 점점 커진다 (최대 +20%)" },
+            { "rule.G2.name", "잔류 중력" },
+            { "rule.G2.effect", "놓은 뒤 0.5초 동안 범위가 남아 끌어당긴다" },
+            { "rule.G3.name", "고요한 중심" },
+            { "rule.G3.effect", "중력원이 멈춰 있는 동안 인력 +30%" },
+            { "rule.C1.name", "연쇄 완성" },
+            { "rule.C1.effect", "1초 안에 이어진 완성마다 수입 +5% (최대 +50%)" },
+            { "rule.C2.name", "열 번째" },
+            { "rule.C2.effect", "판에서 n번째 완성마다 ×2 묶음" },
+            { "rule.C3.name", "첫 천체" },
+            { "rule.C3.effect", "판의 첫 천체 수입 ×5" },
+            { "rule.C4.name", "쉬운 묶음" },
+            { "rule.C4.effect", "묶음이 되는 기준이 낮아진다" },
+            { "rule.A1.name", "공명하는 능력" },
+            { "rule.A1.effect", "능력 하나가 발동하면 다른 능력의 충전 +10%" },
+            { "rule.A2.name", "버프 가속" },
+            { "rule.A2.effect", "증폭 결정 버프 중 능력 충전 ×2" },
+
             // Visual directions of the UI (26 §3), by UITheme direction id; Validate Data checks that every id has a key.
             { "ui.direction.A", "A 관측 기기" },
             { "ui.direction.B", "B 유리 패널" },
@@ -254,6 +292,8 @@ namespace Incremental
         public static string AbilityName(string id) => Get(AbilityKey(id));
         public static string UiDirectionKey(string id) => "ui.direction." + id;
         public static string UiDirectionName(string id) => Get(UiDirectionKey(id));
+        public static string RuleNameKey(string ruleId) => "rule." + ruleId + ".name";
+        public static string RuleEffectKey(string ruleId) => "rule." + ruleId + ".effect";
         public static string StatNameKey(string statId) => "stat." + statId + ".name";
         public static string StatEffectKey(string statId) => "stat." + statId + ".effect";
 
@@ -271,6 +311,7 @@ namespace Incremental
             if (n.IsGate) return string.Empty;
             if (n.IsAbilityUnlock) return Get(AbilityEffectKey(n.abilityId));
             if (n.IsAbilityEvolve) return Get(AbilityEvolveEffectKey(n.abilityId));
+            if (n.IsRule) return Get(RuleEffectKey(n.ruleId));
             if (n.IsDustUnlock)
             {
                 var kind = p != null ? p.DustKind(p.DustKindIndex(n.dustKindId)) : null;
@@ -289,6 +330,7 @@ namespace Incremental
             if (n.IsDustUnlock) return DustKindName(n.dustKindId);
             if (n.IsAbilityUnlock) return string.Format(AbilityUnlockName, AbilityName(n.abilityId));
             if (n.IsAbilityEvolve) return string.Format(AbilityEvolveName, Get(AbilityEvolveKey(n.abilityId)));
+            if (n.IsRule) return Get(RuleNameKey(n.ruleId));
             int self = t.nodes.IndexOf(n);
             int index = 1;
             bool perKind = StatIds.NeedsDustKind(n.statId);
@@ -296,7 +338,7 @@ namespace Incremental
             for (int i = 0; i < t.nodes.Count; i++)
             {
                 var o = t.nodes[i];
-                if (i == self || o.IsGate || o.IsDustUnlock || o.IsAbilityUnlock || o.IsAbilityEvolve || o.statId != n.statId) continue;
+                if (i == self || o.IsGate || o.IsDustUnlock || o.IsAbilityUnlock || o.IsAbilityEvolve || o.IsRule || o.statId != n.statId) continue;
                 // Nodes of a per-kind stat are numbered within their own kind, so every kind starts at I; the same
                 // goes for the stats of one ability (24 §8).
                 if (perKind && o.dustKindId != n.dustKindId) continue;

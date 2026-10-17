@@ -26,6 +26,7 @@ namespace Incremental.EditorTools
         const string AbilityPath = DataDir + "/AbilityTable.asset";
         const string ThemePath = DataDir + "/UITheme.asset";
         const string UiMaterialPath = MaterialsDir + "/UIPanel.mat";
+        const string TreeIconMaterialPath = MaterialsDir + "/TreeIcon.mat";
         const string UiShaderName = "Incremental/UIPanel";
         const string FontRegularPath = GameDir + "/UI/Fonts/Pretendard-Regular.otf";
         const string FontBoldPath = GameDir + "/UI/Fonts/Pretendard-SemiBold.otf";
@@ -94,6 +95,7 @@ namespace Incremental.EditorTools
             if (u.fontBold == null) { u.fontBold = AssetDatabase.LoadAssetAtPath<Font>(FontBoldPath); changed |= u.fontBold != null; }
             if (u.textShader == null) { u.textShader = Shader.Find(TextShaderName); changed |= u.textShader != null; }
             if (u.panelMaterial == null) { u.panelMaterial = AssetDatabase.LoadAssetAtPath<Material>(UiMaterialPath); changed |= u.panelMaterial != null; }
+            if (u.treeIconMaterial == null) { u.treeIconMaterial = AssetDatabase.LoadAssetAtPath<Material>(TreeIconMaterialPath); changed |= u.treeIconMaterial != null; }
             if (changed) EditorUtility.SetDirty(u);
             if (u.fontRegular == null || u.fontBold == null) Debug.LogWarning("[Setup] UITheme: font files not found under " + GameDir + "/UI/Fonts");
             if (u.textShader == null) Debug.LogWarning("[Setup] UITheme: shader '" + TextShaderName + "' not found (Window > TextMeshPro > Import TMP Essential Resources)");
@@ -323,6 +325,7 @@ namespace Incremental.EditorTools
             var bold = u.fontBold;
             var shader = u.textShader;
             var material = u.panelMaterial;
+            var iconMaterial = u.treeIconMaterial;
             var fresh = ScriptableObject.CreateInstance<UITheme>();
             EditorUtility.CopySerialized(fresh, u);
             Object.DestroyImmediate(fresh);
@@ -331,6 +334,7 @@ namespace Incremental.EditorTools
             u.fontBold = bold;
             u.textShader = shader;
             u.panelMaterial = material;
+            u.treeIconMaterial = iconMaterial;
             WireTheme(u);
             EditorUtility.SetDirty(u);
             AssetDatabase.SaveAssets();

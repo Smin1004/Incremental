@@ -16,7 +16,9 @@ namespace Incremental
         public NodeDef node;
         public TreeView view;
         public RectTransform rt;
-        public Image core;
+        /// <summary>The node's disc: its TreeIcon (29 §6), or the center's circle image.</summary>
+        public Graphic core;
+        public TreeIcon icon;
         public Image glow;
         public TMP_Text label;
         public float size;

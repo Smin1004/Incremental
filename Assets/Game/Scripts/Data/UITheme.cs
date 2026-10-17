@@ -60,10 +60,10 @@ namespace Incremental
     public sealed class UITreeStyle
     {
         [Header("Nodes")]
-        public float statSize = 18f;
-        public float gateSize = 32f;
+        public float statSize = 30f;
+        public float gateSize = 44f;
         [Tooltip("Dust kind and ability unlocks: drawn larger than stat nodes (26 §5.3).")]
-        public float unlockSize = 26f;
+        public float unlockSize = 38f;
         public float centerSize = 44f;
         [Tooltip("The soft glow behind a node, as a multiple of its size.")]
         public float glowScale = 2.6f;
@@ -83,6 +83,27 @@ namespace Incremental
         public float pulseHz = 0.6f;
         public float pulseGlow = 0.45f;
         public float pulseScale = 0.08f;
+
+        [Header("Icons (29 §6)")]
+        [Tooltip("Disc color per category, index = NodeCategory: 천체, 먼지, 중력, 능력, 시간 (29 §2, provisional).")]
+        public Color[] categoryColors =
+        {
+            new Color(0.95f, 0.74f, 0.32f, 1f),
+            new Color(0.25f, 0.78f, 0.74f, 1f),
+            new Color(0.62f, 0.45f, 0.95f, 1f),
+            new Color(0.95f, 0.42f, 0.28f, 1f),
+            new Color(0.4f, 0.68f, 1f, 1f),
+        };
+        [Tooltip("Rule nodes: drawn larger than stat nodes, with a double border.")]
+        public float ruleSize = 34f;
+        [Tooltip("Symbol and border color on a bought node, and on one that is not bought yet.")]
+        public Color iconInk = new Color(1f, 0.98f, 0.92f, 1f);
+        public Color iconInkDim = new Color(0.86f, 0.9f, 1f, 0.8f);
+        [Tooltip("Disc brightness by state, × the category color: maxed, owned, available (affordable), available (short), locked.")]
+        public Vector4 discBright = new Vector4(1f, 0.85f, 0.6f, 0.38f);
+        public float discLockedBright = 0.22f;
+        [Tooltip("29 §6 (Q4): nodes of the next ring show as an outline and their symbol in this color; the rings after it are hidden.")]
+        public Color previewInk = new Color(0.62f, 0.66f, 0.75f, 0.55f);
 
         [Header("Edges and rings")]
         public float edgeWidth = 2f;
@@ -104,7 +125,7 @@ namespace Incremental
         [Tooltip("Degrees a sub-axis sits beside its arm (dust kinds beside dust, fragments beside planets, follow beside gravity).")]
         public float armSubOffsetDeg = 8f;
         [Tooltip("The twists the T key cycles through, to compare them while playing.")]
-        public float[] armTwistChoices = { 0f, 8f, 12f, 16f };
+        public float[] armTwistChoices = { 0f, 16f };
         [Tooltip("Straight pieces a curved connection is drawn with.")]
         public int edgeSegments = 10;
 
@@ -204,6 +225,8 @@ namespace Incremental
         public UIDirection[] directions = { DirectionA(), DirectionB(), DirectionC() };
         [Tooltip("Incremental/UIPanel material; each shape role gets its own copy at startup.")]
         public Material panelMaterial;
+        [Tooltip("Incremental/TreeIcon material: the skill tree node icons (29 §6).")]
+        public Material treeIconMaterial;
         [Tooltip("Room around a shape for its shadow and outer light, px.")]
         public float shapePadPx = 40f;
 

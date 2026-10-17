@@ -75,7 +75,7 @@ MonoBehaviour:
     unlockRing: 0
     baseChance: 0
     chancePerLevel: 0
-    chanceMaxLevel: 4
+    chanceMaxLevel: 5
     sizeMult: 1
     accelMult: 1
     brightMult: 1
@@ -84,8 +84,8 @@ MonoBehaviour:
     mass: 5
     unlockRing: 3
     baseChance: 0.03
-    chancePerLevel: 0.03
-    chanceMaxLevel: 4
+    chancePerLevel: 0.024
+    chanceMaxLevel: 5
     sizeMult: 1.7
     accelMult: 0.75
     brightMult: 1.15
@@ -94,8 +94,8 @@ MonoBehaviour:
     mass: 25
     unlockRing: 5
     baseChance: 0.03
-    chancePerLevel: 0.015
-    chanceMaxLevel: 4
+    chancePerLevel: 0.012
+    chanceMaxLevel: 5
     sizeMult: 2.9
     accelMult: 0.55
     brightMult: 1.3
@@ -104,8 +104,8 @@ MonoBehaviour:
     mass: 125
     unlockRing: 7
     baseChance: 0.02
-    chancePerLevel: 0.01
-    chanceMaxLevel: 4
+    chancePerLevel: 0.008
+    chanceMaxLevel: 5
     sizeMult: 4.9
     accelMult: 0.4
     brightMult: 1.45
@@ -114,8 +114,8 @@ MonoBehaviour:
     mass: 625
     unlockRing: 9
     baseChance: 0.02
-    chancePerLevel: 0.01
-    chanceMaxLevel: 4
+    chancePerLevel: 0.008
+    chanceMaxLevel: 5
     sizeMult: 8.5
     accelMult: 0.3
     brightMult: 1.6
@@ -544,11 +544,11 @@ MonoBehaviour:
   newTierOrbitAlpha: 0.45
   newTierOrbitWidth: 3
   newTierStarPulseScale: 0.6
-  treeRingR0Px: 40
+  treeRingR0Px: 140
   treeRingStepPx: 115
   treeHoldDelaySec: 0.35
   treeHoldRepeatSec: 0.08
-  treeZoomMin: 0.3
+  treeZoomMin: 0.25
   treeZoomMax: 1.6
   treeFocusSec: 0.35
   dustCapCeiling: 8000

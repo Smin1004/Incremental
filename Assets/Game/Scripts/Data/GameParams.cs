@@ -76,7 +76,7 @@ namespace Incremental
         public double baseChance;
         [Tooltip("The kind's chance node: added share per level, and how many levels it has.")]
         public double chancePerLevel;
-        public int chanceMaxLevel = 4;
+        public int chanceMaxLevel = 5;
         [Tooltip("Drawn size and pull acceleration relative to the base dust.")]
         public double sizeMult = 1;
         public double accelMult = 1;
@@ -219,22 +219,22 @@ namespace Incremental
             new DustKindDef { id = "base", mass = 1, unlockRing = 0, sizeMult = 1, accelMult = 1, brightMult = 1, shape = DustShape.Dot },
             new DustKindDef
             {
-                id = "medium", mass = 5, unlockRing = 3, baseChance = 0.03, chancePerLevel = 0.03, chanceMaxLevel = 4,
+                id = "medium", mass = 5, unlockRing = 3, baseChance = 0.03, chancePerLevel = 0.024, chanceMaxLevel = 5,
                 sizeMult = 1.7, accelMult = 0.75, brightMult = 1.15, shape = DustShape.Shard,
             },
             new DustKindDef
             {
-                id = "large", mass = 25, unlockRing = 5, baseChance = 0.03, chancePerLevel = 0.015, chanceMaxLevel = 4,
+                id = "large", mass = 25, unlockRing = 5, baseChance = 0.03, chancePerLevel = 0.012, chanceMaxLevel = 5,
                 sizeMult = 2.9, accelMult = 0.55, brightMult = 1.3, shape = DustShape.Clump,
             },
             new DustKindDef
             {
-                id = "crystal", mass = 125, unlockRing = 7, baseChance = 0.02, chancePerLevel = 0.01, chanceMaxLevel = 4,
+                id = "crystal", mass = 125, unlockRing = 7, baseChance = 0.02, chancePerLevel = 0.008, chanceMaxLevel = 5,
                 sizeMult = 4.9, accelMult = 0.40, brightMult = 1.45, shape = DustShape.Crystal,
             },
             new DustKindDef
             {
-                id = "interstellar", mass = 625, unlockRing = 9, baseChance = 0.02, chancePerLevel = 0.01, chanceMaxLevel = 4,
+                id = "interstellar", mass = 625, unlockRing = 9, baseChance = 0.02, chancePerLevel = 0.008, chanceMaxLevel = 5,
                 sizeMult = 8.5, accelMult = 0.30, brightMult = 1.6, shape = DustShape.Interstellar,
             },
         };
@@ -734,12 +734,12 @@ namespace Incremental
         public double newTierStarPulseScale = 0.6;
 
         [Header("Skill tree view (12 §5, §9)")]
-        [Tooltip("Ring k radius = treeRingR0Px + k × treeRingStepPx (reference 1080p).")]
-        public double treeRingR0Px = 40;
+        [Tooltip("Ring k radius = treeRingR0Px + k × treeRingStepPx (reference 1080p). 29: 40 → 140 so the inner rings hold five categories of side lines.")]
+        public double treeRingR0Px = 140;
         public double treeRingStepPx = 115;
         public double treeHoldDelaySec = 0.35;
         public double treeHoldRepeatSec = 0.08;
-        public double treeZoomMin = 0.3;
+        public double treeZoomMin = 0.25;
         public double treeZoomMax = 1.6;
         [Tooltip("Seconds of the camera move to the frontier when the tree opens.")]
         public double treeFocusSec = 0.35;
