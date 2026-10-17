@@ -12,7 +12,10 @@ namespace Incremental
     /// </summary>
     public sealed class Rules
     {
-        readonly GameRoot root;
+        readonly GameParams p;
+
+        /// <summary>C1: the HUD's chain label (GameRoot hooks HudView.ShowChain here).</summary>
+        public Action<int, double> ChainShown;
         readonly Dictionary<string, int> levels = new Dictionary<string, int>();
 
         int completions;
@@ -28,9 +31,9 @@ namespace Incremental
         bool still;
         bool graceLogged, rushLogged;
 
-        public Rules(GameRoot gameRoot) { root = gameRoot; }
+        public Rules(GameParams gameParams) { p = gameParams; }
 
-        RuleParams P => root.gameParams.rules;
+        RuleParams P => p.rules;
 
         /// <summary>Level of a rule node owned at run start (0 = not owned or rules off).</summary>
         public int Level(string ruleId) => ruleId != null && levels.TryGetValue(ruleId, out int l) ? l : 0;
@@ -173,7 +176,7 @@ namespace Incremental
             }
             if (haveGravity && dt > 0)
             {
-                double speedPx = (gravity - lastGravity).magnitude * root.gameParams.pixelsPerUnit / dt;
+                double speedPx = (gravity - lastGravity).magnitude * p.pixelsPerUnit / dt;
                 bool now = holding && speedPx < P.stillSpeedPx;
                 if (now && !still && Level("G3") > 0) Log("G3 고요한 중심: the gravity source is still, pull x" + P.stillPullMult.ToString("0.##"));
                 still = now;
@@ -270,7 +273,7 @@ namespace Incremental
                 {
                     mult *= 1.0 + ChainBonus;
                     Log("C1 연쇄 완성: chain " + chain + ", income +" + (ChainBonus * 100).ToString("0") + "%");
-                    root.Hud.ShowChain(chain, ChainBonus);
+                    ChainShown?.Invoke(chain, ChainBonus);
                 }
             }
             lastCompleteAt = now;

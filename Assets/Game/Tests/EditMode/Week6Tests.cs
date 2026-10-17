@@ -95,10 +95,11 @@ namespace Incremental.Tests
             var expected = new (string id, double mass, int ring, double baseChance, double perLevel, double max, double size, double accel)[]
             {
                 // 22 §8 raised the medium share to 15% (21 §6-3) and the interstellar one to 6%; the rest is 20 §4.
-                ("medium", 5, 3, 0.03, 0.03, 0.15, 1.7, 0.75),
-                ("large", 25, 5, 0.03, 0.015, 0.09, 2.9, 0.55),
-                ("crystal", 125, 7, 0.02, 0.01, 0.06, 4.9, 0.40),
-                ("interstellar", 625, 9, 0.02, 0.01, 0.06, 8.5, 0.30),
+                // 29 §3.2: the same full chance over 5 levels instead of 4.
+                ("medium", 5, 3, 0.03, 0.024, 0.15, 1.7, 0.75),
+                ("large", 25, 5, 0.03, 0.012, 0.09, 2.9, 0.55),
+                ("crystal", 125, 7, 0.02, 0.008, 0.06, 4.9, 0.40),
+                ("interstellar", 625, 9, 0.02, 0.008, 0.06, 8.5, 0.30),
             };
             Assert.AreEqual("base", p.DustKind(0).id);
             Assert.AreEqual(1, p.DustKind(0).mass, Eps);
@@ -111,7 +112,7 @@ namespace Incremental.Tests
                 Assert.AreEqual(e.ring, k.unlockRing, e.id + " unlock ring");
                 Assert.AreEqual(e.baseChance, k.baseChance, Eps, e.id + " unlock chance");
                 Assert.AreEqual(e.perLevel, k.chancePerLevel, Eps, e.id + " chance per level");
-                Assert.AreEqual(4, k.chanceMaxLevel, e.id + " chance levels");
+                Assert.AreEqual(5, k.chanceMaxLevel, e.id + " chance levels");
                 Assert.AreEqual(e.max, k.MaxChance, 1e-9, e.id + " chance at full level");
                 Assert.AreEqual(e.size, k.sizeMult, Eps, e.id + " size");
                 Assert.AreEqual(e.accel, k.accelMult, Eps, e.id + " pull acceleration");
@@ -133,20 +134,30 @@ namespace Incremental.Tests
                 Assert.AreEqual(p.DustKind(p.DustKindIndex(kindId)).unlockRing, unlock.minTier, kindId + " unlock ring");
                 var chance = n.nodes.Find(x => x.statId == StatIds.DustChance && x.dustKindId == kindId);
                 Assert.IsNotNull(chance, "chance node for " + kindId);
-                Assert.AreEqual(4, chance.maxLevel);
+                Assert.AreEqual(5, chance.maxLevel);
                 Assert.AreEqual(unlock.minTier + 1, chance.minTier, kindId + " chance node sits one ring above its unlock");
-                Assert.AreEqual(60f, unlock.angleDeg, 1e-3, "the 60 degree axis is the dust kind axis (12 §5)");
-                Assert.AreEqual(60f, chance.angleDeg, 1e-3);
+                // 29 §3.2: one line beside the dust stem.
+                Assert.AreEqual(NodeCategory.Dust, unlock.category);
+                Assert.AreEqual(unlock.angleDeg, chance.angleDeg, 1e-3, "the kind line runs straight out");
             }
         }
 
         [Test]
-        public void CompoundDustMassNodes_AreGone()
+        public void DustMassNodes_AreBackAsALine_AndCompound()
         {
+            // 29 §3.2 brought dust_mass back as its own line (rings 5, 7, 9, 11, x1.1 per level, compound).
             var n = ProjectNodes();
+            var m = new MetaState();
+            int lines = 0;
             foreach (var node in n.nodes)
-                Assert.AreNotEqual(StatIds.DustMass, node.statId,
-                    "'" + node.id + "' still raises dust_mass; the compound nodes were replaced by the dust kind axis (20 §4)");
+                if (node.statId == StatIds.DustMass)
+                {
+                    lines++;
+                    Assert.Greater(node.effectPerLevel, 1, node.id);
+                    m.SetLevel(node.id, node.maxLevel);
+                }
+            Assert.AreEqual(4, lines);
+            Assert.AreEqual(System.Math.Pow(1.1, 12), Stats.Compute(ProjectParams(), n, m).dustMass / ProjectParams().dustMass, 1e-9);
             var r = DataValidator.Validate(ProjectTiers(), n, ProjectParams());
             Assert.IsEmpty(r.Errors, Joined(r.Errors));
             Assert.IsEmpty(r.Warnings, Joined(r.Warnings));
@@ -169,15 +180,15 @@ namespace Incremental.Tests
             Assert.AreEqual(0.97, open.KindChance(0), Eps);
             Assert.AreEqual(0.97 * 1 + 0.03 * 5, open.dustMassAvg, 1e-9);
 
-            m.SetLevel("r4_chance_medium", 4);
-            Assert.AreEqual(0.15, Stats.Compute(p, n, m).KindChance(1), 1e-9, "four levels of +3%p (22 §8)");
+            m.SetLevel("chance_medium_r4", 5);
+            Assert.AreEqual(0.15, Stats.Compute(p, n, m).KindChance(1), 1e-9, "five levels of +2.4%p (29 §3.2)");
         }
 
         [Test]
         public void ChanceNode_DoesNothingWithoutItsUnlock()
         {
             var m = new MetaState();
-            m.SetLevel("r4_chance_medium", 4);
+            m.SetLevel("chance_medium_r4", 5);
             Assert.AreEqual(0, Stats.Compute(ProjectParams(), ProjectNodes(), m).KindChance(1), Eps);
         }
 
@@ -214,10 +225,12 @@ namespace Incremental.Tests
             var n = ProjectNodes();
             var p = ProjectParams();
             Assert.AreEqual("중형 먼지", UIStrings.NodeName(n, n.DustUnlock("medium")));
-            StringAssert.StartsWith("중형 먼지", UIStrings.NodeName(n, n.Get("r4_chance_medium")));
-            StringAssert.EndsWith("I", UIStrings.NodeName(n, n.Get("r4_chance_medium")), "each kind numbers its own chance node from I");
-            StringAssert.StartsWith("성간 먼지", UIStrings.NodeName(n, n.Get("r10_chance_interstellar")));
-            StringAssert.EndsWith("I", UIStrings.NodeName(n, n.Get("r10_chance_interstellar")));
+            StringAssert.StartsWith("중형 먼지", UIStrings.NodeName(n, n.Get("chance_medium_r4")));
+            StringAssert.EndsWith("I", UIStrings.NodeName(n, n.Get("chance_medium_r4")), "each kind numbers its own chance node from I");
+            StringAssert.StartsWith("성간 먼지", UIStrings.NodeName(n, n.Get("chance_interstellar_r10")));
+            StringAssert.EndsWith("I", UIStrings.NodeName(n, n.Get("chance_interstellar_r10")));
+            // 29 §8 N1: the crystal dust is called 광석 먼지 now (the id stays).
+            Assert.AreEqual("광석 먼지", UIStrings.NodeName(n, n.DustUnlock("crystal")));
             StringAssert.Contains("3", UIStrings.NodeEffect(n.DustUnlock("medium"), p), "the unlock says the starting share");
         }
 
@@ -235,18 +248,21 @@ namespace Incremental.Tests
         // ---------------- §5 C. fragments ----------------
 
         [Test]
-        public void FragmentAxis_HasTheSixNodesOfTheSpecTable()
+        public void FragmentLine_HasTheSevenNodesOfTheSpecTable()
         {
+            // 29 §3.1: unlock 3, chance 4·6·8 (x3 levels of +5%p), range 5·7·9 (one level, ring 9 new).
             var n = ProjectNodes();
-            var expected = new (string id, int ring, string stat, double effect)[]
+            var expected = new (string id, int ring, string stat, double effect, int levels)[]
             {
-                ("frag_unlock", 3, StatIds.FragUnlock, 0.30),
-                ("r4_frag_chance", 4, StatIds.FragChance, 0.15),
-                ("r5_frag_range", 5, StatIds.FragOffset, 1),
-                ("r6_frag_chance", 6, StatIds.FragChance, 0.15),
-                ("r7_frag_range", 7, StatIds.FragOffset, 1),
-                ("r8_frag_chance", 8, StatIds.FragChance, 0.15),
+                ("frag_unlock", 3, StatIds.FragUnlock, 0.30, 1),
+                ("frag_chance_r4", 4, StatIds.FragChance, 0.05, 3),
+                ("frag_range_r5", 5, StatIds.FragOffset, 1, 1),
+                ("frag_chance_r6", 6, StatIds.FragChance, 0.05, 3),
+                ("frag_range_r7", 7, StatIds.FragOffset, 1, 1),
+                ("frag_chance_r8", 8, StatIds.FragChance, 0.05, 3),
+                ("frag_range_r9", 9, StatIds.FragOffset, 1, 1),
             };
+            float angle = n.Get("frag_unlock").angleDeg;
             foreach (var e in expected)
             {
                 var node = n.Get(e.id);
@@ -254,8 +270,9 @@ namespace Incremental.Tests
                 Assert.AreEqual(e.ring, node.minTier, e.id + " ring");
                 Assert.AreEqual(e.stat, node.statId, e.id + " stat");
                 Assert.AreEqual(e.effect, node.effectPerLevel, Eps, e.id + " effect");
-                Assert.AreEqual(1, node.maxLevel, e.id + " is a one-off");
-                Assert.AreEqual(140f, node.angleDeg, 1e-3, "the fragment nodes sit beside the planet axis (20 §5)");
+                Assert.AreEqual(e.levels, node.maxLevel, e.id + " levels");
+                Assert.AreEqual(NodeCategory.Celestial, node.category, e.id);
+                Assert.AreEqual(angle, node.angleDeg, 1e-3, "one straight line beside the celestial stem");
             }
         }
 
@@ -273,19 +290,20 @@ namespace Incremental.Tests
             Assert.AreEqual(0.30, s.fragChance, Eps, "unlock: 30%");
             Assert.AreEqual(4, s.fragOffset, "unlock: offset 4");
 
-            m.SetLevel("r4_frag_chance", 1);
+            m.SetLevel("frag_chance_r4", 3);
             Assert.AreEqual(0.45, Stats.Compute(p, n, m).fragChance, Eps);
-            m.SetLevel("r5_frag_range", 1);
+            m.SetLevel("frag_range_r5", 1);
             Assert.AreEqual(3, Stats.Compute(p, n, m).fragOffset);
-            m.SetLevel("r6_frag_chance", 1);
+            m.SetLevel("frag_chance_r6", 3);
             Assert.AreEqual(0.60, Stats.Compute(p, n, m).fragChance, Eps);
-            m.SetLevel("r7_frag_range", 1);
+            m.SetLevel("frag_range_r7", 1);
             Assert.AreEqual(2, Stats.Compute(p, n, m).fragOffset);
-            m.SetLevel("r8_frag_chance", 1);
+            m.SetLevel("frag_chance_r8", 3);
+            m.SetLevel("frag_range_r9", 1);
             var full = Stats.Compute(p, n, m);
-            Assert.AreEqual(0.75, full.fragChance, Eps, "the whole axis: 75%");
-            Assert.AreEqual(2, full.fragOffset);
-            Assert.AreEqual(9, Stats.FragmentMaxTier(11, full), "at the top ring a fragment can be two tiers below");
+            Assert.AreEqual(0.75, full.fragChance, Eps, "the whole line: 75%");
+            Assert.AreEqual(1, full.fragOffset);
+            Assert.AreEqual(10, Stats.FragmentMaxTier(11, full), "at the top ring a fragment can be one tier below (29 §3.1: ring 9 range)");
         }
 
         [Test]
@@ -472,6 +490,8 @@ namespace Incremental.Tests
                     if (n.minTier != ring || n.IsGate || n.maxLevel == 0) continue;
                     // 24 §21.2: an evolve node is priced at its ability's unlock x 2 until the balance pass decides.
                     if (n.IsAbilityEvolve) continue;
+                    // 13th pass B1: a rule node is 1.5 x its ring's node price until the balance pass prices it.
+                    if (n.IsRule) continue;
                     if (baseCost < 0) baseCost = n.baseCost;
                     Assert.AreEqual(baseCost, n.baseCost, Eps, "'" + n.id + "' does not use its ring's node price (20 §8.2)");
                 }
@@ -483,14 +503,14 @@ namespace Incremental.Tests
         }
 
         [Test]
-        public void CappedNodes_GrowByHalfPerLevel()
+        public void CappedNodes_GrowBy135PercentPerLevel()
         {
             var t = ProjectNodes();
             foreach (var n in t.nodes)
             {
                 if (n.IsGate || n.maxLevel == 1) continue;
                 if (n.maxLevel == 0) Assert.AreEqual(1.6, n.growth, Eps, "'" + n.id + "' is endless (12 §6)");
-                else Assert.AreEqual(1.5, n.growth, Eps, "'" + n.id + "' growth (20 §8.2)");
+                else Assert.AreEqual(1.35, n.growth, Eps, "'" + n.id + "' growth (29 §3: x1.35, was x1.5)");
             }
         }
 

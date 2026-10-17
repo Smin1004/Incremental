@@ -54,9 +54,10 @@ namespace Incremental.Tests
             foreach (var n in t.nodes)
                 if (n.kind == NodeKind.Stat && n.statId == StatIds.FollowSpeed)
                 {
-                    Assert.AreEqual(0.15, n.effectPerLevel, Eps, n.id + " adds 15%p of the base");
-                    Assert.AreEqual(1, n.maxLevel, n.id + " has one level");
-                    m.SetLevel(n.id, 1);
+                    // 29 §3.3: the v1 node's +15%p over three levels.
+                    Assert.AreEqual(0.15, n.effectPerLevel * n.maxLevel, Eps, n.id + " adds 15%p of the base in all");
+                    Assert.AreEqual(3, n.maxLevel, n.id + " has three levels");
+                    m.SetLevel(n.id, n.maxLevel);
                 }
             Assert.AreEqual(385, Stats.Compute(p, t, m).followSpeedPx, 1e-6, "220 × 1.75 with all five (22 §3)");
         }
@@ -83,11 +84,11 @@ namespace Incremental.Tests
             var t = ProjectNodes();
             var m = new MetaState();
             // With only the ring 1 pull node owned the first follow node is reachable and the later ones are not.
-            m.SetLevel("r1_pull", 1);
-            Assert.IsTrue(Shop.PrereqsMet(t, m, t.Get("r2_follow")), "r2_follow follows the ring 1 pull node");
-            foreach (var id in new[] { "r4_follow", "r6_follow", "r8_follow", "r10_follow" })
+            m.SetLevel("pull_r1", 1);
+            Assert.IsTrue(Shop.PrereqsMet(t, m, t.Get("follow_r2")), "follow_r2 follows the ring 1 pull node");
+            foreach (var id in new[] { "follow_r4", "follow_r6", "follow_r8", "follow_r10" })
                 Assert.IsFalse(Shop.PrereqsMet(t, m, t.Get(id)), id + " waits for the follow node before it");
-            foreach (var id in new[] { "r2_follow", "r4_follow", "r6_follow", "r8_follow" })
+            foreach (var id in new[] { "follow_r2", "follow_r4", "follow_r6", "follow_r8" })
             {
                 m.SetLevel(id, 1);
                 Assert.IsTrue(Shop.PrereqsMet(t, m, t.Get(NextFollow(id))), NextFollow(id) + " opens after " + id);
@@ -461,10 +462,11 @@ namespace Incremental.Tests
         public void MediumDust_ReachesFifteenPercent()
         {
             // 21 §6-3: rings 3-4 fell short of the per-ring mass growth, and the answer was 3% + 3%p x 4.
+            // 29 §3.2: the same 15% over five levels of 2.4%p.
             var p = ProjectParams();
             var medium = p.DustKind(p.DustKindIndex("medium"));
             Assert.AreEqual(0.03, medium.baseChance, Eps);
-            Assert.AreEqual(0.03, medium.chancePerLevel, Eps);
+            Assert.AreEqual(0.024, medium.chancePerLevel, Eps);
             Assert.AreEqual(0.15, medium.MaxChance, 1e-9, "15% at full level");
         }
 
@@ -560,10 +562,10 @@ namespace Incremental.Tests
         {
             switch (id)
             {
-                case "r2_follow": return "r4_follow";
-                case "r4_follow": return "r6_follow";
-                case "r6_follow": return "r8_follow";
-                default: return "r10_follow";
+                case "follow_r2": return "follow_r4";
+                case "follow_r4": return "follow_r6";
+                case "follow_r6": return "follow_r8";
+                default: return "follow_r10";
             }
         }
     }

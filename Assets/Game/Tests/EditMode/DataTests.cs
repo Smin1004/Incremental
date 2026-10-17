@@ -32,23 +32,27 @@ namespace Incremental.Tests
         public void ProjectTree_MatchesSpecShape()
         {
             var n = AssetDatabase.LoadAssetAtPath<NodeTable>("Assets/Game/Data/NodeTable.asset");
-            int gates = 0, endless = 0, stats = 0;
+            int gates = 0, endless = 0, rules = 0;
+            var perCategory = new int[5];
             foreach (var node in n.nodes)
             {
                 if (node.IsGate) gates++;
                 else if (node.maxLevel == 0) endless++;
-                else stats++;
+                if (node.IsRule) rules++;
+                perCategory[(int)node.category]++;
             }
             Assert.AreEqual(10, gates, "gates for tiers 2-11");
-            Assert.AreEqual(3, endless, "ring 11 endless nodes");
-            // 24 §20.2 added the crystal nodes and 24 §21.2 one evolve node per ability (rings 7-11).
-            Assert.That(stats, Is.InRange(45, 90), "about 50 stat nodes (12 §6), plus the 22 §3 follow axis, the 22 §8 planet axis and the 24 §21.2 evolve nodes");
+            // 29 §3.4: the endless run time node is gone; sale and spawn keep theirs.
+            Assert.AreEqual(2, endless, "ring 11 endless nodes");
+            Assert.That(n.nodes.Count, Is.InRange(DataValidator.TreeMinNodes, DataValidator.TreeMaxNodes), "29 Q3: 140~160 nodes");
+            Assert.AreEqual(16, rules, "the ★16 rule nodes of 29 §5");
+            foreach (var count in perCategory) Assert.Greater(count, 10, "every category has its share of the tree");
             // 20 §8.2: every cost comes from the measured entry income of its ring, 0.4 × I_k for a node and 3 × I_k
             // for a gate, so ring 1 (I = 9) is a node at 3.6 and the tier 2 gate at 27.
-            Assert.AreEqual(3.6, n.Get("r1_spawn").baseCost, 1e-9);
+            Assert.AreEqual(3.6, n.Get("spawn_r1").baseCost, 1e-9);
             Assert.AreEqual(27, n.Get("gate_t2").baseCost, 1e-9);
             Assert.AreEqual(63, n.Get("gate_t3").baseCost, 1e-9);
-            Assert.AreEqual(2, n.Get("r2_cap").minTier, "dust cap in ring 2 (12 §10-1)");
+            Assert.AreEqual(2, n.Get("cap_r2").minTier, "dust cap in ring 2 (12 §10-1)");
             Assert.AreEqual(3, n.Get("dust_medium").minTier, "the first dust kind unlocks in ring 3 (20 §4)");
         }
 

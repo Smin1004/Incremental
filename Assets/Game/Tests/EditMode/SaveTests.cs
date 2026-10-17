@@ -138,7 +138,7 @@ namespace Incremental.Tests
         public void MissingId_StartsAtLevelZero()
         {
             // A save written before b_mass existed.
-            WriteRaw(store.SavePath, "{\"version\":3,\"meta\":{\"currency\":50.0,\"upgradeLevels\":[{\"id\":\"a_spawn\",\"level\":2}],\"unlockedMaxTier\":1,\"runCount\":4}}");
+            WriteRaw(store.SavePath, "{\"version\":" + SaveMigration.CurrentVersion + ",\"meta\":{\"currency\":50.0,\"upgradeLevels\":[{\"id\":\"a_spawn\",\"level\":2}],\"unlockedMaxTier\":1,\"runCount\":4}}");
             var loaded = store.Load(out var status);
             Assert.AreEqual(LoadStatus.Loaded, status);
             Assert.AreEqual(2, loaded.meta.GetLevel("a_spawn"));

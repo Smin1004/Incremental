@@ -101,6 +101,7 @@ namespace Incremental.Tests
                     UnityEngine.JsonUtility.ToJson(new ChanceBag { c = b.dustKindChance })) changed++;
                 if (s.fragChance != b.fragChance) changed++;
                 if (s.fragOffset != b.fragOffset) changed++;
+                if (s.dustMaxSpeedMult != b.dustMaxSpeedMult) changed++;
                 Assert.AreEqual(1, changed, n.id + " should change exactly one effective value");
             }
         }

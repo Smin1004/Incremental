@@ -63,14 +63,18 @@ namespace Incremental.Tests
         public void ProjectTree_TheOldStaminaNodesAllAddRunTime()
         {
             var t = ProjectNodes();
-            foreach (var id in new[] { "r1_stamina", "r2_stamina", "r3_drain", "r4_stamina", "r5_drain", "r6_stamina",
-                         "r7_drain", "r8_stamina", "r9_drain", "r10_stamina", "r11_stamina" })
+            // 29 §3.4: tree v2 has the run time stem time_r1 … time_r10, and no endless run time node.
+            for (int ring = 1; ring <= 10; ring++)
             {
+                string id = "time_r" + ring;
                 var n = t.Get(id);
-                Assert.IsNotNull(n, id + " keeps its id (save key)");
+                Assert.IsNotNull(n, id);
                 Assert.AreEqual(StatIds.RunTime, n.statId, id);
                 Assert.Greater(n.effectPerLevel, 0, id);
+                Assert.AreEqual(NodeCategory.Time, n.category, id);
             }
+            foreach (var n in t.nodes)
+                Assert.IsFalse(n.statId == StatIds.RunTime && n.maxLevel == 0, "no endless run time node (28 §2.2)");
         }
 
         [Test]
@@ -113,10 +117,11 @@ namespace Incremental.Tests
                           "{\"run\":2,\"durationSec\":3.0,\"income\":5.0,\"endReason\":\"quit\"}]}," +
                           "\"pending\":{\"active\":true,\"run\":3,\"elapsed\":12.0,\"income\":9.0}}";
             var d = SaveMigration.Migrate(JsonUtility.FromJson<SaveData>(json));
-            Assert.AreEqual(4, d.version);
             Assert.AreEqual(SaveMigration.CurrentVersion, d.version);
-            Assert.AreEqual(1, d.meta.GetLevel("r1_stamina"), "node levels stay (the ids are the same)");
-            Assert.AreEqual(2, d.meta.GetLevel("r3_drain"));
+            // 29 Q9: going on to v5 resets the tree; without the v1 table nothing is refunded.
+            Assert.AreEqual(0, d.meta.GetLevel("r1_stamina"), "v5 resets the tree");
+            Assert.AreEqual(0, d.meta.GetLevel("r3_drain"));
+            Assert.AreEqual(500, d.meta.currency, Eps);
             Assert.AreEqual(EndReason.TimeUp, d.meta.runHistory[0].endReason, "stamina -> time");
             Assert.AreEqual(EndReason.Quit, d.meta.runHistory[1].endReason, "other endings untouched");
             Assert.AreEqual(0, d.meta.runHistory[0].startStats.runTimeSec, Eps, "the old stamina numbers are just not read");

@@ -269,7 +269,7 @@ namespace Incremental
             Application.runInBackground = true;
             DataDir = Application.persistentDataPath;
             Store = new SaveStore(DataDir) { TreeV1 = nodeTableV1 };
-            Rules = new Rules(this);
+            Rules = new Rules(gameParams);
             Settings = Store.LoadSettings();
             Fmt.Mode = Settings.notation;
             hasFocus = Application.isFocused;
@@ -312,6 +312,7 @@ namespace Incremental
             UIStyle.SetEffect(EffectIntensity);
             Hud = hudGo.AddComponent<HudView>();
             Hud.Build(this);
+            Rules.ChainShown = Hud.ShowChain;
             Hud.SetCountLifetime(gameParams.planetPopDurationSec + gameParams.planetHoldSec + gameParams.planetDepartSec * 0.5);
             Hud.SetCountYield(gameParams.bundleLabelYieldSec);
             UIBuilder.EnsureEventSystem(transform);
