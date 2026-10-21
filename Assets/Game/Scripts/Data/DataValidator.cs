@@ -814,8 +814,10 @@ namespace Incremental
             else foreach (var n in q.everyNth) if (n < 2) r.Errors.Add("GameParams.rules.everyNth: every n must be >= 2 (C2).");
             if (q.nthMult < 1) r.Errors.Add("GameParams.rules.nthMult must be >= 1 (C2).");
             if (q.startRushSec < 0 || q.startRushMult < 1) r.Errors.Add("GameParams.rules: startRushSec >= 0 and startRushMult >= 1 (C3).");
-            if (q.splitChancePerLevel < 0 || q.splitPieces < 2 || q.splitPieceMassShare <= 0 || q.splitPieceSize <= 0 || q.splitKickPx < 0 || q.splitFlashSec < 0)
-                r.Errors.Add("GameParams.rules: D2 needs splitChancePerLevel >= 0, splitPieces >= 2, splitPieceMassShare and splitPieceSize > 0, splitKickPx and splitFlashSec >= 0.");
+            if (q.splitChancePerLevel == null || q.splitChancePerLevel.Length == 0) r.Errors.Add("GameParams.rules.splitChancePerLevel: needs one chance per D2 level.");
+            else foreach (var c in q.splitChancePerLevel) if (c < 0 || c > 1) r.Errors.Add("GameParams.rules.splitChancePerLevel: chances are 0..1 (D2).");
+            if (q.splitPieces < 2 || q.splitPieceMassShare <= 0 || q.splitPieceSize <= 0 || q.splitKickPx < 0 || q.splitFlashSec < 0)
+                r.Errors.Add("GameParams.rules: D2 needs splitPieces >= 2, splitPieceMassShare and splitPieceSize > 0, splitKickPx and splitFlashSec >= 0.");
             if (q.pulseEverySec == null || q.pulseEverySec.Length == 0) r.Errors.Add("GameParams.rules.pulseEverySec: needs one interval per D5 level.");
             else foreach (var e in q.pulseEverySec) if (e <= q.pulseSec) r.Errors.Add("GameParams.rules.pulseEverySec: every interval must be longer than pulseSec (D5).");
             if (q.pulseSec <= 0 || q.pulseSpawnMult < 1 || q.pulseInflowSpeedPx < 0 || q.pulseNebulaBoost < 0)

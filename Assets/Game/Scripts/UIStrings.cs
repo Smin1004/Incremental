@@ -321,7 +321,7 @@ namespace Incremental
                 case "T3": return string.Format(f, Fmt.Short(r.rushLastSec), Fmt.Short(r.rushIncomeMult));
                 case "T5": return string.Format(f, Fmt.Short(r.crystalTimeSec), Fmt.Short(r.crystalTimeMaxSec));
                 case "D1": return string.Format(f, Levels(max, l => r.fullStartShare != null && r.fullStartShare.Length > 0 ? r.fullStartShare[Math.Min(l, r.fullStartShare.Length) - 1] * 100 : 0));
-                case "D2": return string.Format(f, Levels(max, l => Math.Min(1.0, r.splitChancePerLevel * l) * 100), Fmt.Short(r.splitPieceMassShare * 100));
+                case "D2": return string.Format(f, Levels(max, l => r.splitChancePerLevel != null && r.splitChancePerLevel.Length > 0 ? r.splitChancePerLevel[Math.Min(l, r.splitChancePerLevel.Length) - 1] * 100 : 0), Fmt.Short(r.splitPieceMassShare * 100));
                 // D3: the empty-screen spawn multiplier, 1 + dustRefillBoost (+ the rule's levels).
                 case "D3": return string.Format(f, Levels(max, l => 1 + p.dustRefillBoost + r.refillBoostPerLevel * l), Fmt.Short(1 + p.dustRefillBoost));
                 case "D5": return string.Format(f, Levels(max, l => r.pulseEverySec != null && r.pulseEverySec.Length > 0 ? r.pulseEverySec[Math.Min(l, r.pulseEverySec.Length) - 1] : 0),

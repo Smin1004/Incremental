@@ -219,8 +219,8 @@ namespace Incremental
         public double SpawnMult { get; set; } = 1.0;
 
         /// <summary>
-        /// D5: while true the spawn of the screen comes in from the band outside it instead, moving toward the middle at
-        /// GameParams.rules.pulseInflowSpeedPx, so the pulse is seen pushing in from the edges.
+        /// D5: while true the extra spawn of the pulse (1 − 1/SpawnMult of it) comes in from the band outside the screen,
+        /// moving toward the middle at GameParams.rules.pulseInflowSpeedPx, so the pulse is seen pushing in from the edges.
         /// </summary>
         public bool Inflow { get; set; }
 
@@ -603,13 +603,15 @@ namespace Incremental
             AddPendingPieces();
             SpawnBoost = 1.0 + Math.Max(0.0, p.dustRefillBoost + RefillBoostAdd) * (1f - fill);
             double spawnMult = Math.Max(0.0, SpawnMult);
+            // D5: the extra part of a pulse comes in from the band; the usual share is created where it always is.
+            double inflowShare = Inflow && banded && spawnMult > 1.0 ? 1.0 - 1.0 / spawnMult : 0.0;
             spawnAcc += s.spawnRate * SpawnBoost * spawnMult * dt;
             while (spawnAcc >= 1.0)
             {
                 spawnAcc -= 1.0;
                 if (count >= cap) continue;
                 // 29 §10.3 D5: during a pulse the new dust is pushed in from the band outside the screen.
-                if (Inflow && banded) SpawnInflow(gravity, avoidR, margin, area, s);
+                if (inflowShare > 0 && rng.NextDouble() < inflowShare) SpawnInflow(gravity, avoidR, margin, area, s);
                 else SpawnRandom(gravity, avoidR, s);
             }
 

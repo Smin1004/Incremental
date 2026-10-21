@@ -75,13 +75,15 @@ namespace Incremental
         [Tooltip("D4: chance per level that a new dust is golden, and how many times its mass a golden dust weighs.")]
         public double goldChancePerLevel = 0.005;
         public double goldMassMult = 10;
-        [Tooltip("D4 look: color, brightness and size x, and how fast it twinkles (x effect intensity).")]
+        [Tooltip("D4 look: color, brightness and size x, and how fast it twinkles (x effect intensity). 14th pass: 2.2 / 1.5 -> " +
+                 "3 / 2.5, so a golden dust is picked out at a glance among 5,000 at ring 7 (the brightness is capped at 2 in the " +
+                 "renderer, so the size does most of it).")]
         public Color goldColor = new Color(1f, 0.8f, 0.3f, 1f);
-        public double goldBright = 2.2;
-        public double goldSizeMult = 1.5;
+        public double goldBright = 3;
+        public double goldSizeMult = 2.5;
         public double goldTwinkleHz = 2.5;
-        [Tooltip("D2: chance per level that a large dust splits the first time it comes within the gravity range (30 / 60 / 100%).")]
-        public double splitChancePerLevel = 0.3;
+        [Tooltip("D2: by level, the chance that a large dust splits the first time it comes within the gravity range (30 / 60 / 100%).")]
+        public double[] splitChancePerLevel = { 0.3, 0.6, 1.0 };
         [Tooltip("D2: pieces a split makes, and each piece's share of the original mass (3 x 0.4 = 120%).")]
         public int splitPieces = 3;
         public double splitPieceMassShare = 0.4;
@@ -101,9 +103,10 @@ namespace Incremental
         public double[] pulseEverySec = { 20, 16, 12 };
         public double pulseSec = 3;
         public double pulseSpawnMult = 3;
-        [Tooltip("D5 look: during a pulse new dust comes from the band outside the screen at this speed (px/s) toward the middle, " +
-                 "and the nebula is (1 + pulseNebulaBoost x effect intensity) times as bright (eased over pulseNebulaEaseSec).")]
-        public double pulseInflowSpeedPx = 140;
+        [Tooltip("D5 look: during a pulse the extra dust (1 - 1/pulseSpawnMult of the spawn) comes from the band outside the screen " +
+                 "at this speed (px/s) toward the middle, the rest is created as usual; the nebula is (1 + pulseNebulaBoost x effect " +
+                 "intensity) times as bright (eased over pulseNebulaEaseSec).")]
+        public double pulseInflowSpeedPx = 260;
         public double pulseNebulaBoost = 1.5;
         public double pulseNebulaEaseSec = 0.5;
 

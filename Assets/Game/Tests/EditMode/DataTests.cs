@@ -45,7 +45,7 @@ namespace Incremental.Tests
             // 29 §3.4: the endless run time node is gone; sale and spawn keep theirs.
             Assert.AreEqual(2, endless, "ring 11 endless nodes");
             Assert.That(n.nodes.Count, Is.InRange(DataValidator.TreeMinNodes, DataValidator.TreeMaxNodes), "29 Q3, §10.4: 130~160 nodes (138)");
-            Assert.AreEqual(16, rules, "the ★16 rule nodes of 29 §5");
+            Assert.AreEqual(13, rules, "the 13 rule nodes of 29 §10.4");
             foreach (var count in perCategory) Assert.Greater(count, 10, "every category has its share of the tree");
             // 20 §8.2: every cost comes from the measured entry income of its ring, 0.4 × I_k for a node and 3 × I_k
             // for a gate, so ring 1 (I = 9) is a node at 3.6 and the tier 2 gate at 27.

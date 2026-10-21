@@ -183,13 +183,22 @@ namespace Incremental
         public double GoldChance => P.goldChancePerLevel * Level("D4");
 
         /// <summary>D2 갈라지는 먼지: chance that a large dust splits the first time it comes within the gravity range.</summary>
-        public double SplitChance => Math.Min(1.0, P.splitChancePerLevel * Level("D2"));
+        public double SplitChance
+        {
+            get
+            {
+                int l = Level("D2");
+                var c = P.splitChancePerLevel;
+                if (l <= 0 || c == null || c.Length == 0) return 0;
+                return Math.Max(0.0, Math.Min(1.0, c[Math.Min(l, c.Length) - 1]));
+            }
+        }
 
-        /// <summary>D2: a large dust split (the dust field reports it through GameRoot). Logs the first few of a run.</summary>
+        /// <summary>D2: a large dust split (the dust field reports it through GameRoot). Logs the first three and every 1000th (a ring 11 run splits ~18,000).</summary>
         public void OnSplit()
         {
             splits++;
-            if (splits <= 3 || splits % 50 == 0)
+            if (splits <= 3 || splits % 1000 == 0)
                 Log("D2 갈라지는 먼지: split " + splits + " this run, " + P.splitPieces + " pieces of " + (P.splitPieceMassShare * 100).ToString("0") + "% mass");
         }
 

@@ -65,10 +65,13 @@ MonoBehaviour:
     goldChancePerLevel: 0.005
     goldMassMult: 10
     goldColor: {r: 1, g: 0.8, b: 0.3, a: 1}
-    goldBright: 2.2
-    goldSizeMult: 1.5
+    goldBright: 3
+    goldSizeMult: 2.5
     goldTwinkleHz: 2.5
-    splitChancePerLevel: 0.3
+    splitChancePerLevel:
+    - 0.3
+    - 0.6
+    - 1
     splitPieces: 3
     splitPieceMassShare: 0.4
     splitPieceSize: 0.75
@@ -86,7 +89,7 @@ MonoBehaviour:
     - 12
     pulseSec: 3
     pulseSpawnMult: 3
-    pulseInflowSpeedPx: 140
+    pulseInflowSpeedPx: 260
     pulseNebulaBoost: 1.5
     pulseNebulaEaseSec: 0.5
     deepHoldStartSec: 2
