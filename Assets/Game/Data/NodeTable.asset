@@ -1342,6 +1342,24 @@ MonoBehaviour:
     category: 1
     ruleId: D3
     enabled: 1
+  - id: rule_D2
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 12000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - rule_D3
+    angleDeg: 48
+    radiusOffset: 0
+    category: 1
+    ruleId: D2
+    enabled: 1
   - id: rule_D4
     kind: 5
     statId: 
@@ -1354,11 +1372,29 @@ MonoBehaviour:
     abilityId: 
     minTier: 7
     prereqs:
-    - rule_D3
+    - rule_D2
     angleDeg: 42
     radiusOffset: 0
     category: 1
     ruleId: D4
+    enabled: 1
+  - id: rule_D5
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 440000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - rule_D4
+    angleDeg: 42
+    radiusOffset: 0
+    category: 1
+    ruleId: D5
     enabled: 1
   - id: pull_r1
     kind: 0
@@ -1845,60 +1881,6 @@ MonoBehaviour:
     category: 2
     ruleId: 
     enabled: 1
-  - id: rule_G1
-    kind: 5
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 78
-    growth: 1.35
-    tier: 0
-    dustKindId: 
-    abilityId: 
-    minTier: 3
-    prereqs:
-    - pull_r2
-    angleDeg: 330
-    radiusOffset: 0
-    category: 2
-    ruleId: G1
-    enabled: 1
-  - id: rule_G2
-    kind: 5
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 2400
-    growth: 1.35
-    tier: 0
-    dustKindId: 
-    abilityId: 
-    minTier: 5
-    prereqs:
-    - rule_G1
-    angleDeg: 330
-    radiusOffset: 0
-    category: 2
-    ruleId: G2
-    enabled: 1
-  - id: rule_G3
-    kind: 5
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 100000
-    growth: 1.35
-    tier: 0
-    dustKindId: 
-    abilityId: 
-    minTier: 7
-    prereqs:
-    - rule_G2
-    angleDeg: 330
-    radiusOffset: 0
-    category: 2
-    ruleId: G3
-    enabled: 1
   - id: time_r1
     kind: 0
     statId: run_time
@@ -2077,60 +2059,6 @@ MonoBehaviour:
     radiusOffset: 0
     category: 4
     ruleId: 
-    enabled: 1
-  - id: rule_T1
-    kind: 5
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 3
-    baseCost: 13
-    growth: 1.35
-    tier: 0
-    dustKindId: 
-    abilityId: 
-    minTier: 2
-    prereqs:
-    - time_r1
-    angleDeg: 177
-    radiusOffset: 0
-    category: 4
-    ruleId: T1
-    enabled: 1
-  - id: rule_T2
-    kind: 5
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 440
-    growth: 1.35
-    tier: 0
-    dustKindId: 
-    abilityId: 
-    minTier: 4
-    prereqs:
-    - time_r3
-    angleDeg: 150
-    radiusOffset: 0
-    category: 4
-    ruleId: T2
-    enabled: 1
-  - id: rule_T5
-    kind: 5
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 2400
-    growth: 1.35
-    tier: 0
-    dustKindId: 
-    abilityId: 
-    minTier: 5
-    prereqs:
-    - time_r4
-    angleDeg: 174
-    radiusOffset: 0
-    category: 4
-    ruleId: T5
     enabled: 1
   - id: rule_T3
     kind: 5
@@ -2509,24 +2437,6 @@ MonoBehaviour:
     category: 3
     ruleId: 
     enabled: 1
-  - id: rule_A2
-    kind: 5
-    statId: 
-    effectPerLevel: 0
-    maxLevel: 1
-    baseCost: 2400
-    growth: 1.35
-    tier: 0
-    dustKindId: 
-    abilityId: 
-    minTier: 5
-    prereqs:
-    - ability_crystal
-    angleDeg: 212
-    radiusOffset: 0
-    category: 3
-    ruleId: A2
-    enabled: 1
   - id: rule_A1
     kind: 5
     statId: 
@@ -2539,11 +2449,47 @@ MonoBehaviour:
     abilityId: 
     minTier: 7
     prereqs:
-    - rule_A2
+    - ability_satellite
     angleDeg: 206
     radiusOffset: 0
     category: 3
     ruleId: A1
+    enabled: 1
+  - id: rule_A2
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 4500000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - rule_A1
+    angleDeg: 206
+    radiusOffset: 0
+    category: 3
+    ruleId: A2
+    enabled: 1
+  - id: rule_A5
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 260000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 11
+    prereqs:
+    - ability_blackhole
+    angleDeg: 258
+    radiusOffset: 0
+    category: 3
+    ruleId: A5
     enabled: 1
   ringCostMult:
   - 1

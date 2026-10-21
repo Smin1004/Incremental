@@ -18,8 +18,8 @@ namespace Incremental.EditorTools
         {
             var celestial = LoadAll<CelestialTable>();
             var nodes = LoadAll<NodeTable>();
-            // 29 Q9: Data/NodeTable_v1.asset is the old tree, kept only to price the save refund; the tree is the other one.
-            nodes.RemoveAll(t => AssetDatabase.GetAssetPath(t).EndsWith("_v1.asset"));
+            // 29 Q9, §10.1: Data/NodeTable_v1.asset and _v5.asset are old trees, kept only to price the save refunds; the tree is the other one.
+            nodes.RemoveAll(t => AssetDatabase.GetAssetPath(t).EndsWith("_v1.asset") || AssetDatabase.GetAssetPath(t).EndsWith("_v5.asset"));
             if (celestial.Count != 1 || nodes.Count != 1)
             {
                 Debug.LogError($"[Validate] expected exactly one CelestialTable and one NodeTable, found {celestial.Count} and {nodes.Count}.");

@@ -68,6 +68,27 @@ MonoBehaviour:
     goldBright: 2.2
     goldSizeMult: 1.5
     goldTwinkleHz: 2.5
+    splitChancePerLevel: 0.3
+    splitPieces: 3
+    splitPieceMassShare: 0.4
+    splitPieceSize: 0.75
+    splitKickPx: 160
+    splitSpreadDeg: 50
+    splitFlashPx: 70
+    splitFlashWidthPx: 4
+    splitFlashStrength: 0.6
+    splitFlashCoreGlow: 0.8
+    splitFlashSec: 0.25
+    splitFlashColor: {r: 1, g: 0.92, b: 0.75, a: 1}
+    pulseEverySec:
+    - 20
+    - 16
+    - 12
+    pulseSec: 3
+    pulseSpawnMult: 3
+    pulseInflowSpeedPx: 140
+    pulseNebulaBoost: 1.5
+    pulseNebulaEaseSec: 0.5
     deepHoldStartSec: 2
     deepHoldRampSec: 4
     deepHoldMax: 0.2
@@ -79,10 +100,13 @@ MonoBehaviour:
     chainMax: 0.5
     everyNth: 140000000f0000000a000000
     nthMult: 2
-    firstBodyMult: 5
+    startRushSec: 10
+    startRushMult: 2
     bundleAtCutPerLevel: 0.5
     resonanceChargeShare: 0.1
     buffChargeMult: 2
+    aftermathSec: 6
+    aftermathSpawnMult: 4
   bundleSizeGrowth: 0.12
   bundleSizeMax: 2
   bundlePopMult: 1.6

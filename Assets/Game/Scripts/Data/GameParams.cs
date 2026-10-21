@@ -67,7 +67,7 @@ namespace Incremental
         public double crystalTimeSec = 2;
         public double crystalTimeMaxSec = 15;
 
-        [Header("D1 가득 찬 시작, D3 빈 화면 보충, D4 황금 먼지")]
+        [Header("D1 가득 찬 시작, D2 갈라지는 먼지, D3 빠른 보충, D4 황금 먼지, D5 먼지 맥동")]
         [Tooltip("D1: by level, the share of the dust cap a run starts with (if more than the usual starting dust).")]
         public double[] fullStartShare = { 0.3, 0.6, 1.0 };
         [Tooltip("D3: added to dustRefillBoost per level.")]
@@ -80,6 +80,32 @@ namespace Incremental
         public double goldBright = 2.2;
         public double goldSizeMult = 1.5;
         public double goldTwinkleHz = 2.5;
+        [Tooltip("D2: chance per level that a large dust splits the first time it comes within the gravity range (30 / 60 / 100%).")]
+        public double splitChancePerLevel = 0.3;
+        [Tooltip("D2: pieces a split makes, and each piece's share of the original mass (3 x 0.4 = 120%).")]
+        public int splitPieces = 3;
+        public double splitPieceMassShare = 0.4;
+        [Tooltip("D2 look: a piece's size x, how fast the pieces are thrown toward the gravity source (px/s) and the spread of their headings (degrees).")]
+        public double splitPieceSize = 0.75;
+        public double splitKickPx = 160;
+        public double splitSpreadDeg = 50;
+        [Tooltip("D2 flash (FxRing, x effect intensity): the ring grows to this diameter px over splitFlashSec, its width px, " +
+                 "strength, the glow at its center, seconds, color.")]
+        public double splitFlashPx = 70;
+        public double splitFlashWidthPx = 4;
+        public double splitFlashStrength = 0.6;
+        public double splitFlashCoreGlow = 0.8;
+        public double splitFlashSec = 0.25;
+        public Color splitFlashColor = new Color(1f, 0.92f, 0.75f, 1f);
+        [Tooltip("D5: by level, every this many seconds of the run (run clock) the dust spawn runs x pulseSpawnMult for pulseSec.")]
+        public double[] pulseEverySec = { 20, 16, 12 };
+        public double pulseSec = 3;
+        public double pulseSpawnMult = 3;
+        [Tooltip("D5 look: during a pulse new dust comes from the band outside the screen at this speed (px/s) toward the middle, " +
+                 "and the nebula is (1 + pulseNebulaBoost x effect intensity) times as bright (eased over pulseNebulaEaseSec).")]
+        public double pulseInflowSpeedPx = 140;
+        public double pulseNebulaBoost = 1.5;
+        public double pulseNebulaEaseSec = 0.5;
 
         [Header("G1 깊어지는 중력, G2 잔류 중력, G3 고요한 중심")]
         [Tooltip("G1: after this many seconds of one hold the gravity radius grows, over deepHoldRampSec, up to +deepHoldMax.")]
@@ -92,7 +118,7 @@ namespace Incremental
         public double stillSpeedPx = 40;
         public double stillPullMult = 1.3;
 
-        [Header("C1 연쇄 완성, C2 열 번째, C3 첫 천체, C4 쉬운 묶음")]
+        [Header("C1 연쇄 완성, C2 열 번째, C3 시작 러시, C4 쉬운 묶음")]
         [Tooltip("C1: a completion within chainWindowSec of the last one adds chainStep to the income, up to chainMax.")]
         public double chainWindowSec = 1;
         public double chainStep = 0.05;
@@ -100,16 +126,20 @@ namespace Incremental
         [Tooltip("C2: by level, every n-th completion of a run is a x nthMult bundle (20 / 15 / 10).")]
         public int[] everyNth = { 20, 15, 10 };
         public double nthMult = 2;
-        [Tooltip("C3: the first body of a run pays x this.")]
-        public double firstBodyMult = 5;
+        [Tooltip("C3 시작 러시: the first this many seconds of a run pay x startRushMult (bodies and fragments), time bar gold like T3.")]
+        public double startRushSec = 10;
+        public double startRushMult = 2;
         [Tooltip("C4: bundleAt goes down this much per level (3 -> 2.5 -> 2), never below 1.5.")]
         public double bundleAtCutPerLevel = 0.5;
 
-        [Header("A1 공명하는 능력, A2 버프 가속")]
+        [Header("A1 공명하는 능력, A2 버프 가속, A5 블랙홀 여파")]
         [Tooltip("A1: when one ability fires, every other one gains this share of its cooldown as charge.")]
         public double resonanceChargeShare = 0.1;
         [Tooltip("A2: while the amplifier buff is on, the other abilities charge x this.")]
         public double buffChargeMult = 2;
+        [Tooltip("A5: after the black hole closes, the dust spawn runs x aftermathSpawnMult for this many seconds.")]
+        public double aftermathSec = 6;
+        public double aftermathSpawnMult = 4;
     }
 
     /// <summary>Silhouette the dust shader draws for a dust kind (20 §4). Only the shape branches; the hue is the palette's.</summary>

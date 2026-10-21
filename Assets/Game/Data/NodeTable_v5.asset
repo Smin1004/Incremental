@@ -1,0 +1,2560 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cb7a031150509444b8206391f5ebe9d, type: 3}
+  m_Name: NodeTable_v5
+  m_EditorClassIdentifier: 
+  nodes:
+  - id: gate_t2
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 27
+    growth: 1
+    tier: 2
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t3
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 63
+    growth: 1
+    tier: 3
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - gate_t2
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t4
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 390
+    growth: 1
+    tier: 4
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t5
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2100
+    growth: 1
+    tier: 5
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - gate_t4
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t6
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 12000
+    growth: 1
+    tier: 6
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - gate_t5
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t7
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 60000
+    growth: 1
+    tier: 7
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - gate_t6
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t8
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 510000
+    growth: 1
+    tier: 8
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - gate_t7
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t9
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2200000
+    growth: 1
+    tier: 9
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - gate_t8
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t10
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 23000000
+    growth: 1
+    tier: 10
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - gate_t9
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: gate_t11
+    kind: 1
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 120000000
+    growth: 1
+    tier: 11
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - gate_t10
+    angleDeg: 90
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r1
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.05
+    maxLevel: 5
+    baseCost: 3.6
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 109.2
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r2
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.1
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - sale_r1
+    angleDeg: 105
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r3
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.1
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - sale_r2
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r4
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.2
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - sale_r3
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r5
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.2
+    maxLevel: 5
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - sale_r4
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r6
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.4
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - sale_r5
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r7
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.4
+    maxLevel: 5
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - sale_r6
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r8
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.8
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - sale_r7
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r9
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 0.8
+    maxLevel: 5
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - sale_r8
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r10
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1.6
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - sale_r9
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: sale_r11
+    kind: 0
+    statId: sale_mult
+    effectPerLevel: 1
+    maxLevel: 0
+    baseCost: 170000000
+    growth: 1.6
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 11
+    prereqs:
+    - sale_r10
+    angleDeg: 102
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r2
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.028000000000000004
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - gate_t2
+    angleDeg: 75
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r3
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.028000000000000004
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - thr_r2
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r4
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.028000000000000004
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - thr_r3
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r5
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.024
+    maxLevel: 5
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - thr_r4
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r6
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.02
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - thr_r5
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r7
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.02
+    maxLevel: 5
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - thr_r6
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r8
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.016
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - thr_r7
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r9
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.012
+    maxLevel: 5
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - thr_r8
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: thr_r10
+    kind: 0
+    statId: threshold_mult
+    effectPerLevel: 0.008
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - thr_r9
+    angleDeg: 78
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: frag_unlock
+    kind: 0
+    statId: frag_unlock
+    effectPerLevel: 0.3
+    maxLevel: 1
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - gate_t3
+    angleDeg: 66
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: frag_chance_r4
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - frag_unlock
+    angleDeg: 66
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: frag_range_r5
+    kind: 0
+    statId: frag_offset
+    effectPerLevel: 1
+    maxLevel: 1
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - frag_chance_r4
+    angleDeg: 66
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: frag_chance_r6
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - frag_range_r5
+    angleDeg: 66
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: frag_range_r7
+    kind: 0
+    statId: frag_offset
+    effectPerLevel: 1
+    maxLevel: 1
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - frag_chance_r6
+    angleDeg: 66
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: frag_chance_r8
+    kind: 0
+    statId: frag_chance
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - frag_range_r7
+    angleDeg: 66
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: frag_range_r9
+    kind: 0
+    statId: frag_offset
+    effectPerLevel: 1
+    maxLevel: 1
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - frag_chance_r8
+    angleDeg: 66
+    radiusOffset: 0
+    category: 0
+    ruleId: 
+    enabled: 1
+  - id: rule_C3
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 13
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - gate_t2
+    angleDeg: 120
+    radiusOffset: 0
+    category: 0
+    ruleId: C3
+    enabled: 1
+  - id: rule_C1
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 78
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - rule_C3
+    angleDeg: 114
+    radiusOffset: 0
+    category: 0
+    ruleId: C1
+    enabled: 1
+  - id: rule_C2
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 2400
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - rule_C1
+    angleDeg: 114
+    radiusOffset: 0
+    category: 0
+    ruleId: C2
+    enabled: 1
+  - id: rule_C4
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 2
+    baseCost: 100000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - rule_C2
+    angleDeg: 114
+    radiusOffset: 0
+    category: 0
+    ruleId: C4
+    enabled: 1
+  - id: spawn_r1
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 0.4
+    maxLevel: 5
+    baseCost: 3.6
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r2
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 0.8
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - spawn_r1
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r3
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 0.6
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - spawn_r2
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r4
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 0.6
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - spawn_r3
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r5
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 1
+    maxLevel: 5
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - spawn_r4
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r6
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 1
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - spawn_r5
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r7
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 1.6
+    maxLevel: 5
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - spawn_r6
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r8
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 1.6
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - spawn_r7
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r9
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 2.4
+    maxLevel: 5
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - spawn_r8
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r10
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 2.4
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - spawn_r9
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: spawn_r11
+    kind: 0
+    statId: spawn_rate
+    effectPerLevel: 12
+    maxLevel: 0
+    baseCost: 170000000
+    growth: 1.6
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 11
+    prereqs:
+    - spawn_r10
+    angleDeg: 18
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: cap_r2
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 40
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - spawn_r1
+    angleDeg: 33
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: cap_r4
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 60
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - cap_r2
+    angleDeg: 30
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: cap_r6
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 120
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - cap_r4
+    angleDeg: 30
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: cap_r8
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 200
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - cap_r6
+    angleDeg: 30
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: cap_r10
+    kind: 0
+    statId: dust_cap
+    effectPerLevel: 260
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - cap_r8
+    angleDeg: 30
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: start_r3
+    kind: 0
+    statId: start_bonus
+    effectPerLevel: 33.333333333333336
+    maxLevel: 3
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - spawn_r2
+    angleDeg: 42
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: start_r6
+    kind: 0
+    statId: start_bonus
+    effectPerLevel: 50
+    maxLevel: 3
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - start_r3
+    angleDeg: 42
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: start_r9
+    kind: 0
+    statId: start_bonus
+    effectPerLevel: 83.33333333333333
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - start_r6
+    angleDeg: 42
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: dust_medium
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 52
+    growth: 1
+    tier: 0
+    dustKindId: medium
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - spawn_r2
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: chance_medium_r4
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.024
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: medium
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - dust_medium
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: dust_large
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 1600
+    growth: 1
+    tier: 0
+    dustKindId: large
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - chance_medium_r4
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: chance_large_r6
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.012
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: large
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - dust_large
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: dust_crystal
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 68000
+    growth: 1
+    tier: 0
+    dustKindId: crystal
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - chance_large_r6
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: chance_crystal_r8
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.008
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: crystal
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - dust_crystal
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: dust_interstellar
+    kind: 2
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 3000000
+    growth: 1
+    tier: 0
+    dustKindId: interstellar
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - chance_crystal_r8
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: chance_interstellar_r10
+    kind: 0
+    statId: dust_chance
+    effectPerLevel: 0.008
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: interstellar
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - dust_interstellar
+    angleDeg: 6
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: mass_r5
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.1
+    maxLevel: 3
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - spawn_r4
+    angleDeg: 354
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: mass_r7
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.1
+    maxLevel: 3
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - mass_r5
+    angleDeg: 354
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: mass_r9
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.1
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - mass_r7
+    angleDeg: 354
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: mass_r11
+    kind: 0
+    statId: dust_mass
+    effectPerLevel: 1.1
+    maxLevel: 3
+    baseCost: 170000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 11
+    prereqs:
+    - mass_r9
+    angleDeg: 354
+    radiusOffset: 0
+    category: 1
+    ruleId: 
+    enabled: 1
+  - id: rule_D1
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 440
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - spawn_r3
+    angleDeg: 42
+    radiusOffset: 0
+    category: 1
+    ruleId: D1
+    enabled: 1
+  - id: rule_D3
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 2400
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - rule_D1
+    angleDeg: 42
+    radiusOffset: 0
+    category: 1
+    ruleId: D3
+    enabled: 1
+  - id: rule_D4
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 100000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - rule_D3
+    angleDeg: 42
+    radiusOffset: 0
+    category: 1
+    ruleId: D4
+    enabled: 1
+  - id: pull_r1
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.04
+    maxLevel: 5
+    baseCost: 3.6
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r2
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.04
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - pull_r1
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r3
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.06
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - pull_r2
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r4
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.06
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - pull_r3
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r5
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.08
+    maxLevel: 5
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - pull_r4
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r6
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.08
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - pull_r5
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r7
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.1
+    maxLevel: 5
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - pull_r6
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r8
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.1
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - pull_r7
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r9
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.12
+    maxLevel: 5
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - pull_r8
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: pull_r10
+    kind: 0
+    statId: pull_accel
+    effectPerLevel: 0.12
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - pull_r9
+    angleDeg: 306
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r2
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.0196
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - pull_r1
+    angleDeg: 321
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r3
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.014000000000000002
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - radius_r2
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r4
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.014000000000000002
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - radius_r3
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r5
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.0182
+    maxLevel: 5
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - radius_r4
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r6
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.0196
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - radius_r5
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r7
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.0196
+    maxLevel: 5
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - radius_r6
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r8
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.0224
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - radius_r7
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r9
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.0252
+    maxLevel: 5
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - radius_r8
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: radius_r10
+    kind: 0
+    statId: gravity_radius
+    effectPerLevel: 0.0294
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - radius_r9
+    angleDeg: 318
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: follow_r2
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - pull_r1
+    angleDeg: 291
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: follow_r4
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - follow_r2
+    angleDeg: 294
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: follow_r6
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - follow_r4
+    angleDeg: 294
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: follow_r8
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - follow_r6
+    angleDeg: 294
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: follow_r10
+    kind: 0
+    statId: follow_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - follow_r8
+    angleDeg: 294
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: speed_r3
+    kind: 0
+    statId: dust_max_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - pull_r2
+    angleDeg: 282
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: speed_r6
+    kind: 0
+    statId: dust_max_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - speed_r3
+    angleDeg: 282
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: speed_r9
+    kind: 0
+    statId: dust_max_speed
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - speed_r6
+    angleDeg: 282
+    radiusOffset: 0
+    category: 2
+    ruleId: 
+    enabled: 1
+  - id: rule_G1
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 78
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - pull_r2
+    angleDeg: 330
+    radiusOffset: 0
+    category: 2
+    ruleId: G1
+    enabled: 1
+  - id: rule_G2
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2400
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - rule_G1
+    angleDeg: 330
+    radiusOffset: 0
+    category: 2
+    ruleId: G2
+    enabled: 1
+  - id: rule_G3
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 100000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - rule_G2
+    angleDeg: 330
+    radiusOffset: 0
+    category: 2
+    ruleId: G3
+    enabled: 1
+  - id: time_r1
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 3.6
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 1
+    prereqs: []
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r2
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - time_r1
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r3
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - time_r2
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r4
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - time_r3
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r5
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - time_r4
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r6
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - time_r5
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r7
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - time_r6
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r8
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - time_r7
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r9
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - time_r8
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_r10
+    kind: 0
+    statId: run_time
+    effectPerLevel: 1.8
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - time_r9
+    angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: rule_T1
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 13
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - time_r1
+    angleDeg: 177
+    radiusOffset: 0
+    category: 4
+    ruleId: T1
+    enabled: 1
+  - id: rule_T2
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 440
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - time_r3
+    angleDeg: 150
+    radiusOffset: 0
+    category: 4
+    ruleId: T2
+    enabled: 1
+  - id: rule_T5
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2400
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - time_r4
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: T5
+    enabled: 1
+  - id: rule_T3
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 12000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - time_r5
+    angleDeg: 150
+    radiusOffset: 0
+    category: 4
+    ruleId: T3
+    enabled: 1
+  - id: ability_crystal
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 8.4
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 2
+    prereqs: []
+    angleDeg: 234
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: ability_implode
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 290
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 4
+    prereqs:
+    - ability_crystal
+    angleDeg: 234
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: ability_satellite
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 7900
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 6
+    prereqs:
+    - ability_implode
+    angleDeg: 234
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: ability_meteor
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 290000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 8
+    prereqs:
+    - ability_satellite
+    angleDeg: 234
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: ability_blackhole
+    kind: 3
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 16000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: blackhole
+    minTier: 10
+    prereqs:
+    - ability_meteor
+    angleDeg: 234
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: crystal_power_r3
+    kind: 0
+    statId: ability_power
+    effectPerLevel: 0.06
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 3
+    prereqs:
+    - ability_crystal
+    angleDeg: 242
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: crystal_duration_r4
+    kind: 0
+    statId: ability_duration
+    effectPerLevel: 0.5
+    maxLevel: 3
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 4
+    prereqs:
+    - crystal_power_r3
+    angleDeg: 248
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: crystal_interval_r5
+    kind: 0
+    statId: ability_cooldown
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 5
+    prereqs:
+    - crystal_duration_r4
+    angleDeg: 254
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: evolve_crystal
+    kind: 4
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 140000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: crystal
+    minTier: 7
+    prereqs:
+    - crystal_interval_r5
+    angleDeg: 254
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: implode_range_r5
+    kind: 0
+    statId: ability_range
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 5
+    prereqs:
+    - ability_implode
+    angleDeg: 226
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: implode_power_r6
+    kind: 0
+    statId: ability_power
+    effectPerLevel: 0.1
+    maxLevel: 3
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 6
+    prereqs:
+    - implode_range_r5
+    angleDeg: 220
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: implode_cooldown_r7
+    kind: 0
+    statId: ability_cooldown
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: implode
+    minTier: 7
+    prereqs:
+    - implode_power_r6
+    angleDeg: 214
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: satellite_count_r7
+    kind: 0
+    statId: ability_count
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 7
+    prereqs:
+    - ability_satellite
+    angleDeg: 242
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: satellite_tow_r8
+    kind: 0
+    statId: ability_power
+    effectPerLevel: 0.1
+    maxLevel: 3
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 8
+    prereqs:
+    - satellite_count_r7
+    angleDeg: 248
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: satellite_orbit_r9
+    kind: 0
+    statId: ability_range
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: satellite
+    minTier: 9
+    prereqs:
+    - satellite_tow_r8
+    angleDeg: 254
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: meteor_amount_r9
+    kind: 0
+    statId: ability_amount
+    effectPerLevel: 0.03
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 9
+    prereqs:
+    - ability_meteor
+    angleDeg: 226
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: meteor_interval_r9
+    kind: 0
+    statId: ability_cooldown
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 9
+    prereqs:
+    - meteor_amount_r9
+    angleDeg: 216
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: evolve_meteor
+    kind: 4
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 32000000
+    growth: 1
+    tier: 0
+    dustKindId: 
+    abilityId: meteor
+    minTier: 10
+    prereqs:
+    - meteor_interval_r9
+    angleDeg: 220
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: blackhole_duration_r11
+    kind: 0
+    statId: ability_duration
+    effectPerLevel: 1
+    maxLevel: 3
+    baseCost: 170000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: blackhole
+    minTier: 11
+    prereqs:
+    - ability_blackhole
+    angleDeg: 242
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: blackhole_cooldown_r11
+    kind: 0
+    statId: ability_cooldown
+    effectPerLevel: 0.05
+    maxLevel: 3
+    baseCost: 170000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: blackhole
+    minTier: 11
+    prereqs:
+    - blackhole_duration_r11
+    angleDeg: 250
+    radiusOffset: 0
+    category: 3
+    ruleId: 
+    enabled: 1
+  - id: rule_A2
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 2400
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - ability_crystal
+    angleDeg: 212
+    radiusOffset: 0
+    category: 3
+    ruleId: A2
+    enabled: 1
+  - id: rule_A1
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 1
+    baseCost: 100000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - rule_A2
+    angleDeg: 206
+    radiusOffset: 0
+    category: 3
+    ruleId: A1
+    enabled: 1
+  ringCostMult:
+  - 1
+  - 2.5
+  - 3.1
+  - 2.1
+  - 1.2
+  - 1.9
+  - 3.9
+  - 3.7
+  - 11.5
+  - 3.8
+  - 8.4
+  - 1

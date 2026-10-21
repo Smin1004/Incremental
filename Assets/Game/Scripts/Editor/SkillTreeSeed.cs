@@ -217,10 +217,13 @@ namespace Incremental.EditorTools
             n.Add(Stat("mass_r9", c, 9, -2 * Side, StatIds.DustMass, 1.1, 3, "mass_r7"));
             n.Add(Stat("mass_r11", c, 11, -2 * Side, StatIds.DustMass, 1.1, 3, "mass_r9"));
 
-            // 29 §5.2 rules: D1 ring 4 (×3), D3 ring 5 (×3), D4 ring 7 (×3).
+            // 29 §10.4 rules: D1 ring 4 (×3), D3 ring 5 (×3), D2 ring 6 (×3), D4 ring 7 (×3), D5 ring 8 (×3). D2 sits a
+            // little further out than the rule line because start_r6 holds that place in ring 6.
             n.Add(Rule("D1", c, 4, +2 * Side, 3, "spawn_r3"));
             n.Add(Rule("D3", c, 5, +2 * Side, 3, "rule_D1"));
-            n.Add(Rule("D4", c, 7, +2 * Side, 3, "rule_D3"));
+            n.Add(Rule("D2", c, 6, +2.5f * Side, 3, "rule_D3"));
+            n.Add(Rule("D4", c, 7, +2 * Side, 3, "rule_D2"));
+            n.Add(Rule("D5", c, 8, +2 * Side, 3, "rule_D4"));
         }
 
         static NodeDef Kind(string kind, int ring, string prereq) =>
@@ -263,10 +266,11 @@ namespace Incremental.EditorTools
             for (int r = 3; r <= 9; r += 3)
                 n.Add(Stat("speed_r" + r, c, r, -2 * Side, StatIds.DustMaxSpeed, 0.05, 3, r == 3 ? "pull_r2" : "speed_r" + (r - 3)));
 
-            // 29 §5.3 rules: G1 ring 3, G2 ring 5, G3 ring 7.
-            n.Add(Rule("G1", c, 3, +2 * Side, 1, "pull_r2"));
-            n.Add(Rule("G2", c, 5, +2 * Side, 1, "rule_G1"));
-            n.Add(Rule("G3", c, 7, +2 * Side, 1, "rule_G2"));
+            // 29 §10.1: no rule nodes in this category. The 13th pass lines stay here, effect code and values included
+            // (Rules.cs, GameParams.rules); uncomment one to bring it back.
+            // n.Add(Rule("G1", c, 3, +2 * Side, 1, "pull_r2"));
+            // n.Add(Rule("G2", c, 5, +2 * Side, 1, "rule_G1"));
+            // n.Add(Rule("G3", c, 7, +2 * Side, 1, "rule_G2"));
         }
 
         // ---------------- 29 §3.4 시간 (162°) ----------------
@@ -277,10 +281,11 @@ namespace Incremental.EditorTools
             const NodeCategory c = NodeCategory.Time;
             Line(n, c, "time", StatIds.RunTime, 0f, 1, 10, 5, r => RunTimePerRing, r => r == 1 ? null : "time_r" + (r - 1));
 
-            // 29 §5.1 rules: T1 ring 2 (×3), T2 ring 4, T5 ring 5, T3 ring 6.
-            n.Add(Rule("T1", c, 2, +Side, 3, "time_r1"));
-            n.Add(Rule("T2", c, 4, -Side, 1, "time_r3"));
-            n.Add(Rule("T5", c, 5, +Side, 1, "time_r4"));
+            // 29 §10.4 rules: T3 ring 6 only ("시간은 빡빡하게"). T1, T2 and T5 stay here, effect code and values included;
+            // uncomment one to bring it back.
+            // n.Add(Rule("T1", c, 2, +Side, 3, "time_r1"));
+            // n.Add(Rule("T2", c, 4, -Side, 1, "time_r3"));
+            // n.Add(Rule("T5", c, 5, +Side, 1, "time_r4"));
             n.Add(Rule("T3", c, 6, -Side, 1, "time_r5"));
         }
 
@@ -324,9 +329,11 @@ namespace Incremental.EditorTools
             n.Add(AbilityStat("blackhole_duration_r11", "blackhole", 11, +8, StatIds.AbilityDuration, 1, 3, "ability_blackhole"));
             n.Add(AbilityStat("blackhole_cooldown_r11", "blackhole", 11, +16, StatIds.AbilityCooldown, 0.05, 3, "blackhole_duration_r11"));
 
-            // 29 §5.5 rules: A2 ring 5, A1 ring 7.
-            n.Add(Rule("A2", NodeCategory.Ability, 5, -22, 1, "ability_crystal"));
-            n.Add(Rule("A1", NodeCategory.Ability, 7, -28, 1, "rule_A2"));
+            // 29 §10.4 rules: A1 ring 7 off the stem, A2 ring 9 after it (moved from ring 5), on the outer edge of the right
+            // side; A5 ring 11 on the black hole's branch.
+            n.Add(Rule("A1", NodeCategory.Ability, 7, -28, 1, "ability_satellite"));
+            n.Add(Rule("A2", NodeCategory.Ability, 9, -28, 1, "rule_A1"));
+            n.Add(Rule("A5", NodeCategory.Ability, 11, +24, 1, "ability_blackhole"));
         }
 
         static NodeDef AbilityUnlock(string ability, int ring, string prereq) =>

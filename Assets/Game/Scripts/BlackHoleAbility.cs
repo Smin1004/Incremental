@@ -161,6 +161,8 @@ namespace Incremental
                 root.Cursor.ClearLookOverride();
                 // 26 §12.3 E1.
                 root.Fx.OnBlackHoleRelease();
+                // 29 §10.3 A5 블랙홀 여파: the emptied screen refills faster for a while.
+                root.Rules.OnBlackHoleClosed(root.Run);
                 Log("closed at " + RunClock + ": " + (root.Dust.CapturedCount - capturedFrom) + " dust captured since it fired, " +
                     (root.Dust.Count - root.Dust.OutsideCount) + " on screen and " + root.Dust.OutsideCount + " outside it now");
             }

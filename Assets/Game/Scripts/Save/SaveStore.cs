@@ -43,6 +43,9 @@ namespace Incremental
         /// <summary>29 Q9: the v1 skill tree, which prices the refund of the v4 → v5 migration. Null = no refund.</summary>
         public NodeTable TreeV1 { get; set; }
 
+        /// <summary>29 §10.1: the 13th pass tree, which prices the refund of the v5 → v6 migration. Null = no refund.</summary>
+        public NodeTable TreeV5 { get; set; }
+
         public bool HasSave => File.Exists(SavePath) || File.Exists(BakPath);
 
         // ---------------- save.json ----------------
@@ -105,7 +108,8 @@ namespace Incremental
         /// <summary>Migrates; a save that migration replaces with a new game is first copied to save.v&lt;n&gt;_&lt;time&gt;.json.</summary>
         SaveData Migrate(SaveData data, string sourcePath)
         {
-            if (SaveMigration.ResetsProgress(data.version) || SaveMigration.ResetsTree(data.version))
+            // 14th pass: the v5 → v6 refund changes the tree too, so that save is kept as well.
+            if (SaveMigration.ResetsProgress(data.version) || SaveMigration.ResetsTree(data.version) || data.version == 5)
             {
                 string copy = Path.Combine(Dir, "save.v" + data.version + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + ".json");
                 try
@@ -118,7 +122,7 @@ namespace Incremental
                     Debug.LogWarning("[Save] could not keep a copy of the old save: " + e.Message);
                 }
             }
-            return SaveMigration.Migrate(data, TreeV1);
+            return SaveMigration.Migrate(data, TreeV1, TreeV5);
         }
 
         /// <summary>Deletes save.json, save.bak and save.tmp. Settings and quarantined files are kept.</summary>

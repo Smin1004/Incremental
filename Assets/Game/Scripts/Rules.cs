@@ -29,7 +29,10 @@ namespace Incremental
         Vector2 lastGravity;
         bool haveGravity;
         bool still;
-        bool graceLogged, rushLogged;
+        bool graceLogged, rushLogged, startRushLogged;
+        int pulsesLogged;
+        double aftermathUntil = -1;
+        int splits;
 
         public Rules(GameParams gameParams) { p = gameParams; }
 
@@ -43,7 +46,7 @@ namespace Incremental
         public double ChainBonus => Level("C1") > 0 ? Math.Min(P.chainMax, P.chainStep * chain) : 0;
         /// <summary>T2: seconds the completions have added to this run.</summary>
         public double TimeAdded => timeAdded;
-        /// <summary>Completions in this run (C2, C3).</summary>
+        /// <summary>Completions in this run (C2).</summary>
         public int Completions => completions;
 
         /// <summary>Reads the owned rule nodes and resets everything a run counts.</summary>
@@ -60,7 +63,10 @@ namespace Incremental
             lingerLeft = 0;
             haveGravity = false;
             still = false;
-            graceLogged = rushLogged = false;
+            graceLogged = rushLogged = startRushLogged = false;
+            pulsesLogged = 0;
+            aftermathUntil = -1;
+            splits = 0;
             if (P == null || !P.enabled || t == null || m == null) return;
             var owned = new List<string>();
             foreach (var n in t.nodes)
@@ -101,24 +107,41 @@ namespace Incremental
         /// <summary>T3 막판 러시: true in the last rushLastSec of the run (income × rushIncomeMult).</summary>
         public bool InRush(RunState run) => Level("T3") > 0 && run != null && run.timeLeft <= P.rushLastSec && run.timeLeft > 0;
 
-        /// <summary>T3: what the run's income is multiplied by right now.</summary>
+        /// <summary>C3 시작 러시 (14th pass): true in the first startRushSec of the run (income × startRushMult).</summary>
+        public bool InStartRush(RunState run) => Level("C3") > 0 && run != null && run.elapsed < P.startRushSec;
+
+        /// <summary>T3 and C3: what the run's income is multiplied by right now.</summary>
         public double RushMult(RunState run)
         {
-            if (!InRush(run)) return 1;
-            if (!rushLogged)
+            double mult = 1;
+            if (InStartRush(run))
             {
-                rushLogged = true;
-                Log("T3 막판 러시: last " + P.rushLastSec.ToString("0.#") + "s, income x" + P.rushIncomeMult.ToString("0.##"));
+                if (!startRushLogged)
+                {
+                    startRushLogged = true;
+                    Log("C3 시작 러시: first " + P.startRushSec.ToString("0.#") + "s, income x" + P.startRushMult.ToString("0.##"));
+                }
+                mult *= P.startRushMult;
             }
-            return P.rushIncomeMult;
+            if (InRush(run))
+            {
+                if (!rushLogged)
+                {
+                    rushLogged = true;
+                    Log("T3 막판 러시: last " + P.rushLastSec.ToString("0.#") + "s, income x" + P.rushIncomeMult.ToString("0.##"));
+                }
+                mult *= P.rushIncomeMult;
+            }
+            return mult;
         }
 
-        /// <summary>The time bar's look: 0 as usual, 1 held (T1), 2 rush (T3).</summary>
+        /// <summary>The time bar's look: 0 as usual, 1 held (T1), 2 rush (T3 at the end, C3 at the start: the same gold pulse).</summary>
         public int TimeBarMode(RunState run)
         {
             if (run == null) return 0;
             double g = GraceSec;
             if (g > 0 && run.elapsed <= g) return 1;
+            if (InStartRush(run)) return 2;
             return Level("T3") > 0 && run.timeLeft <= P.rushLastSec && run.timeLeft > 0 ? 2 : 0;
         }
 
@@ -138,7 +161,7 @@ namespace Incremental
             AddTime(run, add, "T5 결정의 시간 (" + crystalTimeAdded.ToString("0.#") + "/" + P.crystalTimeMaxSec.ToString("0") + "s this run)");
         }
 
-        // ---------------- dust (D1, D3, D4) ----------------
+        // ---------------- dust (D1, D2, D3, D4, D5) ----------------
 
         /// <summary>D1 가득 찬 시작: the dust a run starts with, at least the level's share of the cap.</summary>
         public double StartDust(double initial, double cap)
@@ -153,11 +176,66 @@ namespace Incremental
             return full;
         }
 
-        /// <summary>D3 빈 화면 보충: added to GameParams.dustRefillBoost.</summary>
+        /// <summary>D3 빠른 보충: added to GameParams.dustRefillBoost.</summary>
         public double RefillBoostAdd => P.refillBoostPerLevel * Level("D3");
 
         /// <summary>D4 황금 먼지: chance that a new dust is golden.</summary>
         public double GoldChance => P.goldChancePerLevel * Level("D4");
+
+        /// <summary>D2 갈라지는 먼지: chance that a large dust splits the first time it comes within the gravity range.</summary>
+        public double SplitChance => Math.Min(1.0, P.splitChancePerLevel * Level("D2"));
+
+        /// <summary>D2: a large dust split (the dust field reports it through GameRoot). Logs the first few of a run.</summary>
+        public void OnSplit()
+        {
+            splits++;
+            if (splits <= 3 || splits % 50 == 0)
+                Log("D2 갈라지는 먼지: split " + splits + " this run, " + P.splitPieces + " pieces of " + (P.splitPieceMassShare * 100).ToString("0") + "% mass");
+        }
+
+        /// <summary>D2: large dust split so far this run.</summary>
+        public int Splits => splits;
+
+        /// <summary>D5 먼지 맥동: seconds between pulses at the owned level (0 = not owned).</summary>
+        public double PulseEvery
+        {
+            get
+            {
+                int l = Level("D5");
+                var e = P.pulseEverySec;
+                if (l <= 0 || e == null || e.Length == 0) return 0;
+                return e[Math.Min(l, e.Length) - 1];
+            }
+        }
+
+        /// <summary>D5: 0..1 how far into the current pulse (−1 = no pulse now). Pulses start at every, 2 × every, … of the run clock.</summary>
+        public double PulsePhase(RunState run)
+        {
+            double every = PulseEvery;
+            if (every <= 0 || run == null || run.elapsed < every || P.pulseSec <= 0) return -1;
+            int index = (int)Math.Floor(run.elapsed / every);
+            double into = run.elapsed - index * every;
+            if (into >= P.pulseSec) return -1;
+            if (index > pulsesLogged)
+            {
+                pulsesLogged = index;
+                Log("D5 먼지 맥동: pulse " + index + " at " + run.elapsed.ToString("F1") + "s, spawn x" + P.pulseSpawnMult.ToString("0.##") +
+                    " for " + P.pulseSec.ToString("0.#") + "s (every " + every.ToString("0.#") + "s)");
+            }
+            return into / P.pulseSec;
+        }
+
+        /// <summary>
+        /// D5 and A5: what the dust spawn is multiplied by on this tick (both at once multiply). The dust cap still
+        /// holds: at the cap nothing spawns, whatever this says.
+        /// </summary>
+        public double SpawnMult(RunState run)
+        {
+            double m = 1;
+            if (PulsePhase(run) >= 0) m *= P.pulseSpawnMult;
+            if (InAftermath(run)) m *= P.aftermathSpawnMult;
+            return m;
+        }
 
         // ---------------- gravity (G1, G2, G3) ----------------
 
@@ -228,7 +306,7 @@ namespace Incremental
         /// <summary>G2: seconds of lingering gravity left (the gravity ring stays drawn meanwhile).</summary>
         public double LingerLeft => Math.Max(0, lingerLeft);
 
-        // ---------------- bodies (C1, C2, C3, C4, T2, T3) ----------------
+        // ---------------- bodies (C1, C2, C4, T2; C3 and T3 through RushMult) ----------------
 
         /// <summary>C4 쉬운 묶음: the bundle threshold after the rule.</summary>
         public double BundleAt(double baseAt)
@@ -247,12 +325,6 @@ namespace Incremental
             completions++;
             double mult = 1;
             double now = run != null ? run.elapsed : 0;
-
-            if (Level("C3") > 0 && completions == 1)
-            {
-                mult *= P.firstBodyMult;
-                Log("C3 첫 천체: tier " + tier + " pays x" + P.firstBodyMult.ToString("0.##"));
-            }
 
             int c2 = Level("C2");
             if (c2 > 0 && P.everyNth != null && P.everyNth.Length > 0)
@@ -292,6 +364,7 @@ namespace Incremental
         /// <summary>D4: one line at the end of the run.</summary>
         public void EndRun(int goldCaptured)
         {
+            if (Level("D2") > 0) Log("D2 갈라지는 먼지: " + splits + " large dust split this run");
             if (Level("D4") > 0) Log("D4 황금 먼지: " + goldCaptured + " golden dust taken this run (x" + P.goldMassMult.ToString("0.#") + " mass each)");
         }
 
@@ -306,6 +379,18 @@ namespace Incremental
 
         /// <summary>A1 공명하는 능력: share of another ability's cooldown its charge gains when one ability fires.</summary>
         public double ResonanceShare => Level("A1") > 0 ? P.resonanceChargeShare : 0;
+
+        /// <summary>A5 블랙홀 여파: the black hole has just closed.</summary>
+        public void OnBlackHoleClosed(RunState run)
+        {
+            if (Level("A5") <= 0 || run == null || P.aftermathSec <= 0) return;
+            aftermathUntil = run.elapsed + P.aftermathSec;
+            Log("A5 블랙홀 여파: the black hole closed at " + run.elapsed.ToString("F1") + "s, spawn x" + P.aftermathSpawnMult.ToString("0.##") +
+                " for " + P.aftermathSec.ToString("0.#") + "s");
+        }
+
+        /// <summary>A5: true while the spawn after a black hole runs faster.</summary>
+        public bool InAftermath(RunState run) => run != null && aftermathUntil >= 0 && run.elapsed < aftermathUntil;
 
         /// <summary>A1 logs once per trigger.</summary>
         public void LogResonance(Ability from, int others)

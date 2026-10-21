@@ -48,6 +48,7 @@ MonoBehaviour:
   celestialTable: {fileID: 11400000, guid: 70d2eecc0289a9a4695ffd29dc84cf8c, type: 2}
   nodeTable: {fileID: 11400000, guid: 399cf4353515c6143b435c93c2727bdb, type: 2}
   nodeTableV1: {fileID: 11400000, guid: d2533291594350b499a4daeb4c1dcee8, type: 2}
+  nodeTableV5: {fileID: 11400000, guid: 4ebd0709d1776e64d8af4fa8d479c6ad, type: 2}
   abilityTable: {fileID: 11400000, guid: 8ea10e3789f89354c8b1b8539eeaf22d, type: 2}
   uiTheme: {fileID: 11400000, guid: 4efa60e5830632f4792069270ab31eca, type: 2}
   unlitMaterial: {fileID: 2100000, guid: 319a5615ae4d94947aa6fdaa04d30eb2, type: 2}

@@ -52,6 +52,11 @@ namespace Incremental
         float farSpin;
         bool loggedNebula, loggedFar;
 
+        /// <summary>29 §10.3 D5: 1 while a dust pulse runs (GameRoot sets it every tick), else 0.</summary>
+        public float PulseTarget { get; set; }
+        /// <summary>D5: the eased 0..1 the nebula brightens by (rules.pulseNebulaBoost × effect intensity at 1).</summary>
+        public float PulseGlow { get; set; }
+
         /// <summary>B3: which far body ring <paramref name="maxTier"/> shows: the next one with every gate.</summary>
         public static int FarKindFor(int maxTier) => ((Mathf.Max(1, maxTier) - 1) % FarKinds + FarKinds) % FarKinds;
 
@@ -217,6 +222,10 @@ namespace Incremental
                 Debug.Log("[Visual] faint nebula (B1a" + (p.ringNebula ? " + B1b ring colors, style " + p.ringNebulaStyle : "") + "): " +
                           (vis.nebula ? "on, strength " + nebula.ToString("0.###") : "off"));
             }
+            // D5 먼지 맥동: the nebula brightens while a pulse runs, eased in and out.
+            float ease = Mathf.Max(0.01f, (float)p.rules.pulseNebulaEaseSec);
+            PulseGlow = Mathf.MoveTowards(PulseGlow, PulseTarget, Time.deltaTime / ease);
+            if (PulseGlow > 0f) nebula *= 1f + PulseGlow * (float)p.rules.pulseNebulaBoost * root.EffectIntensity;
             mpb.SetColor(IdNebulaA, nebA);
             mpb.SetColor(IdNebulaB, nebB);
             mpb.SetVector(IdNebula, new Vector4(nebula, Mathf.Max(1f, cur.nebulaScalePx), 0f, 0f));

@@ -59,6 +59,8 @@ namespace Incremental
         public NodeTable nodeTable;
         [Tooltip("29 Q9: the v1 skill tree (92 nodes), kept only to price the refund when a v4 save is moved to tree v2.")]
         public NodeTable nodeTableV1;
+        [Tooltip("29 §10.1: the 13th pass tree (141 nodes), kept only to price the refund of the rule nodes a v5 save loses.")]
+        public NodeTable nodeTableV5;
         [Tooltip("Special abilities (24). Without it the game runs with none.")]
         public AbilityTable abilityTable;
         [Tooltip("The look of the UI: fonts, palette, shapes, animation times (26 §4).")]
@@ -97,6 +99,8 @@ namespace Incremental
         public IgnitionFx Ignition { get; private set; }
         /// <summary>26 §5.5: the light ring that spreads with the zoom-out after a gate purchase.</summary>
         public GateExpandFx GateExpand { get; private set; }
+        /// <summary>29 §10.2 D2: the crack flash where a large dust splits.</summary>
+        public SplitFlashFx SplitFlash { get; private set; }
         public DustField Dust { get; private set; }
         public DustMeshRenderer DustRenderer { get; private set; }
         /// <summary>22 §5: the trail ribbons of dust above the base kind.</summary>
@@ -268,7 +272,7 @@ namespace Incremental
             // loop stalls as soon as another window is in front, which breaks unattended bot runs.
             Application.runInBackground = true;
             DataDir = Application.persistentDataPath;
-            Store = new SaveStore(DataDir) { TreeV1 = nodeTableV1 };
+            Store = new SaveStore(DataDir) { TreeV1 = nodeTableV1, TreeV5 = nodeTableV5 };
             Rules = new Rules(gameParams);
             Settings = Store.LoadSettings();
             Fmt.Mode = Settings.notation;
@@ -361,6 +365,16 @@ namespace Incremental
             gateFxGo.transform.SetParent(transform, false);
             GateExpand = gateFxGo.AddComponent<GateExpandFx>();
             GateExpand.Init(this, fxMaterial);
+
+            var splitFxGo = new GameObject("SplitFlash");
+            splitFxGo.transform.SetParent(transform, false);
+            SplitFlash = splitFxGo.AddComponent<SplitFlashFx>();
+            SplitFlash.Init(this, fxMaterial);
+            Dust.Split = pos =>
+            {
+                Rules.OnSplit();
+                SplitFlash.Show(pos);
+            };
 
             var abilitiesGo = new GameObject("Abilities");
             abilitiesGo.transform.SetParent(transform, false);
@@ -652,6 +666,11 @@ namespace Incremental
             Dust.GoldChance = Rules.GoldChance;
             Dust.GoldMassMult = gameParams.rules.goldMassMult;
             Dust.GoldCaptured = 0;
+            Dust.SplitChance = Rules.SplitChance;
+            Dust.SpawnMult = 1;
+            Dust.Inflow = false;
+            SplitFlash.Clear();
+            Backdrop.PulseGlow = 0f;
 
             // 22 §6: the run is drawn at the world scale, and coming from the result screen the camera is not there
             // yet. It goes on before anything is placed, so the pointer is read and the dust laid out for the area the
@@ -714,6 +733,11 @@ namespace Incremental
             bool timeUp = !Rules.InGrace(Run) && Session.TickClock(Run, dt);
             // 29 §5 G2: the gravity keeps pulling for a moment after a release.
             bool dustHolding = Rules.DustHolding(dt, wasHolding, holding);
+            // 29 §10.3 D5, A5: the spawn multiplier of this tick; during a D5 pulse new dust comes in from the edge band.
+            Dust.SpawnMult = Rules.SpawnMult(Run);
+            bool pulse = Rules.PulsePhase(Run) >= 0;
+            Dust.Inflow = pulse;
+            Backdrop.PulseTarget = pulse ? 1f : 0f;
 
             dustWatch.Restart();
             // 24: the abilities go first, so what they do to the dust this tick is part of this same dust tick, and
@@ -950,6 +974,9 @@ namespace Incremental
         void EndRun(string reason, bool showResult)
         {
             Rules.EndRun(Dust.GoldCaptured);
+            Dust.SpawnMult = 1;
+            Dust.Inflow = false;
+            Backdrop.PulseTarget = 0f;
             var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels,
                 runStartStats, reason, Run.fragmentCounts, Run.fragmentIncome);
             Session.ApplyRunEnd(Meta, rec);

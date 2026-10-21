@@ -13,8 +13,15 @@ namespace Incremental
         /// 1: flat shop (week 2). 2: skill tree nodes (12 §3). 3: the dust kind axis (20 §4). 4: time-based runs (28 §2):
         /// the stamina fields are gone from the run stats and a run that ran out ends as "time" instead of "stamina".
         /// 5: skill tree v2 (29, Q9): the tree is reset and what was spent on it is given back.
+        /// 6: the rule nodes of 29 §10.1 left the tree; what was spent on them is given back, the rest of the tree stays.
         /// </summary>
-        public const int CurrentVersion = 5;
+        public const int CurrentVersion = 6;
+
+        /// <summary>
+        /// 29 §10.1 (14th pass): the rule nodes taken out of the tree. Their effect code stays, so a later pass may put one
+        /// back under the same id; this list is only what the v5 → v6 step refunds.
+        /// </summary>
+        public static readonly string[] RemovedInV6 = { "rule_T1", "rule_T2", "rule_T5", "rule_G1", "rule_G2", "rule_G3" };
 
         /// <summary>29 Q9: saves below this hold tree v1 levels, which v5 resets (and refunds).</summary>
         public const int FirstTreeV2Version = 5;
@@ -36,7 +43,11 @@ namespace Incremental
         /// The v1 skill tree (Data/NodeTable_v1.asset): what the v4 node levels cost, for the v5 refund. Without it the
         /// tree is still reset, and nothing is given back.
         /// </param>
-        public static SaveData Migrate(SaveData d, NodeTable treeV1 = null)
+        /// <param name="treeV5">
+        /// The 13th pass tree (Data/NodeTable_v5.asset): what the removed rule nodes cost, for the v6 refund. Without it
+        /// their levels are still dropped, and nothing is given back.
+        /// </param>
+        public static SaveData Migrate(SaveData d, NodeTable treeV1 = null, NodeTable treeV5 = null)
         {
             if (d == null) return null;
             if (d.version < 1) d.version = 1;
@@ -60,7 +71,12 @@ namespace Incremental
                 ToV5(d, treeV1);
                 d.version = 5;
             }
-            // Future steps: if (d.version == 5) { ...; d.version = 6; }
+            if (d.version == 5)
+            {
+                ToV6(d, treeV5);
+                d.version = 6;
+            }
+            // Future steps: if (d.version == 6) { ...; d.version = 7; }
 
             if (d.version > CurrentVersion)
                 Debug.LogWarning($"[Save] save version {d.version} is newer than this build ({CurrentVersion}); loading what is known.");
@@ -127,6 +143,42 @@ namespace Incremental
             if (treeV1 == null)
                 Debug.LogWarning("[Save] v4 -> v5 (skill tree v2, 29): no v1 tree table to price the refund with; the tree is reset and nothing is given back.");
             Debug.Log($"[Save] v4 -> v5 (skill tree v2, 29 Q9): tree reset, {nodes} nodes / {levels} levels refunded for " +
+                      $"{refund:F0} ({Fmt.Num(refund)}); currency {Fmt.Num(before)} -> {Fmt.Num(m.currency)}");
+        }
+
+        /// <summary>
+        /// v5 → v6 (29 §10.1): the levels of the removed rule nodes are given back at what they cost in the v5 tree and
+        /// dropped from the save; every other node keeps its level. Tiers are untouched (no gate was removed).
+        /// </summary>
+        public static double RefundRemovedV6(MetaState m, NodeTable treeV5, out int levels)
+        {
+            levels = 0;
+            double refund = 0;
+            if (m == null || m.upgradeLevels == null) return 0;
+            var removed = new HashSet<string>(RemovedInV6);
+            foreach (var l in m.upgradeLevels)
+            {
+                if (l == null || l.level <= 0 || !removed.Contains(l.id)) continue;
+                var n = treeV5 != null ? treeV5.Get(l.id) : null;
+                int owned = n != null && n.maxLevel > 0 ? System.Math.Min(l.level, n.maxLevel) : l.level;
+                if (n != null)
+                    for (int k = 0; k < owned; k++) refund += Stats.CostCeil(treeV5, n, k);
+                levels += owned;
+            }
+            m.upgradeLevels.RemoveAll(l => l != null && removed.Contains(l.id));
+            return refund;
+        }
+
+        static void ToV6(SaveData d, NodeTable treeV5)
+        {
+            var m = d.meta;
+            if (m == null) return;
+            double before = m.currency;
+            double refund = RefundRemovedV6(m, treeV5, out int levels);
+            m.currency += refund;
+            if (treeV5 == null && levels > 0)
+                Debug.LogWarning("[Save] v5 -> v6 (29 §10.1): no v5 tree table to price the refund with; the removed rule nodes are dropped and nothing is given back.");
+            Debug.Log($"[Save] v5 -> v6 (rule nodes removed, 29 §10.1): {levels} levels of {string.Join(", ", RemovedInV6)} refunded for " +
                       $"{refund:F0} ({Fmt.Num(refund)}); currency {Fmt.Num(before)} -> {Fmt.Num(m.currency)}");
         }
 

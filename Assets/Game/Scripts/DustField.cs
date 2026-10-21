@@ -33,6 +33,11 @@ namespace Incremental
         /// so a dust that is created in plain view grows in instead of popping in. Render only.
         /// </summary>
         public float born;
+        /// <summary>
+        /// 29 §10.2 D2: 0 = a large dust not yet rolled, 1 = rolled (it does not split any more), 2 = a split piece
+        /// (mass × GameParams.rules.splitPieceMassShare, never splits again).
+        /// </summary>
+        public byte split;
     }
 
     /// <summary>
@@ -114,6 +119,11 @@ namespace Incremental
         float[] kindAccel = { 1f };
         double spawnAcc;
         double marginAcc;
+        /// <summary>D2: index of the large dust kind in GameParams.dustKinds (−1 = none), read once.</summary>
+        int largeKind = -1;
+        /// <summary>D2: the extra pieces of this tick's splits, added after the loop (adding inside it could grow the array under a ref).</summary>
+        Dust[] pendingPieces = new Dust[32];
+        int pendingCount;
         System.Random rng = new System.Random();
         // Render-only variation draws from its own RNG so the simulation sequence is the same as before (bot measurements).
         System.Random visualRng = new System.Random();
@@ -195,6 +205,26 @@ namespace Incremental
         public int GoldCaptured { get; set; }
 
         /// <summary>
+        /// 29 §10.2 D2: chance that a large dust splits the first time it comes within the gravity radius (set at run
+        /// start). The pieces and their look are GameParams.rules.split*.
+        /// </summary>
+        public double SplitChance { get; set; }
+
+        /// <summary>D2: a large dust split here (world position); GameRoot counts it and shows the flash.</summary>
+        public Action<Vector2> Split;
+
+        /// <summary>
+        /// 29 §10.3 D5, A5: the spawn rate is multiplied by this (set every tick, 1 = as usual). The dust cap still holds.
+        /// </summary>
+        public double SpawnMult { get; set; } = 1.0;
+
+        /// <summary>
+        /// D5: while true the spawn of the screen comes in from the band outside it instead, moving toward the middle at
+        /// GameParams.rules.pulseInflowSpeedPx, so the pulse is seen pushing in from the edges.
+        /// </summary>
+        public bool Inflow { get; set; }
+
+        /// <summary>
         /// 24 §19.1 the inhale: every dust's velocity is multiplied by this once per tick while it is below 1 (the
         /// black hole sets it for the ticks of its inhale and puts it back to 1). Render has nothing to do with it.
         /// </summary>
@@ -222,6 +252,7 @@ namespace Incremental
                 var def = p.DustKind(k);
                 kindMass[k] = def != null ? def.mass : 1.0;
                 kindAccel[k] = def != null ? (float)def.accelMult : 1f;
+                if (def != null && def.id == "large") largeKind = k;
             }
         }
 
@@ -407,6 +438,12 @@ namespace Incremental
             float grow = BornStep(fdt);
             float speedMul = Mathf.Clamp01(SpeedMul);
             double captured = 0;
+            // 29 §10.2 D2: a large dust rolls once, the first tick it is inside the gravity radius while holding.
+            float gravR2 = gravR * gravR;
+            int capNow = (int)s.dustCap;
+            bool splitting = SplitChance > 0 && largeKind >= 0;
+            int splitExtra = Math.Max(2, p.rules.splitPieces) - 1;
+            pendingCount = 0;
 
             for (int i = 0; i < count; i++)
             {
@@ -415,6 +452,13 @@ namespace Incremental
                 if (d.born < 1f) d.born = Mathf.Min(1f, d.born + grow);
                 Vector2 toCursor = gravity - d.pos;
                 float dist2 = toCursor.sqrMagnitude;
+
+                // D2: the pieces must fit under the dust cap; if they do not, the dust tries again on a later tick.
+                if (splitting && d.split == 0 && d.kind == largeKind && holding && dist2 < gravR2 && count + pendingCount + splitExtra <= capNow)
+                {
+                    d.split = 1;
+                    if (rng.NextDouble() < SplitChance) SplitDust(ref d, toCursor, splitExtra);
+                }
 
                 bool pulled = holding && dist2 < outerR2;
                 if (pulled)
@@ -505,12 +549,14 @@ namespace Incremental
                 // Capture on the swept segment, not on the end point: a fast dust cannot jump over the capture circle.
                 if (holding && SegmentHitsCircle(from, to, gravity, capR))
                 {
+                    double mass = KindMass(d.kind);
+                    if (d.split == 2) mass *= p.rules.splitPieceMassShare;
                     if (d.gold > 0f)
                     {
-                        captured += KindMass(d.kind) * GoldMassMult;
+                        mass *= GoldMassMult;
                         GoldCaptured++;
                     }
-                    else captured += KindMass(d.kind);
+                    captured += mass;
                     CapturedCount++;
                     SwapRemove(i);
                     i--;
@@ -554,12 +600,17 @@ namespace Incremental
             // ability that sweeps the screen clean does not leave it bare for most of the run.
             int cap = (int)s.dustCap;
             float fill = cap > 0 ? Mathf.Clamp01(count / (float)cap) : 1f;
+            AddPendingPieces();
             SpawnBoost = 1.0 + Math.Max(0.0, p.dustRefillBoost + RefillBoostAdd) * (1f - fill);
-            spawnAcc += s.spawnRate * SpawnBoost * dt;
+            double spawnMult = Math.Max(0.0, SpawnMult);
+            spawnAcc += s.spawnRate * SpawnBoost * spawnMult * dt;
             while (spawnAcc >= 1.0)
             {
                 spawnAcc -= 1.0;
-                if (count < cap) SpawnRandom(gravity, avoidR, s);
+                if (count >= cap) continue;
+                // 29 §10.3 D5: during a pulse the new dust is pushed in from the band outside the screen.
+                if (Inflow && banded) SpawnInflow(gravity, avoidR, margin, area, s);
+                else SpawnRandom(gravity, avoidR, s);
             }
 
             // The band outside the screen has a trickle of its own, which stops at the band's share of the cap: it is
@@ -568,7 +619,7 @@ namespace Incremental
             if (banded)
             {
                 int budget = MarginBudget(cap);
-                marginAcc += s.spawnRate * SpawnBoost * Math.Max(0.0, p.dustMarginSpawnShare) * dt;
+                marginAcc += s.spawnRate * SpawnBoost * spawnMult * Math.Max(0.0, p.dustMarginSpawnShare) * dt;
                 while (marginAcc >= 1.0)
                 {
                     marginAcc -= 1.0;
@@ -847,6 +898,72 @@ namespace Incremental
                 if ((pos - cursor).sqrMagnitude >= gravR2) break;
             }
             Add(pos, RandomDir() * Px(p.driftSpeed), RollKind(s));
+        }
+
+        /// <summary>
+        /// 29 §10.2 D2: <paramref name="d"/> breaks into 1 + <paramref name="extra"/> pieces. It becomes the first piece
+        /// itself; the others are queued and added after the dust loop. Every piece is smaller, weighs
+        /// splitPieceMassShare of the original, is excited and is thrown toward the gravity source, fanned out over
+        /// splitSpreadDeg.
+        /// </summary>
+        void SplitDust(ref Dust d, Vector2 toCursor, int extra)
+        {
+            var q = p.rules;
+            Vector2 dir = toCursor.sqrMagnitude > 1e-8f ? toCursor.normalized : RandomDir();
+            float kick = Px(q.splitKickPx);
+            float spread = (float)q.splitSpreadDeg * Mathf.Deg2Rad;
+            int pieces = extra + 1;
+            d.split = 2;
+            d.size *= (float)q.splitPieceSize;
+            d.excite = 1f;
+            Dust template = d;
+            for (int j = 0; j < pieces; j++)
+            {
+                float a = (pieces > 1 ? (j / (float)(pieces - 1) - 0.5f) * spread : 0f) + (float)((rng.NextDouble() * 2.0 - 1.0) * 0.15);
+                float cos = Mathf.Cos(a), sin = Mathf.Sin(a);
+                var v = new Vector2(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos) * kick * (0.85f + 0.3f * (float)rng.NextDouble());
+                if (j == 0)
+                {
+                    d.vel = v;
+                    continue;
+                }
+                var piece = template;
+                piece.vel = v;
+                piece.tint = (float)rng.NextDouble();
+                if (pendingCount >= pendingPieces.Length) Array.Resize(ref pendingPieces, pendingPieces.Length * 2);
+                pendingPieces[pendingCount++] = piece;
+            }
+            Split?.Invoke(d.pos);
+        }
+
+        /// <summary>D2: the pieces queued this tick join the field, each with a fresh trail.</summary>
+        void AddPendingPieces()
+        {
+            for (int k = 0; k < pendingCount; k++)
+            {
+                if (count >= items.Length) Grow();
+                int index = count++;
+                items[index] = pendingPieces[k];
+                items[index].trailFill = 0;
+                items[index].trailHead = 0;
+                ClearTrail(index, items[index].pos);
+            }
+            pendingCount = 0;
+        }
+
+        /// <summary>
+        /// 29 §10.3 D5: a dust of the pulse. It is created in the band outside the screen (as the band's own trickle is)
+        /// and moves toward the middle of the screen at rules.pulseInflowSpeedPx, excited so it keeps that speed for a
+        /// while, so the pulse is seen pushing in from the edges.
+        /// </summary>
+        void SpawnInflow(Vector2 cursor, float gravR, float margin, Rect area, in EffectiveStats s)
+        {
+            SpawnOutside(cursor, gravR, margin, s);
+            ref Dust d = ref items[count - 1];
+            Vector2 to = area.center + new Vector2((float)(rng.NextDouble() - 0.5) * area.width * 0.6f, (float)(rng.NextDouble() - 0.5) * area.height * 0.6f);
+            Vector2 dir = to - d.pos;
+            d.vel = (dir.sqrMagnitude > 1e-8f ? dir.normalized : RandomDir()) * Px(p.rules.pulseInflowSpeedPx);
+            d.excite = 1f;
         }
 
         /// <summary>

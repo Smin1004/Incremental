@@ -235,8 +235,12 @@ namespace Incremental
             { "rule.T5.effect", "증폭 결정을 먹으면 시간 +{0}초 (판당 최대 +{1}초)" },
             { "rule.D1.name", "가득 찬 시작" },
             { "rule.D1.effect", "판 시작 때 화면이 상한의 {0}%까지 차 있다" },
-            { "rule.D3.name", "빈 화면 보충" },
-            { "rule.D3.effect", "빈 화면의 먼지 보충 가속 +{0}" },
+            { "rule.D2.name", "갈라지는 먼지" },
+            { "rule.D2.effect", "대형 먼지가 중력 범위에 들어오면 {0}% 확률로 셋으로 갈라진다 (조각 하나가 질량의 {1}%)" },
+            { "rule.D3.name", "빠른 보충" },
+            { "rule.D3.effect", "화면에 먼지가 적을수록 더 빨리 생긴다 (텅 빈 화면에서 ×{0}, 기본 ×{1})" },
+            { "rule.D5.name", "먼지 맥동" },
+            { "rule.D5.effect", "{0}초마다 {1}초 동안 먼지 생성 ×{2}" },
             { "rule.D4.name", "황금 먼지" },
             { "rule.D4.effect", "새 먼지의 {0}%가 질량 ×{1}의 금빛 먼지" },
             { "rule.G1.name", "깊어지는 중력" },
@@ -249,14 +253,16 @@ namespace Incremental
             { "rule.C1.effect", "{0}초 안에 이어진 완성마다 수입 +{1}% (최대 +{2}%)" },
             { "rule.C2.name", "열 번째" },
             { "rule.C2.effect", "판에서 {0}번째 완성마다 ×{1} 묶음" },
-            { "rule.C3.name", "첫 천체" },
-            { "rule.C3.effect", "판의 첫 천체 수입 ×{0}" },
+            { "rule.C3.name", "시작 러시" },
+            { "rule.C3.effect", "판의 처음 {0}초 동안 수입 ×{1}" },
             { "rule.C4.name", "쉬운 묶음" },
             { "rule.C4.effect", "묶음이 되는 기준 {0}배 (기본 {1}배)" },
             { "rule.A1.name", "공명하는 능력" },
             { "rule.A1.effect", "능력 하나가 발동하면 다른 능력의 충전 +{0}%" },
             { "rule.A2.name", "버프 가속" },
             { "rule.A2.effect", "증폭 결정 버프 중 다른 능력 충전 ×{0}" },
+            { "rule.A5.name", "블랙홀 여파" },
+            { "rule.A5.effect", "블랙홀이 닫힌 뒤 {0}초 동안 먼지 생성 ×{1}" },
 
             // Visual directions of the UI (26 §3), by UITheme direction id; Validate Data checks that every id has a key.
             { "ui.direction.A", "A 관측 기기" },
@@ -315,17 +321,22 @@ namespace Incremental
                 case "T3": return string.Format(f, Fmt.Short(r.rushLastSec), Fmt.Short(r.rushIncomeMult));
                 case "T5": return string.Format(f, Fmt.Short(r.crystalTimeSec), Fmt.Short(r.crystalTimeMaxSec));
                 case "D1": return string.Format(f, Levels(max, l => r.fullStartShare != null && r.fullStartShare.Length > 0 ? r.fullStartShare[Math.Min(l, r.fullStartShare.Length) - 1] * 100 : 0));
-                case "D3": return string.Format(f, Levels(max, l => r.refillBoostPerLevel * l));
+                case "D2": return string.Format(f, Levels(max, l => Math.Min(1.0, r.splitChancePerLevel * l) * 100), Fmt.Short(r.splitPieceMassShare * 100));
+                // D3: the empty-screen spawn multiplier, 1 + dustRefillBoost (+ the rule's levels).
+                case "D3": return string.Format(f, Levels(max, l => 1 + p.dustRefillBoost + r.refillBoostPerLevel * l), Fmt.Short(1 + p.dustRefillBoost));
+                case "D5": return string.Format(f, Levels(max, l => r.pulseEverySec != null && r.pulseEverySec.Length > 0 ? r.pulseEverySec[Math.Min(l, r.pulseEverySec.Length) - 1] : 0),
+                    Fmt.Short(r.pulseSec), Fmt.Short(r.pulseSpawnMult));
                 case "D4": return string.Format(f, Levels(max, l => r.goldChancePerLevel * l * 100), Fmt.Short(r.goldMassMult));
                 case "G1": return string.Format(f, Fmt.Short(r.deepHoldStartSec), Fmt.Short(r.deepHoldMax * 100));
                 case "G2": return string.Format(f, Fmt.Short(r.lingerSec));
                 case "G3": return string.Format(f, Fmt.Short((r.stillPullMult - 1) * 100));
                 case "C1": return string.Format(f, Fmt.Short(r.chainWindowSec), Fmt.Short(r.chainStep * 100), Fmt.Short(r.chainMax * 100));
                 case "C2": return string.Format(f, Levels(max, l => r.everyNth != null && r.everyNth.Length > 0 ? r.everyNth[Math.Min(l, r.everyNth.Length) - 1] : 0), Fmt.Short(r.nthMult));
-                case "C3": return string.Format(f, Fmt.Short(r.firstBodyMult));
+                case "C3": return string.Format(f, Fmt.Short(r.startRushSec), Fmt.Short(r.startRushMult));
                 case "C4": return string.Format(f, Levels(max, l => Math.Max(1.5, p.bundleAt - r.bundleAtCutPerLevel * l)), p.bundleAt);
                 case "A1": return string.Format(f, Fmt.Short(r.resonanceChargeShare * 100));
                 case "A2": return string.Format(f, Fmt.Short(r.buffChargeMult));
+                case "A5": return string.Format(f, Fmt.Short(r.aftermathSec), Fmt.Short(r.aftermathSpawnMult));
                 default: return f;
             }
         }

@@ -6,8 +6,8 @@ using UnityEngine;
 namespace Incremental.Tests
 {
     /// <summary>
-    /// 13th pass, skill tree v2 (29): the shape of the project tree, the v4 → v5 save refund, and the three core rule
-    /// nodes (T1 유예, C2 열 번째, G2 잔류 중력).
+    /// 13th pass, skill tree v2 (29): the shape of the project tree, the v4 → v5 save refund, and three rule effects
+    /// (T1 유예, C2 열 번째, G2 잔류 중력; T1 and G2 are out of the tree since the 14th pass, their code is not).
     /// </summary>
     public class TreeV2Tests
     {
@@ -70,7 +70,8 @@ namespace Incremental.Tests
                 Assert.IsTrue(UIStrings.Has(UIStrings.RuleNameKey(n.ruleId)), n.ruleId);
                 Assert.AreEqual(TreeIcon.Symbol.Rule, TreeIcon.SymbolFor(n));
             }
-            CollectionAssert.AreEquivalent(new[] { "T1", "T2", "T3", "T5", "D1", "D3", "D4", "G1", "G2", "G3", "C1", "C2", "C3", "C4", "A1", "A2" }, seen);
+            // 29 §10.4 (14th pass): 13 rules. T1, T2, T5 and G1-G3 left the tree; their effect code stays (the tests below still cover T1 and G2).
+            CollectionAssert.AreEquivalent(new[] { "T3", "D1", "D2", "D3", "D4", "D5", "C1", "C2", "C3", "C4", "A1", "A2", "A5" }, seen);
         }
 
         // ---------------- save v5 ----------------

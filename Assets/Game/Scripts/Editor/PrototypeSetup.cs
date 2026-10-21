@@ -256,6 +256,7 @@ namespace Incremental.EditorTools
             root.celestialTable = AssetDatabase.LoadAssetAtPath<CelestialTable>(CelestialPath);
             root.nodeTable = AssetDatabase.LoadAssetAtPath<NodeTable>(NodePath);
             root.nodeTableV1 = AssetDatabase.LoadAssetAtPath<NodeTable>(GameDir + "/Data/NodeTable_v1.asset");
+            root.nodeTableV5 = AssetDatabase.LoadAssetAtPath<NodeTable>(GameDir + "/Data/NodeTable_v5.asset");
             root.abilityTable = AssetDatabase.LoadAssetAtPath<AbilityTable>(AbilityPath);
             root.uiTheme = AssetDatabase.LoadAssetAtPath<UITheme>(ThemePath);
             root.unlitMaterial = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);

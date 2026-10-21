@@ -21,10 +21,10 @@ namespace Incremental
         public const float MinAngleGapDeg = 5f;
 
         /// <summary>29 Q3: the number of nodes tree v2 aims for.</summary>
-        public const int TreeMinNodes = 140, TreeMaxNodes = 160;
+        public const int TreeMinNodes = 130, TreeMaxNodes = 160;
 
         /// <summary>
-        /// 29 Q3, 13th pass B5: the project tree has 140~160 nodes. Only for the project's table (the small test tables
+        /// 29 Q3, 13th pass B5: the project tree has 140~160 nodes; 29 §10.4 (14th pass) took it to 138, so the floor is 130 now. Only for the project's table (the small test tables
         /// of the EditMode tests are not trees of that size).
         /// </summary>
         public static void ValidateTreeSize(NodeTable t, ValidationReport r)
@@ -32,7 +32,7 @@ namespace Incremental
             int count = 0;
             foreach (var n in t.nodes) if (n != null && n.enabled) count++;
             if (count < TreeMinNodes || count > TreeMaxNodes)
-                r.Errors.Add($"NodeTable: {count} nodes, outside the {TreeMinNodes}~{TreeMaxNodes} of 29 Q3.");
+                r.Errors.Add($"NodeTable: {count} nodes, outside the {TreeMinNodes}~{TreeMaxNodes} of 29 Q3 (§10.4: 138).");
         }
 
         /// <summary>
@@ -812,7 +812,15 @@ namespace Incremental
             if (q.chainWindowSec <= 0 || q.chainStep < 0 || q.chainMax < 0) r.Errors.Add("GameParams.rules: chainWindowSec > 0, chainStep and chainMax >= 0 (C1).");
             if (q.everyNth == null || q.everyNth.Length == 0) r.Errors.Add("GameParams.rules.everyNth: needs one n per C2 level.");
             else foreach (var n in q.everyNth) if (n < 2) r.Errors.Add("GameParams.rules.everyNth: every n must be >= 2 (C2).");
-            if (q.nthMult < 1 || q.firstBodyMult < 1) r.Errors.Add("GameParams.rules: nthMult and firstBodyMult must be >= 1 (C2, C3).");
+            if (q.nthMult < 1) r.Errors.Add("GameParams.rules.nthMult must be >= 1 (C2).");
+            if (q.startRushSec < 0 || q.startRushMult < 1) r.Errors.Add("GameParams.rules: startRushSec >= 0 and startRushMult >= 1 (C3).");
+            if (q.splitChancePerLevel < 0 || q.splitPieces < 2 || q.splitPieceMassShare <= 0 || q.splitPieceSize <= 0 || q.splitKickPx < 0 || q.splitFlashSec < 0)
+                r.Errors.Add("GameParams.rules: D2 needs splitChancePerLevel >= 0, splitPieces >= 2, splitPieceMassShare and splitPieceSize > 0, splitKickPx and splitFlashSec >= 0.");
+            if (q.pulseEverySec == null || q.pulseEverySec.Length == 0) r.Errors.Add("GameParams.rules.pulseEverySec: needs one interval per D5 level.");
+            else foreach (var e in q.pulseEverySec) if (e <= q.pulseSec) r.Errors.Add("GameParams.rules.pulseEverySec: every interval must be longer than pulseSec (D5).");
+            if (q.pulseSec <= 0 || q.pulseSpawnMult < 1 || q.pulseInflowSpeedPx < 0 || q.pulseNebulaBoost < 0)
+                r.Errors.Add("GameParams.rules: pulseSec > 0, pulseSpawnMult >= 1, pulseInflowSpeedPx and pulseNebulaBoost >= 0 (D5).");
+            if (q.aftermathSec < 0 || q.aftermathSpawnMult < 1) r.Errors.Add("GameParams.rules: aftermathSec >= 0 and aftermathSpawnMult >= 1 (A5).");
             if (q.bundleAtCutPerLevel < 0) r.Errors.Add("GameParams.rules.bundleAtCutPerLevel must be >= 0 (C4).");
             if (q.resonanceChargeShare < 0 || q.resonanceChargeShare > 1 || q.buffChargeMult < 1)
                 r.Errors.Add("GameParams.rules: resonanceChargeShare within 0..1 and buffChargeMult >= 1 (A1, A2).");
