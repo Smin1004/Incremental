@@ -42,6 +42,7 @@
 > - **10/14 밤 (2):** 밸런스 전 점검([27](27_PreBalance_Review.md))과 회신. **스태미나 → 시간제 판**(D21), 분량 1시간 40분 ~ 2시간(D22), 윈도우만, Next Fest 안 함, 이름·도전과제 보류. 다음 프롬프트 [Prompts/Proto11.md](Prompts/Proto11.md), 밸런스 스펙 [28](28_Balance_Spec.md). 일정 27 §7.1. `origin` 푸시함.
 > - **10/15:** 11차 완료([Reports/PreBalance.md](Reports/PreBalance.md)). 성능 여유 회복(R28 해소). 다음은 [Prompts/Proto12.md](Prompts/Proto12.md)(궤도석 꼬리를 궤도 기준으로 + 시각 보강 26 §12)와 개발자 트리 의견 → 밸런스 패스. 밸런스 패스가 이어받을 숫자는 28 §2.2.
 > - **10/15 저녁:** 12차 완료([Reports/Visual12.md](Reports/Visual12.md), 선택은 26 §12.5). 다음은 스킬트리 v2([29](29_SkillTree_v2.md), 프롬프트 [Prompts/Proto13_TreeV2.md](Prompts/Proto13_TreeV2.md), 1단계 시안 뒤 멈춤) → 밸런스 패스. **워커 컴파일이 개발자 에디터 플레이를 깬다(R29)**: 워커가 도는 동안은 빌드로 플레이.
+> - **10/18:** 13차 스킬트리 v2 완료([Reports/TreeV2.md](Reports/TreeV2.md)). 규칙 노드를 개발자 회신대로 13개로 정리(29 §10, 시간은 빡빡하게). 다음 프롬프트 [Prompts/Proto14_Rules.md](Prompts/Proto14_Rules.md) → 개발자 추가 의견 → 밸런스 패스.
 > - **개발 방향 D20:** 몰아침은 빈도와 숫자로 만들고, 화면을 한꺼번에 덮는 연출은 넣지 않는다.
 
 ### 2.1 깃
