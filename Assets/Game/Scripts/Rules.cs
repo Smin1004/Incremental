@@ -33,6 +33,7 @@ namespace Incremental
         int pulsesLogged;
         double aftermathUntil = -1;
         int splits;
+        int clustersDone, cometsDone, debrisBursts, debrisDust;
 
         public Rules(GameParams gameParams) { p = gameParams; }
 
@@ -73,6 +74,7 @@ namespace Incremental
             pulsesLogged = 0;
             aftermathUntil = -1;
             splits = 0;
+            clustersDone = cometsDone = debrisBursts = debrisDust = 0;
             if (!On || t == null || m == null) return;
             var owned = new List<string>();
             foreach (var n in t.nodes)
@@ -252,6 +254,72 @@ namespace Incremental
             return m;
         }
 
+        // ---------------- dust sources (S1, S2, S3: 29 §10.7) ----------------
+
+        static double ByLevel(double[] values, int level) =>
+            level <= 0 || values == null || values.Length == 0 ? 0 : values[Math.Min(level, values.Length) - 1];
+
+        /// <summary>S1 먼지 무리: seconds between clumps at the owned level (0 = not owned).</summary>
+        public double ClusterEvery => ByLevel(P.clusterEverySec, Level("S1"));
+
+        /// <summary>S3 혜성: seconds between comets at the owned level (0 = not owned).</summary>
+        public double CometEvery => ByLevel(P.cometEverySec, Level("S3"));
+
+        /// <summary>S2 잔해: the share of a completed body's mass that comes back as dust (0 = not owned).</summary>
+        public double DebrisShare => ByLevel(P.debrisShare, Level("S2"));
+
+        /// <summary>
+        /// S1: true on the tick the run clock passes the next multiple of the interval (every, 2 × every, …). Counts it.
+        /// </summary>
+        public bool ClusterDue(RunState run)
+        {
+            double every = ClusterEvery;
+            if (every <= 0 || run == null) return false;
+            int index = (int)Math.Floor(run.elapsed / every);
+            if (index <= clustersDone) return false;
+            clustersDone = index;
+            return true;
+        }
+
+        /// <summary>S3: as <see cref="ClusterDue"/>, for comets.</summary>
+        public bool CometDue(RunState run)
+        {
+            double every = CometEvery;
+            if (every <= 0 || run == null) return false;
+            int index = (int)Math.Floor(run.elapsed / every);
+            if (index <= cometsDone) return false;
+            cometsDone = index;
+            return true;
+        }
+
+        public void LogCluster(RunState run, int added, Vector2 px)
+        {
+            Log("S1 먼지 무리: clump " + clustersDone + " at " + run.elapsed.ToString("F1") + "s, " + added + " dust at (" +
+                px.x.ToString("F0") + ", " + px.y.ToString("F0") + ") px (every " + ClusterEvery.ToString("0.#") + "s)");
+        }
+
+        public void LogComet(RunState run, int planned, float passPx, float radii)
+        {
+            Log("S3 혜성: comet " + cometsDone + " at " + run.elapsed.ToString("F1") + "s, crossing in " + P.cometCrossSec.ToString("0.#") +
+                "s, to shed " + planned + " dust, passing the gravity source at " + passPx.ToString("F0") + " px (" + radii.ToString("0.##") +
+                " radii) (every " + CometEvery.ToString("0.#") + "s)");
+        }
+
+        public void LogCometGone(int shed, int notShed)
+        {
+            Log("S3 혜성: gone, shed " + shed + " dust" + (notShed > 0 ? ", " + notShed + " not shed (dust cap or off screen)" : string.Empty));
+        }
+
+        /// <summary>S2: a burst happened. Logs the first three and every 100th (a ring 11 run completes a body every ~0.4 s).</summary>
+        public void OnDebris(int dust, double bodyMass)
+        {
+            debrisBursts++;
+            debrisDust += dust;
+            if (debrisBursts <= 3 || debrisBursts % 100 == 0)
+                Log("S2 잔해: burst " + debrisBursts + ", " + dust + " dust from a body of mass " + bodyMass.ToString("F0") +
+                    " (" + (DebrisShare * 100).ToString("0") + "%, at most " + P.debrisMax + ")");
+        }
+
         // ---------------- gravity (G1, G2, G3) ----------------
 
         /// <summary>
@@ -380,6 +448,9 @@ namespace Incremental
         public void EndRun(int goldCaptured)
         {
             if (Level("D2") > 0) Log("D2 갈라지는 먼지: " + splits + " large dust split this run");
+            if (Level("S1") > 0) Log("S1 먼지 무리: " + clustersDone + " clumps this run");
+            if (Level("S2") > 0) Log("S2 잔해: " + debrisBursts + " bursts, " + debrisDust + " dust this run");
+            if (Level("S3") > 0) Log("S3 혜성: " + cometsDone + " comets this run");
             if (Level("D4") > 0) Log("D4 황금 먼지: " + goldCaptured + " golden dust taken this run (x" + P.goldMassMult.ToString("0.#") + " mass each)");
         }
 

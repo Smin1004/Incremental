@@ -176,7 +176,9 @@ namespace Incremental.EditorTools
             // 29 §5.4 rules: C3 ring 2, C1 ring 3, C2 ring 5 (×3), C4 ring 7 (×2).
             n.Add(Rule("C3", c, 2, +2 * Side, 1, "gate_t2"));
             n.Add(Rule("C1", c, 3, +2 * Side, 1, "rule_C3"));
-            n.Add(Rule("C2", c, 5, +2 * Side, 3, "rule_C1"));
+            // 29 §10.7 S2 잔해 ring 4 (×3), between C1 and C2.
+            n.Add(Rule("S2", c, 4, +2 * Side, 3, "rule_C1"));
+            n.Add(Rule("C2", c, 5, +2 * Side, 3, "rule_S2"));
             n.Add(Rule("C4", c, 7, +2 * Side, 2, "rule_C2"));
         }
 
@@ -222,11 +224,15 @@ namespace Incremental.EditorTools
 
             // 29 §10.4 rules: D1 ring 4 (×3), D3 ring 5 (×3), D2 ring 6 (×3), D4 ring 7 (×3), D5 ring 8 (×3). D2 sits a
             // little further out than the rule line because start_r6 holds that place in ring 6.
-            n.Add(Rule("D1", c, 4, +2 * Side, 3, "spawn_r3"));
+            // 29 §10.7: S1 먼지 무리 ring 3 heads the line and S3 혜성 ring 9 ends it, both a little further out because
+            // start_r3 and start_r9 hold the rule line's place in those rings.
+            n.Add(Rule("S1", c, 3, +2.5f * Side, 3, "spawn_r2"));
+            n.Add(Rule("D1", c, 4, +2 * Side, 3, "rule_S1"));
             n.Add(Rule("D3", c, 5, +2 * Side, 3, "rule_D1"));
             n.Add(Rule("D2", c, 6, +2.5f * Side, 3, "rule_D3"));
             n.Add(Rule("D4", c, 7, +2 * Side, 3, "rule_D2"));
             n.Add(Rule("D5", c, 8, +2 * Side, 3, "rule_D4"));
+            n.Add(Rule("S3", c, 9, +2.5f * Side, 3, "rule_D5"));
         }
 
         static NodeDef Kind(string kind, int ring, string prereq) =>

@@ -71,7 +71,8 @@ namespace Incremental.Tests
                 Assert.AreEqual(TreeIcon.Symbol.Rule, TreeIcon.SymbolFor(n));
             }
             // 29 §10.4 (14th pass): 13 rules. T1, T2, T5 and G1-G3 left the tree; their effect code stays (the tests below still cover T1 and G2).
-            CollectionAssert.AreEquivalent(new[] { "T3", "D1", "D2", "D3", "D4", "D5", "C1", "C2", "C3", "C4", "A1", "A2", "A5" }, seen);
+            // 29 §10.7 (15th pass): + the dust sources S1, S2, S3 = 16.
+            CollectionAssert.AreEquivalent(new[] { "T3", "D1", "D2", "D3", "D4", "D5", "C1", "C2", "C3", "C4", "A1", "A2", "A5", "S1", "S2", "S3" }, seen);
         }
 
         // ---------------- save v5 ----------------

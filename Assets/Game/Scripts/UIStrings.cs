@@ -253,6 +253,12 @@ namespace Incremental
             { "rule.D2.effect", "대형 먼지가 중력 범위에 들어오면 {0}% 확률로 셋으로 갈라진다 (조각 하나가 질량의 {1}%)" },
             { "rule.D3.name", "빠른 보충" },
             { "rule.D3.effect", "화면에 먼지가 적을수록 더 빨리 생긴다 (텅 빈 화면에서 ×{0}, 기본 ×{1})" },
+            { "rule.S1.name", "먼지 무리" },
+            { "rule.S1.effect", "{0}초마다 화면 어딘가에 먼지 {1}개가 뭉쳐 생긴다" },
+            { "rule.S2.name", "잔해" },
+            { "rule.S2.effect", "천체가 완성될 때 그 질량의 {0}%만큼 먼지가 터져 나온다 (수입은 그대로)" },
+            { "rule.S3.name", "혜성" },
+            { "rule.S3.effect", "{0}초마다 혜성이 천천히 지나가며 먼지를 흘린다 (상한의 {1}%)" },
             { "rule.D5.name", "먼지 맥동" },
             { "rule.D5.effect", "{0}초마다 {1}초 동안 먼지 생성 ×{2}" },
             { "rule.D4.name", "황금 먼지" },
@@ -340,6 +346,9 @@ namespace Incremental
                 case "D3": return string.Format(f, Levels(max, l => 1 + p.dustRefillBoost + r.refillBoostPerLevel * l), Fmt.Short(1 + p.dustRefillBoost));
                 case "D5": return string.Format(f, Levels(max, l => r.pulseEverySec != null && r.pulseEverySec.Length > 0 ? r.pulseEverySec[Math.Min(l, r.pulseEverySec.Length) - 1] : 0),
                     Fmt.Short(r.pulseSec), Fmt.Short(r.pulseSpawnMult));
+                case "S1": return string.Format(f, Levels(max, l => ByLevel(r.clusterEverySec, l)), r.clusterCount);
+                case "S2": return string.Format(f, Levels(max, l => ByLevel(r.debrisShare, l) * 100));
+                case "S3": return string.Format(f, Levels(max, l => ByLevel(r.cometEverySec, l)), Fmt.Short(r.cometDustShare * 100));
                 case "D4": return string.Format(f, Levels(max, l => r.goldChancePerLevel * l * 100), Fmt.Short(r.goldMassMult));
                 case "G1": return string.Format(f, Fmt.Short(r.deepHoldStartSec), Fmt.Short(r.deepHoldMax * 100));
                 case "G2": return string.Format(f, Fmt.Short(r.lingerSec));
@@ -354,6 +363,8 @@ namespace Incremental
                 default: return f;
             }
         }
+
+        static double ByLevel(double[] values, int l) => values != null && values.Length > 0 ? values[Math.Min(l, values.Length) - 1] : 0;
 
         /// <summary>"a / b / c": a value at levels 1..max.</summary>
         static string Levels(int max, Func<int, double> at)

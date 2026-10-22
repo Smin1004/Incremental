@@ -99,6 +99,52 @@ MonoBehaviour:
     pulseInflowSpeedPx: 260
     pulseNebulaBoost: 1.5
     pulseNebulaEaseSec: 0.5
+    clusterEverySec:
+    - 15
+    - 12
+    - 9
+    clusterCount: 40
+    clusterRadiusPx: 60
+    clusterMinRadii: 1.5
+    clusterSpreadSec: 8
+    clusterSpreadPx: 110
+    clusterGlowPx: 200
+    clusterGlowStrength: 0.35
+    clusterGlowSec: 1.5
+    clusterGlowColor: {r: 1, g: 0.85, b: 0.65, a: 1}
+    debrisShare:
+    - 0.05
+    - 0.1
+    - 0.15
+    debrisSpeedPx: 200
+    debrisMax: 20
+    debrisFlashPx: 120
+    debrisFlashStrength: 0.35
+    debrisFlashSec: 0.3
+    cometEverySec:
+    - 30
+    - 25
+    - 20
+    cometCrossSec: 6
+    cometDustShare: 0.25
+    cometPassMinRadii: 0.8
+    cometPassMaxRadii: 2
+    cometShedSpreadPx: 60
+    cometDustSpeedShare: 0.25
+    cometComaPx: 170
+    cometComaStrength: 0.22
+    cometComaColor: {r: 0.75, g: 0.9, b: 1, a: 1}
+    cometCorePx: 34
+    cometCoreStrength: 0.9
+    cometDustTailPx: 620
+    cometDustTailWidthPx: 80
+    cometDustTailCurve: 0.3
+    cometDustTailBright: 0.55
+    cometDustTailColor: {r: 1, g: 0.78, b: 0.5, a: 1}
+    cometIonTailPx: 860
+    cometIonTailWidthPx: 22
+    cometIonTailBright: 0.7
+    cometIonTailColor: {r: 0.45, g: 0.7, b: 1, a: 1}
     deepHoldStartSec: 2
     deepHoldRampSec: 4
     deepHoldMax: 0.2

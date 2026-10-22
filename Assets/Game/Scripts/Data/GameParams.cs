@@ -121,6 +121,61 @@ namespace Incremental
         public double pulseNebulaBoost = 1.5;
         public double pulseNebulaEaseSec = 0.5;
 
+        [Header("S1 먼지 무리, S3 혜성 (먼지), S2 잔해 (천체): 29 §10.7, 15th pass")]
+        [Tooltip("S1: by level, every this many seconds of the run clock a clump of clusterCount dust appears within clusterRadiusPx, " +
+                 "on screen and at least clusterMinRadii gravity radii from the gravity source.")]
+        public double[] clusterEverySec = { 15, 12, 9 };
+        public int clusterCount = 40;
+        public double clusterRadiusPx = 60;
+        public double clusterMinRadii = 1.5;
+        [Tooltip("S1: the clump widens by clusterSpreadPx over clusterSpreadSec (its dust keep their slow outward speed meanwhile), then drifts as usual.")]
+        public double clusterSpreadSec = 8;
+        public double clusterSpreadPx = 110;
+        [Tooltip("S1 look (FxRing glow, x effect intensity): the glow's diameter px (it widens with the clump), strength, seconds, color.")]
+        public double clusterGlowPx = 200;
+        public double clusterGlowStrength = 0.35;
+        public double clusterGlowSec = 1.5;
+        public Color clusterGlowColor = new Color(1f, 0.85f, 0.65f, 1f);
+
+        [Tooltip("S2: by level, the share of a completed body's mass that comes back as new dust (5 / 10 / 15%), thrown out of the " +
+                 "completion point at debrisSpeedPx, excited, at most debrisMax at once. The body's income is unchanged.")]
+        public double[] debrisShare = { 0.05, 0.10, 0.15 };
+        public double debrisSpeedPx = 200;
+        public int debrisMax = 20;
+        [Tooltip("S2 look: a short FxRing flash at the burst (diameter px, strength, seconds, x effect intensity).")]
+        public double debrisFlashPx = 120;
+        public double debrisFlashStrength = 0.35;
+        public double debrisFlashSec = 0.3;
+
+        [Tooltip("S3: by level, every this many seconds of the run clock a comet crosses the screen in cometCrossSec, shedding " +
+                 "cometDustShare of the dust cap along the way (never past the cap). Its path passes the gravity source between " +
+                 "cometPassMinRadii and cometPassMaxRadii gravity radii.")]
+        public double[] cometEverySec = { 30, 25, 20 };
+        public double cometCrossSec = 6;
+        public double cometDustShare = 0.25;
+        public double cometPassMinRadii = 0.8;
+        public double cometPassMaxRadii = 2;
+        [Tooltip("S3: shed dust lands up to this far to either side of the path (px) and is born moving the comet's way at this share of its speed.")]
+        public double cometShedSpreadPx = 60;
+        public double cometDustSpeedShare = 0.25;
+        [Tooltip("S3 look (x effect intensity): a big faint coma (diameter px, strength, color) round a small bright core.")]
+        public double cometComaPx = 170;
+        public double cometComaStrength = 0.22;
+        public Color cometComaColor = new Color(0.75f, 0.9f, 1f, 1f);
+        public double cometCorePx = 34;
+        public double cometCoreStrength = 0.9;
+        [Tooltip("S3 dust tail: warm, wide, bending away to one side (curve = sideways bend at its end, share of its length).")]
+        public double cometDustTailPx = 620;
+        public double cometDustTailWidthPx = 80;
+        public double cometDustTailCurve = 0.3;
+        public double cometDustTailBright = 0.55;
+        public Color cometDustTailColor = new Color(1f, 0.78f, 0.5f, 1f);
+        [Tooltip("S3 ion tail: blue, narrow, straight back from the head, longer than the dust tail.")]
+        public double cometIonTailPx = 860;
+        public double cometIonTailWidthPx = 22;
+        public double cometIonTailBright = 0.7;
+        public Color cometIonTailColor = new Color(0.45f, 0.7f, 1f, 1f);
+
         [Header("G1 깊어지는 중력, G2 잔류 중력, G3 고요한 중심")]
         [Tooltip("G1: after this many seconds of one hold the gravity radius grows, over deepHoldRampSec, up to +deepHoldMax.")]
         public double deepHoldStartSec = 2;

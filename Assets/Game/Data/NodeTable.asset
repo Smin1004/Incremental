@@ -713,6 +713,24 @@ MonoBehaviour:
     category: 0
     ruleId: C1
     enabled: 1
+  - id: rule_S2
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 440
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - rule_C1
+    angleDeg: 114
+    radiusOffset: 0
+    category: 0
+    ruleId: S2
+    enabled: 1
   - id: rule_C2
     kind: 5
     statId: 
@@ -725,7 +743,7 @@ MonoBehaviour:
     abilityId: 
     minTier: 5
     prereqs:
-    - rule_C1
+    - rule_S2
     angleDeg: 114
     radiusOffset: 0
     category: 0
@@ -1306,6 +1324,24 @@ MonoBehaviour:
     category: 1
     ruleId: 
     enabled: 1
+  - id: rule_S1
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 78
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - spawn_r2
+    angleDeg: 48
+    radiusOffset: 0
+    category: 1
+    ruleId: S1
+    enabled: 1
   - id: rule_D1
     kind: 5
     statId: 
@@ -1318,7 +1354,7 @@ MonoBehaviour:
     abilityId: 
     minTier: 4
     prereqs:
-    - spawn_r3
+    - rule_S1
     angleDeg: 42
     radiusOffset: 0
     category: 1
@@ -1395,6 +1431,24 @@ MonoBehaviour:
     radiusOffset: 0
     category: 1
     ruleId: D5
+    enabled: 1
+  - id: rule_S3
+    kind: 5
+    statId: 
+    effectPerLevel: 0
+    maxLevel: 3
+    baseCost: 4500000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - rule_D5
+    angleDeg: 48
+    radiusOffset: 0
+    category: 1
+    ruleId: S3
     enabled: 1
   - id: pull_r1
     kind: 0

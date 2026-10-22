@@ -44,6 +44,11 @@ namespace Incremental
         /// </summary>
         public float flare;
         public float flareGain;
+        /// <summary>
+        /// 29 §10.7 S1: seconds left during which a drifting dust keeps the velocity it was given instead of settling to
+        /// the drift (a cluster spreading out slowly). A pull or a push acts on it as on any dust.
+        /// </summary>
+        public float linger;
     }
 
     /// <summary>
@@ -457,6 +462,7 @@ namespace Incremental
                 if (d.excite > 0f) d.excite = Mathf.Max(0f, d.excite - calm);
                 if (d.born < 1f) d.born = Mathf.Min(1f, d.born + grow);
                 if (d.flare > 0f) d.flare -= fdt;
+                if (d.linger > 0f) d.linger -= fdt;
                 Vector2 toCursor = gravity - d.pos;
                 float dist2 = toCursor.sqrMagnitude;
 
@@ -535,10 +541,10 @@ namespace Incremental
                     float cap2 = d.excite > 0f ? maxSpeedExcited2 : maxSpeed2;
                     if (sp2 > cap2) d.vel *= Mathf.Sqrt(cap2 / sp2);
                 }
-                else
+                else if (d.linger <= 0f)
                 {
                     // Drift: small random heading change; speed relaxes toward driftSpeed, more slowly while the
-                    // dust is still excited by an ability (24 §16.1).
+                    // dust is still excited by an ability (24 §16.1). A lingering dust (S1) keeps its own slow velocity.
                     float speed = d.vel.magnitude;
                     float turn = (float)(rng.NextDouble() * 2.0 - 1.0) * noise * fdt;
                     float cos = Mathf.Cos(turn), sin = Mathf.Sin(turn);
@@ -864,6 +870,52 @@ namespace Incremental
             Add(pos, vel, RollKind(s, heavyWeight));
             items[count - 1].excite = 1f;
             return true;
+        }
+
+        /// <summary>
+        /// 29 §10.7 S1 먼지 무리: up to <paramref name="n"/> dust packed within <paramref name="radius"/> of
+        /// <paramref name="center"/> (world units), each moving straight out at a speed that grows with its distance from the
+        /// center so the clump keeps its shape while it widens by <paramref name="spread"/> over <paramref name="lingerSec"/>,
+        /// then drifts as usual. Kinds are rolled as for any new dust. Never past the dust cap. Returns how many were added.
+        /// </summary>
+        public int SpawnCluster(Vector2 center, int n, float radius, float spread, float lingerSec, in EffectiveStats s)
+        {
+            int cap = (int)s.dustCap;
+            int added = 0;
+            float speed = lingerSec > 0f ? spread / lingerSec : 0f;
+            for (int i = 0; i < n && count < cap; i++)
+            {
+                Vector2 dir = RandomDir();
+                // sqrt for an even fill of the disc, a little denser in the middle (^0.6).
+                float r = radius * Mathf.Pow((float)rng.NextDouble(), 0.6f);
+                Vector2 pos = center + dir * r;
+                Add(pos, dir * (speed * (radius > 0f ? r / radius : 1f) + speed * 0.15f), RollKind(s));
+                items[count - 1].linger = lingerSec;
+                added++;
+            }
+            return added;
+        }
+
+        /// <summary>
+        /// 29 §10.7 S2 잔해: up to <paramref name="n"/> dust thrown out from a ring of <paramref name="startRadius"/> round
+        /// <paramref name="center"/> at <paramref name="speed"/> (world units), excited, kinds as usual. Never past the dust
+        /// cap. Returns how many were added.
+        /// </summary>
+        public int SpawnBurst(Vector2 center, int n, float startRadius, float speed, in EffectiveStats s)
+        {
+            int cap = (int)s.dustCap;
+            int added = 0;
+            for (int i = 0; i < n && count < cap; i++)
+            {
+                Vector2 dir = RandomDir();
+                Add(center + dir * startRadius, dir * (speed * (0.8f + 0.4f * (float)rng.NextDouble())), RollKind(s));
+                ref Dust d = ref items[count - 1];
+                d.excite = 1f;
+                // Out of the forming body's glow at once: no fade-in.
+                d.born = 1f;
+                added++;
+            }
+            return added;
         }
 
         /// <summary>Random position inside the area, outside gravityRadius of the cursor (best effort).</summary>

@@ -103,6 +103,10 @@ namespace Incremental
         public SplitFlashFx SplitFlash { get; private set; }
         /// <summary>15th pass: soft lines and ribbons (D2 cracks, meteor and comet tails), drawn over the dust.</summary>
         public FxLines Lines { get; private set; }
+        /// <summary>15th pass: soft glows (meteor head, comet coma, S1 clump, S2 burst).</summary>
+        public GlowFx Glow { get; private set; }
+        /// <summary>29 §10.7: the S1 / S2 / S3 dust sources.</summary>
+        public DustSources Sources { get; private set; }
         public DustField Dust { get; private set; }
         public DustMeshRenderer DustRenderer { get; private set; }
         /// <summary>22 §5: the trail ribbons of dust above the base kind.</summary>
@@ -377,6 +381,16 @@ namespace Incremental
             splitFxGo.transform.SetParent(transform, false);
             SplitFlash = splitFxGo.AddComponent<SplitFlashFx>();
             SplitFlash.Init(this, fxMaterial);
+
+            var glowGo = new GameObject("GlowFx");
+            glowGo.transform.SetParent(transform, false);
+            Glow = glowGo.AddComponent<GlowFx>();
+            Glow.Init(fxMaterial, 8);
+
+            var sourcesGo = new GameObject("DustSources");
+            sourcesGo.transform.SetParent(transform, false);
+            Sources = sourcesGo.AddComponent<DustSources>();
+            Sources.Init(this);
             Dust.Split = pos =>
             {
                 Rules.OnSplit();
@@ -677,6 +691,7 @@ namespace Incremental
             Dust.SpawnMult = 1;
             Dust.Inflow = false;
             SplitFlash.Clear();
+            Sources.Clear();
             Backdrop.PulseGlow = 0f;
 
             // 22 §6: the run is drawn at the world scale, and coming from the result screen the camera is not there
@@ -754,6 +769,8 @@ namespace Incremental
             Abilities.Tick(dt, holding, s);
             abilityWatch.Stop();
             abilityTickMsAcc += abilityWatch.Elapsed.TotalMilliseconds;
+            // 29 §10.7 S1, S3: the clumps and the comet add their dust before the dust moves.
+            Sources.Tick(dt, s, Run);
             double captured = Dust.Tick(dt, CameraArea(), GravityWorld, dustHolding, s, Abilities.Forces, Abilities.ForceCount);
             dustWatch.Stop();
             dustTickMsAcc += dustWatch.Elapsed.TotalMilliseconds;
@@ -928,6 +945,8 @@ namespace Incremental
                 bodyGapLeft = gameParams.bodyMinIntervalSec;
             }
             else if (th > 0) count = Math.Max(1.0, Math.Floor(Run.mass / th));
+            // 29 §10.7 S2: the mass that went into this body (what is kept for the next one is not).
+            double bodyMass = Math.Max(0.0, Run.mass - keep);
             // 29 §5: C1 chain, C2 every n-th (count x2, shown as a bundle), C3 first body, T2 time, T3 rush.
             double ruleMult = Rules.OnComplete(Run, tier.tier, ref count, out bool nth);
             if (nth) bundle = true;
@@ -963,6 +982,7 @@ namespace Incremental
             else Planets.Show(GravityWorld, tier, bodySeed, bodyPx);
             if (count > 1 && !bundle) Hud.ShowPlanetCount(Cam.WorldToScreenPoint(GravityWorld), tier.sizePx, count);
             Run.mass = keep;
+            if (!ending) Sources.OnBody(GravityWorld, bodyMass, tier.sizePx, Effective);
             // The kept mass has crossed its thresholds once already (20 §5 rolled for them), so they are not crossed again.
             Run.crossedTier = 0;
             if (keep > 0)
@@ -985,6 +1005,7 @@ namespace Incremental
             Dust.SpawnMult = 1;
             Dust.Inflow = false;
             Backdrop.PulseTarget = 0f;
+            Sources.Clear();
             var rec = Session.MakeRecord(Meta, Meta.runCount, Run.elapsed, Run.runIncome, Run.planetCounts, runStartLevels,
                 runStartStats, reason, Run.fragmentCounts, Run.fragmentIncome);
             Session.ApplyRunEnd(Meta, rec);
