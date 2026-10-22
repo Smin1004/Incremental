@@ -325,23 +325,19 @@ namespace Incremental
             float wobble = (float)(d.fireTailWobblePx / ppu);
             int n = tail.Length;
             Vector2 side = new Vector2(-m.dir.y, m.dir.x);
+            float bright = (float)d.fireTailBright * intensity * flicker;
+            Color c0 = d.fireHeadColor.linear, c1 = d.fireMidColor.linear, c2 = d.fireEndColor.linear;
             for (int i = 0; i < n; i++)
             {
                 float u = i / (float)(n - 1);
                 float w = wobble * u * (Mathf.PerlinNoise(u * 4f - t * 6f, m.start.y) * 2f - 1f);
                 tail[i] = at - m.dir * (length * u) + side * w;
+                tailWidths[i] = width * Mathf.Pow(1f - u, 0.8f) * (1f + 0.25f * Mathf.Sin(u * 17f - t * 23f) * u);
+                Color c = u < 0.35f ? Color.Lerp(c0, c1, u / 0.35f) : Color.Lerp(c1, c2, (u - 0.35f) / 0.65f);
+                float b = bright * (1f - u) * (1f - u * 0.5f);
+                tailColors[i] = new Color(c.r * b, c.g * b, c.b * b);
             }
-            float bright = (float)d.fireTailBright * intensity * flicker;
-            Color c0 = d.fireHeadColor.linear, c1 = d.fireMidColor.linear, c2 = d.fireEndColor.linear;
-            root.Lines.Ribbon(tail, n,
-                i => { float u = i / (float)(n - 1); return width * Mathf.Pow(1f - u, 0.8f) * (1f + 0.25f * Mathf.Sin(u * 17f - t * 23f) * u); },
-                i =>
-                {
-                    float u = i / (float)(n - 1);
-                    Color c = u < 0.35f ? Color.Lerp(c0, c1, u / 0.35f) : Color.Lerp(c1, c2, (u - 0.35f) / 0.65f);
-                    float b = bright * (1f - u) * (1f - u * 0.5f);
-                    return new Color(c.r * b, c.g * b, c.b * b);
-                });
+            root.Lines.Ribbon(tail, tailWidths, tailColors, n);
 
             // M1 the hot head: an orange glow leaning forward, a white core at its front.
             Vector2 forward = at + m.dir * (head * (float)d.headGlowForward);
@@ -371,5 +367,7 @@ namespace Incremental
         }
 
         readonly Vector2[] tail = new Vector2[16];
+        readonly float[] tailWidths = new float[16];
+        readonly Color[] tailColors = new Color[16];
     }
 }

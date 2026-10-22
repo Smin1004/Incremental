@@ -496,7 +496,7 @@ namespace Incremental
 
             root.Hud.SetDebug(overlay
                 ? string.Format(UIStrings.DebugOverlay, fps, root.Dust.Count, root.LastTickMs, root.MaxTickMs,
-                    perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
+                    perfMode ? UIStrings.On : UIStrings.Off, root.Bot != null && root.Bot.Enabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
                     root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
                     root.Settings.holdToggle ? UIStrings.On : UIStrings.Off,
                     root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost * root.Dust.SpawnMult) + "\n" +

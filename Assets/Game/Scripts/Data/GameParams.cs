@@ -87,10 +87,12 @@ namespace Incremental
         [Tooltip("D2: pieces a split makes, and each piece's share of the original mass (3 x 0.4 = 120%).")]
         public int splitPieces = 3;
         public double splitPieceMassShare = 0.4;
-        [Tooltip("D2 look: a piece's size x, how fast the pieces are thrown toward the gravity source (px/s) and the spread of their headings (degrees).")]
+        [Tooltip("D2 look: a piece's size x, how fast the pieces are thrown toward the gravity source (px/s) and the spread of their " +
+                 "headings (degrees). 15th pass feedback (\"더 역동적으로\"): 160 px/s, 50° -> 380 px/s, 160°: the pieces fly out to " +
+                 "the sides and curve back in.")]
         public double splitPieceSize = 0.75;
-        public double splitKickPx = 160;
-        public double splitSpreadDeg = 50;
+        public double splitKickPx = 380;
+        public double splitSpreadDeg = 160;
         [Tooltip("D2 flash (FxRing, x effect intensity): the ring grows to this diameter px over splitFlashSec, its width px, " +
                  "strength, the glow at its center, seconds, color. 15th pass: 70 -> 110 px.")]
         public double splitFlashPx = 110;
@@ -108,7 +110,7 @@ namespace Incremental
         public double splitCrackBright = 2.6;
         [Tooltip("D2 pieces (15th pass): for this many seconds after the split a piece's excite brightness is x splitPieceFlareBright " +
                  "and its ribbon brighter, so the three are seen flying off.")]
-        public double splitPieceFlareSec = 0.3;
+        public double splitPieceFlareSec = 0.5;
         public double splitPieceFlareBright = 1.5;
         [Tooltip("D5: by level, every this many seconds of the run (run clock) the dust spawn runs x pulseSpawnMult for pulseSec.")]
         public double[] pulseEverySec = { 20, 16, 12 };
@@ -122,17 +124,19 @@ namespace Incremental
         public double pulseNebulaEaseSec = 0.5;
 
         [Header("S1 먼지 무리, S3 혜성 (먼지), S2 잔해 (천체): 29 §10.7, 15th pass")]
-        [Tooltip("S1: by level, every this many seconds of the run clock a clump of clusterCount dust appears within clusterRadiusPx, " +
-                 "on screen and at least clusterMinRadii gravity radii from the gravity source.")]
+        [Tooltip("S1: by level, every this many seconds of the run clock a clump of dust appears within clusterRadiusPx, on screen " +
+                 "and at least clusterMinRadii gravity radii from the gravity source: clusterCapShare of the dust cap, at least " +
+                 "clusterCount. 15th pass feedback (W1): 40 -> 3% of the cap (min 40), radius 60 -> 90 px.")]
         public double[] clusterEverySec = { 15, 12, 9 };
         public int clusterCount = 40;
-        public double clusterRadiusPx = 60;
+        public double clusterCapShare = 0.03;
+        public double clusterRadiusPx = 90;
         public double clusterMinRadii = 1.5;
         [Tooltip("S1: the clump widens by clusterSpreadPx over clusterSpreadSec (its dust keep their slow outward speed meanwhile), then drifts as usual.")]
         public double clusterSpreadSec = 8;
         public double clusterSpreadPx = 110;
         [Tooltip("S1 look (FxRing glow, x effect intensity): the glow's diameter px (it widens with the clump), strength, seconds, color.")]
-        public double clusterGlowPx = 200;
+        public double clusterGlowPx = 300;
         public double clusterGlowStrength = 0.35;
         public double clusterGlowSec = 1.5;
         public Color clusterGlowColor = new Color(1f, 0.85f, 0.65f, 1f);
@@ -204,8 +208,10 @@ namespace Incremental
         [Header("A1 공명하는 능력, A2 버프 가속, A5 블랙홀 여파")]
         [Tooltip("A1: when one ability fires, every other one gains this share of its cooldown as charge.")]
         public double resonanceChargeShare = 0.1;
-        [Tooltip("A2: while the amplifier buff is on, the other abilities charge x this.")]
-        public double buffChargeMult = 2;
+        [Tooltip("A2: while the amplifier buff is on, the other abilities charge x this. 15th pass feedback: 2 -> 1.3 (the black " +
+                 "hole fired back to back), and the abilities in buffChargeExclude are not sped up at all.")]
+        public double buffChargeMult = 1.3;
+        public string[] buffChargeExclude = { "blackhole" };
         [Tooltip("A5: after the black hole closes, the dust spawn runs x aftermathSpawnMult for this many seconds.")]
         public double aftermathSec = 6;
         public double aftermathSpawnMult = 4;

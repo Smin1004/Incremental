@@ -48,7 +48,9 @@ namespace Incremental
         readonly Burst[] bursts = new Burst[16];
         int nextBurst;
         Comet comet;
-        Vector2[] points = new Vector2[24];
+        readonly Vector2[] points = new Vector2[24];
+        readonly float[] widths = new float[24];
+        readonly Color[] colors = new Color[24];
 
         RuleParams Q => p.rules;
 
@@ -127,7 +129,9 @@ namespace Incremental
                     at = c;
                 }
             }
-            int added = root.Dust.SpawnCluster(at, Mathf.Max(0, Q.clusterCount), radius, Px(Q.clusterSpreadPx), (float)Q.clusterSpreadSec, s);
+            // W1: a share of the dust cap, so a late clump is worth chasing too, never below clusterCount.
+            int n = Mathf.Max(Mathf.Max(0, Q.clusterCount), (int)Math.Round(Math.Max(0.0, Q.clusterCapShare) * s.dustCap));
+            int added = root.Dust.SpawnCluster(at, n, radius, Px(Q.clusterSpreadPx), (float)Q.clusterSpreadSec, s);
             clusters[nextCluster] = new Cluster { age = 0, at = at };
             nextCluster = (nextCluster + 1) % clusters.Length;
             ClusterAge = 0f;
@@ -289,10 +293,11 @@ namespace Incremental
             {
                 float u = i / (float)(n - 1);
                 points[i] = head + back * (ionL * u) + side * (ionW * 0.15f * Mathf.Sin(u * 9f - t * 3f) * u);
+                widths[i] = ionW * (0.5f + 0.7f * u);
+                float b = ionB * Mathf.Pow(1f - u, 1.3f) * (0.85f + 0.15f * Mathf.Sin(u * 23f - t * 7f));
+                colors[i] = new Color(ion.r * b, ion.g * b, ion.b * b);
             }
-            root.Lines.Ribbon(points, n,
-                i => { float u = i / (float)(n - 1); return ionW * (0.5f + 0.7f * u); },
-                i => { float u = i / (float)(n - 1); float b = ionB * Mathf.Pow(1f - u, 1.3f) * (0.85f + 0.15f * Mathf.Sin(u * 23f - t * 7f)); return new Color(ion.r * b, ion.g * b, ion.b * b); });
+            root.Lines.Ribbon(points, widths, colors, n);
 
             // The dust tail, warm, fanning out and bending away to one side.
             float dustL = Px(Q.cometDustTailPx), dustW = Px(Q.cometDustTailWidthPx);
@@ -303,10 +308,11 @@ namespace Incremental
             {
                 float u = i / (float)(n - 1);
                 points[i] = head + back * (dustL * u) + side * (dustL * curve * u * u);
+                widths[i] = dustW * (0.35f + 0.9f * Mathf.Sqrt(u));
+                float b = dustB * Mathf.Pow(1f - u, 1.6f);
+                colors[i] = new Color(warm.r * b, warm.g * b, warm.b * b);
             }
-            root.Lines.Ribbon(points, n,
-                i => { float u = i / (float)(n - 1); return dustW * (0.35f + 0.9f * Mathf.Sqrt(u)); },
-                i => { float u = i / (float)(n - 1); float b = dustB * Mathf.Pow(1f - u, 1.6f); return new Color(warm.r * b, warm.g * b, warm.b * b); });
+            root.Lines.Ribbon(points, widths, colors, n);
 
             // The coma: big and faint, round a small bright core.
             var coma = Q.cometComaColor.linear;

@@ -61,13 +61,13 @@ namespace Incremental
         }
 
         /// <summary>
-        /// A ribbon through <paramref name="count"/> points, head first: width and color are asked per point (0 = head,
-        /// 1 = tail end) from <paramref name="width"/> and <paramref name="color"/>. Neighbouring pieces share their edge
-        /// so the ribbon has no seams.
+        /// A ribbon through <paramref name="count"/> points, head first, with the full width and the color of each point in
+        /// <paramref name="widths"/> and <paramref name="colors"/> (arrays the caller keeps and fills, so a frame allocates
+        /// nothing). Neighbouring pieces share their edge so the ribbon has no seams.
         /// </summary>
-        public void Ribbon(Vector2[] points, int count, System.Func<int, float> width, System.Func<int, Color> color)
+        public void Ribbon(Vector2[] points, float[] widths, Color[] colors, int count)
         {
-            if (points == null || count < 2) return;
+            if (points == null || widths == null || colors == null || count < 2) return;
             Vector2 prevL = default, prevR = default;
             Color32 prevC = default;
             for (int i = 0; i < count; i++)
@@ -76,9 +76,9 @@ namespace Incremental
                 if (i > 0 && i < count - 1) dir = points[i + 1] - points[i - 1];
                 float len = dir.magnitude;
                 Vector2 side = len > 1e-6f ? new Vector2(-dir.y, dir.x) / len : Vector2.up;
-                float w = Mathf.Max(0f, width(i)) * 0.5f;
+                float w = Mathf.Max(0f, widths[i]) * 0.5f;
                 Vector2 l = points[i] + side * w, r = points[i] - side * w;
-                var c = Encode(color(i));
+                var c = Encode(colors[i]);
                 if (i > 0) Quad(prevL, prevR, r, l, prevC, c);
                 prevL = l;
                 prevR = r;

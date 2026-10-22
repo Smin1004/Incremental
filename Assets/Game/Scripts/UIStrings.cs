@@ -257,7 +257,7 @@ namespace Incremental
             { "rule.D3.name", "빠른 보충" },
             { "rule.D3.effect", "화면에 먼지가 적을수록 더 빨리 생긴다 (텅 빈 화면에서 ×{0}, 기본 ×{1})" },
             { "rule.S1.name", "먼지 무리" },
-            { "rule.S1.effect", "{0}초마다 화면 어딘가에 먼지 {1}개가 뭉쳐 생긴다" },
+            { "rule.S1.effect", "{0}초마다 화면 어딘가에 먼지 상한의 {1}%(최소 {2}개)가 뭉쳐 생긴다" },
             { "rule.S2.name", "잔해" },
             { "rule.S2.effect", "천체가 완성될 때 그 질량의 {0}%만큼 먼지가 터져 나온다 (수입은 그대로)" },
             { "rule.S3.name", "혜성" },
@@ -283,7 +283,7 @@ namespace Incremental
             { "rule.A1.name", "공명하는 능력" },
             { "rule.A1.effect", "능력 하나가 발동하면 다른 능력의 충전 +{0}%" },
             { "rule.A2.name", "버프 가속" },
-            { "rule.A2.effect", "증폭 결정 버프 중 다른 능력 충전 ×{0}" },
+            { "rule.A2.effect", "증폭 결정 버프 중 다른 능력 충전 ×{0} (블랙홀 제외)" },
             { "rule.A5.name", "블랙홀 여파" },
             { "rule.A5.effect", "블랙홀이 닫힌 뒤 {0}초 동안 먼지 생성 ×{1}" },
 
@@ -349,7 +349,7 @@ namespace Incremental
                 case "D3": return string.Format(f, Levels(max, l => 1 + p.dustRefillBoost + r.refillBoostPerLevel * l), Fmt.Short(1 + p.dustRefillBoost));
                 case "D5": return string.Format(f, Levels(max, l => r.pulseEverySec != null && r.pulseEverySec.Length > 0 ? r.pulseEverySec[Math.Min(l, r.pulseEverySec.Length) - 1] : 0),
                     Fmt.Short(r.pulseSec), Fmt.Short(r.pulseSpawnMult));
-                case "S1": return string.Format(f, Levels(max, l => ByLevel(r.clusterEverySec, l)), r.clusterCount);
+                case "S1": return string.Format(f, Levels(max, l => ByLevel(r.clusterEverySec, l)), Fmt.Short(r.clusterCapShare * 100), r.clusterCount);
                 case "S2": return string.Format(f, Levels(max, l => ByLevel(r.debrisShare, l) * 100));
                 case "S3": return string.Format(f, Levels(max, l => ByLevel(r.cometEverySec, l)), Fmt.Short(r.cometDustShare * 100));
                 case "D4": return string.Format(f, Levels(max, l => r.goldChancePerLevel * l * 100), Fmt.Short(r.goldMassMult));

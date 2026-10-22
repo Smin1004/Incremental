@@ -75,8 +75,8 @@ MonoBehaviour:
     splitPieces: 3
     splitPieceMassShare: 0.4
     splitPieceSize: 0.75
-    splitKickPx: 160
-    splitSpreadDeg: 50
+    splitKickPx: 380
+    splitSpreadDeg: 160
     splitFlashPx: 110
     splitFlashWidthPx: 4
     splitFlashStrength: 0.6
@@ -88,7 +88,7 @@ MonoBehaviour:
     splitCrackWidthPx: 6
     splitCrackSec: 0.15
     splitCrackBright: 2.6
-    splitPieceFlareSec: 0.3
+    splitPieceFlareSec: 0.5
     splitPieceFlareBright: 1.5
     pulseEverySec:
     - 20
@@ -104,11 +104,12 @@ MonoBehaviour:
     - 12
     - 9
     clusterCount: 40
-    clusterRadiusPx: 60
+    clusterCapShare: 0.03
+    clusterRadiusPx: 90
     clusterMinRadii: 1.5
     clusterSpreadSec: 8
     clusterSpreadPx: 110
-    clusterGlowPx: 200
+    clusterGlowPx: 300
     clusterGlowStrength: 0.35
     clusterGlowSec: 1.5
     clusterGlowColor: {r: 1, g: 0.85, b: 0.65, a: 1}
@@ -160,7 +161,9 @@ MonoBehaviour:
     startRushMult: 2
     bundleAtCutPerLevel: 0.5
     resonanceChargeShare: 0.1
-    buffChargeMult: 2
+    buffChargeMult: 1.3
+    buffChargeExclude:
+    - blackhole
     aftermathSec: 6
     aftermathSpawnMult: 4
   spawnRampSec: 60
