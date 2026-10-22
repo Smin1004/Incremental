@@ -864,11 +864,15 @@ namespace Incremental
         /// added at the dust cap or outside the visible area: the meteor then sheds that much less. Returns whether the
         /// dust was added.
         /// </summary>
-        public bool Shed(Vector2 pos, Vector2 vel, in EffectiveStats s, double heavyWeight)
+        public bool Shed(Vector2 pos, Vector2 vel, in EffectiveStats s, double heavyWeight, float flareSec = 0f, float flareGain = 0f)
         {
             if (count >= (int)s.dustCap || !Area.Contains(pos)) return false;
             Add(pos, vel, RollKind(s, heavyWeight));
-            items[count - 1].excite = 1f;
+            ref Dust d = ref items[count - 1];
+            d.excite = 1f;
+            // 15th pass M3: a meteor's sparks flare for a moment.
+            d.flare = flareSec;
+            d.flareGain = flareGain;
             return true;
         }
 

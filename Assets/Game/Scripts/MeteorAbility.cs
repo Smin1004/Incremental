@@ -20,6 +20,12 @@ namespace Incremental
     /// It wears the look of the comet tier with a longer tail. The planet shader points a tail away from the light, so
     /// the light is put straight ahead of the meteor.
     ///
+    /// 15th pass (29 §10.7 M1-M5, "정적인 행성 스프라이트가 쭉 날아가는 기분"): the look is now a burning rock (the asteroid
+    /// tier, turning, M4) with a hot glow leaning forward over it (M1), a short fire tail of the trail ribbon's kind (M2),
+    /// shed dust that flies off as sparks (M3) and a streak of light where it comes in over the edge (M5). Fast, hot and
+    /// short, so it is not taken for the S3 comet, which is slow, cold and long-tailed. Everything but the body follows
+    /// the effect intensity.
+    ///
     /// 24 §21.2 유성우, the evolved form as decided on 10/8: the same meteor at a shorter cooldown (MeteorDef.showerCooldownSec),
     /// one at a time. The five-at-once shower of the 7th pass was rejected as too much; the array of meteors below is
     /// what is left of it and holds one.
@@ -44,6 +50,9 @@ namespace Incremental
             public double shedRate, shedAcc;
             public int shedCount, shed, notShed;
             public float closestPx;
+            /// <summary>M5: where and when (seconds of its age) it came in over the edge; −1 = not yet.</summary>
+            public Vector2 entryAt;
+            public float entryAge;
         }
 
         /// <summary>Path and shed positions. Apart from the dust and visual RNGs, like the fragment rolls.</summary>
@@ -128,6 +137,8 @@ namespace Incremental
             var tier = root.celestialTable.Get(d.lookTier);
             var look = tier != null && tier.look != null ? tier.look.Clone() : new PlanetLook();
             look.tailLength = (float)d.tailLength;
+            // M4: it turns as it goes.
+            look.spinDegPerSec = (float)d.spinDegPerSec;
             float diameter = (float)(root.RunBodyPx(d.sizePx) / ppu);
             m.margin = diameter * 0.5f * look.Extent();
 
@@ -145,6 +156,7 @@ namespace Incremental
             m.speed = (float)(length / m.duration);
             m.passOffset = m.start + m.dir * Vector2.Dot(gravity - m.start, m.dir) - gravity;
             m.entered = false;
+            m.entryAge = -1f;
 
             // Dust is shed at an even rate over the part of the planned path that is on screen.
             double share = d.DustShare(Level);
@@ -195,6 +207,12 @@ namespace Incremental
             Rect area = root.CameraArea();
             Vector2 gravity = root.GravityWorld;
             bool onScreen = area.Contains(m.pos);
+            if (onScreen && !m.entered)
+            {
+                // M5: the edge it came in over.
+                m.entryAt = m.pos;
+                m.entryAge = (float)m.age;
+            }
             m.entered |= onScreen;
 
             // Homing: the planned path passed the gravity source at passOffset. If the gravity source has moved since,
@@ -223,13 +241,17 @@ namespace Incremental
                 var side = new Vector2(-m.dir.y, m.dir.x);
                 Vector2 vel = m.dir * (m.speed * (float)d.dustSpeedShare);
                 float spread = (float)(d.shedSpreadPx / ppu);
+                float kick = (float)(d.sparkKickPx / ppu);
                 while (m.shedAcc >= 1.0 && m.shed + m.notShed < m.shedCount)
                 {
                     m.shedAcc -= 1.0;
                     Vector2 at = Vector2.LerpUnclamped(from, m.pos, (float)rng.NextDouble()) +
                                  side * (spread * (float)(rng.NextDouble() * 2.0 - 1.0));
                     // At the cap this returns false and the dust is simply not shed (24 §5).
-                    if (root.Dust.Shed(at, vel, s, d.heavyWeight)) m.shed++;
+                    // M3: thrown off sideways and a little back, flaring, so they read as sparks.
+                    float sideways = (float)(rng.NextDouble() * 2.0 - 1.0);
+                    Vector2 sparkVel = vel + side * (kick * sideways) - m.dir * (kick * 0.4f * (float)rng.NextDouble());
+                    if (root.Dust.Shed(at, sparkVel, s, d.heavyWeight, (float)d.sparkSec, (float)Math.Max(0.0, d.sparkBright - 1.0))) m.shed++;
                     else m.notShed++;
                 }
             }
@@ -245,7 +267,8 @@ namespace Incremental
             m.age += dt;
             // Done once it is off screen, tail and all: after having been on screen, or after the planned crossing time
             // for a path that never came on screen.
-            if (Expand(area, m.margin).Contains(m.pos) || !(m.entered || m.age >= m.duration)) return;
+            // 15th pass: the fire tail (M2) has to be off screen too before it is done.
+            if (Expand(area, m.margin + m.speed * (float)d.fireTailSec).Contains(m.pos) || !(m.entered || m.age >= m.duration)) return;
             m.active = false;
             Log("gone after " + m.age.ToString("0.##") + "s: came within " + m.closestPx.ToString("F0") + " px (" + Radii(m.closestPx, s) +
                 " radii) of the gravity source, shed " + m.shed + " dust" +
@@ -279,7 +302,74 @@ namespace Incremental
                 body.SetLightDirection(m.dir);
                 // The coma is a glow like any other and follows the effect intensity; the head and the tail stay.
                 body.SetGlowMul(root.EffectIntensity);
+                DrawFire(ref m, at, root.EffectIntensity);
             }
         }
+
+        /// <summary>Seconds of the effect clock, for the flicker and the wobble (render only).</summary>
+        float FxTime => Time.time;
+
+        /// <summary>15th pass M1, M2, M5 for one meteor whose head is drawn at <paramref name="at"/>.</summary>
+        void DrawFire(ref Meteor m, Vector2 at, float intensity)
+        {
+            if (intensity <= 0f || root.Glow == null || root.Lines == null) return;
+            var d = D;
+            float ppu = (float)p.pixelsPerUnit;
+            float head = (float)(root.RunBodyPx(d.sizePx) / ppu);
+            float t = FxTime;
+            float flicker = 1f + (float)d.headFlicker * (Mathf.PerlinNoise(t * (float)d.headFlickerHz, m.start.x) * 2f - 1f);
+
+            // M2 the fire tail: as long as the meteor travels in fireTailSec, under the head.
+            float length = m.speed * (float)d.fireTailSec;
+            float width = (float)(d.fireTailWidthPx / ppu);
+            float wobble = (float)(d.fireTailWobblePx / ppu);
+            int n = tail.Length;
+            Vector2 side = new Vector2(-m.dir.y, m.dir.x);
+            for (int i = 0; i < n; i++)
+            {
+                float u = i / (float)(n - 1);
+                float w = wobble * u * (Mathf.PerlinNoise(u * 4f - t * 6f, m.start.y) * 2f - 1f);
+                tail[i] = at - m.dir * (length * u) + side * w;
+            }
+            float bright = (float)d.fireTailBright * intensity * flicker;
+            Color c0 = d.fireHeadColor.linear, c1 = d.fireMidColor.linear, c2 = d.fireEndColor.linear;
+            root.Lines.Ribbon(tail, n,
+                i => { float u = i / (float)(n - 1); return width * Mathf.Pow(1f - u, 0.8f) * (1f + 0.25f * Mathf.Sin(u * 17f - t * 23f) * u); },
+                i =>
+                {
+                    float u = i / (float)(n - 1);
+                    Color c = u < 0.35f ? Color.Lerp(c0, c1, u / 0.35f) : Color.Lerp(c1, c2, (u - 0.35f) / 0.65f);
+                    float b = bright * (1f - u) * (1f - u * 0.5f);
+                    return new Color(c.r * b, c.g * b, c.b * b);
+                });
+
+            // M1 the hot head: an orange glow leaning forward, a white core at its front.
+            Vector2 forward = at + m.dir * (head * (float)d.headGlowForward);
+            var g = d.headGlowColor.linear;
+            var w0 = d.headCoreColor.linear;
+            root.Glow.Draw(forward, (float)(root.RunBodyPx(d.headGlowPx) / ppu),
+                new Color(g.r, g.g, g.b, (float)d.headGlowStrength * intensity * flicker), 0f, 0.5f, 0.5f, m.dir, (float)d.headGlowStretch);
+            root.Glow.Draw(forward + m.dir * (head * 0.15f), head * 1.1f,
+                new Color(w0.r, w0.g, w0.b, (float)d.headCoreStrength * intensity * flicker), 0f, 0.35f, 1f, m.dir, 1.3f);
+
+            // M5 the entry flash: a streak of light inward from the edge it came in over, and a flash at that point.
+            float since = m.entryAge >= 0f ? (float)m.age - m.entryAge : -1f;
+            float sec = (float)d.entryFlashSec;
+            if (since >= 0f && since < sec && sec > 0f)
+            {
+                float k = since / sec;
+                float fade = (1f - k) * (1f - k);
+                float len = (float)(d.entryFlashPx / ppu) * (0.4f + 0.6f * k);
+                float eb = (float)d.entryFlashBright * fade * intensity;
+                var hot = new Color(w0.r * eb, w0.g * eb, w0.b * eb);
+                var warm = new Color(g.r * eb * 0.3f, g.g * eb * 0.3f, g.b * eb * 0.3f);
+                float ew = (float)(d.entryFlashWidthPx / ppu);
+                root.Lines.Segment(m.entryAt - m.dir * (len * 0.3f), m.entryAt + m.dir * len, ew * 0.4f, ew, warm, hot);
+                root.Glow.Draw(m.entryAt, (float)(d.entryGlowPx / ppu) * (0.6f + 0.4f * k),
+                    new Color(w0.r, w0.g, w0.b, 0.6f * fade * intensity), 0f, 0.45f, 0.8f, m.dir, 1.8f);
+            }
+        }
+
+        readonly Vector2[] tail = new Vector2[16];
     }
 }

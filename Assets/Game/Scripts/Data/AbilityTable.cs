@@ -304,11 +304,50 @@ namespace Incremental
         public double wakeAccelPx = 700;
 
         [Header("Look")]
-        [Tooltip("The celestial tier whose look the meteor wears (2 = the comet).")]
-        public int lookTier = 2;
-        [Tooltip("Diameter of the head, px, and the length of the tail in head radii (the comet's own tail is 3.5).")]
+        [Tooltip("The celestial tier whose look the meteor wears. 15th pass: 2 (the comet) -> 1 (the asteroid): a rock that " +
+                 "burns, so it is not taken for the S3 comet.")]
+        public int lookTier = 1;
+        [Tooltip("Diameter of the head, px, and the length of the planet shader's tail in head radii. 15th pass: 9 -> 0, the " +
+                 "fire tail (M2) is the tail now.")]
         public double sizePx = 40;
-        public double tailLength = 9;
+        public double tailLength = 0;
+        [Tooltip("M4: the body turns this many degrees per second (the look's own spin is replaced).")]
+        public double spinDegPerSec = 70;
+
+        [Header("Look: 15th pass M1 hot head, M2 fire tail, M3 sparks, M5 entry flash (x effect intensity)")]
+        [Tooltip("M1: a glow leaning forward over the head, white at the front to orange round it: its diameter px, how much " +
+                 "longer than wide it is, how far forward of the head it sits (share of the head diameter), the strength of " +
+                 "the white core and of the orange glow, and a flicker (share, Hz).")]
+        public double headGlowPx = 110;
+        public double headGlowStretch = 1.6;
+        public double headGlowForward = 0.25;
+        public double headCoreStrength = 1.1;
+        public double headGlowStrength = 0.45;
+        public Color headCoreColor = new Color(1f, 0.97f, 0.88f, 1f);
+        public Color headGlowColor = new Color(1f, 0.72f, 0.38f, 1f);
+        public double headFlicker = 0.18;
+        public double headFlickerHz = 11;
+        [Tooltip("M2: a ribbon behind the head as long as the meteor travels in fireTailSec, fireTailWidthPx wide at the head " +
+                 "and thinning to nothing, white-yellow -> orange -> red, its edge wobbling fireTailWobblePx.")]
+        public double fireTailSec = 0.6;
+        public double fireTailWidthPx = 36;
+        public double fireTailBright = 1.4;
+        public double fireTailWobblePx = 7;
+        public Color fireHeadColor = new Color(1f, 0.9f, 0.6f, 1f);
+        public Color fireMidColor = new Color(1f, 0.62f, 0.25f, 1f);
+        public Color fireEndColor = new Color(0.9f, 0.3f, 0.1f, 1f);
+        [Tooltip("M3: shed dust flies off as sparks: thrown sideways and back at up to sparkKickPx, and for sparkSec its excite " +
+                 "brightness is x sparkBright.")]
+        public double sparkSec = 0.5;
+        public double sparkBright = 2;
+        public double sparkKickPx = 140;
+        [Tooltip("M5: the moment the meteor comes in over the edge of the screen, a short streak of light along its way " +
+                 "(length px, width px, seconds, brightness) with a flash at the edge.")]
+        public double entryFlashPx = 300;
+        public double entryFlashWidthPx = 12;
+        public double entryFlashSec = 0.3;
+        public double entryFlashBright = 1.6;
+        public double entryGlowPx = 160;
 
         [Header("Evolved: 유성우 (24 §21.2; 10/8: 간격 단축)")]
         [Tooltip("Evolved, meteors come every this many seconds of holding instead of cooldownSec, still one at a time, each on " +

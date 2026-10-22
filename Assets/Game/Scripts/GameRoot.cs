@@ -385,7 +385,8 @@ namespace Incremental
             var glowGo = new GameObject("GlowFx");
             glowGo.transform.SetParent(transform, false);
             Glow = glowGo.AddComponent<GlowFx>();
-            Glow.Init(fxMaterial, 8);
+            // Over the meteor's body (9), so its hot front shows on the rock; additive, so the order among glows is moot.
+            Glow.Init(fxMaterial, 10);
 
             var sourcesGo = new GameObject("DustSources");
             sourcesGo.transform.SetParent(transform, false);

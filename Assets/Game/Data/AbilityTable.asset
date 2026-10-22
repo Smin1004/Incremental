@@ -94,9 +94,34 @@ MonoBehaviour:
     shedSpreadPx: 30
     wakeRadiusShare: 0.8
     wakeAccelPx: 700
-    lookTier: 2
+    lookTier: 1
     sizePx: 40
-    tailLength: 9
+    tailLength: 0
+    spinDegPerSec: 70
+    headGlowPx: 110
+    headGlowStretch: 1.6
+    headGlowForward: 0.25
+    headCoreStrength: 1.1
+    headGlowStrength: 0.45
+    headCoreColor: {r: 1, g: 0.97, b: 0.88, a: 1}
+    headGlowColor: {r: 1, g: 0.72, b: 0.38, a: 1}
+    headFlicker: 0.18
+    headFlickerHz: 11
+    fireTailSec: 0.6
+    fireTailWidthPx: 36
+    fireTailBright: 1.4
+    fireTailWobblePx: 7
+    fireHeadColor: {r: 1, g: 0.9, b: 0.6, a: 1}
+    fireMidColor: {r: 1, g: 0.62, b: 0.25, a: 1}
+    fireEndColor: {r: 0.9, g: 0.3, b: 0.1, a: 1}
+    sparkSec: 0.5
+    sparkBright: 2
+    sparkKickPx: 140
+    entryFlashPx: 300
+    entryFlashWidthPx: 12
+    entryFlashSec: 0.3
+    entryFlashBright: 1.6
+    entryGlowPx: 160
     showerCooldownSec: 5
     pathTries: 16
   blackHole:
