@@ -38,6 +38,12 @@ namespace Incremental
         /// (mass × GameParams.rules.splitPieceMassShare, never splits again).
         /// </summary>
         public byte split;
+        /// <summary>
+        /// 15th pass: seconds left of a flare (D2 pieces, meteor sparks). While above 0 the excite brightness is
+        /// x (1 + <see cref="flareGain"/>) and the dust's ribbon is brighter too. Render only.
+        /// </summary>
+        public float flare;
+        public float flareGain;
     }
 
     /// <summary>
@@ -450,6 +456,7 @@ namespace Incremental
                 ref Dust d = ref items[i];
                 if (d.excite > 0f) d.excite = Mathf.Max(0f, d.excite - calm);
                 if (d.born < 1f) d.born = Mathf.Min(1f, d.born + grow);
+                if (d.flare > 0f) d.flare -= fdt;
                 Vector2 toCursor = gravity - d.pos;
                 float dist2 = toCursor.sqrMagnitude;
 
@@ -918,6 +925,9 @@ namespace Incremental
             d.split = 2;
             d.size *= (float)q.splitPieceSize;
             d.excite = 1f;
+            // 15th pass: the pieces fly off bright for a moment, ribbons and all.
+            d.flare = (float)q.splitPieceFlareSec;
+            d.flareGain = (float)Math.Max(0.0, q.splitPieceFlareBright - 1.0);
             Dust template = d;
             for (int j = 0; j < pieces; j++)
             {

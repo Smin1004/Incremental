@@ -256,6 +256,8 @@ namespace Incremental
                 float headWidth = h * share;
                 // Fainter near the end of the budget, and while the dust itself is still fading in.
                 float bright = d.bright * (kindDef != null ? (float)kindDef.brightMult : 1f) * pickedFade[c] * d.born * density;
+                // 15th pass: a flaring dust (a D2 piece) leaves a brighter ribbon while it flares.
+                if (d.flare > 0f) bright *= 1f + d.flareGain * root.EffectIntensity;
                 if (centerR > 0f)
                 {
                     float dc = (d.pos - gravity).magnitude;

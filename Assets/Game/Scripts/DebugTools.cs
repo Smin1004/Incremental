@@ -25,6 +25,11 @@ namespace Incremental
     /// T: the twist of the skill tree's spiral arms, through UITheme.tree.armTwistChoices (26 §10.1); not saved.
     /// B, N, J (26 §12.4): the visual pass. B the background items on / off, N the lenses on / off, J the effects
     /// on / off. Runtime only; the data flags set where a launch starts.
+    /// 15th pass, for the balance pass: P auto-buy on / off (when a run ends, the cheapest stat nodes are bought until the
+    /// currency runs out; gates, unlocks and rules are left alone). Shift+F10 the ring start state of the next ring (11 is
+    /// followed by 1), as ApplyRingStartState; it overwrites the save, and during a run it waits for the run to end.
+    /// [ and ] the game speed (Time.timeScale) through gameSpeedSteps. R the rule nodes off / on from the next run. None
+    /// of it is saved. The F1 overlay has a second line with the play clock, the ring and the run.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
     /// what a keyboard really sends.
     /// </summary>
@@ -38,6 +43,14 @@ namespace Incremental
         public double cheatCurrencyMin = 1000;
         [Tooltip("F11 cycles the runtime effect intensity through these values (14 §6; the options screen is week 7).")]
         public float[] effectSteps = { 1f, 0.5f, 0f };
+        [Tooltip("15th pass: [ and ] step Time.timeScale through these values. Not saved.")]
+        public float[] gameSpeedSteps = { 1f, 2f, 4f, 8f };
+
+        /// <summary>15th pass P: buy stat nodes when a run ends (debug only, not saved).</summary>
+        public bool AutoBuy { get; private set; }
+        /// <summary>15th pass Shift+F10: the ring whose start state is applied once the run has ended (0 = none).</summary>
+        int pendingRing;
+        int speedStep;
 
         GameRoot root;
         readonly System.Collections.Generic.List<PendingCapture> pendingCaptures = new System.Collections.Generic.List<PendingCapture>();
@@ -53,7 +66,105 @@ namespace Incremental
         public bool BotEnabled { get; set; }
         public float Fps => fps;
 
-        public void Init(GameRoot gameRoot) { root = gameRoot; }
+        public void Init(GameRoot gameRoot)
+        {
+            root = gameRoot;
+            root.RunEnded += OnRunEndedAutoBuy;
+        }
+
+        // ---------------- 15th pass balance keys (P, Shift+F10, [ ], R) ----------------
+
+        /// <summary>P: auto-buy on or off. Runtime only.</summary>
+        public void ToggleAutoBuy()
+        {
+            AutoBuy = !AutoBuy;
+            string state = AutoBuy ? UIStrings.On : UIStrings.Off;
+            root.Hud.ShowToast(string.Format(UIStrings.AutoBuyToast, state));
+            Debug.Log("[Debug] auto-buy: " + state + " (stat nodes only, cheapest first, when a run ends)");
+        }
+
+        void OnRunEndedAutoBuy(RunRecord rec)
+        {
+            // The bot shops for itself.
+            if (!AutoBuy || (root.Bot != null && root.Bot.Enabled)) return;
+            int levels = BuyStatNodes();
+            root.Hud.ShowToast(string.Format(UIStrings.AutoBuyDone, levels));
+            Debug.Log("[Debug] auto-buy after run " + rec.run + ": " + levels + " levels, currency " + Fmt.Num(root.Meta.currency) + " left");
+        }
+
+        readonly System.Collections.Generic.List<NodeDef> buyScratch = new System.Collections.Generic.List<NodeDef>();
+
+        /// <summary>
+        /// Buys the cheapest purchasable stat node again and again until none is affordable. Gates, dust kind and ability
+        /// unlocks, evolutions and rule nodes are not bought. Returns the levels bought.
+        /// </summary>
+        public int BuyStatNodes()
+        {
+            int levels = 0;
+            for (int guard = 0; guard < 10000; guard++)
+            {
+                Shop.PurchasableStatNodes(root.nodeTable, root.Meta, buyScratch);
+                NodeDef next = null;
+                foreach (var n in buyScratch)
+                    if (n.kind == NodeKind.Stat) { next = n; break; }
+                if (next == null || !root.TryBuy(next.id)) break;
+                levels++;
+            }
+            return levels;
+        }
+
+        /// <summary>Shift+F10: the start state of the next ring; during a run, once the run has ended.</summary>
+        public void StepRingStart()
+        {
+            int from = pendingRing > 0 ? pendingRing : root.Meta.unlockedMaxTier;
+            int ring = from % SkillRingCount + 1;
+            if (root.Phase == GamePhase.Run && root.Run != null)
+            {
+                pendingRing = ring;
+                root.Hud.ShowToast(string.Format(UIStrings.RingStartPending, ring));
+                Debug.Log("[Debug] ring start state " + ring + " once this run has ended (overwrites the save)");
+                if (!root.EndingActive) root.Run.timeLeft = 0;
+                return;
+            }
+            ApplyRingStart(ring);
+        }
+
+        /// <summary>Rings of the tree (the last tier's gate opens ring 11).</summary>
+        int SkillRingCount => Mathf.Max(1, root.celestialTable.MaxTier);
+
+        void ApplyRingStart(int ring)
+        {
+            pendingRing = 0;
+            ApplyRingStartState(ring);
+            root.Save();
+            root.Hud.ShowToast(string.Format(UIStrings.RingStartToast, ring));
+            Debug.Log("[Debug] ring start state " + ring + ": every node below ring " + ring + " at full level, currency 0 (save overwritten)");
+        }
+
+        /// <summary>[ and ]: the game speed one step down or up. Runtime only.</summary>
+        public void StepGameSpeed(int by)
+        {
+            if (gameSpeedSteps == null || gameSpeedSteps.Length == 0) return;
+            speedStep = Mathf.Clamp(speedStep + by, 0, gameSpeedSteps.Length - 1);
+            Time.timeScale = Mathf.Max(0.01f, gameSpeedSteps[speedStep]);
+            root.Hud.ShowToast(string.Format(UIStrings.GameSpeedToast, Time.timeScale));
+            Debug.Log("[Debug] game speed x" + Time.timeScale + " (the play clock of progress.csv runs on game time, so it speeds up too)");
+        }
+
+        /// <summary>R: the rule nodes off or on from the next run.</summary>
+        public void ToggleRules()
+        {
+            root.Rules.DebugOff = !root.Rules.DebugOff;
+            string state = root.Rules.On ? UIStrings.On : UIStrings.Off;
+            root.Hud.ShowToast(string.Format(UIStrings.RulesToast, state));
+            Debug.Log("[Debug] rule nodes: " + state + " from the next run (rules.enabled " + root.gameParams.rules.enabled + ")");
+        }
+
+        static string Clock(double sec)
+        {
+            var t = TimeSpan.FromSeconds(Math.Max(0, sec));
+            return ((int)t.TotalHours).ToString() + ":" + t.Minutes.ToString("00") + ":" + t.Seconds.ToString("00");
+        }
 
         struct PendingCapture
         {
@@ -336,6 +447,7 @@ namespace Incremental
                 ScreenCapture.CaptureScreenshot(pendingCaptures[0].file);
                 pendingCaptures.RemoveAt(0);
             }
+            if (pendingRing > 0 && root.Phase == GamePhase.Result && !root.EndingActive) ApplyRingStart(pendingRing);
             fpsFrames++;
             fpsTimer += Time.unscaledDeltaTime;
             if (fpsTimer >= 0.5f)
@@ -358,6 +470,12 @@ namespace Incremental
                 if (kb.f7Key.wasPressedThisFrame) ToggleNotation();
                 if (kb.f8Key.wasPressedThisFrame && root.Gallery != null) root.Gallery.Toggle();
                 if (kb.f9Key.wasPressedThisFrame && kb.shiftKey.isPressed) root.ResetProgress();
+                // 15th pass: Shift only, because it overwrites the save.
+                if (kb.f10Key.wasPressedThisFrame && kb.shiftKey.isPressed) StepRingStart();
+                if (kb.pKey.wasPressedThisFrame) ToggleAutoBuy();
+                if (kb.leftBracketKey.wasPressedThisFrame) StepGameSpeed(-1);
+                if (kb.rightBracketKey.wasPressedThisFrame) StepGameSpeed(1);
+                if (kb.rKey.wasPressedThisFrame) ToggleRules();
                 if (kb.f11Key.wasPressedThisFrame) CycleEffectIntensity();
                 if (kb.f12Key.wasPressedThisFrame) Screenshot();
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
@@ -381,7 +499,9 @@ namespace Incremental
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
                     root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
                     root.Settings.holdToggle ? UIStrings.On : UIStrings.Off,
-                    root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost)
+                    root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost) + "\n" +
+                  string.Format(UIStrings.DebugOverlay2, Clock(root.Meta.playClockSec), root.Meta.unlockedMaxTier, root.Meta.runCount,
+                      Time.timeScale, AutoBuy ? UIStrings.On : UIStrings.Off, root.Rules.On ? UIStrings.On : UIStrings.Off)
                 : string.Empty);
             root.Hud.SetAbilityDebug(root.Abilities != null ? root.Abilities.DebugLabel(overlay) : string.Empty);
         }

@@ -101,6 +101,8 @@ namespace Incremental
         public GateExpandFx GateExpand { get; private set; }
         /// <summary>29 §10.2 D2: the crack flash where a large dust splits.</summary>
         public SplitFlashFx SplitFlash { get; private set; }
+        /// <summary>15th pass: soft lines and ribbons (D2 cracks, meteor and comet tails), drawn over the dust.</summary>
+        public FxLines Lines { get; private set; }
         public DustField Dust { get; private set; }
         public DustMeshRenderer DustRenderer { get; private set; }
         /// <summary>22 §5: the trail ribbons of dust above the base kind.</summary>
@@ -309,6 +311,11 @@ namespace Incremental
             TrailRenderer = trailGo.AddComponent<DustTrailRenderer>();
             TrailRenderer.Init(this, Dust, dustTrailMaterial);
 
+            var linesGo = new GameObject("FxLines", typeof(MeshFilter), typeof(MeshRenderer));
+            linesGo.transform.SetParent(transform, false);
+            Lines = linesGo.AddComponent<FxLines>();
+            // Over the dust (0) and the rings (5), under the meteor's body (9) so its tail starts behind it.
+            Lines.Init(dustTrailMaterial, 8);
 
             var hudGo = new GameObject("HudView");
             hudGo.transform.SetParent(transform, false);

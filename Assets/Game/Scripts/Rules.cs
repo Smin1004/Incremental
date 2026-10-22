@@ -36,6 +36,12 @@ namespace Incremental
 
         public Rules(GameParams gameParams) { p = gameParams; }
 
+        /// <summary>15th pass, debug key R: every rule node does nothing from the next run on, whatever rules.enabled says. Runtime only.</summary>
+        public bool DebugOff { get; set; }
+
+        /// <summary>Whether the rule nodes act in the runs that start now (rules.enabled and not switched off by R).</summary>
+        public bool On => P != null && P.enabled && !DebugOff;
+
         RuleParams P => p.rules;
 
         /// <summary>Level of a rule node owned at run start (0 = not owned or rules off).</summary>
@@ -67,7 +73,7 @@ namespace Incremental
             pulsesLogged = 0;
             aftermathUntil = -1;
             splits = 0;
-            if (P == null || !P.enabled || t == null || m == null) return;
+            if (!On || t == null || m == null) return;
             var owned = new List<string>();
             foreach (var n in t.nodes)
             {

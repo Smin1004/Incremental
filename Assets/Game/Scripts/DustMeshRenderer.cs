@@ -295,7 +295,9 @@ namespace Incremental
                     }
                 }
                 float b = d.bright * kindBright[kind] * Mathf.Lerp(dim, 1f, inField) * (1f + boost) * remnantBright * earlyBright;
-                if (d.excite > 0f) b *= 1f + d.excite * exciteBright / (1f + (kindSize[kind] - 1f) * exciteFalloff);
+                // 15th pass: a flaring dust (D2 piece, meteor spark) lights up harder than a plain excited one.
+                float flare = d.flare > 0f ? 1f + d.flareGain : 1f;
+                if (d.excite > 0f) b *= 1f + d.excite * exciteBright * flare / (1f + (kindSize[kind] - 1f) * exciteFalloff);
                 // 26 §5.5: dust right over the forming body dims toward its center so the body is not drowned.
                 if (centerR > 0f)
                 {

@@ -66,6 +66,18 @@ namespace Incremental
         // Debug overlay
         /// <summary>{8} = the UI direction id (key U), 26 §6. {9} = the hold toggle (key H), 28 §2.1.</summary>
         public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7}, 생성 ×{11:0.0})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI {8} [U]   홀드 토글 {9} [H]   노출 억제 {10} [X]";
+        /// <summary>
+        /// 15th pass: the overlay's second line. {0} = play clock (h:mm:ss, the progress.csv clock), {1} = ring, {2} = run,
+        /// {3} = game speed, {4} = auto-buy, {5} = rule nodes.
+        /// </summary>
+        public const string DebugOverlay2 = "플레이 {0}   링 {1}   판 {2}   속도 ×{3:0} [ / ]   자동 구매 {4} [P]   규칙 노드 {5} [R]";
+        /// <summary>15th pass debug keys (P, Shift+F10, [ ], R).</summary>
+        public const string AutoBuyToast = "자동 구매: {0}  (P, 판이 끝나면 수치 노드를 싼 것부터)";
+        public const string AutoBuyDone = "자동 구매: {0}레벨 샀다";
+        public const string RingStartToast = "링 {0} 시작 상태 (세이브 덮어씀)  (Shift+F10)";
+        public const string RingStartPending = "판을 끝낸 뒤 링 {0} 시작 상태로 (세이브 덮어씀)";
+        public const string GameSpeedToast = "게임 속도 ×{0:0}  ([ / ], 진행 시계도 ×{0:0}로 흐른다)";
+        public const string RulesToast = "규칙 노드 효과: {0}  (R, 다음 판부터)";
         /// <summary>28 §2.1: the H key's toast. {0} = on / off.</summary>
         public const string HoldToggleToast = "홀드 토글: {0}  (H, 클릭 한 번 = 누르기, 다시 클릭 = 놓기)";
         /// <summary>26 §5.5: the toast of the overexposure key. {0} = on / off.</summary>

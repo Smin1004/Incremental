@@ -92,13 +92,24 @@ namespace Incremental
         public double splitKickPx = 160;
         public double splitSpreadDeg = 50;
         [Tooltip("D2 flash (FxRing, x effect intensity): the ring grows to this diameter px over splitFlashSec, its width px, " +
-                 "strength, the glow at its center, seconds, color.")]
-        public double splitFlashPx = 70;
+                 "strength, the glow at its center, seconds, color. 15th pass: 70 -> 110 px.")]
+        public double splitFlashPx = 110;
         public double splitFlashWidthPx = 4;
         public double splitFlashStrength = 0.6;
         public double splitFlashCoreGlow = 0.8;
         public double splitFlashSec = 0.25;
         public Color splitFlashColor = new Color(1f, 0.92f, 0.75f, 1f);
+        [Tooltip("D2 crack (15th pass, FxLines, x effect intensity): this many thin lines shoot out of the split point to " +
+                 "splitCrackPx long over splitCrackSec, splitCrackWidthPx wide, at splitCrackBright (color splitFlashColor).")]
+        public int splitCrackLines = 3;
+        public double splitCrackPx = 46;
+        public double splitCrackWidthPx = 3;
+        public double splitCrackSec = 0.15;
+        public double splitCrackBright = 1.6;
+        [Tooltip("D2 pieces (15th pass): for this many seconds after the split a piece's excite brightness is x splitPieceFlareBright " +
+                 "and its ribbon brighter, so the three are seen flying off.")]
+        public double splitPieceFlareSec = 0.3;
+        public double splitPieceFlareBright = 1.5;
         [Tooltip("D5: by level, every this many seconds of the run (run clock) the dust spawn runs x pulseSpawnMult for pulseSec.")]
         public double[] pulseEverySec = { 20, 16, 12 };
         public double pulseSec = 3;
@@ -580,7 +591,7 @@ namespace Incremental
                  "gravityLensRingBonus) of the reach at most. Lets go over gravityLensReleaseSec. No disc is cleared.")]
         public bool gravityLens = true;
         public double gravityLensReach = 0.65;
-        public double gravityLensStrength = 0.2;
+        public double gravityLensStrength = 0.14;
         public double gravityLensRingBonus = 0.05;
         public double gravityLensReleaseSec = 0.3;
         [Tooltip("D2 (off by default): where the implode ring passes, a band implodeRippleWidth x its radius wide pushes the stars " +

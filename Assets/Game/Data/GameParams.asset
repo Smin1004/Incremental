@@ -77,12 +77,19 @@ MonoBehaviour:
     splitPieceSize: 0.75
     splitKickPx: 160
     splitSpreadDeg: 50
-    splitFlashPx: 70
+    splitFlashPx: 110
     splitFlashWidthPx: 4
     splitFlashStrength: 0.6
     splitFlashCoreGlow: 0.8
     splitFlashSec: 0.25
     splitFlashColor: {r: 1, g: 0.92, b: 0.75, a: 1}
+    splitCrackLines: 3
+    splitCrackPx: 46
+    splitCrackWidthPx: 3
+    splitCrackSec: 0.15
+    splitCrackBright: 1.6
+    splitPieceFlareSec: 0.3
+    splitPieceFlareBright: 1.5
     pulseEverySec:
     - 20
     - 16
@@ -376,7 +383,7 @@ MonoBehaviour:
   nebulaSwirlInSec: 0.5
   gravityLens: 1
   gravityLensReach: 0.65
-  gravityLensStrength: 0.2
+  gravityLensStrength: 0.14
   gravityLensRingBonus: 0.05
   gravityLensReleaseSec: 0.3
   implodeRipple: 1
