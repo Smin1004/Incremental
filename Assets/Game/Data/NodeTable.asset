@@ -1901,7 +1901,7 @@ MonoBehaviour:
   - id: time_r2
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 8.4
     growth: 1.35
@@ -1919,7 +1919,7 @@ MonoBehaviour:
   - id: time_r3
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 52
     growth: 1.35
@@ -1937,7 +1937,7 @@ MonoBehaviour:
   - id: time_r4
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 290
     growth: 1.35
@@ -1955,7 +1955,7 @@ MonoBehaviour:
   - id: time_r5
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 1600
     growth: 1.35
@@ -1973,7 +1973,7 @@ MonoBehaviour:
   - id: time_r6
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 7900
     growth: 1.35
@@ -1991,7 +1991,7 @@ MonoBehaviour:
   - id: time_r7
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 68000
     growth: 1.35
@@ -2009,7 +2009,7 @@ MonoBehaviour:
   - id: time_r8
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 290000
     growth: 1.35
@@ -2027,7 +2027,7 @@ MonoBehaviour:
   - id: time_r9
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 3000000
     growth: 1.35
@@ -2045,7 +2045,7 @@ MonoBehaviour:
   - id: time_r10
     kind: 0
     statId: run_time
-    effectPerLevel: 1.8
+    effectPerLevel: 0.9
     maxLevel: 5
     baseCost: 16000000
     growth: 1.35
@@ -2056,6 +2056,258 @@ MonoBehaviour:
     prereqs:
     - time_r9
     angleDeg: 162
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r2
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - time_r1
+    angleDeg: 177
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r3
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 52
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 3
+    prereqs:
+    - time_side_r2
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r4
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - time_side_r3
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r5
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 1600
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 5
+    prereqs:
+    - time_side_r4
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r6
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - time_side_r5
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r7
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 68000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 7
+    prereqs:
+    - time_side_r6
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r8
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - time_side_r7
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r9
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 3000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 9
+    prereqs:
+    - time_side_r8
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: time_side_r10
+    kind: 0
+    statId: run_time
+    effectPerLevel: 0.9
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - time_side_r9
+    angleDeg: 174
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: ramp_r2
+    kind: 0
+    statId: spawn_ramp
+    effectPerLevel: 0.04
+    maxLevel: 5
+    baseCost: 8.4
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 2
+    prereqs:
+    - time_r1
+    angleDeg: 147
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: ramp_r4
+    kind: 0
+    statId: spawn_ramp
+    effectPerLevel: 0.04
+    maxLevel: 5
+    baseCost: 290
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 4
+    prereqs:
+    - ramp_r2
+    angleDeg: 150
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: ramp_r6
+    kind: 0
+    statId: spawn_ramp
+    effectPerLevel: 0.04
+    maxLevel: 5
+    baseCost: 7900
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 6
+    prereqs:
+    - ramp_r4
+    angleDeg: 150
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: ramp_r8
+    kind: 0
+    statId: spawn_ramp
+    effectPerLevel: 0.04
+    maxLevel: 5
+    baseCost: 290000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 8
+    prereqs:
+    - ramp_r6
+    angleDeg: 150
+    radiusOffset: 0
+    category: 4
+    ruleId: 
+    enabled: 1
+  - id: ramp_r10
+    kind: 0
+    statId: spawn_ramp
+    effectPerLevel: 0.04
+    maxLevel: 5
+    baseCost: 16000000
+    growth: 1.35
+    tier: 0
+    dustKindId: 
+    abilityId: 
+    minTier: 10
+    prereqs:
+    - ramp_r8
+    angleDeg: 150
     radiusOffset: 0
     category: 4
     ruleId: 
@@ -2073,7 +2325,7 @@ MonoBehaviour:
     minTier: 6
     prereqs:
     - time_r5
-    angleDeg: 150
+    angleDeg: 138
     radiusOffset: 0
     category: 4
     ruleId: T3

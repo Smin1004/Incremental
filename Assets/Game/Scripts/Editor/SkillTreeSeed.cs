@@ -35,6 +35,9 @@ namespace Incremental.EditorTools
         /// <summary>28 §2: seconds of run time per ring (rings 1-10, +90 s in all). The ring 11 endless node is gone (29 §3.4).</summary>
         public const double RunTimePerRing = 9;
 
+        /// <summary>29 §10.7 S4: spawn_ramp per level (×5 per node, five nodes: +1.0 in all, x2 spawn once the ramp is full).</summary>
+        public const double SpawnRampPerLevel = 0.04;
+
         /// <summary>
         /// Income of a run at the start of ring k, measured with the bot (20 §8.3 step 1; index = ring, 0 = not measured).
         /// Every node cost is derived from it, so the balance pass changes these numbers and nothing else.
@@ -275,18 +278,24 @@ namespace Incremental.EditorTools
 
         // ---------------- 29 §3.4 시간 (162°) ----------------
 
-        /// <summary>Stem: run time (rings 1-10 ×5, +9 s per ring). The rule nodes branch off left and right in turn.</summary>
+        /// <summary>
+        /// Stem: run time (rings 1-10 ×5, +9 s per ring). 29 §10.7 H1: from ring 2 the ring's 9 s are split between the stem
+        /// node and a side node (+Side, ×5 each), so the category has more nodes and the run is no longer. Right of the
+        /// stem: S4 무르익는 하늘 (spawn_ramp, rings 2·4·6·8·10 ×5) and, further out, the rule line.
+        /// </summary>
         static void Time(List<NodeDef> n)
         {
             const NodeCategory c = NodeCategory.Time;
-            Line(n, c, "time", StatIds.RunTime, 0f, 1, 10, 5, r => RunTimePerRing, r => r == 1 ? null : "time_r" + (r - 1));
+            Line(n, c, "time", StatIds.RunTime, 0f, 1, 10, 5, r => r == 1 ? RunTimePerRing : RunTimePerRing * 0.5, r => r == 1 ? null : "time_r" + (r - 1));
+            Line(n, c, "time_side", StatIds.RunTime, +Side, 2, 10, 5, r => RunTimePerRing * 0.5, r => r == 2 ? "time_r1" : "time_side_r" + (r - 1));
+            Line(n, c, "ramp", StatIds.SpawnRamp, -Side, 2, 10, 5, r => SpawnRampPerLevel * 5, r => r == 2 ? "time_r1" : "ramp_r" + (r - 2), 2);
 
             // 29 §10.4 rules: T3 ring 6 only ("시간은 빡빡하게"). T1, T2 and T5 stay here, effect code and values included;
             // uncomment one to bring it back.
             // n.Add(Rule("T1", c, 2, +Side, 3, "time_r1"));
             // n.Add(Rule("T2", c, 4, -Side, 1, "time_r3"));
             // n.Add(Rule("T5", c, 5, +Side, 1, "time_r4"));
-            n.Add(Rule("T3", c, 6, -Side, 1, "time_r5"));
+            n.Add(Rule("T3", c, 6, -2 * Side, 1, "time_r5"));
         }
 
         // ---------------- 29 §3.5 능력 (234°) ----------------

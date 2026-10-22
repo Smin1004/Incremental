@@ -50,6 +50,11 @@ namespace Incremental
         /// (0.05 = +5%). 13th pass step 1: the nodes exist, the effect comes in step 2.
         /// </summary>
         public const string DustMaxSpeed = "dust_max_speed";
+        /// <summary>
+        /// 29 §10.7 S4 무르익는 하늘 (time category): the dust spawn runs x (1 + sum x min(1, run seconds / GameParams.spawnRampSec)),
+        /// so it grows as the run goes on. A share (0.04 = +4% once the ramp is full).
+        /// </summary>
+        public const string SpawnRamp = "spawn_ramp";
 
         /// <summary>
         /// 24 §8: the stats of the ability axis. Each acts on the ability named by <see cref="NodeDef.abilityId"/>, the
@@ -75,7 +80,7 @@ namespace Incremental
         {
             SpawnRate, PullAccel, SaleMult, RunTime, ThresholdMult,
             DustCap, DustMass, GravityRadius, StartBonus,
-            DustChance, FragUnlock, FragChance, FragOffset, FollowSpeed, DustMaxSpeed,
+            DustChance, FragUnlock, FragChance, FragOffset, FollowSpeed, DustMaxSpeed, SpawnRamp,
         };
 
         /// <summary>

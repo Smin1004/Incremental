@@ -42,6 +42,8 @@ namespace Incremental
         public int fragOffset;
         /// <summary>29 §3.3: the dust's top speed is GameParams.dustMaxSpeed × this (1 + the dust_max_speed nodes).</summary>
         public double dustMaxSpeedMult;
+        /// <summary>29 §10.7 S4: the spawn_ramp sum. The spawn is x (1 + this x min(1, run seconds / spawnRampSec)).</summary>
+        public double spawnRamp;
 
         /// <summary>Share of spawned dust of that kind index, 0 when it is out of range (a save written before 20 §4).</summary>
         public double KindChance(int index) =>
@@ -66,7 +68,7 @@ namespace Incremental
         public static EffectiveStats Compute(GameParams p, NodeTable t, MetaState m, double growthScale)
         {
             double spawn = 0, pull = 0, sale = 0, runTime = 0, threshold = 0, cap = 0, radius = 0, start = 0, follow = 0;
-            double mass = 1, frag = 0, fragRange = 0, dustSpeed = 0;
+            double mass = 1, frag = 0, fragRange = 0, dustSpeed = 0, ramp = 0;
             // 20 §4: extra share per dust kind from its chance node; the kind only appears once its unlock node is owned.
             int kinds = p.DustKindCount;
             var kindAdd = kinds > 0 ? new double[kinds] : System.Array.Empty<double>();
@@ -101,6 +103,7 @@ namespace Incremental
                     case StatIds.FragChance: frag += add; break;
                     case StatIds.FragOffset: fragRange += add; break;
                     case StatIds.DustMaxSpeed: dustSpeed += add; break;
+                    case StatIds.SpawnRamp: ramp += add; break;
                 }
             }
 
@@ -122,6 +125,7 @@ namespace Incremental
                 gravityRadius = p.gravityRadius * (1.0 + radius * Math.Max(0.0, growthScale)),
                 followSpeedPx = p.followSpeedPx * (1.0 + follow),
                 dustMaxSpeedMult = 1.0 + dustSpeed,
+                spawnRamp = ramp,
             };
             // The starting dust follows the area for the same reason: without it a late run would open on an empty
             // world and take longer than the run itself to fill up.
@@ -290,7 +294,7 @@ namespace Incremental
             statId == StatIds.GravityRadius || statId == StatIds.FollowSpeed ||
             statId == StatIds.DustChance || statId == StatIds.FragUnlock || statId == StatIds.FragChance ||
             statId == StatIds.AbilityPower || statId == StatIds.AbilityCooldown || statId == StatIds.AbilityAmount ||
-            statId == StatIds.DustMaxSpeed;
+            statId == StatIds.DustMaxSpeed || statId == StatIds.SpawnRamp;
 
         /// <summary>Number substituted into the stat.&lt;id&gt;.effect string: percent for fraction effects, raw otherwise.</summary>
         public static double EffectDisplayNumber(NodeDef n) =>
@@ -301,6 +305,17 @@ namespace Incremental
         /// Ring 1 is 1 and ring 11 is 1.60 at the spec value. A pure function, so the tests can read the rule and the
         /// camera can ask for the target before the effective stats are recomputed.
         /// </summary>
+        /// <summary>
+        /// 29 §10.7 S4: what the spawn_ramp nodes multiply the dust spawn by, <paramref name="elapsed"/> seconds into a run:
+        /// 1 + ramp x min(1, elapsed / spawnRampSec). A pure function so the tests can read the rule.
+        /// </summary>
+        public static double SpawnRampMult(double ramp, double elapsed, double rampSec)
+        {
+            if (!(ramp > 0)) return 1.0;
+            double k = rampSec > 0 ? Math.Min(1.0, Math.Max(0.0, elapsed) / rampSec) : 1.0;
+            return 1.0 + ramp * k;
+        }
+
         public static double WorldScale(GameParams p, int ring) =>
             1.0 + p.worldScalePerRing * Math.Max(0, ring - 1);
 

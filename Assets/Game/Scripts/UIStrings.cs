@@ -235,6 +235,8 @@ namespace Incremental
             // 29 §3.3: the new gravity line.
             { "stat.dust_max_speed.name", "먼지 최고 속도" },
             { "stat.dust_max_speed.effect", "+{0}%" },
+            { "stat.spawn_ramp.name", "무르익는 하늘" },
+            { "stat.spawn_ramp.effect", "판이 진행될수록 먼지 생성 증가 ({1}초 뒤 최대 +{0}%)" },
 
             // Rule nodes (29 §5): name and one line, by rule id. 13th pass step 1 bought them without an effect yet.
             { "rule.T1.name", "유예" },
@@ -386,7 +388,9 @@ namespace Incremental
                 var kind = p != null ? p.DustKind(p.DustKindIndex(n.dustKindId)) : null;
                 return string.Format(DustUnlockEffect, DustKindName(n.dustKindId), Fmt.Short(kind != null ? kind.baseChance * 100.0 : 0.0));
             }
-            return string.Format(Get(StatEffectKey(n.statId)), Fmt.Short(Stats.EffectDisplayNumber(n)));
+            // {1} = 29 §10.7 S4's ramp seconds (GameParams.spawnRampSec); other effect strings ignore it.
+            return string.Format(Get(StatEffectKey(n.statId)), Fmt.Short(Stats.EffectDisplayNumber(n)),
+                Fmt.Short(p != null ? p.spawnRampSec : 60.0));
         }
 
         /// <summary>

@@ -281,6 +281,9 @@ namespace Incremental
         public int bundleAt = 3;
         [Tooltip("29 §5: the rule nodes' numbers (temporary).")]
         public RuleParams rules = new RuleParams();
+        [Tooltip("29 §10.7 S4 무르익는 하늘: the spawn_ramp nodes reach their full share this many seconds into a run (spawn x " +
+                 "(1 + sum x min(1, run seconds / this))).")]
+        public double spawnRampSec = 60;
         public double bundleSizeGrowth = 0.12;
         public double bundleSizeMax = 2.0;
         public double bundlePopMult = 1.6;

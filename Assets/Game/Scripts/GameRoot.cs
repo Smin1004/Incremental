@@ -741,7 +741,8 @@ namespace Incremental
             // 29 §5 G2: the gravity keeps pulling for a moment after a release.
             bool dustHolding = Rules.DustHolding(dt, wasHolding, holding);
             // 29 §10.3 D5, A5: the spawn multiplier of this tick; during a D5 pulse new dust comes in from the edge band.
-            Dust.SpawnMult = Rules.SpawnMult(Run);
+            // 29 §10.7 S4: the spawn_ramp nodes speed the spawn up as the run goes on.
+            Dust.SpawnMult = Rules.SpawnMult(Run) * Stats.SpawnRampMult(s.spawnRamp, Run.elapsed, gameParams.spawnRampSec);
             bool pulse = Rules.PulsePhase(Run) >= 0;
             Dust.Inflow = pulse;
             Backdrop.PulseTarget = pulse ? 1f : 0f;

@@ -96,7 +96,8 @@ namespace Incremental
             }
             switch (n.statId)
             {
-                case StatIds.SpawnRate: return Symbol.Spawn;
+                case StatIds.SpawnRate:
+                case StatIds.SpawnRamp: return Symbol.Spawn;
                 case StatIds.DustCap: return Symbol.DustCap;
                 case StatIds.StartBonus: return Symbol.StartBonus;
                 case StatIds.DustChance: return Symbol.DustKind;

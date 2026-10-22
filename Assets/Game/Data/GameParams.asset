@@ -117,6 +117,7 @@ MonoBehaviour:
     buffChargeMult: 2
     aftermathSec: 6
     aftermathSpawnMult: 4
+  spawnRampSec: 60
   bundleSizeGrowth: 0.12
   bundleSizeMax: 2
   bundlePopMult: 1.6
