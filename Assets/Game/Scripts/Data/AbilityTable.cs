@@ -344,10 +344,10 @@ namespace Incremental
         [Tooltip("M5: the moment the meteor comes in over the edge of the screen, a short streak of light along its way " +
                  "(length px, width px, seconds, brightness) with a flash at the edge.")]
         public double entryFlashPx = 300;
-        public double entryFlashWidthPx = 12;
+        public double entryFlashWidthPx = 18;
         public double entryFlashSec = 0.3;
         public double entryFlashBright = 1.6;
-        public double entryGlowPx = 160;
+        public double entryGlowPx = 220;
 
         [Header("Evolved: 유성우 (24 §21.2; 10/8: 간격 단축)")]
         [Tooltip("Evolved, meteors come every this many seconds of holding instead of cooldownSec, still one at a time, each on " +

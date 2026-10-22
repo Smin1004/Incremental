@@ -118,10 +118,10 @@ MonoBehaviour:
     sparkBright: 2
     sparkKickPx: 140
     entryFlashPx: 300
-    entryFlashWidthPx: 12
+    entryFlashWidthPx: 18
     entryFlashSec: 0.3
     entryFlashBright: 1.6
-    entryGlowPx: 160
+    entryGlowPx: 220
     showerCooldownSec: 5
     pathTries: 16
   blackHole:

@@ -895,6 +895,8 @@ namespace Incremental
                 Vector2 pos = center + dir * r;
                 Add(pos, dir * (speed * (radius > 0f ? r / radius : 1f) + speed * 0.15f), RollKind(s));
                 items[count - 1].linger = lingerSec;
+                // Most of the way in already: the clump is there at once, with its glow.
+                items[count - 1].born = 0.6f;
                 added++;
             }
             return added;

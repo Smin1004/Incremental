@@ -64,7 +64,10 @@ namespace Incremental
         public const string EndingContinue = "계속하기  (Space)";
 
         // Debug overlay
-        /// <summary>{8} = the UI direction id (key U), 26 §6. {9} = the hold toggle (key H), 28 §2.1.</summary>
+        /// <summary>
+        /// {8} = the UI direction id (key U), 26 §6. {9} = the hold toggle (key H), 28 §2.1. {11} = the spawn multiplier of the
+        /// last tick: the refill boost x D5 / A5 x S4 (15th pass; it was the refill boost alone).
+        /// </summary>
         public const string DebugOverlay = "FPS {0:F1}   먼지 {1} (화면 밖 {7}, 생성 ×{11:0.0})   틱 {2:F2} ms (최대 {3:F2})   성능모드 {4}   봇 {5}   연출 {6:0.0}   UI {8} [U]   홀드 토글 {9} [H]   노출 억제 {10} [X]";
         /// <summary>
         /// 15th pass: the overlay's second line. {0} = play clock (h:mm:ss, the progress.csv clock), {1} = ring, {2} = run,

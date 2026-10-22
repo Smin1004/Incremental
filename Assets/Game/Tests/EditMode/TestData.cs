@@ -50,6 +50,8 @@ namespace Incremental.Tests
                 Stat("e_mass", 1, 60, StatIds.DustMass, 1.5, 3, 5, 1),
                 Stat("e_follow", 1, 310, StatIds.FollowSpeed, 0.15, 2, 5, 1),
                 Stat("e_dustspeed", 1, 300, StatIds.DustMaxSpeed, 0.05, 3, 5, 1),
+                // 29 §10.7 S4 (15th pass).
+                Stat("e_ramp", 1, 190, StatIds.SpawnRamp, 0.04, 5, 5, 1),
                 DustUnlock("dust_medium", "medium", 1, 100, 5),
                 DustChance("e_chance", "medium", 1, 110, 0.02, 4, 5, "dust_medium"),
                 Stat("e_frag", 1, 120, StatIds.FragUnlock, 0.3, 1, 5, 1),

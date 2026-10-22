@@ -499,7 +499,7 @@ namespace Incremental
                     perfMode ? UIStrings.On : UIStrings.Off, BotEnabled ? UIStrings.On : UIStrings.Off, root.EffectIntensity,
                     root.Dust.OutsideCount, root.Ui.Direction != null ? root.Ui.Direction.id : string.Empty,
                     root.Settings.holdToggle ? UIStrings.On : UIStrings.Off,
-                    root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost) + "\n" +
+                    root.ExposureFix ? UIStrings.On : UIStrings.Off, root.Dust.SpawnBoost * root.Dust.SpawnMult) + "\n" +
                   string.Format(UIStrings.DebugOverlay2, Clock(root.Meta.playClockSec), root.Meta.unlockedMaxTier, root.Meta.runCount,
                       Time.timeScale, AutoBuy ? UIStrings.On : UIStrings.Off, root.Rules.On ? UIStrings.On : UIStrings.Off)
                 : string.Empty);

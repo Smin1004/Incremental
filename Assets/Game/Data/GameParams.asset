@@ -84,10 +84,10 @@ MonoBehaviour:
     splitFlashSec: 0.25
     splitFlashColor: {r: 1, g: 0.92, b: 0.75, a: 1}
     splitCrackLines: 3
-    splitCrackPx: 46
-    splitCrackWidthPx: 3
+    splitCrackPx: 62
+    splitCrackWidthPx: 6
     splitCrackSec: 0.15
-    splitCrackBright: 1.6
+    splitCrackBright: 2.6
     splitPieceFlareSec: 0.3
     splitPieceFlareBright: 1.5
     pulseEverySec:
@@ -131,8 +131,8 @@ MonoBehaviour:
     cometPassMaxRadii: 2
     cometShedSpreadPx: 60
     cometDustSpeedShare: 0.25
-    cometComaPx: 170
-    cometComaStrength: 0.22
+    cometComaPx: 240
+    cometComaStrength: 0.28
     cometComaColor: {r: 0.75, g: 0.9, b: 1, a: 1}
     cometCorePx: 34
     cometCoreStrength: 0.9

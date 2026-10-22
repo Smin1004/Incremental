@@ -102,10 +102,10 @@ namespace Incremental
         [Tooltip("D2 crack (15th pass, FxLines, x effect intensity): this many thin lines shoot out of the split point to " +
                  "splitCrackPx long over splitCrackSec, splitCrackWidthPx wide, at splitCrackBright (color splitFlashColor).")]
         public int splitCrackLines = 3;
-        public double splitCrackPx = 46;
-        public double splitCrackWidthPx = 3;
+        public double splitCrackPx = 62;
+        public double splitCrackWidthPx = 6;
         public double splitCrackSec = 0.15;
-        public double splitCrackBright = 1.6;
+        public double splitCrackBright = 2.6;
         [Tooltip("D2 pieces (15th pass): for this many seconds after the split a piece's excite brightness is x splitPieceFlareBright " +
                  "and its ribbon brighter, so the three are seen flying off.")]
         public double splitPieceFlareSec = 0.3;
@@ -159,8 +159,8 @@ namespace Incremental
         public double cometShedSpreadPx = 60;
         public double cometDustSpeedShare = 0.25;
         [Tooltip("S3 look (x effect intensity): a big faint coma (diameter px, strength, color) round a small bright core.")]
-        public double cometComaPx = 170;
-        public double cometComaStrength = 0.22;
+        public double cometComaPx = 240;
+        public double cometComaStrength = 0.28;
         public Color cometComaColor = new Color(0.75f, 0.9f, 1f, 1f);
         public double cometCorePx = 34;
         public double cometCoreStrength = 0.9;
