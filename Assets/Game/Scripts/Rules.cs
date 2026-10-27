@@ -457,13 +457,16 @@ namespace Incremental
         // ---------------- abilities (A1, A2) ----------------
 
         /// <summary>
-        /// A2 버프 가속: how fast the abilities other than the crystal charge (× buffChargeMult while it is on). 15th pass
-        /// feedback: the abilities in buffChargeExclude (the black hole) are left out, it came round back to back.
+        /// 15th pass feedback: the abilities in rules.chargeBoostExclude (the black hole) are never charged faster by a rule,
+        /// A1 or A2. It came round back to back.
         /// </summary>
+        public bool ChargeBoostBlocked(Ability a) =>
+            a != null && P.chargeBoostExclude != null && Array.IndexOf(P.chargeBoostExclude, a.Def.id) >= 0;
+
+        /// <summary>A2 버프 가속: how fast the abilities other than the crystal charge (× buffChargeMult while it is on).</summary>
         public double ChargeRate(Ability a, bool crystalBuffed)
         {
-            if (!crystalBuffed || Level("A2") <= 0 || a == null || a.Def.id == "crystal") return 1;
-            if (P.buffChargeExclude != null && Array.IndexOf(P.buffChargeExclude, a.Def.id) >= 0) return 1;
+            if (!crystalBuffed || Level("A2") <= 0 || a == null || a.Def.id == "crystal" || ChargeBoostBlocked(a)) return 1;
             return P.buffChargeMult;
         }
 

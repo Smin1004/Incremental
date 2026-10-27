@@ -162,7 +162,7 @@ MonoBehaviour:
     bundleAtCutPerLevel: 0.5
     resonanceChargeShare: 0.1
     buffChargeMult: 1.3
-    buffChargeExclude:
+    chargeBoostExclude:
     - blackhole
     aftermathSec: 6
     aftermathSpawnMult: 4

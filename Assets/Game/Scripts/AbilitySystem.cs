@@ -98,7 +98,8 @@ namespace Incremental
             for (int i = 0; i < abilities.Length; i++)
             {
                 var a = abilities[i];
-                if (a == null || a == from || !a.Level.unlocked) continue;
+                // 15th pass feedback: the black hole is not pulled forward (rules.chargeBoostExclude).
+                if (a == null || a == from || !a.Level.unlocked || root.Rules.ChargeBoostBlocked(a)) continue;
                 a.AddChargeShare(share);
                 others++;
             }

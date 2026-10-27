@@ -281,7 +281,7 @@ namespace Incremental
             { "rule.C4.name", "쉬운 묶음" },
             { "rule.C4.effect", "묶음이 되는 기준 {0}배 (기본 {1}배)" },
             { "rule.A1.name", "공명하는 능력" },
-            { "rule.A1.effect", "능력 하나가 발동하면 다른 능력의 충전 +{0}%" },
+            { "rule.A1.effect", "능력 하나가 발동하면 다른 능력의 충전 +{0}% (블랙홀 제외)" },
             { "rule.A2.name", "버프 가속" },
             { "rule.A2.effect", "증폭 결정 버프 중 다른 능력 충전 ×{0} (블랙홀 제외)" },
             { "rule.A5.name", "블랙홀 여파" },

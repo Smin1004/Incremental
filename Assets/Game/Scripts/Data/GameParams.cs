@@ -209,9 +209,12 @@ namespace Incremental
         [Tooltip("A1: when one ability fires, every other one gains this share of its cooldown as charge.")]
         public double resonanceChargeShare = 0.1;
         [Tooltip("A2: while the amplifier buff is on, the other abilities charge x this. 15th pass feedback: 2 -> 1.3 (the black " +
-                 "hole fired back to back), and the abilities in buffChargeExclude are not sped up at all.")]
+                 "hole fired back to back).")]
         public double buffChargeMult = 1.3;
-        public string[] buffChargeExclude = { "blackhole" };
+        [Tooltip("15th pass feedback (10/22, 10/27): abilities whose charge no rule ever speeds up, neither A2 (buff) nor A1 " +
+                 "(resonance): the black hole comes when its own cooldown says.")]
+        [UnityEngine.Serialization.FormerlySerializedAs("buffChargeExclude")]
+        public string[] chargeBoostExclude = { "blackhole" };
         [Tooltip("A5: after the black hole closes, the dust spawn runs x aftermathSpawnMult for this many seconds.")]
         public double aftermathSec = 6;
         public double aftermathSpawnMult = 4;
