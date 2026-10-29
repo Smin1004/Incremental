@@ -61,6 +61,8 @@
 | **[ / ]** | 게임 속도 ×1 / ×2 / ×4 / ×8. 진행 시계도 같이 빨라진다. 저장 안 함. 15차 |
 | **R** | 규칙 노드 효과 전부 끔 ↔ 켬 (다음 판부터). 15차 |
 
+**웹 보고용 빌드에서만:** 브라우저가 F키를 가져가므로 글자 키가 대신한다. F1 Q, F2 W, F3 E, F4 A, F5 S, F6 D, F7 F, F8 G, Shift+F9 Shift+Z, Shift+F10 Shift+C, F11 V, F12 L.
+
 - 능력 충전 호는 홀드 중에만 중력 고리 바깥에 보인다. 숫자 `6`으로 능력을 전부 켜고 홀드하면 바로 볼 수 있다.
 - UI 값은 `Assets/Game/Data/UITheme.asset`, 과노출 값은 `GameParams.asset`에 있다. 필드 설명은 [Reports/UI_Proto.md](Reports/UI_Proto.md) §3, §9.
 
