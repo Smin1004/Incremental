@@ -32,6 +32,9 @@ namespace Incremental
     /// of it is saved. The F1 overlay has a second line with the play clock, the ring and the run.
     /// With the F1 overlay on, every key the game receives is also written to the console, which is how to find out
     /// what a keyboard really sends.
+    /// Web build only (temporary): the browser keeps most F-keys (F5 reload, F11 full screen, F12 dev tools), so each one
+    /// also answers to a letter: F1 Q, F2 W, F3 E, F4 A, F5 S, F6 D, F7 F, F8 G, Shift+F9 Shift+Z, Shift+F10 Shift+C,
+    /// F11 V, F12 L.
     /// </summary>
     public sealed class DebugTools : MonoBehaviour
     {
@@ -70,6 +73,9 @@ namespace Incremental
         {
             root = gameRoot;
             root.RunEnded += OnRunEndedAutoBuy;
+#if UNITY_WEBGL && !UNITY_EDITOR && DEVELOPMENT_BUILD
+            Debug.Log("[Debug] web build: F-keys also on letters, F1 Q, F2 W, F3 E, F4 A, F5 S, F6 D, F7 F, F8 G, Shift+F9 Shift+Z, Shift+F10 Shift+C, F11 V, F12 L");
+#endif
         }
 
         // ---------------- 15th pass balance keys (P, Shift+F10, [ ], R) ----------------
@@ -461,23 +467,23 @@ namespace Incremental
             var kb = Keyboard.current;
             if (kb != null)
             {
-                if (kb.f1Key.wasPressedThisFrame) overlay = !overlay;
-                if (kb.f2Key.wasPressedThisFrame) SetPerfMode(!perfMode);
-                if (kb.f3Key.wasPressedThisFrame) root.DebugBoostCurrency(cheatCurrencyMult, cheatCurrencyMin);
-                if (kb.f4Key.wasPressedThisFrame && root.Bot != null) root.Bot.SetEnabled(!root.Bot.Enabled);
-                if (kb.f5Key.wasPressedThisFrame) SaveNow();
-                if (kb.f6Key.wasPressedThisFrame) root.DebugUnlockNext();
-                if (kb.f7Key.wasPressedThisFrame) ToggleNotation();
-                if (kb.f8Key.wasPressedThisFrame && root.Gallery != null) root.Gallery.Toggle();
-                if (kb.f9Key.wasPressedThisFrame && kb.shiftKey.isPressed) root.ResetProgress();
+                if (F(kb.f1Key, kb.qKey)) overlay = !overlay;
+                if (F(kb.f2Key, kb.wKey)) SetPerfMode(!perfMode);
+                if (F(kb.f3Key, kb.eKey)) root.DebugBoostCurrency(cheatCurrencyMult, cheatCurrencyMin);
+                if (F(kb.f4Key, kb.aKey) && root.Bot != null) root.Bot.SetEnabled(!root.Bot.Enabled);
+                if (F(kb.f5Key, kb.sKey)) SaveNow();
+                if (F(kb.f6Key, kb.dKey)) root.DebugUnlockNext();
+                if (F(kb.f7Key, kb.fKey)) ToggleNotation();
+                if (F(kb.f8Key, kb.gKey) && root.Gallery != null) root.Gallery.Toggle();
+                if (F(kb.f9Key, kb.zKey) && kb.shiftKey.isPressed) root.ResetProgress();
                 // 15th pass: Shift only, because it overwrites the save.
-                if (kb.f10Key.wasPressedThisFrame && kb.shiftKey.isPressed) StepRingStart();
+                if (F(kb.f10Key, kb.cKey) && kb.shiftKey.isPressed) StepRingStart();
                 if (kb.pKey.wasPressedThisFrame) ToggleAutoBuy();
                 if (kb.leftBracketKey.wasPressedThisFrame) StepGameSpeed(-1);
                 if (kb.rightBracketKey.wasPressedThisFrame) StepGameSpeed(1);
                 if (kb.rKey.wasPressedThisFrame) ToggleRules();
-                if (kb.f11Key.wasPressedThisFrame) CycleEffectIntensity();
-                if (kb.f12Key.wasPressedThisFrame) Screenshot();
+                if (F(kb.f11Key, kb.vKey)) CycleEffectIntensity();
+                if (F(kb.f12Key, kb.lKey)) Screenshot();
                 if (kb.endKey.wasPressedThisFrame) root.DebugReplayEnding();
                 if (kb.homeKey.wasPressedThisFrame) root.DebugTimeUp();
                 if (kb.insertKey.wasPressedThisFrame) CycleFollow();
@@ -526,6 +532,15 @@ namespace Incremental
             if (kb.equalsKey.wasPressedThisFrame) abilities.StepForcedLevel(1);
             if (kb.pageUpKey.wasPressedThisFrame) abilities.CycleForced();
             if (kb.pageDownKey.wasPressedThisFrame) abilities.CycleForcedLevel();
+        }
+
+        /// <summary>An F-key debug key; in the web build its letter stand-in counts too (see the class summary).</summary>
+        static bool F(UnityEngine.InputSystem.Controls.KeyControl fKey, UnityEngine.InputSystem.Controls.KeyControl webKey)
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (webKey.wasPressedThisFrame) return true;
+#endif
+            return fKey.wasPressedThisFrame;
         }
 
         /// <summary>
