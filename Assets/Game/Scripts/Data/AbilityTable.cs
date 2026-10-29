@@ -118,6 +118,24 @@ namespace Incremental
         [Tooltip("Corners of the circle the ring is drawn as.")]
         public int ringSegments = 128;
 
+        [Header("Look: shockwave (15th pass feedback, x effect intensity)")]
+        [Tooltip("On: the ring is drawn as a shockwave (a bright front, a soft wake behind it, a flash where it leaves) instead of " +
+                 "the line. Off: the line as before. The push is the same either way.")]
+        public bool shockwave = true;
+        [Tooltip("The front: a thin bright edge, its width px and brightness (it dims to shockEndBright of that as it reaches the end).")]
+        public double shockFrontWidthPx = 9;
+        public double shockFrontBright = 1.1;
+        public double shockEndBright = 0.45;
+        [Tooltip("The wake: a wide soft band just inside the front, its width px, brightness, and how far behind the front its middle sits (share of its width).")]
+        public double shockWakeWidthPx = 90;
+        public double shockWakeBright = 0.22;
+        public double shockWakeLag = 0.6;
+        public Color shockColor = new Color(0.78f, 0.9f, 1f, 1f);
+        [Tooltip("The flash where the wave leaves: diameter px, brightness, seconds.")]
+        public double shockFlashPx = 320;
+        public double shockFlashBright = 0.9;
+        public double shockFlashSec = 0.22;
+
         public ImplodeDef()
         {
             id = "implode";

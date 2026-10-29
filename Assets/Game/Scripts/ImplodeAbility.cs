@@ -11,6 +11,10 @@ namespace Incremental
     /// the range turns inward as one, and the reaction spreads outward with the ring. Dust already captured is mass,
     /// not dust, and is not touched. The ring is drawn the way the gravity radius ring is, in blue-white; it stops at
     /// the end of its range and fades out there, which is how the player sees how far it reached.
+    ///
+    /// 15th pass feedback: with ImplodeDef.shockwave on (the default) the ring is drawn as a shockwave instead of the line:
+    /// a thin bright front, a wide soft wake just behind it and a flash where it leaves (GlowFx, FxRing quads), on top of
+    /// the lens ripple (26 §12.2 D2). Same radius and timing as the push, so it is a picture only.
     /// </summary>
     public sealed class ImplodeAbility : Ability
     {
@@ -125,6 +129,12 @@ namespace Incremental
 
             var d = D;
             float radius = RadiusAt(age + lead);
+            if (d.shockwave)
+            {
+                if (ring.enabled) ring.enabled = false;
+                DrawShock(d, radius, lead, intensity);
+                return;
+            }
             int n = Mathf.Max(3, d.ringSegments);
             if (points.Length != n)
             {
@@ -144,6 +154,42 @@ namespace Incremental
             Color c = d.ringColor;
             c.a *= (1f - fade) * intensity;
             ring.startColor = ring.endColor = c;
+        }
+
+        /// <summary>15th pass feedback: the shockwave at <paramref name="radius"/> (world).</summary>
+        void DrawShock(ImplodeDef d, float radius, float lead, float intensity)
+        {
+            var glow = root.Glow;
+            if (glow == null) return;
+            float ppu = (float)p.pixelsPerUnit;
+            float scale = (float)root.WorldScale / ppu;
+            float t = (float)(age + lead);
+            float spread = Mathf.Clamp01(t / Mathf.Max(1e-3f, (float)d.ringSec));
+            float fade = d.ringFadeSec > 0 ? Mathf.Clamp01((float)((t - d.ringSec) / d.ringFadeSec)) : (spread >= 1f ? 1f : 0f);
+            float alive = (1f - fade) * intensity;
+            Color c = d.shockColor.linear;
+
+            // The flash where it leaves: up at once, gone in shockFlashSec.
+            float flashSec = (float)d.shockFlashSec;
+            if (t < flashSec && flashSec > 0f)
+            {
+                float k = t / flashSec;
+                float f = (float)d.shockFlashBright * (1f - k) * (1f - k) * intensity;
+                glow.Draw(origin, (float)d.shockFlashPx * scale * (0.6f + 0.6f * k), new Color(c.r, c.g, c.b, f), 0.25f + 0.4f * k, 0.25f, 1f - k);
+            }
+            if (alive <= 0f || radius <= 1e-4f) return;
+
+            // The front dims as the wave spreads, as one would; the wake rides just inside it.
+            float bright = Mathf.Lerp(1f, (float)d.shockEndBright, spread) * alive;
+            float front = (float)d.shockFrontWidthPx * scale;
+            float wake = (float)d.shockWakeWidthPx * scale;
+            // One quad a little larger than the circle (FxRing fades the last eighth of the quad out); its ring radius and
+            // width are shares of the half size.
+            float half = radius * 1.15f + wake + front;
+            float frontAt = radius / half;
+            glow.Draw(origin, half * 2f, new Color(c.r, c.g, c.b, (float)d.shockFrontBright * bright), frontAt, front * 0.5f / half, 0f);
+            float wakeAt = Mathf.Max(0f, radius - wake * (float)d.shockWakeLag) / half;
+            glow.Draw(origin, half * 2f, new Color(c.r, c.g, c.b, (float)d.shockWakeBright * bright), wakeAt, wake * 0.5f / half, 0f);
         }
     }
 }

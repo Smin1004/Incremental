@@ -55,6 +55,17 @@ MonoBehaviour:
     ringColor: {r: 0.72, g: 0.88, b: 1, a: 0.85}
     ringFadeSec: 0.25
     ringSegments: 128
+    shockwave: 1
+    shockFrontWidthPx: 9
+    shockFrontBright: 1.1
+    shockEndBright: 0.45
+    shockWakeWidthPx: 90
+    shockWakeBright: 0.22
+    shockWakeLag: 0.6
+    shockColor: {r: 0.78, g: 0.9, b: 1, a: 1}
+    shockFlashPx: 320
+    shockFlashBright: 0.9
+    shockFlashSec: 0.22
   satellite:
     id: satellite
     unlockRing: 6

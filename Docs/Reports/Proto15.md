@@ -208,3 +208,20 @@ Validate 0/0, EditMode 233개 통과. 플레이 확인은 하지 않았다(블�
 ### 9.3 D2 캡처 위치
 
 `Proto15_Screens/W_D2_split_dynamic.png`(10/22 바꾼 뒤, 링 7, 섬광 시계로 0.02 / 0.1 / 0.2 / 0.35초 확대)과 `E_D2_split_zoom.png`(위 14차, 아래 15차 첫 값). 원본 전체 화면은 `Captures/p15/w_d2_*.png`(깃에 안 들어감)다.
+
+## 10. 수축 충격파 (10/29 개발자 요청)
+
+수축의 고리를 얇은 선 대신 **충격파**로 그린다. 그림만 바뀌고, 퍼지는 반지름·시간·당기는 힘은 그대로다(같은 `RadiusAt`).
+
+| 부분 | 내용 | 값 (`AbilityTable.implode`) |
+|---|---|---|
+| 앞 테두리 | 밝고 얇은 푸른 흰 고리. 끝으로 갈수록 어두워진다 | `shockFrontWidthPx` 9, `shockFrontBright` 1.1, `shockEndBright` 0.45 |
+| 뒤 띠 | 테두리 바로 안쪽의 넓고 흐린 띠 | `shockWakeWidthPx` 90, `shockWakeBright` 0.22, `shockWakeLag` 0.6 |
+| 출발 섬광 | 수축이 떠나는 자리에서 0.22초 | `shockFlashPx` 320, `shockFlashBright` 0.9, `shockFlashSec` 0.22 |
+| 색 | | `shockColor` (0.78, 0.9, 1) |
+| 전환 | 끄면 예전 선(`ringWidthPx`, `ringColor`) | `shockwave` true |
+
+- `GlowFx`(FxRing 쿼드) 두 장으로 그리고, 연출 강도(F11)를 따른다. 렌즈 일렁임(`implodeRipple`, N 키)은 그대로 위에 겹친다.
+- 캡처: `X_implode_shockwave.png`, 링 7. 위가 예전 선, 아래가 충격파이고 각 4장은 퍼지는 순서다. 위아래가 같은 순간은 아니다(위는 이후 따로 쏜 수축이다).
+- Validate 0/0, EditMode 233개 통과. 개발자 세이브(10/27 테스트용 세이브)는 복사 후 되돌렸다(`cmp` 5개 일치).
+- 작업 중 유니티가 뒤에 있는 동안 컴파일이 멈췄다(빌드 대상이 WebGL로 바뀌어 있었다). 에디터 창을 앞으로 가져온 뒤 진행됐다.
